@@ -61,6 +61,13 @@
 			<artifactId>tomp2p-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<!-- For Android relays -->
+		<dependency>
+			<groupId>com.ganyo</groupId>
+			<artifactId>gcm-server</artifactId>
+			<version>1.0.2</version>
+		</dependency>
 
 		<!-- For testing-->
 		<dependency>

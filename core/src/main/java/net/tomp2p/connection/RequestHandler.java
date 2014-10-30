@@ -248,11 +248,6 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                     + "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
-            // We need to exclude RCON Messages from the sanity check because we
-         	// use this RequestHandler for sending a Type.REQUEST_1,
-         	// RPC.Commands.RCON message on top of it. Therefore the response
-         	// type will never be the same Type as the one the user initially
-         	// used (e.g. DIRECT_DATA).
         } else if (responseMessage.command() != RPC.Commands.RCON.getNr() && message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
         	String msg = "Message [" + responseMessage
                     + "] sent has a different relay flag than we sent [" + this.message + "]. Recipient ("+message.recipient().isRelayed()+") / Sender ("+responseMessage.sender().isRelayed()+")";
@@ -275,7 +270,17 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             LOG.debug("good message is streaming {}", responseMessage);
             return;
         }
-
+        
+        // support slow, unreachable devices which cannot respond instantly
+        if(this.message.recipient().isRelayed() && this.message.recipient().isSlow() && responseMessage.type() == Message.Type.PARTIALLY_OK) {
+        	LOG.debug("Received partially ok by the relay peer. Wait for answer of the unreachable peer.");
+        	// wait for the (real) answer of the unreachable peer.
+        	connectionBean.dispatcher().addPendingRequest(message.messageId(), futureResponse);
+        	// close the channel to the relay peer
+        	ctx.close();
+        	return;
+        }
+        
         if (!message.isKeepAlive()) {
         	LOG.debug("good message, we can close {}, {}", responseMessage, ctx.channel());
             //set the success now, but trigger the notify when we closed the channel.

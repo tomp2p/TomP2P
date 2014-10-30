@@ -58,11 +58,11 @@ public class TestCache {
                     Thread.currentThread().setName("test-cache1 " + ii);
                     integer1.incrementAndGet();
                     test.put("hallo" + ii, "test" + ii);
-                    synchronized (long1) {
-                        long seen = System.currentTimeMillis();
-                        if (seen > long1.get())
-                            long1.set(seen);
-                    }
+                    
+					long seen = System.currentTimeMillis();
+					if (seen > long1.get())
+						long1.set(seen);
+					
                     integer2.incrementAndGet();
                     new Thread(new Runnable() {
                         @Override

@@ -1,12 +1,20 @@
 package net.tomp2p.replication;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.NavigableSet;
+import java.util.Random;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.tomp2p.Utils2;
-import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -18,10 +26,9 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
 import net.tomp2p.synchronization.SyncStat;
+
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class AutomaticReplicationTest {
     private double reliability = 0.90;
@@ -208,7 +215,7 @@ public class AutomaticReplicationTest {
     private NavigableSet<PeerAddress> findTheClosestPeer(PeerDHT[] peers, Number160 locationKey) {
     	
     	Comparator<PeerAddress> c = PeerMap.createComparator(locationKey);
-    	TreeSet<PeerAddress> ts = new TreeSet<PeerAddress>(c);
+    	TreeSet<PeerAddress> ts = new TreeSet<>(c);
     	for(PeerDHT peer:peers) {
     		ts.add(peer.peerAddress());
     	}

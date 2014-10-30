@@ -2,12 +2,11 @@ package net.tomp2p.relay;
 
 import java.util.Collection;
 
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureImpl;
 
 public class FutureRelay extends BaseFutureImpl<FutureRelay> {
 
-	private Collection<PeerConnection> relays;
+	private Collection<BaseRelayConnection> relays;
 
 	private boolean isRelayNotRequired;
 
@@ -27,7 +26,7 @@ public class FutureRelay extends BaseFutureImpl<FutureRelay> {
 		return this;
 	}
 
-	public FutureRelay done(Collection<PeerConnection> relays) {
+	public FutureRelay done(Collection<BaseRelayConnection> relays) {
 		synchronized (lock) {
 			if (!completedAndNotify()) {
 				return this;
@@ -45,7 +44,7 @@ public class FutureRelay extends BaseFutureImpl<FutureRelay> {
 		}
 	}
 
-	public Collection<PeerConnection> relays() {
+	public Collection<BaseRelayConnection> relays() {
 		synchronized (lock) {
 			return relays;
 		}

@@ -43,6 +43,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
+import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -217,23 +219,16 @@ public class ChannelCreator {
 	 */
 	private void addHandlers(final Bootstrap bootstrap,
 	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
-        bootstrap.handler(new ChannelInitializer<Channel>()
-        {
+        bootstrap.handler(new ChannelInitializer<Channel>() {
             @Override
-            protected void initChannel(final Channel ch) throws Exception
-            {
-                for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : channelHandlers.entrySet())
-                {
-                    if (entry.getKey().equals("handler"))
-                    {
+            protected void initChannel(final Channel ch) throws Exception {
+                for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : channelHandlers.entrySet()) {
+                    if (entry.getKey().equals("handler")) {
                         handlerExecutor = entry.getValue().element0();
                     }
-                    if (entry.getValue().element0() != null)
-                    {
+                    if (entry.getValue().element0() != null) {
                         ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
-                    }
-                    else
-                    {
+                    } else {
                         ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
                     }
                 }
@@ -268,7 +263,14 @@ public class ChannelCreator {
 					@Override
 					public void run() {
 						semaphore.release();
-						futureResponse.responseNow();
+						
+						Message request = futureResponse.request();
+						if(request.recipient().isSlow() && request.command() != Commands.PING.getNr() && request.command() != Commands.NEIGHBOR.getNr()) {
+							// If the request goes to a slow peer, the channel can be closed until the response arrives
+							LOG.debug("Ignoring channel close event because recipient is slow peer");
+						} else {
+							futureResponse.responseNow();
+						}
 					}
 				};
 				if (handlerExecutor == null) {

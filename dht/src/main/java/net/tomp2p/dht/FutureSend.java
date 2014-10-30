@@ -81,7 +81,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
             final int size = rawChannels.size();
             this.minReached = size >= min;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;
-            this.reason = minReached ? "Minimun number of results reached" : "Expected " + min + " result, but got "
+            this.reason = minReached ? "Minimum number of results reached" : "Expected " + min + " result, but got "
                     + size;
         }
         notifyListeners();
@@ -102,7 +102,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
             final int size = rawObjects.size();
             this.minReached = size >= min;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;
-            this.reason = minReached ? "Minimun number of results reached" : "Expected " + min + " result, but got "
+            this.reason = minReached ? "Minimum number of results reached" : "Expected " + min + " result, but got "
                     + size;
         }
         notifyListeners();

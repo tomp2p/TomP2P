@@ -15,15 +15,14 @@ public class NeighborSet {
         // remove neighbors that are over the limit
         int serializedSize = 1;
         // no need to cut if we don't provide a limit
-        if (neighborLimit < 0) {
-            return;
-        }
-        for (Iterator<PeerAddress> iterator = neighbors.iterator(); iterator.hasNext();) {
-            PeerAddress neighbor = iterator.next();
-            serializedSize += neighbor.size();
-            if (serializedSize > neighborLimit) {
-                iterator.remove();
-            }
+        if (neighborLimit >= 0) {
+			for (Iterator<PeerAddress> iterator = neighbors.iterator(); iterator.hasNext();) {
+				PeerAddress neighbor = iterator.next();
+				serializedSize += neighbor.size();
+				if (serializedSize > neighborLimit) {
+					iterator.remove();
+				}
+			}
         }
     }
 

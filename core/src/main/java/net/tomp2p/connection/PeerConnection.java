@@ -197,6 +197,16 @@ public class PeerConnection {
     	return new PeerConnection(oneConnection, remotePeer, cc, initiator, map, closeFuture, heartBeatMillis, channelFuture);
     }
     
+	@Override
+	public int hashCode() {
+		if(channelFuture!=null) {
+			channelFuture.hashCode();
+		} else if(remotePeer != null) {
+			return remotePeer.hashCode();
+		}
+		return super.hashCode();
+	}
+    
     @Override
     public boolean equals(Object obj) {
     	if (!(obj instanceof PeerConnection)) {

@@ -30,7 +30,18 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import net.tomp2p.connection.*;
+import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelClientConfiguration;
+import net.tomp2p.connection.ChannelServerConfiguration;
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.DSASignatureFactory;
+import net.tomp2p.connection.DefaultSendBehavior;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerCreator;
+import net.tomp2p.connection.PingBuilderFactory;
+import net.tomp2p.connection.PipelineFilter;
+import net.tomp2p.connection.Ports;
+import net.tomp2p.connection.SendBehavior;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
@@ -109,6 +120,7 @@ public class PeerBuilder {
 	private MaintenanceTask maintenanceTask = null;
 	private Random random = null;
 	private List<PeerInit> toInitialize = new ArrayList<PeerInit>(1);
+	private SendBehavior sendBehavior;
 
 	// enable / disable RPC/P2P/other
 	private boolean enableHandShakeRPC = true;
@@ -209,12 +221,16 @@ public class PeerBuilder {
 			scheduledExecutorService = Executors.newScheduledThreadPool(1);
 		}
 
+		if(sendBehavior == null) {
+			sendBehavior = new DefaultSendBehavior();
+		}
+		
 		final PeerCreator peerCreator;
 		if (masterPeer != null) {
 			peerCreator = new PeerCreator(masterPeer.peerCreator(), peerId, keyPair);
 		} else {
 			peerCreator = new PeerCreator(p2pID, peerId, keyPair, channelServerConfiguration,
-			        channelClientConfiguration, scheduledExecutorService);
+			        channelClientConfiguration, scheduledExecutorService, sendBehavior);
 		}
 
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
@@ -583,6 +599,23 @@ public class PeerBuilder {
 	public PeerBuilder behindFirewall() {
 		this.behindFirewall = true;
 		return this;
+	}
+	
+	/**
+	 * Set the send behavior. If none is sent, {@link DefaultSendBehavior} is used.
+	 * @param sendBehavior the custom send behavior for direct messages
+	 * @return This class
+	 */
+	public PeerBuilder sendBehavior(SendBehavior sendBehavior) {
+		this.sendBehavior = sendBehavior;
+		return this;
+	}
+	
+	/**
+	 * @return the current {@link SendBehavior}
+	 */
+	public SendBehavior sendBehavior() {
+		return sendBehavior;
 	}
 
 	/**

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.tomp2p.connection.PeerException.AbortCause;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
@@ -66,6 +67,13 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * on behalf of another peer.
      */
     private volatile Map<Number320, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number320, Map<Integer, DispatchHandler>>();
+    
+	/**
+	 * Map that stores requests that are not answered yet. Normally, the {@link RequestHandler} handles
+	 * responses, however, in case the asked peer has {@link PeerAddress#isSlow()} set to true, the answer
+	 * might arrive later. The key of the map is the expected message id.
+	 */
+    private volatile Map<Integer, FutureResponse> pendingRequests = new HashMap<Integer, FutureResponse>();
 
     /**
      * 
@@ -342,5 +350,24 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	public Map<Integer, DispatchHandler> searchHandlerMap(Number160 peerId, Number160 onBehalfOf) {
 		Map<Integer, DispatchHandler> ioHandlerMap = ioHandlers.get(new Number320(peerId, onBehalfOf));
 		return ioHandlerMap;
+	}
+	
+	/**
+	 * Add a new pending request. If slow peers answer, this map will be checked for an entry
+	 * 
+	 * @param messageId the message id
+	 * @param futureResponse the future to respond as soon as a (satisfying) response from the slow peer
+	 *            arrived.
+	 */
+	public void addPendingRequest(int messageId, FutureResponse futureResponse) {
+		// TODO add timeout for the pending requests
+		pendingRequests.put(messageId, futureResponse);
+	}
+
+	/**
+	 * @return all pending requests
+	 */
+	public Map<Integer, FutureResponse> getPendingRequests() {
+		return pendingRequests;
 	}
 }

@@ -70,8 +70,8 @@ public class TestRelay {
 	public static Collection data() {
 		return Arrays.asList(new Object[][] {
 				{ RelayConfig.OpenTCP().peerMapUpdateInterval(5) },
-				{ RelayConfig.Android(gcmServerCredentials).peerMapUpdateInterval(3) },
-				{ RelayConfig.Android(gcmServerCredentials, gcmMessageBuffer).peerMapUpdateInterval(3) } }
+				{ RelayConfig.Android(gcmServerCredentials).peerMapUpdateInterval(3).gcmSendRetries(0) },
+				{ RelayConfig.Android(gcmServerCredentials, gcmMessageBuffer).peerMapUpdateInterval(3).gcmSendRetries(0) } }
 		);
 	}
 	
@@ -142,6 +142,13 @@ public class TestRelay {
 			peers[i] = peersDHT[i].peer();
 		}
 		mockGCM(peers, unreachablePeer, gcmMessageHandler);
+	}
+	
+	private void waitMapUpdate() throws InterruptedException {
+		Thread.sleep(relayConfig.peerMapUpdateInterval() * 1000);
+		if(relayConfig.bufferConfiguration() != null) {
+			Thread.sleep(relayConfig.bufferConfiguration().bufferAgeLimit());
+		}
 	}
 	
 	@Test
@@ -244,7 +251,7 @@ public class TestRelay {
 			Assert.assertTrue(otherPeersHaveRelay);
 
 			// wait for maintenance
-			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1000);
+			waitMapUpdate();
 
 			boolean otherPeersMe = false;
 			for (Peer peer : peers) {
@@ -513,7 +520,7 @@ public class TestRelay {
 			Assert.assertNotNull(found);
 
 			// wait for at least one map update task (5s)
-			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1000);
+			waitMapUpdate();
 
 			int nrOfNeighbors = getNeighbors(found).size();
 			// we have in total 9 peers, we should find 8 as neighbors
@@ -536,7 +543,7 @@ public class TestRelay {
 			 * heartbeat and the routing table of the relay peers are also
 			 * updated periodically
 			 */
-			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1500);
+			waitMapUpdate();
 
 			Assert.assertEquals(nrOfNeighbors - 3, getNeighbors(found).size());
 			Assert.assertEquals(relayConfig.type().maxRelayCount(), frNAT.relays().size());
@@ -650,7 +657,7 @@ public class TestRelay {
 			mockGCM(peers, uNat, fbn.gcmMessageHandler());
 
 			// wait for maintenance to kick in
-			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1200);
+			waitMapUpdate();
 
 			printMapStatus(unreachablePeer, peers);
 
@@ -701,7 +708,7 @@ public class TestRelay {
 			mockGCM(peers, uNat, fbn.gcmMessageHandler());
 
 			// wait for maintenance to kick in
-			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1200);
+			waitMapUpdate();
 
 			printMapStatus(unreachablePeer, peers);
 
@@ -765,14 +772,14 @@ public class TestRelay {
 			UtilsNAT.perfectRouting(peers);
 			
 			// wait for relay setup
-			Thread.sleep(relayConfig.peerMapUpdateInterval() * 2000);
+			Thread.sleep(5000);
 			
 			mockGCM(peers, uNat1, fbn1.gcmMessageHandler());
 			mockGCM(peers, uNat2, fbn2.gcmMessageHandler());
 			UtilsNAT.perfectRouting(peers);
 
 			// wait for maintenance to kick in
-			Thread.sleep(relayConfig.peerMapUpdateInterval() * 2000);
+			waitMapUpdate();
 
 			printMapStatus(unreachablePeer1, peers);
 			printMapStatus(unreachablePeer2, peers);
@@ -824,70 +831,66 @@ public class TestRelay {
          PeerDHT unreachablePeer1 = null;
          PeerDHT unreachablePeer2 = null;
          try {
-        	 PeerDHT[] peers = UtilsNAT.createNodesDHT(10, rnd, 4000);
-             master = peers[0]; // the relay peer
+        	PeerDHT[] peers = UtilsNAT.createNodesDHT(10, rnd, 4000);
+            master = peers[0]; // the relay peer
             
-             for(PeerDHT peer:peers) {
- 				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
-             }
+            for(PeerDHT peer:peers) {
+            	new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
+            }
              
-             KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
-             KeyPair pair1 = gen.generateKeyPair();
-             KeyPair pair2 = gen.generateKeyPair();
+            KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+            KeyPair pair1 = gen.generateKeyPair();
+            KeyPair pair2 = gen.generateKeyPair();
              
              // Test setting up relay peers
-             unreachablePeer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).keyPair(pair1).ports(13337).start()).start();
-             unreachablePeer1.peer().peerBean().serverPeerAddress(unreachablePeer1.peer().peerAddress().changeFirewalledTCP(true).changeFirewalledUDP(true));
-             PeerNAT uNat1 = new PeerBuilderNAT(unreachablePeer1.peer()).start();
-             FutureRelayNAT fbn1 = uNat1.startRelay(relayConfig, master.peerAddress()).awaitUninterruptibly();
-             Assert.assertTrue(fbn1.isSuccess());
+            unreachablePeer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).keyPair(pair1).ports(13337).start()).start();
+            PeerNAT uNat1 = new PeerBuilderNAT(unreachablePeer1.peer()).start();
+            FutureRelayNAT fbn1 = uNat1.startRelay(relayConfig, master.peerAddress()).awaitUninterruptibly();
+            Assert.assertTrue(fbn1.isSuccess());
 
-             unreachablePeer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).keyPair(pair2).ports(13338).start()).start();
-             unreachablePeer2.peer().peerBean().serverPeerAddress(unreachablePeer2.peer().peerAddress().changeFirewalledTCP(true).changeFirewalledUDP(true));
-             PeerNAT uNat2 = new PeerBuilderNAT(unreachablePeer2.peer()).start();
-             FutureRelayNAT fbn2 = uNat2.startRelay(relayConfig, master.peerAddress()).awaitUninterruptibly();
-             Assert.assertTrue(fbn2.isSuccess());
+            unreachablePeer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).keyPair(pair2).ports(13338).start()).start();
+            PeerNAT uNat2 = new PeerBuilderNAT(unreachablePeer2.peer()).start();
+            FutureRelayNAT fbn2 = uNat2.startRelay(relayConfig, master.peerAddress()).awaitUninterruptibly();
+            Assert.assertTrue(fbn2.isSuccess());
 
-             peers[8] = unreachablePeer1;
+            peers[8] = unreachablePeer1;
  			peers[9] = unreachablePeer2;
  			UtilsNAT.perfectRouting(peers);
  			
  			// wait for relay setup
- 			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1200);
+			Thread.sleep(5000);
  			
  			mockGCM(peers, uNat1, fbn1.gcmMessageHandler());
  			mockGCM(peers, uNat2, fbn2.gcmMessageHandler());
  			UtilsNAT.perfectRouting(peers);
 
- 			// wait for maintenance to kick in
- 			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1200);
+			// wait for maintenance to kick in
+			waitMapUpdate();
+
+			printMapStatus(unreachablePeer1, peers);
+			printMapStatus(unreachablePeer2, peers);
+
+			RoutingConfiguration r = new RoutingConfiguration(5, 1, 1);
+			RequestP2PConfiguration rp = new RequestP2PConfiguration(1, 1, 0);
+
+            System.err.println(unreachablePeer1.peerID()); //..8bd
+            System.err.println(unreachablePeer2.peerID()); //..af3
              
-             printMapStatus(unreachablePeer1, peers);
-             printMapStatus(unreachablePeer2, peers);
+            FuturePut futurePut = unreachablePeer1.put(unreachablePeer2.peerID()).data(new Data("hello")).sign().routingConfiguration(r).requestP2PConfiguration(rp).start().awaitUninterruptibly();
+            //the relayed one is the slowest, so we need to wait for it!
+            futurePut.futureRequests().awaitUninterruptibly();
+            System.err.println(futurePut.failedReason());
              
-             RoutingConfiguration r = new RoutingConfiguration(5, 1, 1);
-             RequestP2PConfiguration rp = new RequestP2PConfiguration(1, 1, 0);
+            Assert.assertTrue(futurePut.isSuccess());
+            Assert.assertTrue(unreachablePeer2.storageLayer().contains(new Number640(unreachablePeer2.peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
              
-             System.err.println(unreachablePeer1.peerID()); //f1
-             System.err.println(unreachablePeer2.peerID()); //e7
+            FutureGet futureGet = unreachablePeer1.get(unreachablePeer2.peerID()).routingConfiguration(r).sign().requestP2PConfiguration(rp).fastGet(false).start().awaitUninterruptibly();
+            //TODO: try peers even if no data found with fastget
+            System.err.println(futureGet.failedReason());
+            Assert.assertTrue(futureGet.isSuccess());
              
-             FuturePut futurePut = unreachablePeer1.put(unreachablePeer2.peerID()).data(new Data("hello")).sign().routingConfiguration(r).requestP2PConfiguration(rp).start().awaitUninterruptibly();
-             //the relayed one is the slowest, so we need to wait for it!
-             futurePut.futureRequests().awaitUninterruptibly();
-             System.err.println(futurePut.failedReason());
-             
-             Assert.assertTrue(futurePut.isSuccess());
-             Assert.assertTrue(unreachablePeer2.storageLayer().contains(new Number640(unreachablePeer2.peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
-             
-             FutureGet futureGet = unreachablePeer1.get(unreachablePeer2.peerID()).routingConfiguration(r).sign().requestP2PConfiguration(rp).fastGet(false).start().awaitUninterruptibly();
-             //TODO: try peers even if no data found with fastget
-             System.err.println(futureGet.failedReason());
-             Assert.assertTrue(futureGet.isSuccess());
-             
-             //we cannot see the peer in futurePut.rawResult, as the relayed is the slowest and we finish earlier than that.
-             
-             System.err.println("DONE!");
-             
+            //we cannot see the peer in futurePut.rawResult, as the relayed is the slowest and we finish earlier than that.
+            System.err.println("DONE!");
          } finally {
         	 if(master != null) {
  				master.shutdown().await();
@@ -930,7 +933,7 @@ public class TestRelay {
 			mockGCM(peers, uNat, fbn.gcmMessageHandler());
 
 			// wait for maintenance to kick in
- 			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1200);
+			waitMapUpdate();
 
 			RoutingConfiguration r = new RoutingConfiguration(5, 1, 1);
             RequestP2PConfiguration rp = new RequestP2PConfiguration(1, 1, 0);

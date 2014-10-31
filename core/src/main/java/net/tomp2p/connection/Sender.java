@@ -214,7 +214,7 @@ public class Sender {
 	/**
 	 * This method makes a copy of the original Message and prepares it for
 	 * sending it to the relay.
-	 * 
+	 *
 	 * @param message
 	 * @return rconMessage
 	 */
@@ -222,40 +222,37 @@ public class Sender {
 		// get Relay InetAddress from unreachable peer
 		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
 		PeerSocketAddress socketAddress = null;
-		
 		if (relayInetAdresses.length > 0) {
 			// we should be fair and choose one of the relays randomly
-			socketAddress = (PeerSocketAddress) relayInetAdresses[Utils.randomPositiveInt(relayInetAdresses.length)]; 
+			socketAddress = (PeerSocketAddress) relayInetAdresses[Utils.randomPositiveInt(relayInetAdresses.length)];
 		} else {
 			throw new IllegalArgumentException(
-					"There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");
+			        "There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");
 		}
-
 		// we need to make a copy of the original message
 		Message rconMessage = new Message();
 		rconMessage.sender(message.sender());
 		rconMessage.version(message.version());
-		
+
 		// store the message id in the payload to get the cached message later
 		rconMessage.intValue(message.messageId());
 		
 		// the message must have set the keepAlive Flag true. If not, the relay
 		// peer will close the PeerConnection to the unreachable peer.
 		rconMessage.keepAlive(true);
-
 		// making the message ready to send
-		PeerAddress recipient = message.recipient().changeAddress(socketAddress.inetAddress()).changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
+		PeerAddress recipient = message.recipient().changeAddress(socketAddress.inetAddress())
+		        .changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
 		rconMessage.recipient(recipient);
 		rconMessage.command(RPC.Commands.RCON.getNr());
 		rconMessage.type(Message.Type.REQUEST_1);
-
 		return rconMessage;
 	}
 
 	/**
 	 * This method is extracted by @author jonaswagner to ensure that no
 	 * duplicate code exist.
-	 * 
+	 *
 	 * @param handler
 	 * @param futureResponse
 	 * @param channelCreator
@@ -264,18 +261,22 @@ public class Sender {
 	 * @param timeoutHandler
 	 * @param message
 	 */
-	private void connectAndSend(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
-			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
-			final TimeoutFactory timeoutHandler, final Message message) {
+	private void connectAndSend(final SimpleChannelInboundHandler<Message> handler,
+	        final FutureResponse futureResponse, final ChannelCreator channelCreator, final int connectTimeoutMillis,
+	        final PeerConnection peerConnection, final TimeoutFactory timeoutHandler, final Message message) {
 		InetSocketAddress recipient = message.recipient().createSocketTCP();
-		final ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler,
-				connectTimeoutMillis, futureResponse);
+		final ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
+		        timeoutHandler, connectTimeoutMillis, futureResponse);
 		afterConnect(futureResponse, message, channelFuture, handler == null);
 	}
 
 	/**
 	 * Both peers are relayed, thus sending directly or over reverse connection
 	 * is not possible. Send the message to one of the receiver's relays.
+<<<<<<< HEAD
+=======
+	 * 
+>>>>>>> refs/remotes/tomp2p/master
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -421,7 +422,7 @@ public class Sender {
 		ChannelPipeline pipeline = channelFuture.channel().pipeline();
 
 		// we need to replace the handler if this comes from the peer that
-		// create a peerconnection, otherwise we
+		// create a peerConnection, otherwise we
 		// need to add a handler
 		addOrReplace(pipeline, "dispatcher", "handler", handler);
 		// uncomment this if the recipient should also heartbeat
@@ -510,7 +511,7 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-		
+
 		try {
 			final ChannelFuture channelFuture;
 			switch (sendBehavior.udpSendBehavior(message)) {
@@ -648,8 +649,6 @@ public class Sender {
 	 *            The future to set the response
 	 * @param close
 	 *            The close future
-	 * @param cause
-	 *            The response message
 	 */
 	private void reportFailed(final FutureResponse futureResponse, final ChannelFuture close) {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {
@@ -667,8 +666,6 @@ public class Sender {
 	 *            The future to set the response
 	 * @param close
 	 *            The close future
-	 * @param responseMessage
-	 *            The response message
 	 */
 	private void reportMessage(final FutureResponse futureResponse, final ChannelFuture close) {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {

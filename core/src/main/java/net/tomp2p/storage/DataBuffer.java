@@ -37,7 +37,7 @@ public class DataBuffer {
 	 * Creates a DataBuffer and adds the ByteBuf to this DataBuffer
 	 * 
 	 * @param buf
-	 *            The ByteBuf is only added, but no retain() is called!
+	 *            The ByteBuf to add
 	 */
 	public DataBuffer(final ByteBuf buf) {
 		buffers = new ArrayList<ByteBuf>(1);
@@ -45,11 +45,13 @@ public class DataBuffer {
 		buf.retain();
 	}
 
-	private DataBuffer(final List<ByteBuf> buffers) {
+	private DataBuffer(final List<ByteBuf> buffers, boolean refCount) {
 		this.buffers = new ArrayList<ByteBuf>(buffers.size());
 		for (final ByteBuf buf : buffers) {
 			this.buffers.add(buf.duplicate());
-			buf.retain();
+			if(refCount) {
+				buf.retain();
+			}
 		}
 	}
 	
@@ -67,7 +69,21 @@ public class DataBuffer {
 	public DataBuffer shallowCopy() {
 		final DataBuffer db;
 		synchronized (buffers) {
-			db = new DataBuffer(buffers);
+			db = new DataBuffer(buffers, true);
+		}
+		return db;
+	}
+	
+	/**
+	 * This internal copy is used only in this class. That means we can skip the
+	 * retain/release here as the copy lives only as long as this data buffer object anyway.
+	 * 
+	 * @return
+	 */
+	private DataBuffer shallowCopyIntern() {
+		final DataBuffer db;
+		synchronized (buffers) {
+			db = new DataBuffer(buffers, false);
 		}
 		return db;
 	}
@@ -79,7 +95,7 @@ public class DataBuffer {
 	 * @return The backing list of byte buffers
 	 */
 	public List<ByteBuffer> bufferList() {
-		final DataBuffer copy = shallowCopy();
+		final DataBuffer copy = shallowCopyIntern();
 		final List<ByteBuffer> nioBuffers = new ArrayList<ByteBuffer>(
 				copy.buffers.size());
 		for (final ByteBuf buf : copy.buffers) {
@@ -95,7 +111,7 @@ public class DataBuffer {
 	 */
 	public int length() {
 		int length = 0;
-		final DataBuffer copy = shallowCopy();
+		final DataBuffer copy = shallowCopyIntern();
 		for (final ByteBuf buffer : copy.buffers) {
 			length += buffer.writerIndex();
 		}
@@ -107,7 +123,7 @@ public class DataBuffer {
 	 *         not deep copied here.
 	 */
 	public ByteBuf toByteBuf() {
-		final DataBuffer copy = shallowCopy();
+		final DataBuffer copy = shallowCopyIntern();
 		return Unpooled.wrappedBuffer(copy.buffers.toArray(new ByteBuf[0]));
 	}
 	
@@ -116,7 +132,7 @@ public class DataBuffer {
 	 *         not deep copied here.
 	 */
 	public ByteBuf[] toByteBufs() {
-		final DataBuffer copy = shallowCopy();
+		final DataBuffer copy = shallowCopyIntern();
 		return copy.buffers.toArray(new ByteBuf[0]);
 	}
 
@@ -136,7 +152,7 @@ public class DataBuffer {
 	 *            transfered to
 	 */
 	public void transferTo(final AlternativeCompositeByteBuf buf) {
-		final DataBuffer copy = shallowCopy();
+		final DataBuffer copy = shallowCopyIntern();
 		for (final ByteBuf buffer : copy.buffers) {
 			buf.addComponent(buffer);
 			alreadyTransferred += buffer.readableBytes();

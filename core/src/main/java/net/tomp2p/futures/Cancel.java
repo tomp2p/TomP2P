@@ -16,7 +16,7 @@
 package net.tomp2p.futures;
 
 /**
- * A cancelable class should implement this method use use it for future
+ * A cancelable class should implement this method to use it for future
  * objects.
  * 
  * @author Thomas Bocek

@@ -687,19 +687,22 @@ public class TestRouting {
             }
         }
     }
-
+    
     @Test
     public void testBootstrap() throws Exception {
         Peer master = null;
         Peer client = null;
         try {
-            // Bindings b = new Bindings("wlan0");
-            master = new PeerBuilder(new Number160(rnd)).ports(4000).start();
-            client = new PeerBuilder(new Number160(rnd)).ports(4001).start();
+            //TODO: make this generic
+        	Bindings b = new Bindings().addInterface("wlp3s0");
+            master = new PeerBuilder(new Number160(rnd)).bindings(b).ports(4000).enableMaintenance(false).start();
+            client = new PeerBuilder(new Number160(rnd)).bindings(b).ports(4001).enableMaintenance(false).start();
 
             DiscoverResults dr = master.connectionBean().channelServer().discoverNetworks().currentDiscoverResults();
             if(dr.existingBroadcastAddresses().size() == 0) {
             	System.err.println("this test does not work if none of your interfaces supports broadcast");
+            } else {
+            	System.err.println(dr.existingBroadcastAddresses());
             }
             
             BaseFuture tmp = client.ping().broadcast().port(4000).start();

@@ -34,10 +34,8 @@ public class RelayRPC extends DispatchHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
     private final Peer peer;
-    private final ConnectionConfiguration config;
-	
-    // used when it should serve as an Android relay server
     private final MessageBufferConfiguration bufferConfig;
+    private final ConnectionConfiguration config;
 	
 	// holds the forwarder for each client
 	private final Map<Number160, BaseRelayForwarderRPC> forwarders;
@@ -60,6 +58,7 @@ public class RelayRPC extends DispatchHandler {
      * @param peer
      *            The peer to register the RelayRPC
      * @param rconRPC the reverse connection RPC
+	 * @param bufferConfig 
      * @param gcmAuthToken the authentication key for Google cloud messaging
      * @return
      */
@@ -224,7 +223,7 @@ public class RelayRPC extends DispatchHandler {
 			}
 		}
 		
-		peer.peerBean().addPeerStatusListeners(forwarder);
+		peer.peerBean().addPeerStatusListener(forwarder);
 		forwarders.put(forwarder.unreachablePeerId(), forwarder);
 	}
 

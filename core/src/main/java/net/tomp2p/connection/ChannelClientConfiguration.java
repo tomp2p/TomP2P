@@ -16,6 +16,8 @@
 
 package net.tomp2p.connection;
 
+import java.net.InetAddress;
+
 /**
  * The class that stores the limits for the resource reservation.
  * 
@@ -31,6 +33,9 @@ public class ChannelClientConfiguration {
     private PipelineFilter pipelineFilter;
     private SignatureFactory signatureFactory;
     private Bindings bindings;
+    
+    private InetAddress senderUDP;
+    private InetAddress senderTCP;
 
     /**
      * @return The maximum number of permanent (long-lived) connections
@@ -84,7 +89,7 @@ public class ChannelClientConfiguration {
     }
 
     /**
-     * @return Set the filter for the pipeline, where the user can add / remove or change filters
+     * @return The filter for the pipeline, where the user can add / remove or change filters
      */
     public PipelineFilter pipelineFilter() {
         return pipelineFilter;
@@ -117,12 +122,38 @@ public class ChannelClientConfiguration {
         return this;
     }
 
+    /**
+     * @return The bindings
+     */
     public Bindings bindings() {
         return bindings;
     }
-    
+
+    /**
+     * @param bindings
+     *            The bindings
+     * @return This class
+     */
     public ChannelClientConfiguration bindings(Bindings bindings) {
         this.bindings = bindings;
         return this;
+    }
+
+	public InetAddress senderUDP() {
+	    return senderUDP;
+    }
+	
+	public ChannelClientConfiguration senderUDP(InetAddress senderUDP) {
+		this.senderUDP = senderUDP;
+	    return this;
+    }
+
+	public InetAddress senderTCP() {
+	    return senderTCP;
+    }
+	
+	public ChannelClientConfiguration senderTCP(InetAddress senderUDP) {
+		this.senderTCP = senderUDP;
+	    return this;
     }
 }

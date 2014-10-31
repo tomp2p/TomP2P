@@ -38,6 +38,7 @@ public class Bindings {
     private final List<String> interfaceHints = new ArrayList<String>(1);
     private final List<StandardProtocolFamily> protocolHint = new ArrayList<StandardProtocolFamily>(1);
 
+    private boolean listenAny = false;
     
     /**
      * Adds an address that we want to listen to. If the address is not found,
@@ -74,7 +75,14 @@ public class Bindings {
         interfaceHints.add(interfaceHint);
         return this;
     }
-    
+
+    /**
+     * 
+     * @param protocolFamily
+     *              The protocol family, e.g. StandardProtocolFamily.INET or StandardProtocolFamily.INET6
+     * 
+     * @return The same instance
+     */
     public Bindings addProtocol(StandardProtocolFamily protocolFamily) {
         if (protocolFamily == null) {
             throw new IllegalArgumentException("Cannot add null");
@@ -104,27 +112,23 @@ public class Bindings {
     public void clear() {
         interfaceHints.clear();
         addresses.clear();
+        
+        //TODO MK: I assume it should also clear protocolHint?
+        protocolHint.clear();
     }
 
     /**
-     * @return Checks if the user sets any addresses
-     */
-    public boolean anyAddresses() {
-        return addresses.size() == 0;
-    }
-
-    /**
-     * @return Checks if the user sets any interfaces
+     * @return Checks if the user has set interfaces to anything (not set to a specific)
      */
     public boolean anyInterfaces() {
-        return interfaceHints.size() == 0;
+        return interfaceHints.isEmpty();
     }
 
     /**
-     * @return Checks if the user sets any protocols
+     * @return Checks if the user has set protocols to anything (not set to a specific)
      */
     public boolean anyProtocols() {
-        return protocolHint.size() == 0;
+        return protocolHint.isEmpty();
     }
 
     /**
@@ -142,11 +146,23 @@ public class Bindings {
     }
 
     /**
-     * @return Checks if the user sets anything at all
+     * @return Checks if the user wants to listen to a wildcard address
      */
-    public boolean isListenAll() {
-        return anyProtocols() && anyInterfaces() && anyAddresses();
+    public boolean isListenAny() {
+        return listenAny;
     }
+    
+    public Bindings listenAny() {
+    	setListenAny(true);
+    	return this;
+    }
+    
+    public Bindings setListenAny(boolean listenAny) {
+    	this.listenAny = listenAny;
+    	return this;
+    }
+    
+    
 
     /**
      * Checks if the user provided an interface hint.

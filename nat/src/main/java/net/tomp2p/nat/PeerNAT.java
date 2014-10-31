@@ -219,7 +219,6 @@ public class PeerNAT {
 
 	private DistributedRelay startSetupRelay(FutureRelay futureRelay, final RelayConfig relayConfig) {
 		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, maxFail, manualRelays, config, relayConfig);
-		
 		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {
 			@Override

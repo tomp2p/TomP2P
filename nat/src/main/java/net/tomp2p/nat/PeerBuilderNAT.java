@@ -12,7 +12,6 @@ import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RconRPC;
 import net.tomp2p.relay.RelayRPC;
-import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
 
 public class PeerBuilderNAT {
@@ -26,7 +25,6 @@ public class PeerBuilderNAT {
 	private int maxFail = -1;
 
 	private MessageBufferConfiguration bufferConfig = new MessageBufferConfiguration();
-	private int gcmSendRetries = -1;
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
@@ -103,24 +101,6 @@ public class PeerBuilderNAT {
 		this.bufferConfig = bufferConfiguration;
 		return this;
 	}
-
-	/**
-	 * @return the number of retries to send a message over GCM to the mobile device.
-	 */
-	public int gcmSendRetries() {
-		return gcmSendRetries;
-	}
-
-	/**
-	 * The number of retries to send a message over GCM to the mobile device.
-	 * 
-	 * @param gcmSendRetries the maximum number of attempts to try to reach the mobile device
-	 * @return this instance
-	 */
-	public PeerBuilderNAT gcmSendRetries(int gcmSendRetries) {
-		this.gcmSendRetries = gcmSendRetries;
-		return this;
-	}
 	
 	public PeerNAT start() {
 		ConnectionConfiguration connectionConfiguration = new DefaultConnectionConfiguration();
@@ -145,10 +125,6 @@ public class PeerBuilderNAT {
 			manualRelays = Collections.emptyList();
 		}
 		
-		if(gcmSendRetries == -1) {
-			gcmSendRetries = 5;
-		}
-
 		peer.addShutdownListener(new Shutdown() {
 			@Override
 			public BaseFuture shutdown() {

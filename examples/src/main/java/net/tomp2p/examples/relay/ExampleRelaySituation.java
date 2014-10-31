@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
@@ -208,7 +208,7 @@ public class ExampleRelaySituation {
 	}
 
 	private Peer createPeer(int port) throws IOException {
-		ChannelServerConficuration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+		ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
 		csc.ports(new Ports(port, port));
 		csc.portsForwarding(new Ports(port, port));
 		csc.connectionTimeoutTCPMillis(10 * 1000);

@@ -36,24 +36,22 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
     public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise)
             throws Exception {
         AlternativeCompositeByteBuf buf = null;
+        if (!(msg instanceof Message)) {
+    		ctx.write(msg, promise);
+            return;
+    	}
         try {
-            boolean done = false;
-            if (msg instanceof Message) {
-                Message message = (Message) msg;
+        	boolean done = false;
                 
-                if (preferDirect) {
-                    buf = alloc.compDirectBuffer(); 
-                } else {
-                    buf = alloc.compBuffer(); 
-                }
-                //null, means create signature
-                done = encoder.write(buf, message, null);
+            if (preferDirect) {
+                buf = alloc.compDirectBuffer(); 
             } else {
-                ctx.write(msg, promise);
-                return;
+                buf = alloc.compBuffer(); 
             }
+            //null, means create signature
+            done = encoder.write(buf, (Message) msg, null);
             
-            Message message = encoder.message();
+            final Message message = encoder.message();
 
             if (buf.isReadable()) {
                 // this will release the buffer
@@ -66,11 +64,10 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                     	if(message.recipientRelay()!=null) {
                     		//in case of sending to a relay (the relayed flag is already set)
                     		recipient = message.recipientRelay().createSocketUDP();
-                    		sender = message.sender().createSocketUDP();
                     	} else {
                     		recipient = message.recipient().createSocketUDP();
-                    		sender = message.sender().createSocketUDP();
                     	}
+                    	sender = message.sender().createSocketUDP(0);
                     } else {
                     	//in case of a reply
                     	recipient = message.senderSocket();

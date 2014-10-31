@@ -37,11 +37,11 @@ public class BasicUsecasesInWANTest
     private static final Logger log = LoggerFactory.getLogger(BasicUsecasesInWANTest.class);
 
     private final static String SERVER_ID_1 = "tomp2p.net";
-    private final static String SERVER_IP_1 = "188.40.119.70";
+    private final static String SERVER_IP_1 = "188.40.119.115";
     private final static int SERVER_PORT_1 = 5000;
 
     private final static String SERVER_ID_2 = "tomp2p.net";
-    private final static String SERVER_IP_2 = "188.40.119.70";
+    private final static String SERVER_IP_2 = "188.40.119.115";
     private final static int SERVER_PORT_2 = 5001;
 
     private final static String SERVER_ID = SERVER_ID_1;
@@ -153,7 +153,7 @@ public class BasicUsecasesInWANTest
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void testSendDirect() throws Exception
     {
         PeerDHT peer1DHT = startClient(CLIENT_1_ID, new Ports().tcpPort());
@@ -273,7 +273,7 @@ public class BasicUsecasesInWANTest
         Peer peer = null;
         try
         {
-            peer = new PeerBuilder(Number160.createHash("digitalocean1.bitsquare.io")).ports(5000).start();
+            peer = new PeerBuilder(Number160.createHash(SERVER_ID_1)).ports(5000).start();
             new PeerBuilderDHT(peer).start();
             new PeerBuilderNAT(peer).start();
 

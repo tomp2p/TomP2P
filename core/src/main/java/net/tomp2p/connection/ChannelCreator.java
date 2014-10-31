@@ -51,10 +51,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Creates the channels. This class is created by {@link ConnectionReservation}
+ * Creates the channels. This class is created by {@link net.tomp2p.connection.Reservation.WaitReservationPermanent}
  * and should never be called directly. With this class one can create TCP or
- * UDP channels up to a certain extend. Thus it must be know beforehand how much
- * connection will be created.
+ * UDP channels up to a certain extend. Thus it must be know beforehand how many
+ * connections will be created.
  * 
  * @author Thomas Bocek
  */
@@ -91,11 +91,11 @@ public class ChannelCreator {
 
 	/**
 	 * Package private constructor, since this is created by
-	 * {@link ConnectionReservation} and should never be called directly.
+	 * {@link net.tomp2p.connection.Reservation.WaitReservationPermanent} and should never be called directly.
 	 * 
 	 * @param workerGroup
 	 *            The worker group for netty that is shared between TCP and UDP.
-	 *            This workergroup is not shutdown if this class is shutdown
+	 *            This worker group is not shutdown if this instance is shutdown
 	 * @param futureChannelCreationDone
 	 *            We need to set this from the outside as we want to attach
 	 *            listeners to it
@@ -118,21 +118,18 @@ public class ChannelCreator {
 		this.channelClientConfiguration = channelClientConfiguration;
 	}
 
-	/**
-	 * Creates a "channel" to the given address. This won't send any message
-	 * unlike TCP.
-	 * 
-	 * @param recipient
-	 *            The recipient of the a message
-	 * 
-	 * @param broadcast
-	 *            Sets this channel to be able to broadcast
-	 * @param channelHandlers
-	 *            The handlers to set
-	 * @param futureResponse
-	 * 			  the response
-	 * @return The channel future object or null if we are shut down
-	 */
+    /**
+     * Creates a "channel" to the given address. This won't send any message
+     * unlike TCP.
+     * 
+     * @param broadcast
+     *              Sets this channel to be able to broadcast
+     * @param channelHandlers
+     *              The handlers to set
+     * @param futureResponse
+     *              The futureResponse
+     * @return The channel future object or null if we are shut down
+     */
 	public ChannelFuture createUDP(final boolean broadcast,
 			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
 		readUDP.lock();
@@ -156,12 +153,12 @@ public class ChannelCreator {
 			// Here we need to bind, as opposed to the TCP, were we connect if
 			// we do a connect, we cannot receive
 			// broadcast messages
-			final ChannelFuture channelFuture = b.bind(new InetSocketAddress(0));
+			final ChannelFuture channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
 
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;
-		} finally {
+        } finally {
 			readUDP.unlock();
 		}
 	}
@@ -176,8 +173,13 @@ public class ChannelCreator {
 	 *            The timeout for establishing a TCP connection
 	 * @param channelHandlers
 	 *            The handlers to set
+<<<<<<< HEAD
 	 * @param futureResponse
 	 * 			  the response
+=======
+	 * @param futureResponse 
+     *            The futureResponse
+>>>>>>> refs/remotes/tomp2p/master
 	 * @return The channel future object or null if we are shut down.
 	 */
 	public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
@@ -201,7 +203,7 @@ public class ChannelCreator {
 			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(channelHandlers, true, true);
 			addHandlers(b, channelHandlers2);
 
-			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(0));
+			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(channelClientConfiguration.senderTCP(), 0));
 
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreTCP, futureResponse);
@@ -215,41 +217,48 @@ public class ChannelCreator {
 	 * Since we want to add multiple handlers, we need to do this with the
 	 * pipeline.
 	 * 
-	 * @param b
-	 *            The boostrap
+	 * @param bootstrap
+	 *            The bootstrap
 	 * @param channelHandlers
 	 *            The handlers to be added.
 	 */
-	private void addHandlers(final Bootstrap b,
+	private void addHandlers(final Bootstrap bootstrap,
 	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
-		b.handler(new ChannelInitializer<Channel>() {
-			@Override
-			protected void initChannel(final Channel ch) throws Exception {
-				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : channelHandlers.entrySet()) {
-					if (entry.getKey().equals("handler")) {
-						handlerExecutor = entry.getValue().element0();
-					}
-					if (entry.getValue().element0() != null) {
-						ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
-					} else {
-						ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
-					}
-				}
-			}
-		});
+        bootstrap.handler(new ChannelInitializer<Channel>() {
+            @Override
+            protected void initChannel(final Channel ch) throws Exception {
+                for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : channelHandlers.entrySet()) {
+                    if (entry.getKey().equals("handler")) {
+                        handlerExecutor = entry.getValue().element0();
+                    }
+                    if (entry.getValue().element0() != null) {
+                        ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
+                    } else {
+                        ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
+                    }
+                }
+            }
+        });
 	}
 
 	/**
 	 * When a channel is closed, the semaphore is released an other channel can
-	 * be created. Also the lock for the channel creating is beining released.
-	 * This means that the channelcreator can be shutdown.
+	 * be created. Also the lock for the channel creating is being released.
+	 * This means that the channelCreator can be shutdown.
 	 * 
 	 * @param channelFuture
 	 *            The channel future
 	 * @param semaphore
+<<<<<<< HEAD
 	 *            The semaphore to decrease
 	 * @param futureResponse
 	 * 			  The response to fire when the channel is closed. If the response is <code>null</code>, nothing will be done.
+=======
+     *            The semaphore to decrease
+     *@param futureResponse
+     *            The future response
+     *            
+>>>>>>> refs/remotes/tomp2p/master
 	 * @return The same future that was passed as an argument
 	 */
 	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore, final FutureResponse futureResponse) {
@@ -259,7 +268,7 @@ public class ChannelCreator {
 				// it is important that the release of the semaphore and the set
 				// of the future happen sequentially. If this is run in this
 				// thread it will be a netty thread, and this is not what the
-				// user may have wanted. The future respones should be executed
+				// user may have wanted. The future response should be executed
 				// in the thread of the handler.
 				Runnable runner = new Runnable() {
 					@Override
@@ -287,8 +296,10 @@ public class ChannelCreator {
 	
 	/**
 	 * Setup the close listener for a channel that was already created
-	 * @param channelFuture The channel future
+	 * @param channelFuture 
+     *               The channel future
 	 * @param futureResponse
+     *               The future response
 	 * @return The same future that was passed as an argument
 	 */
 	public ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final FutureResponse futureResponse) {

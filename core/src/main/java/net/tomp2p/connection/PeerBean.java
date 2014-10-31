@@ -51,7 +51,7 @@ public class PeerBean {
 	private static final Logger LOG = LoggerFactory.getLogger(PeerBean.class);
     
 	/**
-	 * aThis map is used for all open peerConnections which are meant to stay
+	 * This map is used for all open peerConnections which are meant to stay
 	 * open. {@link Number160} = peerId. {@link Integer} = amount of seconds which this connection
 	 * should be kept alive.
 	 */
@@ -109,7 +109,7 @@ public class PeerBean {
     }
 
     /**
-     * @return The peermap that stores neighbors
+     * @return The peerMap that stores neighbors
      */
     public PeerMap peerMap() {
         return peerMap;
@@ -117,7 +117,7 @@ public class PeerBean {
 
     /**
      * @param peerMap
-     *            The peermap that stores neighbors
+     *            The peerMap that stores neighbors
      * @return This class
      */
     public PeerBean peerMap(final PeerMap peerMap) {
@@ -134,19 +134,19 @@ public class PeerBean {
     }
 
     /**
-     * @param peerStatusListeners
-     *            The listeners that are interested in the peer status, e.g., peer is found to be online, or a peer is
+     * @param peerStatusListener
+     *            The listener that is interested in the peer status, e.g., peer is found to be online, or a peer is
      *            offline or failed to respond in time
      * @return This class
      */
-    public PeerBean addPeerStatusListeners(final PeerStatusListener peerStatusListener) {
+    public PeerBean addPeerStatusListener(final PeerStatusListener peerStatusListener) {
     	synchronized (peerStatusListeners) {
     		peerStatusListeners.add(peerStatusListener);    
         }
         return this;
     }
     
-    public PeerBean removePeerStatusListeners(final PeerStatusListener peerStatusListener) {
+    public PeerBean removePeerStatusListener(final PeerStatusListener peerStatusListener) {
     	synchronized (peerStatusListeners) {
     		peerStatusListeners.remove(peerStatusListener);    
         }

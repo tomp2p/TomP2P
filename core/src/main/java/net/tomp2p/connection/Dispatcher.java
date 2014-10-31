@@ -80,13 +80,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 
     
     /**
-     * Constructor.
      * 
      * @param p2pID
-     *            the p2p ID the dispatcher is looking for in messages
-     * @param signatureFactory 
-     * @param peerBean
-     *            .
+     *             the p2p ID the dispatcher is looking for in messages
+     * @param peerBeanMaster
+     * @param heartBeatMillis
      */
     public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, final int heartBeatMillis) {
         this.p2pID = p2pID;
@@ -309,7 +307,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            The recipient of the message
      * @param onBehalfOf
      * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
-     * @param command
+     * @param cmd
      *            The type of the message to be filtered
      * @return the handler for the given message or null if none has been found
      */

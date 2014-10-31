@@ -86,7 +86,7 @@ public class PeerBuilderTracker {
 			scheduledFuture = null;
 		}
 
-		peer.peerBean().addPeerStatusListeners(trackerStorage);
+		peer.peerBean().addPeerStatusListener(trackerStorage);
 		peer.peerBean().peerMap().addPeerMapChangeListener(trackerStorage);
 		peer.peerBean().maintenanceTask().addMaintainable(trackerStorage);
 		peer.peerBean().digestTracker(trackerStorage);

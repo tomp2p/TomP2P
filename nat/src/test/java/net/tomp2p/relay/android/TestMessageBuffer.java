@@ -17,7 +17,24 @@ import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.relay.UtilsNAT;
 
 import org.junit.Test;
-
+// create three messages
+// buffer did not trigger yet
+// buffer triggered now
+// create one message
+// buffer triggered already
+// create one message
+// buffer did not trigger yet
+// wait for the given time and slightly longer
+// buffer triggered already
+// wait again
+// test that buffer did not trigger again
+// create five messages
+// buffer triggered by now, check the order
+// create one message
+// garbage collect
+// create another message
+// buffer triggered two messages
+// instantly decompose since we don't need to send it here
 public class TestMessageBuffer {
 
 	private final SignatureFactory signature = new DSASignatureFactory();

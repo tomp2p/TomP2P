@@ -253,8 +253,8 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 				Component c = i.previous();
 				if (bytesToTrim >= c.buf.capacity()) {
 					bytesToTrim -= c.buf.capacity();
-					i.remove();
 					c.buf.release();
+					i.remove();
 					continue;
 				}
 				Component newC = new Component(c.buf.slice(0, c.buf.capacity()
@@ -501,8 +501,8 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 			}
 			
 			if(readerIndex >= c.endOffset()) {
-				iterator.remove();
 				c.buf.release();
+				iterator.remove();
 				isOffsetAdjustment = true;
 				int adjust = c.endOffset() - c.offset;
 				setIndex0(readerIndex - adjust, writerIndex - adjust);

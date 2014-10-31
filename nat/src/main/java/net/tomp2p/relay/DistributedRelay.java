@@ -388,7 +388,10 @@ public class DistributedRelay implements GCMMessageHandler {
 	 * 
 	 * @param connection
 	 *            the relay connection on which to add a close listener
+<<<<<<< HEAD
 	 * @param relayType 
+=======
+>>>>>>> refs/remotes/tomp2p/master
 	 */
 	private void addCloseListener(final BaseRelayConnection connection) {
 		connection.addCloseListener(new RelayListener() {

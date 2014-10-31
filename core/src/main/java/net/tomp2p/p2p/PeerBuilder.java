@@ -20,6 +20,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
-import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.DefaultSendBehavior;
@@ -62,7 +63,14 @@ import net.tomp2p.utils.Utils;
  * 
  */
 public class PeerBuilder {
-	public static final PublicKey EMPTY_PUBLICKEY = new PublicKey() {
+	
+	static {
+		System.setProperty("java.net.preferIPv4Stack" , "true");
+		//or use -Djava.net.preferIPv4Stack=true in the command line. This is required to make broadcasting work. See
+		//https://issues.jboss.org/browse/MODCLUSTER-327 or https://code.google.com/p/kryonet/issues/detail?id=29
+	}
+	
+	public static final PublicKey EMPTY_PUBLIC_KEY = new PublicKey() {
 		private static final long serialVersionUID = 4041565007522454573L;
 
 		@Override
@@ -81,7 +89,7 @@ public class PeerBuilder {
 		}
 	};
 
-	private static final KeyPair EMPTY_KEYPAIR = new KeyPair(EMPTY_PUBLICKEY, null);
+	private static final KeyPair EMPTY_KEY_PAIR = new KeyPair(EMPTY_PUBLIC_KEY, null);
 	// if the permits are chosen too high, then we might run into timeouts as we
 	// cant handle that many connections
 	// withing the time limit
@@ -103,7 +111,7 @@ public class PeerBuilder {
 	private Bindings bindings = null;
 	private PeerMap peerMap = null;
 	private Peer masterPeer = null;
-	private ChannelServerConficuration channelServerConfiguration = null;
+	private ChannelServerConfiguration channelServerConfiguration = null;
 	private ChannelClientConfiguration channelClientConfiguration = null;
 	private Boolean behindFirewall = null;
 	private BroadcastHandler broadcastHandler;
@@ -125,7 +133,7 @@ public class PeerBuilder {
 
 
 	/**
-	 * Creates a peermaker with the peer ID and an empty key pair.
+	 * Creates a PeerBuilder with the peer ID and an empty key pair.
 	 * 
 	 * @param peerId
 	 *            The peer Id
@@ -135,15 +143,15 @@ public class PeerBuilder {
 	}
 
 	/**
-	 * Creates a peermaker with the key pair and generates out of this key pair
+	 * Creates a PeerBuilder with the key pair and generates out of this key pair
 	 * the peer ID.
 	 * 
 	 * @param keyPair
 	 *            The public private key
 	 */
 	public PeerBuilder(final KeyPair keyPair) {
-		this.peerId = Utils.makeSHAHash(keyPair.getPublic().getEncoded());
 		this.keyPair = keyPair;
+		this.peerId = Utils.makeSHAHash(keyPair.getPublic().getEncoded());
 	}
 
 	/**
@@ -153,7 +161,6 @@ public class PeerBuilder {
 	 * @throws IOException .
 	 */
 	public Peer start() throws IOException {
-
 		boolean isBehindFirewallSet = false;
 		if (behindFirewall == null) {
 			behindFirewall = false;
@@ -193,7 +200,7 @@ public class PeerBuilder {
 			channelClientConfiguration = createDefaultChannelClientConfiguration();
 		}
 		if (keyPair == null) {
-			keyPair = EMPTY_KEYPAIR;
+			keyPair = EMPTY_KEY_PAIR;
 		}
 		if (p2pID == -1) {
 			p2pID = 1;
@@ -208,7 +215,6 @@ public class PeerBuilder {
 		}
 		if (peerMap == null) {
 			peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-			
 		}
 
 		if (masterPeer == null && scheduledExecutorService == null) {
@@ -230,7 +236,7 @@ public class PeerBuilder {
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
 
 		PeerBean peerBean = peerCreator.peerBean();
-		peerBean.addPeerStatusListeners(peerMap);
+		peerBean.addPeerStatusListener(peerMap);
 		
 		ConnectionBean connectionBean = peerCreator.connectionBean();
 
@@ -303,8 +309,8 @@ public class PeerBuilder {
 		return peer;
 	}
 
-	public static ChannelServerConficuration createDefaultChannelServerConfiguration() {
-		ChannelServerConficuration channelServerConfiguration = new ChannelServerConficuration();
+	public static ChannelServerConfiguration createDefaultChannelServerConfiguration() {
+		ChannelServerConfiguration channelServerConfiguration = new ChannelServerConfiguration();
 		channelServerConfiguration.bindings(new Bindings());
 		//these two values may be overwritten in the peer builder
 		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
@@ -323,6 +329,8 @@ public class PeerBuilder {
 		channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
 		channelClientConfiguration.pipelineFilter(new DefaultPipelineFilter());
 		channelClientConfiguration.signatureFactory(new DSASignatureFactory());
+		channelClientConfiguration.senderTCP(new InetSocketAddress(0).getAddress());
+		channelClientConfiguration.senderUDP(new InetSocketAddress(0).getAddress());
 		return channelClientConfiguration;
 	}
 
@@ -423,11 +431,11 @@ public class PeerBuilder {
 		return this;
 	}
 
-	public ChannelServerConficuration channelServerConfiguration() {
+	public ChannelServerConfiguration channelServerConfiguration() {
 		return channelServerConfiguration;
 	}
 
-	public PeerBuilder channelServerConfiguration(ChannelServerConficuration channelServerConfiguration) {
+	public PeerBuilder channelServerConfiguration(ChannelServerConfiguration channelServerConfiguration) {
 		this.channelServerConfiguration = channelServerConfiguration;
 		return this;
 	}

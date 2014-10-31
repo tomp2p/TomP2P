@@ -34,7 +34,7 @@ import net.tomp2p.futures.FutureDone;
 
 /**
  * A class to search for addresses to bind the sockets to. The user first
- * creates a {@link Bindings} class and provides all the necesary information,
+ * creates a {@link Bindings} class and provides all the necessary information,
  * then calls {@link #discoverInterfaces(Bindings)}. The results are stored in
  * {@link Bindings} as well.
  * 
@@ -44,7 +44,7 @@ public final class DiscoverNetworks {
 
 	private final Collection<DiscoverNetworkListener> listeners = new ArrayList<DiscoverNetworkListener>(1);
 	
-	private final int checkIntevalMillis;
+	private final int checkIntervalMillis;
 	private final Bindings bindings;
 	private final ScheduledExecutorService timer;
 	
@@ -52,8 +52,8 @@ public final class DiscoverNetworks {
 	private boolean stopped = false;
 	private volatile DiscoverResults discoverResults = null;
 	
-	public DiscoverNetworks(final int checkIntevalMillis, Bindings bindings, ScheduledExecutorService timer) {
-		this.checkIntevalMillis = checkIntevalMillis;
+	public DiscoverNetworks(final int checkIntervalMillis, Bindings bindings, ScheduledExecutorService timer) {
+		this.checkIntervalMillis = checkIntervalMillis;
 		this.bindings = bindings;
 		this.timer = timer;
 	}
@@ -67,7 +67,10 @@ public final class DiscoverNetworks {
 			public void run() {
 				try {
 					discoverResults = discoverInterfaces(bindings, discoverResults);
-					if(!discoverResults.isEmpty()) {
+					if(discoverResults.isListenAny()) {
+						future.cancel(false);
+						notifyDiscoverNetwork(discoverResults);
+					} else if(!discoverResults.isEmpty()) {
 						notifyDiscoverNetwork(discoverResults);
 					}
 					if(firstRun) {
@@ -79,7 +82,7 @@ public final class DiscoverNetworks {
 					notifyFailure(t);
 				}
 			}
-		}, 0, checkIntevalMillis, TimeUnit.MILLISECONDS);
+		}, 0, checkIntervalMillis, TimeUnit.MILLISECONDS);
 		return futureDone;
 	}
 	
@@ -112,7 +115,7 @@ public final class DiscoverNetworks {
 				return;
 			}
 			for (DiscoverNetworkListener listener : listeners) {
-				listener.dicoverNetwork(discoverResults);
+				listener.discoverNetwork(discoverResults);
 			}
 		}
 	}
@@ -132,17 +135,19 @@ public final class DiscoverNetworks {
 		return discoverInterfaces(bindings, null);
 	}
 
-	/**
-	 * Search for local interfaces. Hints how to search for those interfaces are
-	 * provided by the user through the {@link Bindings} class. The results of
-	 * that search (InetAddress) are stored in {@link Bindings} as well.
-	 * 
-	 * @param bindings
-	 *            The hints for the search and also the results are stored there
-	 * @return The status of the search
-	 * @throws IOException
-	 *             If anything goes wrong, such as reflection.
-	 */
+    /**
+     * Search for local interfaces. Hints how to search for those interfaces are
+     * provided by the user through the {@link Bindings} class. The results of
+     * that search (InetAddress) are stored in {@link Bindings} as well.
+     * 
+     * @param bindings
+     *              The hints for the search and also the results are stored there
+     * @param oldDiscoverResults
+     * 
+     * @return The status of the search
+     * @throws IOException
+     *              If anything goes wrong, such as reflection.
+     */
 	public static DiscoverResults discoverInterfaces(final Bindings bindings, DiscoverResults oldDiscoverResults) throws IOException {
 		
 		final Collection<InetAddress> existingAddresses = new ArrayList<InetAddress>();
@@ -216,7 +221,7 @@ public final class DiscoverNetworks {
 		}
 		
 		DiscoverResults discoverResults = new DiscoverResults(newAddresses, newBroadcastAddresses, 
-				removedFoundAddresses, removedFoundBroadcastAddresses, existingAddresses, existingBroadcastAddresses, sb.toString());
+				removedFoundAddresses, removedFoundBroadcastAddresses, existingAddresses, existingBroadcastAddresses, bindings.isListenAny(), sb.toString());
 		return discoverResults;
 	}
 
@@ -229,15 +234,21 @@ public final class DiscoverNetworks {
 		}
     }
 
-	/**
-	 * Discovers network interfaces and addresses.
-	 * 
-	 * @param networkInterface
-	 *            The networkInterface to search for addresses to listen to
-	 * @param bindings
-	 *            The search hints and result storage.
-	 * @return The status of the discovery
-	 */
+    /**
+     * Discovers network interfaces and addresses.
+     * 
+     * @param networkInterface
+     *                  The networkInterface to search for addresses to listen to
+     * @param foundAddresses
+     * 
+     * @param foundBroadcastAddresses
+     * 
+     * @param isIPv4
+     * 
+     * @param isIPv6
+     * 
+     * @return  The status of the discovery
+     */
 	public static DiscoverResults discoverNetwork(final NetworkInterface networkInterface,
 	        final Collection<InetAddress> foundAddresses, Collection<InetAddress> foundBroadcastAddresses,
 	        boolean isIPv4, boolean isIPv6) {
@@ -279,7 +290,7 @@ public final class DiscoverNetworks {
 		sb.deleteCharAt(sb.length() - 1);
 		sb.append(")");
 		DiscoverResults discoverResults = new DiscoverResults(null, null,
-				null, null, foundAddresses2, foundBroadcastAddresses2, sb.toString());
+				null, null, foundAddresses2, foundBroadcastAddresses2, false, sb.toString());
 
 		return discoverResults;
 	}

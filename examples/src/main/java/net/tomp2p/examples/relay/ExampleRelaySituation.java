@@ -54,7 +54,7 @@ public class ExampleRelaySituation {
 
 	private static final int NUM_RELAY_PEERS = 1;
 	private static final int NUM_MOBILE_PEERS = 0;
-	private static final int NUM_QUERY_PEERS = 1;
+	private static final int NUM_QUERY_PEERS = 3;
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		String gcmKey = null;
@@ -248,7 +248,7 @@ public class ExampleRelaySituation {
 						LOG.error("Cannot put / get / remove", e);
 					}
 				}
-			}, "Query node").start();
+			}, queryPeer.toString()).start();
 		}
 	}
 

@@ -349,7 +349,7 @@ public class RelayRPC extends DispatchHandler {
 	 * @param sign
 	 */
 	private void handleLateResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) {
-		if(!message.sender().isSlow() ||  message.bufferList().isEmpty()) {
+		if(!message.sender().isSlow() || message.bufferList().isEmpty()) {
             throw new IllegalArgumentException("Late response does not come from slow peer or does not contain the buffered message");
     	}
 		

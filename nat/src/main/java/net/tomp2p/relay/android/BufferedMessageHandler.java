@@ -1,8 +1,5 @@
 package net.tomp2p.relay.android;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-
 import java.util.List;
 
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -25,20 +22,19 @@ public class BufferedMessageHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BufferedMessageHandler.class);
 	private final Peer peer;
-	private final DispatchHandler dispatchHandler;
 	private final ConnectionConfiguration connectionConfig;
 
-	public BufferedMessageHandler(Peer peer, DispatchHandler dispatchHandler, ConnectionConfiguration connectionConfig) {
+	public BufferedMessageHandler(Peer peer, ConnectionConfiguration connectionConfig) {
 		this.peer = peer;
-		this.dispatchHandler = dispatchHandler;
 		this.connectionConfig = connectionConfig;
 	}
 
 	/**
 	 * Takes the message containing the buffered messages. The buffer is decoded and the requests are executed
 	 * 
-	 * @param bufferResponse
-	 * @param futureDone
+	 * @param bufferResponse the response of the relay peer
+	 * @param futureDone done when all messages are passed to their handlers. Responses are not necessary sent
+	 *            before this future is done.
 	 */
 	public void handleBufferResponse(Message bufferResponse, FutureDone<Void> futureDone) {
 		Buffer buffer = bufferResponse.buffer(0);
@@ -74,7 +70,7 @@ public class BufferedMessageHandler {
 
 		try {
 			LOG.debug("Handle buffered message {}", bufferedMessage);
-			handler.handleResponse(bufferedMessage, null, false, new AndroidDirectResponder(bufferedMessage));
+			handler.handleResponse(bufferedMessage, null, false, new AndroidDirectResponder(bufferedMessage, handler));
 		} catch (Exception e) {
 			LOG.error("Cannot handle the buffered message {}", bufferedMessage, e);
 		}
@@ -86,17 +82,19 @@ public class BufferedMessageHandler {
 	 * @author Nico Rutishauser
 	 *
 	 */
-	private class AndroidDirectResponder extends SimpleChannelInboundHandler<Message> implements Responder {
+	private class AndroidDirectResponder implements Responder {
 
-		private final Message bufferedMessage;
+		private final Message request;
+		private final DispatchHandler dispatchHandler;
 
-		public AndroidDirectResponder(Message bufferedMessage) {
-			this.bufferedMessage = bufferedMessage;
+		public AndroidDirectResponder(Message request, DispatchHandler dispatchHandler) {
+			this.request = request;
+			this.dispatchHandler = dispatchHandler;
 		}
 		
 		@Override
 		public void response(final Message responseMessage) {
-			// piggyback the late response. It will be unwrapped by the dispatcher
+			// piggyback the late response. It will be unwrapped by the RelayRPC
 			Message envelope = dispatchHandler.createMessage(responseMessage.recipient(), Commands.RELAY.getNr(), Type.REQUEST_5);
 			try {
 				envelope.buffer(RelayUtils.encodeMessage(responseMessage, peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
@@ -122,24 +120,13 @@ public class BufferedMessageHandler {
 		@Override
 		public void failed(Type type, String reason) {
 			LOG.warn("Handling of buffered messages resulted in an error: {}", reason);
-			response(dispatchHandler.createResponseMessage(bufferedMessage, type));
+			response(dispatchHandler.createResponseMessage(request, type));
 		}
 
 		@Override
 		public void responseFireAndForget() {
 			// respond through TCP anyway
-			response(dispatchHandler.createResponseMessage(bufferedMessage, Type.OK));
+			response(dispatchHandler.createResponseMessage(request, Type.OK));
 		}
-
-		@Override
-		protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-			// not used at the moment, we don't send a confirmation to the unreachable peer for the late response
-			if(msg.isOk()) {
-				LOG.debug("Late message accepted by requester.");
-			} else {
-				LOG.error("Late requester did not accept the late message. He responded: {}", msg);
-			}
-		}
-
 	}
 }

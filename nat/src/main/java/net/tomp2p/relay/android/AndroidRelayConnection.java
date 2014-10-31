@@ -1,5 +1,7 @@
 package net.tomp2p.relay.android;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -38,6 +40,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	private final GCMServerCredentials gcmServerCredentials;
 	private int reachRelayFailCounter = 0;
 	private final BufferedMessageHandler bufferedMessageHandler;
+	private final AtomicBoolean shutdown;
 
 	public AndroidRelayConnection(PeerAddress relayAddress, DispatchHandler dispatchHandler, Peer peer,
 			ConnectionConfiguration config, GCMServerCredentials gcmServerCredentials) {
@@ -46,11 +49,16 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 		this.peer = peer;
 		this.config = config;
 		this.gcmServerCredentials = gcmServerCredentials;
-		this.bufferedMessageHandler = new BufferedMessageHandler(peer, dispatchHandler, config);
+		this.bufferedMessageHandler = new BufferedMessageHandler(peer, config);
+		this.shutdown = new AtomicBoolean(false);
 	}
 
 	@Override
 	public FutureResponse sendToRelay(Message message) {
+		if(shutdown.get()) {
+			return new FutureResponse(message).failed("Relay connection is already shut down");
+		}
+		
 		// send it over a newly opened connection
 		return RelayUtils.connectAndSend(peer, message, config);
 	}
@@ -62,6 +70,10 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	 * @return when the buffer request is done
 	 */
 	public FutureDone<Void> sendBufferRequest() {
+		if(shutdown.get()) {
+			return new FutureDone<Void>().failed("Relay connection is already shut down");
+		}
+		
 		LOG.debug("Sending buffer request to relay {}", relayAddress());
 		final FutureDone<Void> futureDone = new FutureDone<Void>();
 
@@ -92,7 +104,8 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 
 	@Override
 	public FutureDone<Void> shutdown() {
-		// Nothing to do
+		shutdown.set(true);
+		// else, nothing to do
 		return new FutureDone<Void>().done();
 	}
 	

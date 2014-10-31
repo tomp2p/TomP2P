@@ -50,7 +50,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
             throw new Exception(t);
 		} finally {
 			//the cumulation buffer now maintains the buffer buf, so we can release it here
-			buf.release();
+			//buf.release();
 			if (!cumulation.isReadable()) {
                 cumulation.release();
                 cumulation = null;

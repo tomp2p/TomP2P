@@ -1,6 +1,7 @@
 package net.tomp2p.examples;
 
 import java.io.IOException;
+
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.*;
 import net.tomp2p.futures.FutureDirect;
@@ -16,6 +17,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
+
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -33,11 +35,11 @@ public class BasicUsecasesInWANTest
 {
     private static final Logger log = LoggerFactory.getLogger(BasicUsecasesInWANTest.class);
 
-    private final static String SERVER_ID_1 = "tomp2p.net";
+    private final static String SERVER_ID_1 = "1.tomp2p.net";
     private final static String SERVER_IP_1 = "188.40.119.115";
     private final static int SERVER_PORT_1 = 5000;
 
-    private final static String SERVER_ID_2 = "tomp2p.net";
+    private final static String SERVER_ID_2 = "2.tomp2p.net";
     private final static String SERVER_IP_2 = "188.40.119.115";
     private final static int SERVER_PORT_2 = 5001;
 
@@ -178,6 +180,30 @@ public class BasicUsecasesInWANTest
         peer1DHT.shutdown().awaitUninterruptibly();
         peer2DHT.shutdown().awaitUninterruptibly();
     }
+    
+    @Test
+    public void testSendDirect2() throws Exception {
+    	PeerDHT peer1DHT = startClient(CLIENT_1_ID, new Ports().tcpPort());
+    	PeerAddress reachablePeer = new PeerAddress(Number160.createHash(SERVER_ID_2), SERVER_IP_2, SERVER_PORT_2,
+    			SERVER_PORT_2);
+    	
+    	FuturePeerConnection futurePeerConnection = peer1DHT.peer().createPeerConnection(reachablePeer, 500);
+        
+    	FutureDirect futureDirect = peer1DHT.peer().sendDirect(futurePeerConnection).object("hallo").start();
+        futureDirect.awaitUninterruptibly();
+        System.err.println(futureDirect.failedReason());
+        assertTrue(futureDirect.isSuccess());
+        assertEquals("world on port 5001", futureDirect.object());
+        
+        //2nd call
+        futureDirect = peer1DHT.peer().sendDirect(futurePeerConnection).object("hallo").start();
+        futureDirect.awaitUninterruptibly();
+        assertTrue(futureDirect.isSuccess());
+        assertEquals("world on port 5001", futureDirect.object());
+        
+        
+        peer1DHT.shutdown().awaitUninterruptibly();
+    }
 
     private PeerDHT startClient(String clientId, int clientPort) throws Exception
     {
@@ -262,27 +288,30 @@ public class BasicUsecasesInWANTest
 
     
     public static void main(String[] args) throws Exception {
-        new BasicUsecasesInWANTest().startBootstrappingSeedNode();
+    	BasicUsecasesInWANTest b =new BasicUsecasesInWANTest();
+    	b.startBootstrappingSeedNode(SERVER_PORT_1, SERVER_ID_1);
+    	b.startBootstrappingSeedNode(SERVER_PORT_2, SERVER_ID_2);
     }
     
-    private void startBootstrappingSeedNode()
+    private void startBootstrappingSeedNode(final int port, String serverID)
     {
         Peer peer = null;
         try
         {
-            peer = new PeerBuilder(Number160.createHash(SERVER_ID_1)).ports(5000).start();
-            new PeerBuilderDHT(peer).start();
+            peer = new PeerBuilder(Number160.createHash(serverID)).ports(port).start();
+            PeerDHT peerDHT = new PeerBuilderDHT(peer).start();
             new PeerBuilderNAT(peer).start();
+            
+            peerDHT.peer().objectDataReply(new ObjectDataReply()
+            {
+                @Override
+                public Object reply(PeerAddress sender, Object request) throws Exception
+                {
+                    return "world on port " + port;
+                }
+            });
 
             System.out.println("peer started.");
-            for (; ; )
-            {
-                for (PeerAddress pa : peer.peerBean().peerMap().all())
-                {
-                    System.out.println("peer online (TCP):" + pa);
-                }
-                Thread.sleep(2000);
-            }
         } catch (Exception e)
         {
             if (peer != null)

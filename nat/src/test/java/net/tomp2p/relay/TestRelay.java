@@ -536,7 +536,7 @@ public class TestRelay {
 			 * heartbeat and the routing table of the relay peers are also
 			 * updated periodically
 			 */
-			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1000);
+			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1500);
 
 			Assert.assertEquals(nrOfNeighbors - 3, getNeighbors(found).size());
 			Assert.assertEquals(relayConfig.type().maxRelayCount(), frNAT.relays().size());

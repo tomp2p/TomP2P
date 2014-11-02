@@ -186,8 +186,9 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         
         @Override
         public void run() {
-        	failed(serverPeerAddress, "Timeout in Discover: " + 
-        			(System.currentTimeMillis() - start) + "ms. However, I think my peer address is " + serverPeerAddress);
+        	failed(serverPeerAddress, "Timeout in Discover: " +
+                    (System.currentTimeMillis() - start) + "ms. Seems like pingTCPProbe or pingUDPProbe did not " +
+                    "succeed in time. However my address reported from pingTCPDiscover is " + serverPeerAddress);
         }
     }
     

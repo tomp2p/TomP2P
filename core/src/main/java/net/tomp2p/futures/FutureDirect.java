@@ -32,7 +32,7 @@ public class FutureDirect extends FutureWrapper2<FutureDirect, FutureResponse> {
     
     public Object object() throws ClassNotFoundException, IOException {
         synchronized (lock) {
-            return buffer().object();
+            return buffer() != null ? buffer().object() : null;
         }
     }
     

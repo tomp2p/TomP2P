@@ -238,7 +238,8 @@ public class TestDHT {
 			FutureGet fdht2 = master.get(Number160.ONE).start();
 			fdht2.awaitUninterruptibly();
 			System.err.println(fdht2.failedReason());
-			Assert.assertEquals(false, fdht2.isSuccess());
+			//we get an empty result, this means it did not fail, just it did not return anything
+			Assert.assertEquals(true, fdht2.isSuccess());
 			Data tmp = fdht2.data();
 			Assert.assertNull(tmp);
 		} finally {

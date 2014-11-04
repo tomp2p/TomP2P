@@ -24,7 +24,13 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.ConnectException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -431,9 +437,9 @@ public class Sender {
 		return channelFuture;
 	}
 
+	// ChannelHandler channelHandler) {
 	// private boolean addIfAbsent(ChannelPipeline pipeline, String before,
 	// String name,
-	// ChannelHandler channelHandler) {
 	// List<String> names = pipeline.names();
 	// if (names.contains(name)) {
 	// return false;
@@ -488,15 +494,20 @@ public class Sender {
 		}
 		removePeerIfFailed(futureResponse, message);
 
-		if (message.sender().isRelayed()) { 
+		if (message.sender().isRelayed()) {
 			message.peerSocketAddresses(message.sender().peerSocketAddresses());
 		}
-		
-		if (message.recipient().isRelayed() && message.sender().isRelayed()) {
-			prepareHolePunch(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
+
+		boolean isHolePunchNeeded = false;
+		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
+			try {
+				prepareHolePunch(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			return;
 		}
-		
+
 		boolean isFireAndForget = handler == null;
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
@@ -520,33 +531,38 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-		if (message.recipient().isRelayed() && message.command() != RPC.Commands.NEIGHBOR.getNr()
-				&& message.command() != RPC.Commands.PING.getNr()) {
-			LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}", message);
-			futureResponse.failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
-		} else {
-			final ChannelFuture channelFuture;
-			if (message.recipient().isRelayed()) {
 
-				List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
-				LOG.debug("send neighbor request to random relay peer {}", psa);
-				if (psa.size() > 0) {
-					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-					message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
-					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
-				} else {
-					futureResponse.failed("Peer is relayed, but no relay given");
-					return;
-				}
+		// TODO jwa this is not longer needed!, we want to make this possible
+		// if (message.recipient().isRelayed() && message.command() !=
+		// RPC.Commands.NEIGHBOR.getNr()
+		// && message.command() != RPC.Commands.PING.getNr()) {
+		// LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}",
+		// message);
+		// futureResponse.failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
+		// } else {
+		final ChannelFuture channelFuture;
+		if (message.recipient().isRelayed()) {
+
+			List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
+			LOG.debug("send neighbor request to random relay peer {}", psa);
+			if (psa.size() > 0) {
+				PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
+				message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null, -1);
 			} else {
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+				futureResponse.failed("Peer is relayed, but no relay given");
+				return;
 			}
-			afterConnect(futureResponse, message, channelFuture, handler == null);
+		} else {
+			channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null, -1);
 		}
+		afterConnect(futureResponse, message, channelFuture, handler == null);
+		// }
 	}
 
 	private void prepareHolePunch(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
-			final Message message, final ChannelCreator channelCreator, final int idleUDPSeconds, final boolean broadcast) {
+			final Message message, final ChannelCreator channelCreator, final int idleUDPSeconds, final boolean broadcast)
+			throws IOException {
 		// TODO jwa notify rendez-vous server
 		// TODO jwa punch a hole into firewall
 		// TODO jwa store message to chachedRequests
@@ -577,23 +593,35 @@ public class Sender {
 		holePMessage.command(RPC.Commands.HOLEP.getNr());
 		holePMessage.type(Message.Type.REQUEST_1);
 
-		final FutureResponse holePResponse = new FutureResponse(holePMessage);
+		boolean isFireAndForget = handler == null;
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
-		final int nrTCPHandlers = 7; // 5 / 0.75
-		handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
-		final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds, false);
-		handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
-		handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
+		if (isFireAndForget) {
+			final int nrTCPHandlers = 3; // 2 / 0.75
+			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
+		} else {
+			final int nrTCPHandlers = 7; // 5 / 0.75
+			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
+			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds, isFireAndForget);
+			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
+			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
+		}
+
 		handlers.put(
 				"decoder",
 				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(channelClientConfiguration.signatureFactory())));
 		handlers.put(
 				"encoder",
 				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
+		if (!isFireAndForget) {
+			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
+		}
 
-		ChannelFuture channelFuture = channelCreator.createUDP(false, handlers, futureResponse);
-		afterConnect(futureResponse, holePMessage, channelFuture, false);
+		final ChannelFuture channelFuture;
+		channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, message.sender().inetAddress(), 8080);
+		afterConnect(futureResponse, message, channelFuture, false);
+		afterConnect(futureResponse, message, channelFuture, false);
+//		afterConnect(futureResponse, message, channelFuture, true);
 	}
 
 	/**

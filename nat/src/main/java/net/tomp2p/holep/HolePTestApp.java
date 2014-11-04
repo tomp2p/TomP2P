@@ -165,6 +165,7 @@ public class HolePTestApp {
 			public Object reply(PeerAddress sender, Object request) throws Exception {
 				System.out.println("SUCCESS HIT");
 				System.out.println("Sender: " + sender.toString());
+				System.out.println("NATPEER: " + (PeerAddress) request);
 				natPeerAddress = (PeerAddress) request;
 				return null;
 			}

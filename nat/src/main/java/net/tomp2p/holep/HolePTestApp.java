@@ -15,6 +15,8 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureShutdown;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
@@ -55,8 +57,8 @@ public class HolePTestApp {
 		peer.objectDataReply(new ObjectDataReply() {
 
 			@Override
-			public Object reply(PeerAddress sender, Object request) throws Exception {
-				Object reply = null;
+			public FutureDone<PeerAddress> reply(PeerAddress sender, Object request) throws Exception {
+				FutureDone<PeerAddress> futureDone = new FutureDone<PeerAddress>();
 				int command = (Integer) request;
 				switch (command) {
 				case 0: {
@@ -67,11 +69,11 @@ public class HolePTestApp {
 				} 
 				case 1: {
 					if (Number160.createHash(PEER_1).equals(sender.peerId())) {
-						reply = (Object) HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_2));
+						futureDone.done(HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_2)));
 						System.err.println("RETURNED PEERADDRESS OF PEER_2!");
 						System.err.println(sender);
 					} else {
-						reply = (Object) HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_1));
+						futureDone.done(HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_1)));
 						System.err.println("RETURNED PEERADDRESS OF PEER_1!");
 						System.err.println(sender);
 					}
@@ -80,22 +82,7 @@ public class HolePTestApp {
 					break;
 				}
 				
-				if (reply != null) {
-					FutureDirect fd = peer.sendDirect(sender).object(reply).start();
-					fd.addListener(new BaseFutureAdapter<BaseFuture>() {
-
-						@Override
-						public void operationComplete(BaseFuture future) throws Exception {
-							if (future.isSuccess()) {
-								System.err.println("FD SUCCESS!");
-							} else {
-								System.err.println("FD FAIL!");
-							}
-						}
-					});
-				}
-				
-				return reply;
+				return futureDone;
 			}
 		});
 	}
@@ -210,13 +197,20 @@ public class HolePTestApp {
 
 	private void sendRelayNATMessage(){
 		setObjectDataReply();
-		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(new Integer(1)).start();
-		fd.awaitUninterruptibly(10000);
-		if (fd.isFailed()) {
-			System.err.println("NO RELAY SENDDIRECT COULD BE MADE!");
-		} else {
-			System.err.println("RELAY SENDDIRECT SUCCESS!");
-		}
+		final FutureDone<PeerAddress> fDone = new FutureDone<PeerAddress>();
+		FutureDirect fDirect = peer.sendDirect(masterPeerAddress).object(new Integer(1)).start();
+		fDirect.addListener(new BaseFutureAdapter<FutureDone<PeerAddress>>() {
+
+			@Override
+			public void operationComplete(FutureDone<PeerAddress> future) throws Exception {
+				if (future.isSuccess()) {
+					PeerAddress peer2Address = (PeerAddress) future.object();
+					System.err.println("RELAY SENDDIRECT SUCCESS!");
+				} else {
+					System.err.println("NO RELAY SENDDIRECT COULD BE MADE!");
+				}
+			}
+		});
 	}
 
 	private void sendDirectNATMessage() throws IOException {

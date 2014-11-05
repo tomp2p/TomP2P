@@ -2,21 +2,10 @@ package net.tomp2p.holep;
 
 import java.io.IOException;
 import java.net.Inet4Address;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Scanner;
 
-import net.tomp2p.dht.FutureGet;
-import net.tomp2p.dht.FuturePut;
-import net.tomp2p.dht.PeerBuilderDHT;
-import net.tomp2p.dht.PeerDHT;
-import net.tomp2p.dht.PutBuilder;
-import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureShutdown;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
@@ -27,13 +16,13 @@ import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
-import net.tomp2p.storage.Data;
 
 public class HolePTestApp {
 
 	private static final int port = 4001;
 	private static final String PEER_1 = "peer1";
 	private static final String PEER_2 = "peer2";
+	private static final String PEER_3 = "peer3";
 
 	private Peer peer;
 	private PeerNAT pNAT;
@@ -68,7 +57,7 @@ public class HolePTestApp {
 					break;
 				}
 				case 1: {
-					if (Number160.createHash(PEER_1).equals(sender.peerId())) {
+					if (Number160.createHash(PEER_1).equals(sender.peerId()) || Number160.createHash(PEER_3).equals(sender.peerId())) {
 						reply = HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_2));
 						System.err.println("RETURNED PEERADDRESS OF PEER_2!");
 						System.err.println(sender);
@@ -211,12 +200,13 @@ public class HolePTestApp {
 	private void sendDirectNATMessage() throws IOException {
 		setObjectDataReply();
 
-		FutureDirect fd = peer.sendDirect(natPeerAddress).object("Hello World").start();
+		FutureDirect fd = peer.sendDirect(natPeerAddress).object("Hello World").forceUDP(true).start();
 		fd.awaitUninterruptibly();
-		if (!fd.isSuccess()) {
-			System.err.println("SENDDIRECT-NATMESSAGE FAIL!");
+		
+		if (fd.isSuccess()) {
+			System.err.println("WORKS!");
 		} else {
-			System.err.println("SENDDIRECT-NATMESSAGE SUCCESS!");
+			System.err.println("DOES NOT WORK!");
 		}
 	}
 

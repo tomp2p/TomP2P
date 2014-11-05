@@ -57,8 +57,8 @@ public class HolePTestApp {
 		peer.objectDataReply(new ObjectDataReply() {
 
 			@Override
-			public FutureDone<PeerAddress> reply(PeerAddress sender, Object request) throws Exception {
-				FutureDone<PeerAddress> futureDone = new FutureDone<PeerAddress>();
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				Object reply = null;
 				int command = (Integer) request;
 				switch (command) {
 				case 0: {
@@ -66,14 +66,14 @@ public class HolePTestApp {
 					System.err.println("NEW PEERADDRESS STORED IN HOLEPSTATICSTORAGE!");
 					System.err.println(sender);
 					break;
-				} 
+				}
 				case 1: {
 					if (Number160.createHash(PEER_1).equals(sender.peerId())) {
-						futureDone.done(HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_2)));
+						reply = HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_2));
 						System.err.println("RETURNED PEERADDRESS OF PEER_2!");
 						System.err.println(sender);
 					} else {
-						futureDone.done(HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_1)));
+						reply = HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_1));
 						System.err.println("RETURNED PEERADDRESS OF PEER_1!");
 						System.err.println(sender);
 					}
@@ -82,15 +82,11 @@ public class HolePTestApp {
 					break;
 				}
 				
-				if (!futureDone.isCompleted()) {
-					futureDone = null;
-				}
-				
-				return futureDone;
+				return reply;
 			}
 		});
 	}
-	
+
 	public void startNormalPeer(String[] args) throws Exception {
 		peer = new PeerBuilder(Number160.createHash(args[1])).ports(port).start();
 		FutureBootstrap fb = peer.bootstrap().inetAddress(Inet4Address.getByName(args[0])).ports(port).start();
@@ -199,22 +195,16 @@ public class HolePTestApp {
 		System.exit(0);
 	}
 
-	private void sendRelayNATMessage(){
+	private void sendRelayNATMessage() throws ClassNotFoundException, IOException {
 		setObjectDataReply();
-		final FutureDone<PeerAddress> fDone = new FutureDone<PeerAddress>();
 		FutureDirect fDirect = peer.sendDirect(masterPeerAddress).object(new Integer(1)).start();
-		fDirect.addListener(new BaseFutureAdapter<FutureDone<PeerAddress>>() {
+		fDirect.awaitUninterruptibly();
 
-			@Override
-			public void operationComplete(FutureDone<PeerAddress> future) throws Exception {
-				if (future.isSuccess()) {
-					PeerAddress peer2Address = (PeerAddress) future.object();
-					System.err.println("RELAY SENDDIRECT SUCCESS!");
-				} else {
-					System.err.println("NO RELAY SENDDIRECT COULD BE MADE!");
-				}
-			}
-		});
+		if (fDirect.isSuccess()) {
+			Object address = fDirect.object();
+		} else {
+			Object address = fDirect.object();
+		}
 	}
 
 	private void sendDirectNATMessage() throws IOException {

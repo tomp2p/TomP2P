@@ -82,6 +82,10 @@ public class HolePTestApp {
 					break;
 				}
 				
+				if (!futureDone.isCompleted()) {
+					futureDone = null;
+				}
+				
 				return futureDone;
 			}
 		});

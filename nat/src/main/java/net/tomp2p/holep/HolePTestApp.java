@@ -201,9 +201,10 @@ public class HolePTestApp {
 		fDirect.awaitUninterruptibly();
 
 		if (fDirect.isSuccess()) {
-			Object address = fDirect.object();
+			System.err.println("Retrieval of PeerAddress of Peer2 successfull!");
+			natPeerAddress = (PeerAddress) fDirect.object();
 		} else {
-			Object address = fDirect.object();
+			System.err.println("FAILFAILFAIL!");
 		}
 	}
 

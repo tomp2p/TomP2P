@@ -33,6 +33,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
+import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -132,7 +133,7 @@ public class ChannelCreator {
 	 * @return The channel future object or null if we are shut down
 	 */
 	public ChannelFuture createUDP(final boolean broadcast,
-	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
+	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse, InetAddress inetAddress, int port) {
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
@@ -154,8 +155,13 @@ public class ChannelCreator {
 			// Here we need to bind, as opposed to the TCP, were we connect if
 			// we do a connect, we cannot receive
 			// broadcast messages
-			final ChannelFuture channelFuture = b.bind(externalBindings.wildCardSocket());
-
+			//TODO jwa --> include incoming port
+			final ChannelFuture channelFuture;
+			if (port == -1 || inetAddress != null) {
+				channelFuture = b.bind(externalBindings.wildCardSocket());
+			} else {
+				channelFuture = b.bind(inetAddress, port);
+			}
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;
@@ -354,6 +360,4 @@ public class ChannelCreator {
 	    sb.append(semaphoreUPD);
 	    return sb.toString();
 	}
-
-	
 }

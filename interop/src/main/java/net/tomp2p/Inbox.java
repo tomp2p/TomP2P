@@ -7,7 +7,7 @@ public class Inbox {
 		if (args.length < 1) {
 			System.out.println("Argument missing.");
 			System.err.println("Argument missing.");
-			//System.exit(-1); // TODO uncomment (3x)
+			System.exit(-1);
 		}
 
 		String argument = args[0];
@@ -16,22 +16,24 @@ public class Inbox {
 			switch(argument) {
 				
 				case "TestEncodeInt":
-					TestDotNetInterop test = new TestDotNetInterop();
-					test.testDecodeInt();
+					//TestDotNetInterop test = new TestDotNetInterop();
+					//test.testDecodeInt();
 					
 					break;
 				default:
 					System.out.println(String.format("Invalid argument: %s.", argument));
 					System.err.println(String.format("Invalid argument: %s.", argument));
-					//System.exit(-1);
+					System.exit(-1);
 					break;
 			}
 			
 		} catch(Exception ex) {
 			System.out.println(String.format("Exception occurred: %s\n%s.", ex.getCause(), ex));
 			System.err.println(String.format("Exception occurred: %s\n%s.", ex.getCause(), ex));
-			//System.exit(-1);
+			System.exit(-1);
 		}
+		
+		System.exit(0);
 	}
 
 }

@@ -18,6 +18,7 @@ public class HolePTestDriver {
 		LOG.warn("Logger with Level " + Level.DEBUG.toString() + " initialized");
 
 		HolePTestApp testApp = new HolePTestApp();
+		HolePTestController controller = new HolePTestController("DaView", testApp);
 
 		switch (args.length) {
 		case 0:
@@ -34,6 +35,6 @@ public class HolePTestDriver {
 					"The Application can't start with the given arguments. The arguments have to be like this: \n args[0] = 192.168.2.xxx \n args[1] = \"id\n");
 		}
 
-		testApp.runTextInterface();
+//		testApp.runTextInterface();
 	}
 }

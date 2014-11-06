@@ -64,6 +64,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	private boolean forceTCP = false;
 
 	private ProgressListener progressListener;
+	
+	private int sourcePort;
 
 	public SendDirectBuilder(Peer peer, PeerAddress recipientAddress) {
 		this.peer = peer;
@@ -394,5 +396,10 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 */
 	public KeyPair keyPair() {
 		return keyPair;
+	}
+
+	public SendDirectBuilder sourcePort(int port) {
+		this.sourcePort = port;
+		return this;
 	}
 }

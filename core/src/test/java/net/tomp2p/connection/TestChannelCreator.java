@@ -225,7 +225,7 @@ public class TestChannelCreator {
             };
 
             for (int i = 0; i < connections; i++) {
-                final ChannelFuture channelFuture = channelCreator2.createUDP(false, tmp, new FutureResponse(null));
+                final ChannelFuture channelFuture = channelCreator2.createUDP(false, tmp, new FutureResponse(null), null, -1);
                 channelFuture.addListener(handler);
             }
             countDownLatch.await();

@@ -247,10 +247,14 @@ public class DiscoverBuilder {
                                 // packets
                                 final Ports ports = peer.connectionBean().channelServer().channelServerConfiguration().portsForwarding();
                                 if (ports.isManualPort()) {
+                                	final PeerAddress serverAddressOrig = serverAddress;
                                     serverAddress = serverAddress.changePorts(ports.tcpPort(),
                                             ports.udpPort());
                                     serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
+                                    //manual port forwarding detected, set flag
+                                    serverAddress = serverAddress.changePortForwarding(true);
                                     peer.peerBean().serverPeerAddress(serverAddress);
+                                    peer.peerBean().serverPeerAddress().internalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
                                     LOG.info("manual ports, change it to: {}", serverAddress);
                                 } else {
                                     // we need to find a relay, because there is a NAT in the way.

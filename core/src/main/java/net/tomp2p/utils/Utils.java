@@ -32,6 +32,7 @@ import java.io.SequenceInputStream;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -63,6 +64,7 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.DataBuffer;
 
 /**
@@ -891,4 +893,36 @@ public class Utils {
 		}
 		return randomInt;
 	}
+
+	public static InetSocketAddress natReflection(InetSocketAddress recipient, boolean udp, PeerAddress self) {
+	    if(self.isPortForwarding()) {
+	    	//check for NAT reflection
+	    	if(recipient.getAddress().equals(self.inetAddress()) && self.internalPeerSocketAddress() != null) {
+	    		//the recipient and me have the same external IP, this means we either send it to us, or to a peer in our network. Since NAT reflection is rarly properly implemented in routers, we need to change the IP address here in order to reach the peer.
+	    		if(udp && recipient.getPort() == self.udpPort() ) {
+	    			//we send it to ourself, change it to something local
+	    			try {
+	    				//TODO: pick one of the discovered interfaces the server is listening to and prefer localhost if available
+	                    return new InetSocketAddress(InetAddress.getLocalHost(), self.internalPeerSocketAddress().udpPort());
+                    } catch (UnknownHostException e) {
+	                    e.printStackTrace();
+	                    return recipient;
+                    }
+	    		} else if(!udp && recipient.getPort() == self.tcpPort()) {
+	    			//we send it to ourself, change it to something local
+	    			try {
+	    				//TODO: pick one of the discovered interfaces the server is listening to and prefer localhost if available
+	                    return new InetSocketAddress(InetAddress.getLocalHost(), self.internalPeerSocketAddress().tcpPort());
+                    } catch (UnknownHostException e) {
+	                    e.printStackTrace();
+	                    return recipient;
+                    }
+	    		} else {
+	    			//the recipient is in our network, but its not ourself
+	    			//TODO: the peer must send its internal IP, in order to be reachable
+	    		}
+	    	}
+	    }
+	    return recipient;
+    }
 }

@@ -90,16 +90,12 @@ public class TomP2PTests {
     ///////////////////////////////////////////////////////////////////////////////////////////
 
     // Setup your seed node
-    private final static String SEED_ID_WAN_1 = "1.tomp2p.net";
+    final static String SEED_ID_WAN_1 = "seed";
     private final static String SEED_IP_WAN_1 = "188.40.119.115";
     private final static int SEED_PORT_WAN_1 = 5000;
 
     // If you want to test in one specific connection mode define it directly, otherwise use UNKNOWN
-    private final ConnectionType forcedConnectionType = ConnectionType.DIRECT;
-
-    // In port forwarding mode the isSuccess returns false, but the DHT operations succeeded.
-    // Needs investigation why. Will be removed as far its fixed.
-    private boolean ignoreSuccessTests = false;
+    private final ConnectionType forcedConnectionType = ConnectionType.NAT;
 
     // If cache is used tests get faster as it doesn't create and bootstrap a new node at every test.
     // Need to observe if it can have some side effects. 
@@ -110,22 +106,21 @@ public class TomP2PTests {
 
     @Before
     public void configure() {
+    	seedId = SEED_ID_WAN_1;
         // Typically you run the seed node in localhost to test direct connection.
         // If you have a setup where you are not behind a router you can also use a WAN side seed node.
         if (forcedConnectionType == ConnectionType.DIRECT) {
-            seedId = "localhost";
             seedIP = "127.0.0.1";
             seedPort = 5000;
         }
         else {
-            seedId = SEED_ID_WAN_1;
             seedIP = SEED_IP_WAN_1;
             seedPort = SEED_PORT_WAN_1;
         }
 
         // Only in NAT mode we have to deal with that bug.
-        if (forcedConnectionType == ConnectionType.NAT || resolvedConnectionType == ConnectionType.NAT)
-            ignoreSuccessTests = true;
+        //if (forcedConnectionType == ConnectionType.NAT || resolvedConnectionType == ConnectionType.NAT)
+        //    ignoreSuccessTests = true;
 
         client1Port = getNewRandomPort();
         client2Port = getNewRandomPort();
@@ -207,8 +202,7 @@ public class TomP2PTests {
             peer1DHT = getDHTPeer("node_1", client1Port);
             FuturePut futurePut = peer1DHT.put(Number160.createHash("key")).data(new Data("hallo")).start();
             futurePut.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futurePut.isSuccess());
+            assertTrue(futurePut.isSuccess());
 
             shutdown();
         }
@@ -221,15 +215,12 @@ public class TomP2PTests {
             peer1DHT = getDHTPeer("node_1", client1Port);
             FuturePut futurePut = peer1DHT.put(Number160.createHash("key")).data(new Data("hallo")).start();
             futurePut.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futurePut.isSuccess());
-
+            assertTrue(futurePut.isSuccess());
 
             peer2DHT = getDHTPeer("node_2", client2Port);
             FutureGet futureGet = peer2DHT.get(Number160.createHash("key")).start();
             futureGet.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futureGet.isSuccess());
+            assertTrue(futureGet.isSuccess());
             assertEquals("hallo", futureGet.data().object());
 
             shutdown();
@@ -243,13 +234,11 @@ public class TomP2PTests {
             peer1DHT = getDHTPeer("node_1", client1Port);
             FuturePut futurePut1 = peer1DHT.add(Number160.createHash("locationKey")).data(new Data("hallo1")).start();
             futurePut1.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futurePut1.isSuccess());
+            assertTrue(futurePut1.isSuccess());
 
             FuturePut futurePut2 = peer1DHT.add(Number160.createHash("locationKey")).data(new Data("hallo2")).start();
             futurePut2.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futurePut2.isSuccess());
+            assertTrue(futurePut2.isSuccess());
 
             shutdown();
         }
@@ -262,20 +251,16 @@ public class TomP2PTests {
             peer1DHT = getDHTPeer("node_1", client1Port);
             FuturePut futurePut1 = peer1DHT.add(Number160.createHash("locationKey")).data(new Data("hallo1")).start();
             futurePut1.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futurePut1.isSuccess());
+            assertTrue(futurePut1.isSuccess());
 
             FuturePut futurePut2 = peer1DHT.add(Number160.createHash("locationKey")).data(new Data("hallo2")).start();
             futurePut2.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futurePut2.isSuccess());
-
+            assertTrue(futurePut2.isSuccess());
 
             peer2DHT = getDHTPeer("node_2", client2Port);
             FutureGet futureGet = peer2DHT.get(Number160.createHash("locationKey")).all().start();
             futureGet.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futureGet.isSuccess());
+            assertTrue(futureGet.isSuccess());
 
             assertTrue(futureGet.dataMap().values().contains(new Data("hallo1")));
             assertTrue(futureGet.dataMap().values().contains(new Data("hallo2")));
@@ -292,14 +277,11 @@ public class TomP2PTests {
             peer1DHT = getDHTPeer("node_1", client1Port);
             FuturePut futurePut1 = peer1DHT.add(Number160.createHash("locationKey")).data(new Data("hallo1")).start();
             futurePut1.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futurePut1.isSuccess());
+            assertTrue(futurePut1.isSuccess());
 
             FuturePut futurePut2 = peer1DHT.add(Number160.createHash("locationKey")).data(new Data("hallo2")).start();
             futurePut2.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futurePut2.isSuccess());
-
+            assertTrue(futurePut2.isSuccess());
 
             peer2DHT = getDHTPeer("node_2", client2Port);
             Number160 contentKey = new Data("hallo1").hash();
@@ -308,13 +290,11 @@ public class TomP2PTests {
             futureRemove.awaitUninterruptibly();
 
             // That fails sometimes in direct mode and NAT
-            if (!ignoreSuccessTests)
-                assertTrue(futureRemove.isSuccess());
+            assertTrue(futureRemove.isSuccess());
 
             FutureGet futureGet = peer2DHT.get(Number160.createHash("locationKey")).all().start();
             futureGet.awaitUninterruptibly();
-            if (!ignoreSuccessTests)
-                assertTrue(futureGet.isSuccess());
+            assertTrue(futureGet.isSuccess());
 
             assertTrue(futureGet.dataMap().values().contains(new Data("hallo2")));
             assertTrue(futureGet.dataMap().values().size() == 1);

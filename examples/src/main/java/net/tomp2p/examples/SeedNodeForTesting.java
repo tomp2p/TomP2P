@@ -24,6 +24,7 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,47 +32,33 @@ import org.slf4j.LoggerFactory;
  * Used for testing with {@link TomP2PTests}
  */
 public class SeedNodeForTesting {
-    private static final Logger log = LoggerFactory.getLogger(SeedNodeForTesting.class);
+	private static final Logger log = LoggerFactory.getLogger(SeedNodeForTesting.class);
 
-    public static void main(String[] args) throws Exception {
-        // Define your seed node IP and port
-        // "127.0.0.1" for localhost or TomP2PTests.SEED_ID_WAN_1
-        new SeedNodeForTesting().startSeedNode("localhost", 5000);
-    }
+	public static void main(String[] args) throws Exception {
+		Peer peer = null;
+		try {
+			peer = new PeerBuilder(Number160.createHash(TomP2PTests.SEED_ID_WAN_1)).ports(5000).start();
+			peer.objectDataReply(new ObjectDataReply() {
+				@Override
+				public Object reply(PeerAddress sender, Object request) throws Exception {
+					log.trace("received request: ", request.toString());
+					return "pong";
+				}
+			});
 
-    public Thread startSeedNode(final String seedNodeId, final int seedNodePort) {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Peer peer = null;
-                try {
-                    peer = new PeerBuilder(Number160.createHash(seedNodeId)).ports(seedNodePort).start();
-                    peer.objectDataReply(new ObjectDataReply() {
-                        @Override
-                        public Object reply(PeerAddress sender, Object request) throws Exception {
-                            log.trace("received request: ", request.toString());
-                            return "pong";
-                        }
-                    });
+			new PeerBuilderDHT(peer).start();
+			new PeerBuilderNAT(peer).start();
 
-                    new PeerBuilderDHT(peer).start();
-                    new PeerBuilderNAT(peer).start();
-
-                    log.debug("SeedNode started.");
-                    for (; ; ) {
-                        for (PeerAddress pa : peer.peerBean().peerMap().all()) {
-                            log.debug("peer online:" + pa);
-                        }
-                        Thread.sleep(2000);
-                    }
-                } catch (Exception e) {
-                    if (peer != null)
-                        peer.shutdown().awaitUninterruptibly();
-                }
-            }
-        });
-        thread.start();
-        return thread;
-    }
-
+			log.debug("SeedNode started.");
+			for (;;) {
+				for (PeerAddress pa : peer.peerBean().peerMap().all()) {
+					log.debug("peer online:" + pa);
+				}
+				Thread.sleep(2000);
+			}
+		} catch (Exception e) {
+			if (peer != null)
+				peer.shutdown().awaitUninterruptibly();
+		}
+	}
 }

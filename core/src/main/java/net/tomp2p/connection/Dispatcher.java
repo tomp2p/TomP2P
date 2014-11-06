@@ -87,6 +87,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         this.peerBeanMaster = peerBeanMaster;
         this.heartBeatMillis = heartBeatMillis;
     }
+    
+    public PeerBean peerBean() {
+    	return peerBeanMaster;
+    }
 
     /**
      * Registers a handler with this dispatcher. Future received messages adhering to the given parameters will be

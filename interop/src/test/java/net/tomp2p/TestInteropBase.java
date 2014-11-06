@@ -3,6 +3,7 @@ package net.tomp2p;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
 public abstract class TestInteropBase {
 
@@ -13,7 +14,7 @@ public abstract class TestInteropBase {
 	//protected final String from = "C:/Users/Christian/Desktop/interop/bytes-NET-encoded.txt";
 	//protected final String to = "C:/Users/Christian/Desktop/interop/bytes-JAVA-encoded.txt";
 	
-	protected byte[] readFromFile(int fileSize) throws Exception {
+	protected byte[] readFromFile(int fileSize) throws IOException {
 		
 		FileInputStream fis = new FileInputStream(from);
 		byte[] fileContent = new byte[fileSize];
@@ -27,7 +28,7 @@ public abstract class TestInteropBase {
 		return fileContent;
 	}
 	
-	protected void writeToFile(byte[] bytes) throws Exception {
+	protected void writeToFile(byte[] bytes) throws IOException {
 		
 		File file = new File(to);
 		FileOutputStream fos = new FileOutputStream(file);

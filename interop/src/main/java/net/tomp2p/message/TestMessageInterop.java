@@ -1,5 +1,6 @@
-package net.tomp2p.interop;
+package net.tomp2p.message;
 
+import net.tomp2p.TestInteropBase;
 import net.tomp2p.Utils2;
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;

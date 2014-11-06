@@ -1,4 +1,4 @@
-package net.tomp2p.interop;
+package net.tomp2p;
 
 import java.io.File;
 import java.io.FileInputStream;

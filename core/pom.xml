@@ -32,6 +32,7 @@
 	</licenses>
 
 	<dependencies>
+	
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport</artifactId>

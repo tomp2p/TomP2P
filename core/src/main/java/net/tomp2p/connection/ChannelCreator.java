@@ -157,10 +157,10 @@ public class ChannelCreator {
 			// broadcast messages
 			//TODO jwa --> include incoming port
 			final ChannelFuture channelFuture;
-			if (port == -1 || inetAddress != null) {
-				channelFuture = b.bind(externalBindings.wildCardSocket());
-			} else {
+			if (port != -1 && inetAddress != null) {
 				channelFuture = b.bind(inetAddress, port);
+			} else {
+				channelFuture = b.bind(externalBindings.wildCardSocket());
 			}
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);

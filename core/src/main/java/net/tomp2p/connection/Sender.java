@@ -32,6 +32,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,6 +49,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -55,6 +57,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -81,6 +84,7 @@ public class Sender {
 	private final ChannelClientConfiguration channelClientConfiguration;
 	private final Dispatcher dispatcher;
 	private final Random random;
+	private Peer peer;
 
 	// this map caches all messages which are meant to be sent by a reverse
 	// connection setup or TODO jwa a hole punch
@@ -107,6 +111,10 @@ public class Sender {
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.dispatcher = dispatcher;
 		this.random = new Random(peerId.hashCode());
+	}
+	
+	public void setPeer(Peer peer) {
+		this.peer = peer;
 	}
 
 	public ChannelClientConfiguration channelClientConfiguration() {
@@ -235,6 +243,30 @@ public class Sender {
 	 */
 	private static Message createRconMessage(final Message message) {
 		// get Relay InetAddress from unreachable peer
+		PeerSocketAddress socketAddress = extractRandomRelay(message);
+
+		// we need to make a copy of the original message
+		Message rconMessage = new Message();
+		rconMessage.sender(message.sender());
+		rconMessage.version(message.version());
+		rconMessage.intValue(message.messageId());
+
+		// making the message ready to send
+		readyToSend(message, socketAddress, rconMessage, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_1);
+
+		return rconMessage;
+	}
+
+	private static void readyToSend(final Message originalMessage, PeerSocketAddress socketAddress, Message newMessage, byte RPCCommand, Type messageType) {
+		PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
+				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
+		newMessage.recipient(recipient);
+
+		newMessage.command(RPCCommand);
+		newMessage.type(messageType);
+	}
+
+	private static PeerSocketAddress extractRandomRelay(final Message message) {
 		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
 		PeerSocketAddress socketAddress = null;
 
@@ -245,22 +277,21 @@ public class Sender {
 			throw new IllegalArgumentException(
 					"There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");
 		}
-
-		// we need to make a copy of the original message
-		Message rconMessage = new Message();
-		rconMessage.sender(message.sender());
-		rconMessage.version(message.version());
-		rconMessage.intValue(message.messageId());
-
-		// making the message ready to send
-		PeerAddress recipient = message.recipient().changeAddress(socketAddress.inetAddress())
-				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
-		rconMessage.recipient(recipient);
-
-		rconMessage.command(RPC.Commands.RCON.getNr());
-		rconMessage.type(Message.Type.REQUEST_1);
-
-		return rconMessage;
+		return socketAddress;
+	}
+	
+	private static Message createSocketInfoMessage(final Message message) {
+		PeerSocketAddress socketAddress = extractRandomRelay(message);
+		
+		//we need to make a copy of the original Message
+		Message socketInfoMessage = new Message();
+		socketInfoMessage.sender(message.sender());
+		socketInfoMessage.version(message.version());
+		
+		//making the message ready to send
+		readyToSend(message, socketAddress, socketInfoMessage, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
+		
+		return socketInfoMessage;
 	}
 
 	/**
@@ -488,6 +519,7 @@ public class Sender {
 	// without sending over Internet.
 	public void sendUDP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator, final int idleUDPSeconds, final boolean broadcast) {
+		final SocketAddress holePunchSocket;
 		// no need to continue if we already finished
 		if (futureResponse.isCompleted()) {
 			return;
@@ -500,11 +532,13 @@ public class Sender {
 
 		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
 			try {
-				prepareHolePunch(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
+				holePunchSocket = prepareHolePunch(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 			return;
+		} else {
+			holePunchSocket = null;
 		}
 
 		boolean isFireAndForget = handler == null;
@@ -540,26 +574,31 @@ public class Sender {
 		// futureResponse.failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 		// } else {
 		final ChannelFuture channelFuture;
-		if (message.recipient().isRelayed()) {
+		// TODO jwa check if holePunch should be made
 
-			List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
-			LOG.debug("send neighbor request to random relay peer {}", psa);
-			if (psa.size() > 0) {
-				PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-				message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null, -1);
+		if (holePunchSocket == null) {
+
+			if (message.recipient().isRelayed()) {
+
+				List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
+				LOG.debug("send neighbor request to random relay peer {}", psa);
+				if (psa.size() > 0) {
+					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
+					message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null, -1, null);
+				} else {
+					futureResponse.failed("Peer is relayed, but no relay given");
+					return;
+				}
 			} else {
-				futureResponse.failed("Peer is relayed, but no relay given");
-				return;
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null, -1, null);
 			}
-		} else {
-			channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null, -1);
+			afterConnect(futureResponse, message, channelFuture, handler == null);
 		}
-		afterConnect(futureResponse, message, channelFuture, handler == null);
 		// }
 	}
 
-	private void prepareHolePunch(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
+	private SocketAddress prepareHolePunch(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
 			final Message message, final ChannelCreator channelCreator, final int idleUDPSeconds, final boolean broadcast)
 			throws IOException {
 		// TODO jwa notify rendez-vous server
@@ -579,11 +618,32 @@ public class Sender {
 				"encoder",
 				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
 
-		final ChannelFuture channelFuture;
-		channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, message.sender().inetAddress(), 8080);
-		afterConnect(futureResponse, message, channelFuture, isFireAndForget);
-		afterConnect(futureResponse, message, channelFuture, isFireAndForget);
-		// afterConnect(futureResponse, message, channelFuture, true);
+		int numberOfChannelFutures = 3;
+		final List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>(3);
+		for (int j = 0; j < numberOfChannelFutures; j++) {
+			// create new random socket and make a channelFuture
+			final ChannelFuture channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null, -1,
+					channelCreator.createNewWildCardUDPPortSocket());
+			channelFutures.add(channelFuture);
+		}
+
+		for (ChannelFuture cf : channelFutures) {
+			// send at least two messages via the socket to puch a hole into the
+			// firewall (the PAT taggs the
+			// mapping as [ASSURED] (this will increase the time before the
+			// mapping is cleared))
+			for (int i = 0; i < 2; i++) {
+				afterConnect(futureResponse, message, cf, isFireAndForget);
+			}
+		}
+		
+		Message socketInfoMessage = createSocketInfoMessage(message);
+		
+		// make new RPC Call
+		sendUDP(handler, futureResponse, socketInfoMessage, channelCreator, idleUDPSeconds, false);
+		
+		//TODO jwa choose relay randomly
+		return channelFutures.get(0).channel().localAddress();
 	}
 
 	/**

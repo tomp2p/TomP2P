@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 public class DotNetEncodeDecodeTest {
 
-	public static void testEncodeInt() throws Exception {
+	public static byte[] encodeInt() throws Exception {
 
 		ByteBuf buf = Unpooled.buffer();
 
@@ -31,11 +31,11 @@ public class DotNetEncodeDecodeTest {
 		buf.writeInt(256);
 		buf.writeInt(Integer.MAX_VALUE); // 2147483647
 
-		//byte[] bytes = buf.array();
-		// InteropUtil.writeToFile(bytes);
+		byte[] bytes = buf.array();
+		return bytes;
 	}
 
-	public static void testEncodeLong() throws IOException {
+	public static void encodeLong() throws IOException {
 	
 		ByteBuf buf = Unpooled.buffer();
 	
@@ -57,7 +57,7 @@ public class DotNetEncodeDecodeTest {
 		// writeToFile(bytes);
 	}
 
-	public static void testEncodeByte() throws Exception {
+	public static void encodeByte() throws Exception {
 	
 		ByteBuf buf = Unpooled.buffer();
 	
@@ -70,7 +70,7 @@ public class DotNetEncodeDecodeTest {
 		// writeToFile(bytes);
 	}
 
-	public static void testEncodeBytes() throws Exception {
+	public static void encodeBytes() throws Exception {
 	
 		ByteBuf buf = Unpooled.buffer();
 	
@@ -85,7 +85,7 @@ public class DotNetEncodeDecodeTest {
 		//writeToFile(bytes);
 	}
 
-	public static boolean testDecodeInt(String argument) throws IOException {
+	public static byte[] testDecodeInt(String argument) throws IOException {
 
 		byte[] fileContent = InteropUtil.readFromFile(argument, 13 * 4);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
@@ -118,7 +118,8 @@ public class DotNetEncodeDecodeTest {
 		boolean t12 = val12 == 256;
 		boolean t13 = val13 == Integer.MAX_VALUE;
 
-		return t1 && t2 && t3 && t4 && t5 && t6 && t7 && t8 && t9 && t10 && t11 && t12 && t13;
+		boolean result = t1 && t2 && t3 && t4 && t5 && t6 && t7 && t8 && t9 && t10 && t11 && t12 && t13;
+		return new byte[] { result ? (byte) 1 : (byte) 0 };
 	}
 
 	public static boolean testDecodeLong(String argument) throws Exception {

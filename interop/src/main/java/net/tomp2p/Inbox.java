@@ -12,9 +12,8 @@ public class Inbox {
 
 		String argument = args[0];
 		System.out.print(String.format("Argument: %s ", argument));
-
-		Boolean result = null;
-
+		byte[] result = null;
+		
 		try {
 			// executed .NET test
 			switch (argument) {
@@ -23,7 +22,9 @@ public class Inbox {
 				case "TestEncodeInt":
 					result = DotNetEncodeDecodeTest.testDecodeInt(argument);
 					break;
-					
+				case "TestDecodeInt":
+					result = DotNetEncodeDecodeTest.encodeInt();
+					break;
 					
 				default:
 					System.out.println(String.format("Invalid argument: %s.", argument));
@@ -32,12 +33,7 @@ public class Inbox {
 					break;
 			}
 
-			System.out.print(String.format("--> Result: %s\n", result.toString().toUpperCase()));
-
-			byte[] resultBytes = new byte[1];
-			resultBytes[0] = result ? (byte) 1 : (byte) 0;
-			
-			InteropUtil.writeToFile(argument, resultBytes);
+			InteropUtil.writeToFile(argument, result);
 
 		} catch (Exception ex) {
 			System.out.println(String.format("Exception occurred: %s\n%s.", ex.getCause(), ex));

@@ -11,7 +11,7 @@ public class Inbox {
 		}
 
 		String argument = args[0];
-		System.out.println(String.format("Argument: %s.", argument));
+		System.out.print(String.format("Argument: %s ", argument));
 
 		Boolean result = null;
 
@@ -32,7 +32,7 @@ public class Inbox {
 					break;
 			}
 
-			System.out.print(String.format("-> Result: %s.", result.toString().toUpperCase()));
+			System.out.print(String.format("--> Result: %s\n", result.toString().toUpperCase()));
 
 			byte[] resultBytes = new byte[1];
 			resultBytes[0] = result ? (byte) 1 : (byte) 0;

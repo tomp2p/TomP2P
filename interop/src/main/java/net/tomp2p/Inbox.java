@@ -22,8 +22,26 @@ public class Inbox {
 				case "TestEncodeInt":
 					result = DotNetEncodeDecodeTest.testDecodeInt(argument);
 					break;
+				case "TestEncodeLong":
+					result = DotNetEncodeDecodeTest.testDecodeLong(argument);
+					break;
+				case "TestEncodeByte":
+					result = DotNetEncodeDecodeTest.testDecodeByte(argument);
+					break;
+				case "TestEncodeBytes":
+					result = DotNetEncodeDecodeTest.testDecodeBytes(argument);
+					break;
 				case "TestDecodeInt":
 					result = DotNetEncodeDecodeTest.encodeInt();
+					break;
+				case "TestDecodeLong":
+					result = DotNetEncodeDecodeTest.encodeLong();
+					break;
+				case "TestDecodeByte":
+					result = DotNetEncodeDecodeTest.encodeByte();
+					break;
+				case "TestDecodeBytes":
+					result = DotNetEncodeDecodeTest.encodeBytes();
 					break;
 					
 				default:

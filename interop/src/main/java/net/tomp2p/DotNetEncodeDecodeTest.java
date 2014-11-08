@@ -35,7 +35,7 @@ public class DotNetEncodeDecodeTest {
 		return bytes;
 	}
 
-	public static void encodeLong() throws IOException {
+	public static byte[] encodeLong() throws IOException {
 	
 		ByteBuf buf = Unpooled.buffer();
 	
@@ -53,11 +53,11 @@ public class DotNetEncodeDecodeTest {
 		buf.writeLong(256);
 		buf.writeLong(Long.MAX_VALUE); // 923372036854775807
 	
-		//byte[] bytes = buf.array();
-		// writeToFile(bytes);
+		byte[] bytes = buf.array();
+		return bytes;
 	}
 
-	public static void encodeByte() throws Exception {
+	public static byte[] encodeByte() throws Exception {
 	
 		ByteBuf buf = Unpooled.buffer();
 	
@@ -66,11 +66,11 @@ public class DotNetEncodeDecodeTest {
 			buf.writeByte(i);
 		}
 	
-		//byte[] bytes = buf.array();
-		// writeToFile(bytes);
+		byte[] bytes = buf.array();
+		return bytes;
 	}
 
-	public static void encodeBytes() throws Exception {
+	public static byte[] encodeBytes() throws Exception {
 	
 		ByteBuf buf = Unpooled.buffer();
 	
@@ -81,8 +81,8 @@ public class DotNetEncodeDecodeTest {
 	
 		buf.writeBytes(byteArray);
 	
-		//byte[] bytes = buf.array();
-		//writeToFile(bytes);
+		byte[] bytes = buf.array();
+		return bytes;
 	}
 
 	public static byte[] testDecodeInt(String argument) throws IOException {
@@ -122,7 +122,7 @@ public class DotNetEncodeDecodeTest {
 		return new byte[] { result ? (byte) 1 : (byte) 0 };
 	}
 
-	public static boolean testDecodeLong(String argument) throws Exception {
+	public static byte[] testDecodeLong(String argument) throws Exception {
 
 		byte[] fileContent = InteropUtil.readFromFile(argument, 13 * 8);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
@@ -155,25 +155,26 @@ public class DotNetEncodeDecodeTest {
 		boolean t12 = val12 == (long) 256;
 		boolean t13 = val13 == Long.MAX_VALUE;
 		
-		return t1 && t2 && t3 && t4 && t5 && t6 && t7 && t8 && t9 && t10 && t11 && t12 && t13;
+		boolean result = t1 && t2 && t3 && t4 && t5 && t6 && t7 && t8 && t9 && t10 && t11 && t12 && t13;
+		return new byte[] { result ? (byte) 1 : (byte) 0 };
 	}
 
-	public static boolean testDecodeByte(String argument) throws Exception {
+	public static byte[] testDecodeByte(String argument) throws Exception {
 
 		byte[] fileContent = InteropUtil.readFromFile(argument, 256);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 
-		boolean result = false;
+		boolean result = true;
 		for (int i = Byte.MIN_VALUE; i <= Byte.MAX_VALUE; i++) // -128 ... 127
 		{
 			byte b = buf.readByte();
-			result = result && i == b;
+			result = result && (i == b);
 		}
 		
-		return result;
+		return new byte[] { result ? (byte) 1 : (byte) 0 };
 	}
 
-	public static boolean testDecodeBytes(String argument) throws Exception {
+	public static byte[] testDecodeBytes(String argument) throws Exception {
 
 		byte[] fileContent = InteropUtil.readFromFile(argument, 256);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
@@ -181,11 +182,11 @@ public class DotNetEncodeDecodeTest {
 		byte[] byteArray = new byte[256];
 		buf.readBytes(byteArray);
 
-		boolean result = false;
-		for (int i = 0, b = Byte.MIN_VALUE; i <= Byte.MAX_VALUE; i++, b++) {
-			result = result && b == byteArray[i];
+		boolean result = true;
+		for (int i = 0, b = Byte.MIN_VALUE; i <= Byte.MAX_VALUE; i++, b++) { // -128 ... 127
+			result = result && (b == byteArray[i]);
 		}
 		
-		return result;
+		return new byte[] { result ? (byte) 1 : (byte) 0 };
 	}
 }

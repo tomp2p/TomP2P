@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 public class DotNetEncodeDecodeTest {
 
-	public void testEncodeInt() throws Exception {
+	public static void testEncodeInt() throws Exception {
 
 		ByteBuf buf = Unpooled.buffer();
 
@@ -35,7 +35,7 @@ public class DotNetEncodeDecodeTest {
 		// InteropUtil.writeToFile(bytes);
 	}
 
-	public void testEncodeLong() throws IOException {
+	public static void testEncodeLong() throws IOException {
 	
 		ByteBuf buf = Unpooled.buffer();
 	
@@ -57,7 +57,7 @@ public class DotNetEncodeDecodeTest {
 		// writeToFile(bytes);
 	}
 
-	public void testEncodeByte() throws Exception {
+	public static void testEncodeByte() throws Exception {
 	
 		ByteBuf buf = Unpooled.buffer();
 	
@@ -70,7 +70,7 @@ public class DotNetEncodeDecodeTest {
 		// writeToFile(bytes);
 	}
 
-	public void testEncodeBytes() throws Exception {
+	public static void testEncodeBytes() throws Exception {
 	
 		ByteBuf buf = Unpooled.buffer();
 	
@@ -85,7 +85,7 @@ public class DotNetEncodeDecodeTest {
 		//writeToFile(bytes);
 	}
 
-	public boolean testDecodeInt(String argument) throws IOException {
+	public static boolean testDecodeInt(String argument) throws IOException {
 
 		byte[] fileContent = InteropUtil.readFromFile(argument, 13 * 4);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
@@ -121,7 +121,7 @@ public class DotNetEncodeDecodeTest {
 		return t1 && t2 && t3 && t4 && t5 && t6 && t7 && t8 && t9 && t10 && t11 && t12 && t13;
 	}
 
-	public boolean testDecodeLong(String argument) throws Exception {
+	public static boolean testDecodeLong(String argument) throws Exception {
 
 		byte[] fileContent = InteropUtil.readFromFile(argument, 13 * 8);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
@@ -157,7 +157,7 @@ public class DotNetEncodeDecodeTest {
 		return t1 && t2 && t3 && t4 && t5 && t6 && t7 && t8 && t9 && t10 && t11 && t12 && t13;
 	}
 
-	public boolean testDecodeByte(String argument) throws Exception {
+	public static boolean testDecodeByte(String argument) throws Exception {
 
 		byte[] fileContent = InteropUtil.readFromFile(argument, 256);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
@@ -172,7 +172,7 @@ public class DotNetEncodeDecodeTest {
 		return result;
 	}
 
-	public boolean testDecodeBytes(String argument) throws Exception {
+	public static boolean testDecodeBytes(String argument) throws Exception {
 
 		byte[] fileContent = InteropUtil.readFromFile(argument, 256);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);

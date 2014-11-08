@@ -3,12 +3,8 @@ package net.tomp2p.message;
 import net.tomp2p.Utils2;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 public class TestMessageInterop {
 
-	@Test
 	public void testMessageEncode() throws Exception {
 
 		int intVal = 42;
@@ -27,8 +23,6 @@ public class TestMessageInterop {
 		
 	}
 	
-	@Ignore
-	@Test
 	public void testMessageDecode() throws Exception {
 		
 	}

@@ -19,9 +19,9 @@ public class Inbox {
 			// executed .NET test
 			switch (argument) {
 
+				// primitive type encoding / decoding
 				case "TestEncodeInt":
-					TestClass test = new TestClass();
-					result = test.testDecodeInt(argument);
+					result = DotNetEncodeDecodeTest.testDecodeInt(argument);
 					break;
 					
 					

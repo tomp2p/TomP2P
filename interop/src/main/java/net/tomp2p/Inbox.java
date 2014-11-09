@@ -45,6 +45,9 @@ public class Inbox {
 					break;
 					
 				// Message object encoding / decoding
+				case "TestMessageDecodeEmpty":
+					result = MessageEncodeDecode.encodeMessageEmpty();
+					break;
 				case "TestMessageDecodeInt":
 					result = MessageEncodeDecode.encodeMessageInt();
 					break;

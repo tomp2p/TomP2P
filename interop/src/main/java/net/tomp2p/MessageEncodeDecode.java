@@ -6,6 +6,17 @@ import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 public class MessageEncodeDecode {
 
+	public static byte[] encodeMessageEmpty() throws Exception {
+
+		Message m = Utils2.createDummyMessage();
+		
+		Encoder encoder = new Encoder(null); // TODO signaturefactory?
+		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
+		encoder.write(buf, m, null);
+		byte[] bytes = buf.nioBuffer().array(); // TODO correct buffer?
+		return bytes;
+	}
+	
 	public static byte[] encodeMessageInt() throws Exception {
 
 		Message m = Utils2.createDummyMessage();
@@ -18,13 +29,10 @@ public class MessageEncodeDecode {
 		m.intValue(128);
 		m.intValue(Integer.MAX_VALUE);
 		
-		Encoder encoder = new Encoder(null); // TODO signaturefactory?
-
+		Encoder encoder = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
-		
 		encoder.write(buf, m, null);
-		
-		byte[] bytes = buf.nioBuffer().array(); // TODO correct buffer?
+		byte[] bytes = buf.nioBuffer().array();
 		return bytes;
 	}
 	
@@ -40,13 +48,10 @@ public class MessageEncodeDecode {
 		m.longValue(128);
 		m.longValue(Long.MAX_VALUE);
 		
-		Encoder encoder = new Encoder(null); // TODO signaturefactory?
-
+		Encoder encoder = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
-		
 		encoder.write(buf, m, null);
-		
-		byte[] bytes = buf.nioBuffer().array(); // TODO correct buffer?
+		byte[] bytes = buf.nioBuffer().array();
 		return bytes;
 	}
 }

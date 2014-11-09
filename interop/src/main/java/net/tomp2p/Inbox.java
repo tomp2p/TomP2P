@@ -20,30 +20,35 @@ public class Inbox {
 
 				// primitive type encoding / decoding
 				case "TestEncodeInt":
-					result = DotNetEncodeDecodeTest.testDecodeInt(argument);
+					result = DotNetEncodeDecode.testDecodeInt(argument);
 					break;
 				case "TestEncodeLong":
-					result = DotNetEncodeDecodeTest.testDecodeLong(argument);
+					result = DotNetEncodeDecode.testDecodeLong(argument);
 					break;
 				case "TestEncodeByte":
-					result = DotNetEncodeDecodeTest.testDecodeByte(argument);
+					result = DotNetEncodeDecode.testDecodeByte(argument);
 					break;
 				case "TestEncodeBytes":
-					result = DotNetEncodeDecodeTest.testDecodeBytes(argument);
+					result = DotNetEncodeDecode.testDecodeBytes(argument);
 					break;
 				case "TestDecodeInt":
-					result = DotNetEncodeDecodeTest.encodeInt();
+					result = DotNetEncodeDecode.encodeInt();
 					break;
 				case "TestDecodeLong":
-					result = DotNetEncodeDecodeTest.encodeLong();
+					result = DotNetEncodeDecode.encodeLong();
 					break;
 				case "TestDecodeByte":
-					result = DotNetEncodeDecodeTest.encodeByte();
+					result = DotNetEncodeDecode.encodeByte();
 					break;
 				case "TestDecodeBytes":
-					result = DotNetEncodeDecodeTest.encodeBytes();
+					result = DotNetEncodeDecode.encodeBytes();
 					break;
 					
+				// Message object encoding / decoding
+				case "TestMessageDecodeInt":
+					result = MessageEncodeDecode.encodeMessageInt();
+					break;
+				
 				default:
 					System.out.println(String.format("Invalid argument: %s.", argument));
 					System.err.println(String.format("Invalid argument: %s.", argument));

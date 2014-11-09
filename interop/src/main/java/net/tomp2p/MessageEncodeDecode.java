@@ -27,4 +27,26 @@ public class MessageEncodeDecode {
 		byte[] bytes = buf.nioBuffer().array(); // TODO correct buffer?
 		return bytes;
 	}
+	
+	public static byte[] encodeMessageLong() throws Exception {
+
+		Message m = Utils2.createDummyMessage();
+		m.longValue(Long.MIN_VALUE);
+		m.longValue(-256);
+		m.longValue(-128);
+		m.longValue(-1);
+		m.longValue(0);
+		m.longValue(1);
+		m.longValue(128);
+		m.longValue(Long.MAX_VALUE);
+		
+		Encoder encoder = new Encoder(null); // TODO signaturefactory?
+
+		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
+		
+		encoder.write(buf, m, null);
+		
+		byte[] bytes = buf.nioBuffer().array(); // TODO correct buffer?
+		return bytes;
+	}
 }

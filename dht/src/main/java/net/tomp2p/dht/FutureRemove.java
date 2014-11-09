@@ -31,11 +31,12 @@ import net.tomp2p.storage.Data;
  * The future object for put() operations including routing.
  * 
  * @author Thomas Bocek
+ * @param <K>
  */
 public class FutureRemove extends FutureDHT<FutureRemove> {
     // The minimum number of expected results. This is also used for put()
     // operations to decide if a future failed or not.
-    private final int min;
+    private final boolean failIfNotFound;
 
     // Since we receive multiple results, we have an evaluation scheme to
     // simplify the result
@@ -44,24 +45,14 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     // Storage of results
     private Map<PeerAddress, Map<Number640, Byte>> rawKeys640;
     private Map<PeerAddress, Map<Number640, Data>> rawData;
-
-    // Flag indicating if the minimum operations for put have been reached.
-    private boolean minReached;
     
     private Map<Number640, Integer> result;
-    
-    private final int dataSize;
-    
-    public FutureRemove(final DHTBuilder<?> builder) {
-        this(builder, 0, new VotingSchemeDHT(), 1);
-    }
-    
     
     /**
      * Default constructor.
      */
-    public FutureRemove(final DHTBuilder<?> builder, int dataSize) {
-        this(builder, 0, new VotingSchemeDHT(), dataSize);
+    public FutureRemove(final DHTBuilder<?> builder) {
+        this(builder, new VotingSchemeDHT());
     }
 
     /**
@@ -72,11 +63,10 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureRemove(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme, int dataSize) {
+    public FutureRemove(final DHTBuilder<?> builder, final EvaluatingSchemeDHT evaluationScheme) {
         super(builder);
-        this.min = min;
         this.evaluationScheme = evaluationScheme;
-        this.dataSize = dataSize;
+        this.failIfNotFound = builder == null? false: ((RemoveBuilder)builder).isFailIfNotFound();
         self(this);
     }
 
@@ -102,7 +92,6 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
             }
             this.rawKeys640 = rawKeys640;
             final int size = rawKeys640 == null ? 0 : rawKeys640.size();
-            this.minReached = size >= min;
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
             this.reason = size > 0 ? "Minimum number of results reached" : "Expected > 0 result, but got " + size;
         }
@@ -138,7 +127,6 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
             }
             this.rawData = rawData;
             final int size = rawData.size();
-            this.minReached = size >= min;
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
             this.reason = size > 0 ? "Minimum number of results reached" : "Expected >0 result, but got " + size;
         }
@@ -153,18 +141,6 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     public Map<PeerAddress, Map<Number640, Byte>> rawKeys() {
         synchronized (lock) {
             return rawKeys640;
-        }
-    }
-
-    /**
-     * Checks if the minimum of expected results have been reached. This flag is also used for determining the success
-     * or failure of this future for put and send_direct.
-     * 
-     * @return True, if expected minimum results have been reached.
-     */
-    public boolean isMinReached() {
-        synchronized (lock) {
-            return minReached;
         }
     }
 
@@ -262,21 +238,36 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
         if(!super.isSuccess()) {
             return false;
         }
-        if(rawKeys640 != null) {
-        	return checkResults(result(), rawKeys640.size(), dataSize);
-        } else if (rawData!=null) {
-        	return checkResults(result(), rawData.size(), dataSize);
-        } else {
-        	return false;
+        if(!failIfNotFound) {
+        	return true; 
         }
+        if(rawKeys640 != null) {
+        	return checkAtLeastOneSuccess();
+        } else if (rawData!=null) {
+        	return checkAtLeastOneSuccessData();
+        } 
+        return false;
     }
     
-    private boolean checkResults(Map<Number640, Integer> result2, int peerReports, int dataSize) {
-        for(Map.Entry<Number640, Integer> entry:result2.entrySet()) {
-            if(entry.getValue() != peerReports) {
-                return false;
+    private boolean checkAtLeastOneSuccess() {
+        for(Map.Entry<PeerAddress, Map<Number640, Byte>> entry:rawKeys640.entrySet()) {
+        	for(Map.Entry<Number640, Byte> entry2:entry.getValue().entrySet()) {
+                if(entry2.getValue() == PutStatus.OK.ordinal()) {
+                    return true;
+                }
             }
         }
-        return result2.size() >= dataSize;
+        return false;
+    }
+    
+    private boolean checkAtLeastOneSuccessData() {
+        for(Map.Entry<PeerAddress, Map<Number640, Data>> entry:rawData.entrySet()) {
+        	for(Map.Entry<Number640, Data> entry2:entry.getValue().entrySet()) {
+                if(entry2.getValue() != null && !entry2.getValue().isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

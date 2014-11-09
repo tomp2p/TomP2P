@@ -43,6 +43,8 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
     private Number640 to;
     
     private boolean fastGet = true;
+    
+    private boolean failIfNotFound = false;
 
     public RemoveBuilder(PeerDHT peer, Number160 locationKey) {
         super(peer, locationKey);
@@ -141,6 +143,20 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
 
     public RemoveBuilder fastGet() {
         this.fastGet = true;
+        return this;
+    }
+    
+    public boolean isFailIfNotFound() {
+        return failIfNotFound;
+    }
+
+    public RemoveBuilder failIfNotFound(boolean failIfNotFound) {
+        this.failIfNotFound = failIfNotFound;
+        return this;
+    }
+
+    public RemoveBuilder failIfNotFound() {
+        this.failIfNotFound = true;
         return this;
     }
 

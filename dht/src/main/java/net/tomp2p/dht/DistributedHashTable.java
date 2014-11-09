@@ -484,9 +484,7 @@ public class DistributedHashTable {
      * {
      */
     public FutureRemove remove(final RemoveBuilder builder) {
-    	final int dataSize = UtilsDHT.dataSize(builder);
-        final FutureRemove futureDHT = new FutureRemove(builder, builder.requestP2PConfiguration()
-                .minimumResults(), new VotingSchemeDHT(), dataSize);
+        final FutureRemove futureDHT = new FutureRemove(builder, new VotingSchemeDHT());
 
         builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -603,6 +601,11 @@ public class DistributedHashTable {
     private static <K extends FutureDHT<?>> void parallelRequests(RequestP2PConfiguration p2pConfiguration,
     		NavigableSet<PeerAddress> directHit, NavigableSet<PeerAddress> potentialHit, K future, boolean cancleOnFinish, ChannelCreator channelCreator,
             OperationMapper<K> operation) {
+    	//the potential hits may contain same values as in directHit, so remove it from potentialHit
+    	for(PeerAddress peerAddress:directHit) {
+    		potentialHit.remove(peerAddress);
+    	}
+    	
         if (p2pConfiguration.minimumResults() == 0) {
             operation.response(future);
             return;

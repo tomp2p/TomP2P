@@ -52,6 +52,7 @@
 		<module>dht</module>
 		<module>tracker</module>
 		<!-- <module>task</module> -->
+		<module>interop</module>
 	</modules>
 
 	<distributionManagement>

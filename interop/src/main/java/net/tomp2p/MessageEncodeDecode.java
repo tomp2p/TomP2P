@@ -2,6 +2,7 @@ package net.tomp2p;
 
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 public class MessageEncodeDecode {
@@ -17,6 +18,25 @@ public class MessageEncodeDecode {
 		return bytes;
 	}
 	
+	public static byte[] encodeMessageKey() throws Exception {
+		
+		Message m = Utils2.createDummyMessage();
+		m.key(Number160.ZERO);
+		m.key(Number160.ONE);
+		m.key(Number160.MAX_VALUE);
+		m.key(Number160.ZERO);
+		m.key(Number160.ONE);
+		m.key(Number160.MAX_VALUE);
+		m.key(Number160.ZERO);
+		m.key(Number160.ONE);
+		
+		Encoder encoder = new Encoder(null);
+		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
+		encoder.write(buf, m, null);
+		byte[] bytes = buf.nioBuffer().array();
+		return bytes;
+	}
+
 	public static byte[] encodeMessageInt() throws Exception {
 
 		Message m = Utils2.createDummyMessage();

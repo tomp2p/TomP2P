@@ -7,7 +7,8 @@ import java.io.IOException;
 
 public class InteropUtil {
 
-	private static final String TmpDir = "C:/Users/Christian/Desktop/interop/";
+	//private static final String TmpDir = "C:/Users/Christian/Desktop/interop/";
+	private static final String TmpDir = "D:/Desktop/interop/";
 	
 	public static byte[] readFromFile(String argument, int fileSize) throws IOException {
 		

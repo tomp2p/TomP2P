@@ -23,6 +23,8 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.rpc.ObjectDataReply;
 
 import org.slf4j.Logger;
@@ -32,12 +34,16 @@ import org.slf4j.LoggerFactory;
  * Used for testing with {@link TomP2PTests}
  */
 public class SeedNodeForTesting {
+	private static Peer peer = null;
+	private static boolean running = true;
 	private static final Logger log = LoggerFactory.getLogger(SeedNodeForTesting.class);
 
 	public static void main(String[] args) throws Exception {
-		Peer peer = null;
 		try {
-			peer = new PeerBuilder(Number160.createHash(TomP2PTests.SEED_ID_WAN_1)).ports(5000).start();
+			Number160 peerId = Number160.createHash(TomP2PTests.SEED_ID_WAN_1);
+        	PeerMapConfiguration pmc = new PeerMapConfiguration(peerId).peerNoVerification();
+        	PeerMap pm = new PeerMap(pmc);
+			peer = new PeerBuilder(peerId).ports(5000).peerMap(pm).start();
 			peer.objectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -50,15 +56,36 @@ public class SeedNodeForTesting {
 			new PeerBuilderNAT(peer).start();
 
 			log.debug("SeedNode started.");
-			for (;;) {
-				for (PeerAddress pa : peer.peerBean().peerMap().all()) {
-					log.debug("peer online:" + pa);
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					while (running) {
+						for (PeerAddress pa : peer.peerBean().peerMap().all()) {
+							log.debug("peer online:" + pa);
+						}
+					try {
+	                    Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+	                    // TODO Auto-generated catch block
+	                    e.printStackTrace();
+                    }
 				}
-				Thread.sleep(2000);
-			}
+					
+				}
+			}).start();
+			
 		} catch (Exception e) {
 			if (peer != null)
 				peer.shutdown().awaitUninterruptibly();
 		}
+	}
+	
+	public static void stop() {
+		running = false;
+		if(peer!=null ) {
+			peer.shutdown().awaitUninterruptibly();
+		}
+		peer = null;
 	}
 }

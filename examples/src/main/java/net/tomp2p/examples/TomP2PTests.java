@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.*;
 import net.tomp2p.futures.FutureDirect;
@@ -35,8 +36,11 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -91,18 +95,18 @@ public class TomP2PTests {
 
     // Setup your seed node
     final static String SEED_ID_WAN_1 = "seed";
-    private final static String SEED_IP_WAN_1 = "188.40.119.115";
+    private final static String SEED_IP_WAN_1 = "127.0.0.1";
     private final static int SEED_PORT_WAN_1 = 5000;
 
     // If you want to test in one specific connection mode define it directly, otherwise use UNKNOWN
-    private final ConnectionType forcedConnectionType = ConnectionType.NAT;
+    private final ConnectionType forcedConnectionType = ConnectionType.DIRECT;
 
     // If cache is used tests get faster as it doesn't create and bootstrap a new node at every test.
     // Need to observe if it can have some side effects. 
     private boolean cacheClients = true;
 
     // Use that to stress test with repeated run of the test method body
-    private int stressTestLoopCount = 1;
+    private int stressTestLoopCount = 100;
 
     @Before
     public void configure() {
@@ -274,7 +278,12 @@ public class TomP2PTests {
     public void testAddRemove() throws Exception {
         for (int i = 0; i < stressTestLoopCount; i++) {
             configure();
-            peer1DHT = getDHTPeer("node_1", client1Port);
+            
+            if(forcedConnectionType == ConnectionType.DIRECT) {
+            	SeedNodeForTesting.main(null);
+            }
+            
+            peer1DHT = getDHTPeer("node_1" + i, client1Port);
             FuturePut futurePut1 = peer1DHT.add(Number160.createHash("locationKey")).data(new Data("hallo1")).start();
             futurePut1.awaitUninterruptibly();
             assertTrue(futurePut1.isSuccess());
@@ -283,7 +292,7 @@ public class TomP2PTests {
             futurePut2.awaitUninterruptibly();
             assertTrue(futurePut2.isSuccess());
 
-            peer2DHT = getDHTPeer("node_2", client2Port);
+            peer2DHT = getDHTPeer("node_2" + i, client2Port);
             Number160 contentKey = new Data("hallo1").hash();
             FutureRemove futureRemove = peer2DHT.remove(Number160.createHash("locationKey")).contentKey(contentKey)
                                                 .start();
@@ -300,6 +309,10 @@ public class TomP2PTests {
             assertTrue(futureGet.dataMap().values().size() == 1);
 
             shutdown();
+            
+            if(forcedConnectionType == ConnectionType.DIRECT) {
+            	SeedNodeForTesting.stop();
+            }
         }
     }
 
@@ -385,7 +398,10 @@ public class TomP2PTests {
         }
         Peer peer = null;
         try {
-            peer = new PeerBuilder(Number160.createHash(clientId)).ports(clientPort).start();
+        	Number160 peerId = Number160.createHash(clientId);
+        	PeerMapConfiguration pmc = new PeerMapConfiguration(peerId).peerNoVerification();
+        	PeerMap pm = new PeerMap(pmc);
+            peer = new PeerBuilder(peerId).ports(clientPort).peerMap(pm).start();
             PeerAddress masterNodeAddress = new PeerAddress(Number160.createHash(seedNodeId), seedNodeIP, seedNodePort,
                                                             seedNodePort);
             FutureDiscover futureDiscover = peer.discover().peerAddress(masterNodeAddress).start();

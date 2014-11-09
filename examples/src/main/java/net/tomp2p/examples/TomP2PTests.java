@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.*;
+import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FuturePeerConnection;
@@ -286,10 +287,12 @@ public class TomP2PTests {
             peer1DHT = getDHTPeer("node_1" + i, client1Port);
             FuturePut futurePut1 = peer1DHT.add(Number160.createHash("locationKey")).data(new Data("hallo1")).start();
             futurePut1.awaitUninterruptibly();
+            futurePut1.awaitListenersUninterruptibly();
             assertTrue(futurePut1.isSuccess());
 
             FuturePut futurePut2 = peer1DHT.add(Number160.createHash("locationKey")).data(new Data("hallo2")).start();
             futurePut2.awaitUninterruptibly();
+            futurePut2.awaitListenersUninterruptibly();
             assertTrue(futurePut2.isSuccess());
 
             peer2DHT = getDHTPeer("node_2" + i, client2Port);
@@ -297,6 +300,7 @@ public class TomP2PTests {
             FutureRemove futureRemove = peer2DHT.remove(Number160.createHash("locationKey")).contentKey(contentKey)
                                                 .start();
             futureRemove.awaitUninterruptibly();
+            futureRemove.awaitListenersUninterruptibly();
 
             // That fails sometimes in direct mode and NAT
             assertTrue(futureRemove.isSuccess());
@@ -304,7 +308,9 @@ public class TomP2PTests {
             FutureGet futureGet = peer2DHT.get(Number160.createHash("locationKey")).all().start();
             futureGet.awaitUninterruptibly();
             assertTrue(futureGet.isSuccess());
-
+            if(!futureGet.dataMap().values().contains(new Data("hallo2"))) {
+            	System.err.println("raw data has the value, the evaluated not!");
+            }
             assertTrue(futureGet.dataMap().values().contains(new Data("hallo2")));
             assertTrue(futureGet.dataMap().values().size() == 1);
 
@@ -409,7 +415,16 @@ public class TomP2PTests {
             if (futureDiscover.isSuccess()) {
                 log.info("Discover with direct connection successful. Address = " + futureDiscover.peerAddress());
                 cachedPeers.put(id, peer);
-                return peer;
+                
+                //bootstrap
+                FutureBootstrap fb = peer.bootstrap().peerAddress(masterNodeAddress).start();
+                fb.awaitUninterruptibly();
+                if (fb.isSuccess()) {
+                	log.info("Bootstrap with direct connection successful. Address = " + fb.bootstrapTo());
+                	return peer;
+                } else {
+                	return null;
+                }
             }
             else {
                 log.warn("Discover with direct connection failed. Reason = " + futureDiscover.failedReason());

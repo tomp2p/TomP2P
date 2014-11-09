@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.*;
 import net.tomp2p.futures.FutureBootstrap;
@@ -78,7 +79,7 @@ public class TomP2PTests {
     }
 
     // need to be static to keep them during tests
-    private final static Map<String, Peer> cachedPeers = new HashMap<String, Peer>();
+    //private final static Map<String, Peer> cachedPeers = new HashMap<String, Peer>();
 
     private String seedId;
     private String seedIP;
@@ -104,7 +105,6 @@ public class TomP2PTests {
 
     // If cache is used tests get faster as it doesn't create and bootstrap a new node at every test.
     // Need to observe if it can have some side effects. 
-    private boolean cacheClients = true;
 
     // Use that to stress test with repeated run of the test method body
     private int stressTestLoopCount = 100;
@@ -147,12 +147,10 @@ public class TomP2PTests {
 
     @After
     public void shutdown() {
-        if (!cacheClients) {
-            if (peer1DHT != null)
-                peer1DHT.shutdown().awaitUninterruptibly();
-            if (peer2DHT != null)
-                peer2DHT.shutdown().awaitUninterruptibly();
-        }
+        if (peer1DHT != null)
+        	peer1DHT.shutdown().awaitUninterruptibly();
+        if (peer2DHT != null)
+            peer2DHT.shutdown().awaitUninterruptibly();
     }
 
     @Test
@@ -399,22 +397,25 @@ public class TomP2PTests {
     private Peer bootstrapDirectConnection(String clientId, int clientPort, String seedNodeId,
                                            String seedNodeIP, int seedNodePort) {
         final String id = clientId + clientPort;
-        if (cacheClients && cachedPeers.containsKey(id)) {
+        /*if (cacheClients && cachedPeers.containsKey(id)) {
             return cachedPeers.get(id);
-        }
+        }*/
         Peer peer = null;
         try {
         	Number160 peerId = Number160.createHash(clientId);
         	PeerMapConfiguration pmc = new PeerMapConfiguration(peerId).peerNoVerification();
         	PeerMap pm = new PeerMap(pmc);
-            peer = new PeerBuilder(peerId).ports(clientPort).peerMap(pm).start();
+        	ChannelClientConfiguration cc = PeerBuilder.createDefaultChannelClientConfiguration();
+        	cc.maxPermitsTCP(100);
+        	cc.maxPermitsUDP(100);
+            peer = new PeerBuilder(peerId).channelClientConfiguration(cc).ports(clientPort).peerMap(pm).start();
             PeerAddress masterNodeAddress = new PeerAddress(Number160.createHash(seedNodeId), seedNodeIP, seedNodePort,
                                                             seedNodePort);
             FutureDiscover futureDiscover = peer.discover().peerAddress(masterNodeAddress).start();
             futureDiscover.awaitUninterruptibly();
             if (futureDiscover.isSuccess()) {
                 log.info("Discover with direct connection successful. Address = " + futureDiscover.peerAddress());
-                cachedPeers.put(id, peer);
+                //cachedPeers.put(id, peer);
                 
                 //bootstrap
                 FutureBootstrap fb = peer.bootstrap().peerAddress(masterNodeAddress).start();
@@ -448,9 +449,9 @@ public class TomP2PTests {
     private Peer bootstrapWithPortForwarding(String clientId, int clientPort, String seedNodeId,
                                              String seedNodeIP, int seedNodePort) {
         final String id = clientId + clientPort;
-        if (cacheClients && cachedPeers.containsKey(id)) {
+        /*if (cacheClients && cachedPeers.containsKey(id)) {
             return cachedPeers.get(id);
-        }
+        }*/
         Peer peer = null;
         try {
             peer = new PeerBuilder(Number160.createHash(clientId)).ports(clientPort).behindFirewall().start();
@@ -468,7 +469,7 @@ public class TomP2PTests {
                 if (futureDiscover.isSuccess()) {
                     log.info("Discover with automatic port forwarding was successful. Address = " + futureDiscover
                             .peerAddress());
-                    cachedPeers.put(id, peer);
+                    //cachedPeers.put(id, peer);
                     return peer;
                 }
                 else {
@@ -501,9 +502,9 @@ public class TomP2PTests {
     private Peer bootstrapInRelayMode(String clientId, int clientPort, String seedNodeId,
                                       String seedNodeIP, int seedNodePort) {
         final String id = clientId + clientPort;
-        if (cacheClients && cachedPeers.containsKey(id)) {
+        /*if (cacheClients && cachedPeers.containsKey(id)) {
             return cachedPeers.get(id);
-        }
+        }*/
 
         Peer peer = null;
         try {
@@ -517,7 +518,7 @@ public class TomP2PTests {
             futureRelayNAT.awaitUninterruptibly();
             if (futureRelayNAT.isSuccess()) {
                 log.info("Bootstrap using relay was successful. Address = " + peer.peerAddress());
-                cachedPeers.put(id, peer);
+                //cachedPeers.put(id, peer);
                 return peer;
 
             }

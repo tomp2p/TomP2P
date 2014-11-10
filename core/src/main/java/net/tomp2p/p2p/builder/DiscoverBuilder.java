@@ -222,6 +222,9 @@ public class DiscoverBuilder {
             public void operationComplete(FutureResponse future) throws Exception {
                 PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
                 if (futureResponseTCP.isSuccess()) {
+                	//now we know our internal address, set it as it could be a wrong one, e.g. 127.0.0.1
+                	serverAddress = serverAddress.changeAddress(futureResponseTCP.responseMessage().recipient().inetAddress());
+                	
                     Collection<PeerAddress> tmp = futureResponseTCP.responseMessage().neighborsSet(0)
                             .neighbors();
                     futureDiscover.reporter(futureResponseTCP.responseMessage().sender());

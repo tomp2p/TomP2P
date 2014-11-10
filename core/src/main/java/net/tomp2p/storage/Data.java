@@ -214,7 +214,7 @@ public class Data {
 		// 2 is the smallest packet size, we could start if we know 1 byte to
 		// decode the header, but we always need
 		// a second byte. Thus, we are waiting for at least 2 bytes.
-		if (buf.readableBytes() < Utils.BYTE_SIZE + Utils.BYTE_SIZE) {
+		if (buf.readableBytes() < Utils.BYTE_BYTE_SIZE + Utils.BYTE_BYTE_SIZE) {
 			return null;
 		}
 		final int header = buf.getUnsignedByte(buf.readerIndex());
@@ -222,12 +222,12 @@ public class Data {
 		
 		//Data length
 		final int length;
-		final int indexLength = Utils.BYTE_SIZE;
+		final int indexLength = Utils.BYTE_BYTE_SIZE;
 		final int indexTTL;
 		switch (type) {
 		case SMALL:
 			length = buf.getUnsignedByte(buf.readerIndex() + indexLength);
-			indexTTL = indexLength + Utils.BYTE_SIZE;
+			indexTTL = indexLength + Utils.BYTE_BYTE_SIZE;
 			break;
 		case LARGE:
 			indexTTL = indexLength + Utils.INTEGER_BYTE_SIZE;
@@ -261,7 +261,7 @@ public class Data {
 		final Collection<Number160> basedOn = new ArrayList<Number160>();
 		if (hasBasedOn(header)) {
 			// get # of based on keys
-			indexBasedOn = indexBasedOnNr + Utils.BYTE_SIZE;
+			indexBasedOn = indexBasedOnNr + Utils.BYTE_BYTE_SIZE;
 			if (buf.readableBytes() < indexBasedOn) {
 				return null;
 			}
@@ -271,7 +271,7 @@ public class Data {
 				return null;
 			}
 			//get basedon
-			int index = buf.readerIndex() + indexBasedOnNr + Utils.BYTE_SIZE;
+			int index = buf.readerIndex() + indexBasedOnNr + Utils.BYTE_BYTE_SIZE;
 			final byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
 			for (int i = 0; i < numBasedOn; i++) {
 				buf.getBytes(index, me);

@@ -33,7 +33,7 @@ import org.junit.Test;
  */
 public class TestBloomFilter {
 
-    private final int bfSize = 40;
+	private final int bfSize = 40;
     private final int bfSizeLarge = 200;
 
     /**

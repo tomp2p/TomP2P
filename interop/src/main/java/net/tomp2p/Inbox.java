@@ -57,8 +57,8 @@ public class Inbox {
 				case "TestMessageDecodeLong":
 					result = MessageEncodeDecode.encodeMessageLong();
 					break;
-				case "TestMessageDecodeMapKey640Data":
-					result = MessageEncodeDecode.encodeMessageMapKey640Data();
+				case "TestMessageDecodeMapKey640Keys":
+					result = MessageEncodeDecode.encodeMessageMapKey640Keys();
 					break;
 				
 				default:

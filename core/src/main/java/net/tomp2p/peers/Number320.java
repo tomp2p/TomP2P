@@ -101,14 +101,14 @@ public final class Number320 extends Number implements Comparable<Number320> {
     /**
      * @return The minimum value of a content key
      */
-    public Number480 min() {
+    public Number480 minContentKey() {
         return new Number480(locationKey, domainKey, Number160.ZERO);
     }
 
     /**
      * @return The maxium value of a content key
      */
-    public Number480 max() {
+    public Number480 maxContentKey() {
         return new Number480(locationKey, domainKey, Number160.MAX_VALUE);
     }
 

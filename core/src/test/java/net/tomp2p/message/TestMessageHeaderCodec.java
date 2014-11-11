@@ -7,7 +7,7 @@ import net.tomp2p.message.Message.Content;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class TestCodec {
+public class TestMessageHeaderCodec {
     
     @Test
     public void testStreaming() {

@@ -58,17 +58,18 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     public static final int MIN_SIZE = 30;
     private static final long serialVersionUID = -1316622724169272306L;
 
-    private static final int NET6 = 1;
-    private static final int FIREWALL_UDP = 2;
-    private static final int FIREWALL_TCP = 4;
-    // indicates that a relay is used.
+    private static final int NET6 = 1;			// 0001
+    private static final int FIREWALL_UDP = 2;	// 0010
+    private static final int FIREWALL_TCP = 4;	// 0100
+    // indicates that a relay is used.			// 1000
     private static final int RELAYED = 8;
     // indicates that the peer is slow (because relayed)
     private static final int SLOW = 16;
+    // indicates the peer forwarded the ports either manually or with UPNP
+    private static final int PORT_FORWARDING = 32;
 
     // network information
     private final Number160 peerId;
-    //TODO: this may be used as a sixth relay peer
     private final PeerSocketAddress peerSocketAddress;
 
     // connection information
@@ -77,6 +78,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     private final boolean firewalledTCP;
     private final boolean relayed;
     private final boolean slow;
+    private final boolean portForwarding;
 
     // we can make the hash final as it never changes, and this class is used
     // multiple times in maps. A new peer is always added to the peermap, so
@@ -103,9 +105,12 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     // count both ports, UDP and TCP
     private static final int PORTS_SIZE = 4;
 
+    //TODO: make integrate this
+    private PeerSocketAddress internalPeerSocketAddress;
     // used for the relay bit shifting
-    private static final int MASK_1F = 0x1f;
-    private static final int MASK_7 = 0x7;
+    private static final int MASK_1F = 0x1f;	// 0001 1111
+    private static final int MASK_07 = 0x7;		// 0000 0111
+
     
 
     /**
@@ -138,6 +143,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.firewalledTCP = (options & FIREWALL_TCP) > 0;
         this.relayed = (options & RELAYED) > 0;
         this.slow = (options & SLOW) > 0;
+        this.portForwarding = (options & PORT_FORWARDING) > 0;
         final int relays = me[offset++] & Utils.MASK_FF;
         // first: three bits are the size 1,2,4
         // 000 means no relays
@@ -149,7 +155,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         // 110 is not used
         // 111 is not used
         // second: five bits indicate if IPv6 or IPv4 -> in total we can save 5 addresses
-        this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
+        this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_07;
         final byte b = (byte) (relays & MASK_1F);
         this.relayType = Utils.createBitSet(b);
         // now comes the ID
@@ -192,6 +198,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.firewalledTCP = (options & FIREWALL_TCP) > 0;
         this.relayed = (options & RELAYED) > 0;
         this.slow = (options & SLOW) > 0;
+        this.portForwarding = (options & PORT_FORWARDING) > 0;
         final int relays = channelBuffer.readUnsignedByte();
         // first: three bits are the size 1,2,4
         // 000 means no relays
@@ -203,7 +210,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         // 110 is not used
         // 111 is not used
         // second: five bits indicate if IPv6 or IPv4 -> in total we can save 5 addresses
-        this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
+        this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_07;
         final byte b = (byte) (relays & MASK_1F);
         this.relayType = Utils.createBitSet(b);
         // now comes the ID
@@ -270,7 +277,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress(final Number160 id, final PeerSocketAddress peerSocketAddress,
             final boolean firewalledTCP, final boolean firewalledUDP, final boolean isRelayed,
-            boolean isSlow, final Collection<PeerSocketAddress> peerSocketAddresses) {
+            boolean isSlow, boolean portForwarding, final Collection<PeerSocketAddress> peerSocketAddresses) {
         this.peerId = id;
         int size = Number160.BYTE_ARRAY_SIZE;
         this.peerSocketAddress = peerSocketAddress;
@@ -280,6 +287,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.firewalledTCP = firewalledTCP;
         this.relayed = isRelayed;
         this.slow = isSlow;
+        this.portForwarding = portForwarding;
         // header + TCP port + UDP port
         size += HEADER_SIZE + PORTS_SIZE + (net6 ? Utils.IPV6_BYTES : Utils.IPV4_BYTES);
         if (peerSocketAddresses == null) {
@@ -307,24 +315,44 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Facade for {@link #PeerAddress(Number160, InetAddress, int, int, boolean, boolean, PeerSocketAddress[])}.
+     * Facade for PeerAddress(Number160, PeerSocketAddress, boolean, boolean, boolean, Collection-PeerSocketAddress>).
      * 
      * @param peerId
      *            The id of the peer
      * @param inetAddress
-     *            The inetAddress of the peer, how to reach this peer
+     *            The internet address of the peer
      * @param tcpPort
-     *            The TCP port how to reach the peer
+     *            The TCP port of the peer
      * @param udpPort
-     *            The UDP port how to reach the peer
+     *            The UDP port of the peer
      */
     public PeerAddress(final Number160 peerId, final InetAddress inetAddress, final int tcpPort,
             final int udpPort) {
-        this(peerId, new PeerSocketAddress(inetAddress, tcpPort, udpPort), false, false, false, false, EMPTY_PEER_SOCKET_ADDRESSES);
+        this(peerId, new PeerSocketAddress(inetAddress, tcpPort, udpPort), false, false, false, false, false, EMPTY_PEER_SOCKET_ADDRESSES);
     }
 
     /**
      * Facade for {@link #PeerAddress(Number160, InetAddress, int, int, boolean, boolean, PeerSocketAddress[])}.
+     * 
+     * @param id
+     *            The id of the peer
+     * @param inetAddress
+     *            The address of the peer, how to reach this peer
+     * @param tcpPort
+     *            The TCP port how to reach the peer
+     * @param udpPort
+     *            The UDP port how to reach the peer
+     * @param options
+     *            The options for the created PeerAddress.
+     */
+    public PeerAddress(final Number160 id, final InetAddress inetAddress, final int tcpPort,
+            final int udpPort, final int options) {
+        this(id, new PeerSocketAddress(inetAddress, tcpPort, udpPort), isFirewalledTCP(options),
+                isFirewalledUDP(options), isRelay(options), isSlow(options), isPortForwarding(options), EMPTY_PEER_SOCKET_ADDRESSES);
+    }
+    
+    /**
+     * Facade for PeerAddress(Number160, InetAddress, int, int).
      * 
      * @param id
      *            The id of the peer
@@ -344,35 +372,15 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Facade for {@link #PeerAddress(Number160, InetAddress, int, int, boolean, boolean, PeerSocketAddress[])}.
+     * Facade for PeerAddress(Number160, InetAddress, int, int).
      * 
      * @param id
      *            The id of the peer
      * @param inetSocketAddress
-     *            The socket address of the peer, how to reach this peer. Both UPD and TCP will be set to the same port
+     *            The socket address of the peer, how to reach this peer. Both TCP and UDP will be set to the same port
      */
     public PeerAddress(final Number160 id, final InetSocketAddress inetSocketAddress) {
         this(id, inetSocketAddress.getAddress(), inetSocketAddress.getPort(), inetSocketAddress.getPort());
-    }
-
-    /**
-     * Facade for {@link #PeerAddress(Number160, InetAddress, int, int, boolean, boolean, PeerSocketAddress[])}.
-     * 
-     * @param id
-     *            The id of the peer
-     * @param inetAddress
-     *            The address of the peer, how to reach this peer
-     * @param tcpPort
-     *            The TCP port how to reach the peer
-     * @param udpPort
-     *            The UDP port how to reach the peer
-     * @param options
-     *            Set options
-     */
-    public PeerAddress(final Number160 id, final InetAddress inetAddress, final int tcpPort,
-            final int udpPort, final int options) {
-        this(id, new PeerSocketAddress(inetAddress, tcpPort, udpPort), isFirewalledTCP(options),
-                isFirewalledUDP(options), isRelay(options), isSlow(options), EMPTY_PEER_SOCKET_ADDRESSES);
     }
 
     /**
@@ -493,6 +501,9 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         if(slow) {
         	result |= SLOW;
         }
+        if(portForwarding) {
+        	result |= PORT_FORWARDING;
+        }
         return result;
     }
 
@@ -606,6 +617,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     	return slow;
     }
     
+    public boolean isPortForwarding() {
+    	return portForwarding;
+    }
+    
     /**
      * Create a new PeerAddress and change the relayed status.
 
@@ -614,8 +629,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The newly created peer address
      */
     public PeerAddress changeRelayed(final boolean isRelayed) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed, slow,
-                peerSocketAddresses);
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed, slow, portForwarding,
+                peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
     }
     
     /**
@@ -626,8 +641,13 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The newly created peer address
      */
     public PeerAddress changeSlow(final boolean isSlow) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, isSlow,
-                peerSocketAddresses);
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, isSlow, portForwarding,
+                peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
+    }
+    
+    public PeerAddress changePortForwarding(final boolean portForwarding) {
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow, portForwarding,
+                peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
     }
 
     /**
@@ -638,8 +658,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The newly created peer address
      */
     public PeerAddress changeFirewalledUDP(final boolean firewalledUDP) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow,
-                peerSocketAddresses);
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow, portForwarding,
+                peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
     }
 
     /**
@@ -650,8 +670,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The newly created peer address
      */
     public PeerAddress changeFirewalledTCP(final boolean firewalledTCP) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow,
-                peerSocketAddresses);
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow, portForwarding,
+                peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
     }
 
     /**
@@ -665,7 +685,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress changePorts(final int tcpPort, final int udpPort) {
         return new PeerAddress(peerId, new PeerSocketAddress(peerSocketAddress.inetAddress(), tcpPort,
-                udpPort), firewalledTCP, firewalledUDP, relayed, slow, peerSocketAddresses);
+                udpPort), firewalledTCP, firewalledUDP, relayed, slow, portForwarding, peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
     }
 
     /**
@@ -677,7 +697,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress changeAddress(final InetAddress inetAddress) {
         return new PeerAddress(peerId, new PeerSocketAddress(inetAddress, peerSocketAddress.tcpPort(),
-                peerSocketAddress.udpPort()), firewalledTCP, firewalledUDP, relayed, slow, peerSocketAddresses);
+                peerSocketAddress.udpPort()), firewalledTCP, firewalledUDP, relayed, slow, portForwarding, peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
     }
 
     /**
@@ -688,18 +708,18 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The newly created peer address
      */
     public PeerAddress changePeerId(final Number160 peerId) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow,
-                peerSocketAddresses);
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow, portForwarding,
+                peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
     }
     
     public PeerAddress changePeerSocketAddresses(Collection<PeerSocketAddress> peerSocketAddresses) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow,
-                peerSocketAddresses);
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow, portForwarding,
+                peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
     }
     
     public PeerAddress changePeerSocketAddress(PeerSocketAddress peerSocketAddress) {
-    	return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow,
-                peerSocketAddresses);
+    	return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed, slow, portForwarding,
+                peerSocketAddresses).internalPeerSocketAddress(internalPeerSocketAddress);
     }
 
     /**
@@ -763,6 +783,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     private static boolean isSlow(final int options) {
     	 return ((options & Utils.MASK_FF) & SLOW) > 0;
     }
+    
+    private static boolean isPortForwarding(final int options) {
+   	 	return ((options & Utils.MASK_FF) & PORT_FORWARDING) > 0;
+    }
 
     /**
      * Calculates the size based on the two header bytes.
@@ -795,7 +819,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             size += Utils.IPV4_BYTES;
         }
         // count the relays
-        final int relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
+        final int relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_07;
         final byte b = (byte) (relays & MASK_1F);
         final BitSet relayType = Utils.createBitSet(b);
         for (int i = 0; i < relaySize; i++) {
@@ -812,4 +836,13 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 	public int relaySize() {
 	    return relaySize;
     }
+	
+	public PeerSocketAddress internalPeerSocketAddress() {
+		return internalPeerSocketAddress;
+	}
+	
+	public PeerAddress internalPeerSocketAddress(PeerSocketAddress internalPeerSocketAddress) {
+		this.internalPeerSocketAddress = internalPeerSocketAddress;
+		return this;
+	}
 }

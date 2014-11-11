@@ -71,7 +71,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>net.tomp2p.examples.BasicUsecasesInWANTest</mainClass>
+							<mainClass>net.tomp2p.examples.SeedNodeForTesting</mainClass>
 							<addClasspath>true</addClasspath>
 							<classpathPrefix>libs/</classpathPrefix>
 						</manifest>

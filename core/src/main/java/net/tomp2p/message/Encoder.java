@@ -140,7 +140,7 @@ public class Encoder {
                 break;
             case MAP_KEY640_DATA:
                 DataMap dataMap = message.dataMap(next.index());
-                
+                // legnth
                 buf.writeInt(dataMap.size());
                 if (dataMap.isConvert()) {
                     for (Entry<Number160, Data> entry : dataMap.dataMapConvert().entrySet()) {
@@ -163,15 +163,16 @@ public class Encoder {
                 break;
             case MAP_KEY640_KEYS:
                 KeyMap640Keys keyMap640Keys = message.keyMap640Keys(next.index());
+                // length
                 buf.writeInt(keyMap640Keys.size());
                 for (Entry<Number640, Collection<Number160>> entry : keyMap640Keys.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().locationKey().toByteArray());
                     buf.writeBytes(entry.getKey().domainKey().toByteArray());
                     buf.writeBytes(entry.getKey().contentKey().toByteArray());
                     buf.writeBytes(entry.getKey().versionKey().toByteArray());
-                    // write # of based on keys
+                    // write number of based-on keys
                     buf.writeByte(entry.getValue().size());
-                    // write based on keys
+                    // write based-on keys
                     for (Number160 basedOnKey : entry.getValue()) {
                         buf.writeBytes(basedOnKey.toByteArray());
                     }
@@ -180,6 +181,7 @@ public class Encoder {
                 break;
             case MAP_KEY640_BYTE:
                 KeyMapByte keysMap = message.keyMapByte(next.index());
+                // length
                 buf.writeInt(keysMap.size());
                 for (Entry<Number640, Byte> entry : keysMap.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().locationKey().toByteArray());
@@ -195,17 +197,18 @@ public class Encoder {
                 if (!resume) {
                     buf.writeInt(buffer.length());
                 }
+                // length
                 int readable = buffer.readable();
                 buf.writeBytes(buffer.buffer(), readable);
                 if (buffer.incRead(readable) == buffer.length()) {
                     message.contentReferences().poll();
                 } else if (message.isStreaming()) {
-                    LOG.debug("we sent a partial message of length {}", readable);
+                    LOG.debug("Partial message of lengt {} sent.", readable);
                     return false;
                 } else {
-                    LOG.debug("Announced a larger buffer, but not in streaming mode. This is wrong.");
-                    throw new RuntimeException(
-                            "Announced a larger buffer, but not in streaming mode. This is wrong.");
+                	final String description = "Larger buffer has been announced, but not in message streaming mode. This is wrong.";
+                    LOG.error(description);
+                    throw new RuntimeException(description);
                 }
                 break;
             case SET_TRACKER_DATA:
@@ -222,14 +225,13 @@ public class Encoder {
             case PUBLIC_KEY_SIGNATURE:
                 // flag to encode public key
                 message.setHintSign();
-                // then do the regular public key stuff
+                // then do the regular public key stuff -> no break
             case PUBLIC_KEY:
             	PublicKey publicKey = message.publicKey(next.index());
             	signatureFactory.encodePublicKey(publicKey, buf);
             	message.contentReferences().poll();
             	break;
             default:
-            case USER1:
                 throw new RuntimeException("Unknown type: " + next.content());
             }
             LOG.debug("wrote in encoder for {} {}", content, buf.writerIndex() - start);
@@ -238,7 +240,7 @@ public class Encoder {
         return true;
     }
 
-	private int encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
+	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
 		if(isConvertMeta) {
 			data = data.duplicateMeta();
 		} else {
@@ -252,7 +254,6 @@ public class Encoder {
 	    data.encodeHeader(buf, signatureFactory);
 	    data.encodeBuffer(buf);
 	    data.encodeDone(buf, signatureFactory, message.privateKey());
-	    return buf.writerIndex() - startWriter;
     }
 
     public Message message() {

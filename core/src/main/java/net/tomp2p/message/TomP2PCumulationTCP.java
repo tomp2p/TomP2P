@@ -113,6 +113,10 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 	@Override
 	public void exceptionCaught(final ChannelHandlerContext ctx,
 			final Throwable cause) throws Exception {
+		if (cumulation != null) {
+			cumulation.release();
+			cumulation = null;
+		}
 		Message msg = decoder.message();
 		// don't use getLocalizedMessage() -
 		// http://stackoverflow.com/questions/8699521/any-way-to-ignore-only-connection-reset-by-peer-ioexceptions

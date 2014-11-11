@@ -32,6 +32,7 @@ import java.io.SequenceInputStream;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -63,6 +64,7 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.DataBuffer;
 
 /**
@@ -76,13 +78,13 @@ public class Utils {
     public static final int IPV4_BYTES = 4;
     public static final int IPV6_BYTES = 16;
     public static final int BYTE_BITS = 8;
-    public static final int MASK_FF = 0xff;
-    public static final int MASK_80 = 0x80;
-    public static final int INTEGER_BYTE_SIZE = 4;
-    public static final int LONG_BYTE_SIZE = 8;
-    public static final int BYTE_SIZE = 1;
-    public static final int SHORT_BYTE_SIZE = 2;
-    public static final int MASK_0F = 0xf;
+    public static final int MASK_0F = 0xf;			// 00000000 00000000 00000000 00001111
+    public static final int MASK_80 = 0x80;			// 00000000 00000000 00000000 10000000
+    public static final int MASK_FF = 0xff;			// 00000000 00000000 00000000 11111111
+    public static final int BYTE_BYTE_SIZE = 1;		//  8 bits
+    public static final int SHORT_BYTE_SIZE = 2;	// 16 bits
+    public static final int INTEGER_BYTE_SIZE = 4;	// 32 bits
+    public static final int LONG_BYTE_SIZE = 8;		// 64 bits
 	public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
     public static ByteBuffer loadFile(File file) throws IOException {
@@ -891,4 +893,36 @@ public class Utils {
 		}
 		return randomInt;
 	}
+
+	public static InetSocketAddress natReflection(InetSocketAddress recipient, boolean udp, PeerAddress self) {
+	    if(self.isPortForwarding()) {
+	    	//check for NAT reflection
+	    	if(recipient.getAddress().equals(self.inetAddress()) && self.internalPeerSocketAddress() != null) {
+	    		//the recipient and me have the same external IP, this means we either send it to us, or to a peer in our network. Since NAT reflection is rarly properly implemented in routers, we need to change the IP address here in order to reach the peer.
+	    		if(udp && recipient.getPort() == self.udpPort() ) {
+	    			//we send it to ourself, change it to something local
+	    			try {
+	    				//TODO: pick one of the discovered interfaces the server is listening to and prefer localhost if available
+	                    return new InetSocketAddress(InetAddress.getLocalHost(), self.internalPeerSocketAddress().udpPort());
+                    } catch (UnknownHostException e) {
+	                    e.printStackTrace();
+	                    return recipient;
+                    }
+	    		} else if(!udp && recipient.getPort() == self.tcpPort()) {
+	    			//we send it to ourself, change it to something local
+	    			try {
+	    				//TODO: pick one of the discovered interfaces the server is listening to and prefer localhost if available
+	                    return new InetSocketAddress(InetAddress.getLocalHost(), self.internalPeerSocketAddress().tcpPort());
+                    } catch (UnknownHostException e) {
+	                    e.printStackTrace();
+	                    return recipient;
+                    }
+	    		} else {
+	    			//the recipient is in our network, but its not ourself
+	    			//TODO: the peer must send its internal IP, in order to be reachable
+	    		}
+	    	}
+	    }
+	    return recipient;
+    }
 }

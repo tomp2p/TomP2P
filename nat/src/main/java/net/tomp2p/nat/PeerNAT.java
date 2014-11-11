@@ -130,7 +130,8 @@ public class PeerNAT {
 					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress(), peer
 							.connectionBean().channelServer().channelServerConfiguration().portsForwarding());
 					if (externalPorts != null) {
-						final PeerAddress serverAddress = peer.peerBean().serverPeerAddress()
+						final PeerAddress serverAddressOrig = peer.peerBean().serverPeerAddress();
+						final PeerAddress serverAddress = serverAddressOrig
 								.changePorts(externalPorts.tcpPort(), externalPorts.udpPort())
 								.changeAddress(future.externalAddress());
 						
@@ -144,6 +145,9 @@ public class PeerNAT {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
 								if (future.isSuccess()) {
+									//UPNP or NAT-PMP was successful, set flag
+									peer.peerBean().serverPeerAddress(serverAddress.changePortForwarding(true));
+									peer.peerBean().serverPeerAddress().internalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
 									futureNAT.done(future.peerAddress(), future.reporter());
 								} else {
 									// indicate relay

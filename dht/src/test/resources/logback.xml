@@ -16,7 +16,7 @@
   </appender>
   
   <!--  <logger name="net" level="TRACE"/> -->
-  <!--  <logger name="net.tomp2p.relay" level="TRACE"/> -->
+  <!-- <logger name="net.tomp2p.dht.StorageRPC" level="TRACE"/> -->
   
   <!-- Disable Netty Warning that I'm aware of -->
   <logger name="io.netty.util.concurrent.SingleThreadEventExecutor" level="OFF"/>

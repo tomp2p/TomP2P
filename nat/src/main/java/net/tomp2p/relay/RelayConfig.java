@@ -24,6 +24,8 @@ public class RelayConfig {
 	private int peerMapUpdateInterval;
 	private Collection<PeerAddress> manualRelays;
 	private Collection<PeerAddress> gcmServers;
+	private int failedRelayWaitTime;
+	private int maxFail;
 
 	/**
 	 * Creates a TCP relay configuration
@@ -31,7 +33,7 @@ public class RelayConfig {
 	 * @return
 	 */
 	public static RelayConfig OpenTCP() {
-		return new RelayConfig(RelayType.OPENTCP, 15, null, null, null);
+		return new RelayConfig(RelayType.OPENTCP, 15, null, null, null, 60, 2);
 	}
 
 	/**
@@ -57,16 +59,18 @@ public class RelayConfig {
 	 * @return
 	 */
 	public static RelayConfig Android(String registrationId, MessageBufferConfiguration bufferConfiguration) {
-		return new RelayConfig(RelayType.ANDROID, 60, registrationId, null, bufferConfiguration);
+		return new RelayConfig(RelayType.ANDROID, 60, registrationId, null, bufferConfiguration, 120, 2);
 	}
 
-	private RelayConfig(RelayType type, int peerMapUpdateInterval, String registrationId, Collection<PeerAddress> gcmServers,
-			MessageBufferConfiguration bufferConfiguration) {
+	private RelayConfig(RelayType type, int peerMapUpdateInterval, String registrationId,
+			Collection<PeerAddress> gcmServers, MessageBufferConfiguration bufferConfiguration, int failedRelayWaitTime, int maxFail) {
 		this.type = type;
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.registrationId = registrationId;
 		this.gcmServers = gcmServers;
 		this.bufferConfiguration = bufferConfiguration;
+		this.failedRelayWaitTime = failedRelayWaitTime;
+		this.maxFail = maxFail;
 		this.manualRelays = Collections.emptyList();
 	}
 
@@ -117,14 +121,19 @@ public class RelayConfig {
 			manualRelays.add(manualRelay);
 		}
 	}
-	
+
 	/**
 	 * Set the relay list where the peer should connect to
+	 * 
 	 * @param manualRelays publicly reachable relay nodes
 	 * @return this instance
 	 */
 	public RelayConfig manualRelays(Collection<PeerAddress> manualRelays) {
-		this.manualRelays = manualRelays;
+		if(manualRelays == null) {
+			this.manualRelays = Collections.emptySet();
+		} else {
+			this.manualRelays = manualRelays;
+		}
 		return this;
 	}
 
@@ -133,6 +142,52 @@ public class RelayConfig {
 	 */
 	public Collection<PeerAddress> manualRelays() {
 		return manualRelays;
+	}
+
+	/**
+	 * Defines how many seconds to wait at least until asking a relay that
+	 * denied a relay request or a relay that failed to act as a relay again
+	 * 
+	 * @param failedRelayWaitTime
+	 *            wait time in seconds
+	 * @return this instance
+	 */
+	public RelayConfig failedRelayWaitTime(int failedRelayWaitTime) {
+		if(failedRelayWaitTime < 0) {
+			throw new IllegalArgumentException("Negative wait time is not allowed");
+		}
+		this.failedRelayWaitTime = failedRelayWaitTime;
+		return this;
+	}
+
+	/**
+	 * @return How many seconds to wait at least until asking a relay that
+	 *         denied a relay request or a relay that failed to act as a relay
+	 *         again
+	 */
+	public int failedRelayWaitTime() {
+		return failedRelayWaitTime;
+	}
+
+	/**
+	 * Defines how many times a setup with a relay can fail before it's ignored
+	 * 
+	 * @param maxFail the allowed number of fails
+	 * @return this instance
+	 */
+	public RelayConfig maxFail(int maxFail) {
+		if(maxFail < 0) {
+			throw new IllegalArgumentException("Negative maximum fail count is not allowed");
+		}
+		this.maxFail = maxFail;
+		return this;
+	}
+
+	/**
+	 * @return the maximum number of allowed fails
+	 */
+	public int maxFail() {
+		return maxFail;
 	}
 
 	/**
@@ -157,7 +212,8 @@ public class RelayConfig {
 	/**
 	 * <strong>Only used for {@link RelayConfig#ANDROID}</strong><br>
 	 * 
-	 * @return a collection of known GCM servers which are known to be able to send GCM messages. A GCM server can
+	 * @return a collection of known GCM servers which are known to be able to send GCM messages. A GCM server
+	 *         can
 	 *         be configured by setting {@link PeerBuilderNAT#gcmAuthenticationKey(String)}.
 	 */
 	public Collection<PeerAddress> gcmServers() {

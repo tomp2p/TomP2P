@@ -18,9 +18,6 @@ public class PeerBuilderNAT {
 
 	private boolean manualPorts = false;
 
-	private int failedRelayWaitTime = -1;
-	private int maxFail = -1;
-
 	// Android configuration
 	private String gcmAuthenticationKey;
 	private int gcmSendRetries = 5;
@@ -41,37 +38,6 @@ public class PeerBuilderNAT {
 	public PeerBuilderNAT manualPorts(boolean manualPorts) {
 		this.manualPorts = manualPorts;
 		return this;
-	}
-
-	/**
-	 * Defines how many seconds to wait at least until asking a relay that
-	 * denied a relay request or a relay that failed to act as a relay again
-	 * 
-	 * @param failedRelayWaitTime
-	 *            wait time in seconds
-	 * @return this instance
-	 */
-	public PeerBuilderNAT failedRelayWaitTime(int failedRelayWaitTime) {
-		this.failedRelayWaitTime = failedRelayWaitTime;
-		return this;
-	}
-
-	/**
-	 * @return How many seconds to wait at least until asking a relay that
-	 *         denied a relay request or a relay that failed to act as a relay
-	 *         again
-	 */
-	public int failedRelayWaitTime() {
-		return failedRelayWaitTime;
-	}
-
-	public PeerBuilderNAT maxFail(int maxFail) {
-		this.maxFail = maxFail;
-		return this;
-	}
-
-	public int maxFail() {
-		return maxFail;
 	}
 
 	/**
@@ -143,28 +109,20 @@ public class PeerBuilderNAT {
 		if (bufferConfig == null) {
 			bufferConfig = new MessageBufferConfiguration();
 		}
-		
-		if(gcmSendRetries <= 0) {
+
+		if (gcmSendRetries <= 0) {
 			gcmSendRetries = 5;
 		}
-		
+
 		// start GCM server functionality if configured
 		GCMSenderRPC gcmSenderRPC = null;
 		if (gcmAuthenticationKey != null && !gcmAuthenticationKey.isEmpty()) {
 			gcmSenderRPC = new GCMSenderRPC(peer, gcmAuthenticationKey, gcmSendRetries);
 		}
-				
+
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
 		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, gcmSenderRPC, bufferConfig, connectionConfiguration);
-		
-		if (failedRelayWaitTime == -1) {
-			failedRelayWaitTime = 60;
-		}
-
-		if (maxFail == -1) {
-			maxFail = 2;
-		}
 
 		peer.addShutdownListener(new Shutdown() {
 			@Override
@@ -174,7 +132,6 @@ public class PeerBuilderNAT {
 			}
 		});
 
-		return new PeerNAT(peer, natUtils, relayRPC, failedRelayWaitTime, maxFail, manualPorts,
-				connectionConfiguration);
+		return new PeerNAT(peer, natUtils, relayRPC, manualPorts, connectionConfiguration);
 	}
 }

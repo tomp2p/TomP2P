@@ -51,7 +51,6 @@ public class DistributedRelay implements GCMMessageHandler {
 
 	private final List<BaseRelayConnection> relays;
 	private final Set<PeerAddress> failedRelays;
-	private final int maxFail;
 
 	private final Collection<RelayListener> relayListeners;
 	private final RelayConfig relayConfig;
@@ -71,15 +70,14 @@ public class DistributedRelay implements GCMMessageHandler {
 	 * @param relayType
 	 *            the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, int maxFail, ConnectionConfiguration config, RelayConfig relayConfig) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, ConnectionConfiguration config, RelayConfig relayConfig) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
-		this.maxFail = maxFail;
 		this.config = config;
 		this.relayConfig = relayConfig;
 
 		relays = Collections.synchronizedList(new ArrayList<BaseRelayConnection>());
-		failedRelays = new ConcurrentCacheSet<PeerAddress>(failedRelayWaitTime);
+		failedRelays = new ConcurrentCacheSet<PeerAddress>(relayConfig.failedRelayWaitTime());
 		relayListeners = Collections.synchronizedList(new ArrayList<RelayListener>(1));
 		
 		// buffering is currently only allowed at Android devices
@@ -258,7 +256,7 @@ public class DistributedRelay implements GCMMessageHandler {
 			updatePeerAddress();
 			futureRelay.failed("No candidates: " + status.toString());
 			return;
-		} else if (fail > maxFail) {
+		} else if (fail > relayConfig.maxFail()) {
 			updatePeerAddress();
 			futureRelay.failed("Maxfail: " + status.toString());
 			return;

@@ -40,18 +40,13 @@ public class PeerNAT {
 	private final Peer peer;
 	private final NATUtils natUtils;
 	private final RelayRPC relayRPC;
-	private final int failedRelayWaitTime;
-	private final int maxFail;
 	private final boolean manualPorts;
 	private final ConnectionConfiguration config;
 	
-	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, int failedRelayWaitTime, int maxFail,
-			boolean manualPorts, ConnectionConfiguration config) {
+	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, boolean manualPorts, ConnectionConfiguration config) {
 		this.peer = peer;
 		this.natUtils = natUtils;
 		this.relayRPC = relayRPC;
-		this.failedRelayWaitTime = failedRelayWaitTime;
-		this.maxFail = maxFail;
 		this.manualPorts = manualPorts;
 		this.config = config;
 	}
@@ -66,19 +61,6 @@ public class PeerNAT {
 
 	public RelayRPC relayRPC() {
 		return relayRPC;
-	}
-
-	/**
-	 * @return How many seconds to wait at least until asking a relay that
-	 *         denied a relay request or a relay that failed to act as a relay
-	 *         again
-	 */
-	public int failedRelayWaitTime() {
-		return failedRelayWaitTime;
-	}
-
-	public int maxFail() {
-		return maxFail;
 	}
 
 	public boolean isManualPorts() {
@@ -205,7 +187,7 @@ public class PeerNAT {
 	}
 
 	private DistributedRelay startSetupRelay(FutureRelay futureRelay, final RelayConfig relayConfig) {
-		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, maxFail, config, relayConfig);
+		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, config, relayConfig);
 		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {
 			@Override

@@ -1,4 +1,4 @@
-package net.tomp2p.relay.android;
+package net.tomp2p.relay.android.gcm;
 
 public interface GCMMessageHandler {
 

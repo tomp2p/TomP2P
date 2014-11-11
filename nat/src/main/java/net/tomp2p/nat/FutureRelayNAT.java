@@ -5,7 +5,7 @@ import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.android.GCMMessageHandler;
+import net.tomp2p.relay.android.gcm.GCMMessageHandler;
 
 public class FutureRelayNAT extends BaseFutureImpl<FutureRelayNAT> {
 

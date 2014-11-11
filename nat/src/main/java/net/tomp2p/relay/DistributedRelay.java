@@ -18,13 +18,14 @@ import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.android.AndroidRelayConnection;
-import net.tomp2p.relay.android.GCMMessageHandler;
 import net.tomp2p.relay.android.MessageBuffer;
 import net.tomp2p.relay.android.MessageBufferListener;
+import net.tomp2p.relay.android.gcm.GCMMessageHandler;
 import net.tomp2p.relay.tcp.OpenTCPRelayConnection;
 import net.tomp2p.rpc.RPC;
 
@@ -306,6 +307,11 @@ public class DistributedRelay implements GCMMessageHandler {
 				// add the registration ID, the GCM authentication key and the map update interval
 				message.buffer(RelayUtils.encodeString(relayConfig.registrationId()));
 				message.intValue(relayConfig.peerMapUpdateInterval());
+			}
+			
+			if(relayConfig.gcmServers() != null && !relayConfig.gcmServers().isEmpty()) {
+				// provide gcm servers at startup, later they will be updated using the map update task
+				message.neighborsSet(new NeighborSet(-1, relayConfig.gcmServers()));
 			}
 		}
 

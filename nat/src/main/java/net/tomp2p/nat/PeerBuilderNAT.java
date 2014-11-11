@@ -14,6 +14,7 @@ import net.tomp2p.relay.RconRPC;
 import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
+import net.tomp2p.relay.android.gcm.GCMSenderRPC;
 
 public class PeerBuilderNAT {
 
@@ -160,11 +161,17 @@ public class PeerBuilderNAT {
 		if(gcmSendRetries <= 0) {
 			gcmSendRetries = 5;
 		}
-
+		
+		// start GCM server functionality if configured
+		GCMSenderRPC gcmSenderRPC = null;
+		if (gcmAuthenticationKey != null && !gcmAuthenticationKey.isEmpty()) {
+			gcmSenderRPC = new GCMSenderRPC(peer, gcmAuthenticationKey, gcmSendRetries);
+		}
+				
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
-		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, bufferConfig, connectionConfiguration, gcmAuthenticationKey, gcmSendRetries);
-
+		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, gcmSenderRPC, bufferConfig, connectionConfiguration);
+		
 		if (failedRelayWaitTime == -1) {
 			failedRelayWaitTime = 60;
 		}

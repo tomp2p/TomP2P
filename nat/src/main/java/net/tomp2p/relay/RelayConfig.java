@@ -1,5 +1,10 @@
 package net.tomp2p.relay;
 
+import java.util.Collection;
+import java.util.Set;
+
+import net.tomp2p.nat.PeerBuilderNAT;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
 
 /**
@@ -16,6 +21,7 @@ public class RelayConfig {
 
 	// configurable
 	private int peerMapUpdateInterval;
+	private Collection<PeerAddress> gcmServers;
 
 	/**
 	 * Creates a TCP relay configuration
@@ -23,7 +29,7 @@ public class RelayConfig {
 	 * @return
 	 */
 	public static RelayConfig OpenTCP() {
-		return new RelayConfig(RelayType.OPENTCP, 15, null, null);
+		return new RelayConfig(RelayType.OPENTCP, 15, null, null, null);
 	}
 
 	/**
@@ -49,14 +55,15 @@ public class RelayConfig {
 	 * @return
 	 */
 	public static RelayConfig Android(String registrationId, MessageBufferConfiguration bufferConfiguration) {
-		return new RelayConfig(RelayType.ANDROID, 60, registrationId, bufferConfiguration);
+		return new RelayConfig(RelayType.ANDROID, 60, registrationId, null, bufferConfiguration);
 	}
 
-	private RelayConfig(RelayType type, int peerMapUpdateInterval, String registrationId,
+	private RelayConfig(RelayType type, int peerMapUpdateInterval, String registrationId, Collection<PeerAddress> gcmServers,
 			MessageBufferConfiguration bufferConfiguration) {
 		this.type = type;
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.registrationId = registrationId;
+		this.gcmServers = gcmServers;
 		this.bufferConfiguration = bufferConfiguration;
 	}
 
@@ -116,5 +123,29 @@ public class RelayConfig {
 	 */
 	public MessageBufferConfiguration bufferConfiguration() {
 		return bufferConfiguration;
+	}
+
+	/**
+	 * <strong>Only used for {@link RelayConfig#ANDROID}</strong><br>
+	 * 
+	 * @return a collection of known GCM servers which are known to be able to send GCM messages. A GCM server can
+	 *         be configured by setting {@link PeerBuilderNAT#gcmAuthenticationKey(String)}.
+	 */
+	public Collection<PeerAddress> gcmServers() {
+		return gcmServers;
+	}
+
+	/**
+	 * <strong>Only used for {@link RelayConfig#ANDROID}</strong><br>
+	 *
+	 * Defines well-known peers that have the ability to send messages over Google Cloud Messaging. If an
+	 * empty list or null is provided, the relays try to send it by themselves or deny the relay connection.
+	 * 
+	 * @param gcmServers a set of peers that can send GCM messages
+	 * @return this instance
+	 */
+	public RelayConfig gcmServers(Set<PeerAddress> gcmServers) {
+		this.gcmServers = gcmServers;
+		return this;
 	}
 }

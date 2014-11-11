@@ -1,6 +1,7 @@
 package net.tomp2p.relay;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 import net.tomp2p.nat.PeerBuilderNAT;
@@ -21,6 +22,7 @@ public class RelayConfig {
 
 	// configurable
 	private int peerMapUpdateInterval;
+	private Collection<PeerAddress> manualRelays;
 	private Collection<PeerAddress> gcmServers;
 
 	/**
@@ -65,6 +67,7 @@ public class RelayConfig {
 		this.registrationId = registrationId;
 		this.gcmServers = gcmServers;
 		this.bufferConfiguration = bufferConfiguration;
+		this.manualRelays = Collections.emptyList();
 	}
 
 	@Override
@@ -104,6 +107,32 @@ public class RelayConfig {
 	public RelayConfig peerMapUpdateInterval(int peerMapUpdateInterval) {
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		return this;
+	}
+
+	/**
+	 * Add a relay to the relays list
+	 */
+	public void addManualRelay(PeerAddress manualRelay) {
+		synchronized (manualRelays) {
+			manualRelays.add(manualRelay);
+		}
+	}
+	
+	/**
+	 * Set the relay list where the peer should connect to
+	 * @param manualRelays publicly reachable relay nodes
+	 * @return this instance
+	 */
+	public RelayConfig manualRelays(Collection<PeerAddress> manualRelays) {
+		this.manualRelays = manualRelays;
+		return this;
+	}
+
+	/**
+	 * @return the currently configured list of relay peers
+	 */
+	public Collection<PeerAddress> manualRelays() {
+		return manualRelays;
 	}
 
 	/**

@@ -1,15 +1,11 @@
 package net.tomp2p.nat;
 
-import java.util.Collection;
-import java.util.Collections;
-
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RconRPC;
 import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.RelayRPC;
@@ -21,7 +17,6 @@ public class PeerBuilderNAT {
 	final private Peer peer;
 
 	private boolean manualPorts = false;
-	private Collection<PeerAddress> manualRelays;
 
 	private int failedRelayWaitTime = -1;
 	private int maxFail = -1;
@@ -45,15 +40,6 @@ public class PeerBuilderNAT {
 
 	public PeerBuilderNAT manualPorts(boolean manualPorts) {
 		this.manualPorts = manualPorts;
-		return this;
-	}
-
-	public Collection<PeerAddress> manualRelays() {
-		return manualRelays;
-	}
-
-	public PeerBuilderNAT relays(Collection<PeerAddress> manualRelays) {
-		this.manualRelays = manualRelays;
 		return this;
 	}
 
@@ -180,10 +166,6 @@ public class PeerBuilderNAT {
 			maxFail = 2;
 		}
 
-		if (manualRelays == null) {
-			manualRelays = Collections.emptyList();
-		}
-
 		peer.addShutdownListener(new Shutdown() {
 			@Override
 			public BaseFuture shutdown() {
@@ -192,7 +174,7 @@ public class PeerBuilderNAT {
 			}
 		});
 
-		return new PeerNAT(peer, natUtils, relayRPC, manualRelays, failedRelayWaitTime, maxFail, manualPorts,
+		return new PeerNAT(peer, natUtils, relayRPC, failedRelayWaitTime, maxFail, manualPorts,
 				connectionConfiguration);
 	}
 }

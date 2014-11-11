@@ -181,9 +181,9 @@ public class ExampleRelaySituation {
 			}
 
 			RelayConfig config;
-			PeerBuilderNAT builder = new PeerBuilderNAT(peer).relays(relayAddresses);
+			PeerBuilderNAT builder = new PeerBuilderNAT(peer);
 			if (RELAY_TYPE == RelayType.ANDROID) {
-				config = RelayConfig.Android(GCM_REGISTRATION_ID);
+				config = RelayConfig.Android(GCM_REGISTRATION_ID).manualRelays(relayAddresses);
 			} else {
 				config = RelayConfig.OpenTCP();
 			}

@@ -52,7 +52,6 @@ public class DistributedRelay implements GCMMessageHandler {
 	private final List<BaseRelayConnection> relays;
 	private final Set<PeerAddress> failedRelays;
 	private final int maxFail;
-	private final Collection<PeerAddress> manualRelays;
 
 	private final Collection<RelayListener> relayListeners;
 	private final RelayConfig relayConfig;
@@ -72,11 +71,10 @@ public class DistributedRelay implements GCMMessageHandler {
 	 * @param relayType
 	 *            the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, int maxFail, Collection<PeerAddress> manualRelays, ConnectionConfiguration config, RelayConfig relayConfig) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, int maxFail, ConnectionConfiguration config, RelayConfig relayConfig) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
 		this.maxFail = maxFail;
-		this.manualRelays = manualRelays;
 		this.config = config;
 		this.relayConfig = relayConfig;
 
@@ -148,7 +146,7 @@ public class DistributedRelay implements GCMMessageHandler {
 	 */
 	public FutureRelay setupRelays(final FutureRelay futureRelay) {
 		final List<PeerAddress> relayCandidates;
-		if (manualRelays.isEmpty()) {
+		if (relayConfig.manualRelays().isEmpty()) {
 			// Get the neighbors of this peer that could possibly act as relays. Relay
 			// candidates are neighboring peers that are not relayed themselves and have
 			// not recently failed as relay or denied acting as relay.
@@ -158,7 +156,7 @@ public class DistributedRelay implements GCMMessageHandler {
 		} else {
 			// if the user sets manual relays, the failed relays are not removed, as this has to be done by
 			// the user
-			relayCandidates = new ArrayList<PeerAddress>(manualRelays);
+			relayCandidates = new ArrayList<PeerAddress>(relayConfig.manualRelays());
 		}
 
 		filterRelayCandidates(relayCandidates);

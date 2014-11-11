@@ -1,6 +1,5 @@
 package net.tomp2p.nat;
 
-import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -46,17 +45,11 @@ public class PeerNAT {
 	private final boolean manualPorts;
 	private final ConnectionConfiguration config;
 	
-	// relaying
-	private final Collection<PeerAddress> manualRelays;
-	private static final int MESSAGE_VERSION = 1;
-
-
-	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, Collection<PeerAddress> manualRelays,
-			int failedRelayWaitTime, int maxFail, boolean manualPorts, ConnectionConfiguration config) {
+	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, int failedRelayWaitTime, int maxFail,
+			boolean manualPorts, ConnectionConfiguration config) {
 		this.peer = peer;
 		this.natUtils = natUtils;
 		this.relayRPC = relayRPC;
-		this.manualRelays = manualRelays;
 		this.failedRelayWaitTime = failedRelayWaitTime;
 		this.maxFail = maxFail;
 		this.manualPorts = manualPorts;
@@ -88,16 +81,6 @@ public class PeerNAT {
 		return maxFail;
 	}
 
-	public void addRelay(PeerAddress relay) {
-		synchronized (manualRelays) {
-			manualRelays.add(relay);
-		}
-	}
-
-	public Collection<PeerAddress> manualRelays() {
-		return manualRelays;
-	}
-
 	public boolean isManualPorts() {
 		return manualPorts;
 	}
@@ -126,7 +109,7 @@ public class PeerNAT {
 					futureNAT.reporter(future.reporter());
 				}
 
-				if (future.isFailed() && future.isNat() && !isManualPorts()) {
+				if (future.isFailed() && future.isNat() && !manualPorts) {
 					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress(), peer
 							.connectionBean().channelServer().channelServerConfiguration().portsForwarding());
 					if (externalPorts != null) {
@@ -222,7 +205,7 @@ public class PeerNAT {
 	}
 
 	private DistributedRelay startSetupRelay(FutureRelay futureRelay, final RelayConfig relayConfig) {
-		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, maxFail, manualRelays, config, relayConfig);
+		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, maxFail, config, relayConfig);
 		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {
 			@Override
@@ -430,7 +413,7 @@ public class PeerNAT {
 			// this message is sent to the relay peer to initiate the rcon setup
 			private Message createSetupMessage(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress) {
 				Message setUpMessage = new Message();
-				setUpMessage.version(MESSAGE_VERSION);
+				setUpMessage.version(peer.connectionBean().p2pId());
 				setUpMessage.sender(peer.peerAddress());
 				setUpMessage.recipient(relayPeerAddress.changePeerId(unreachablePeerAddress.peerId()));
 				setUpMessage.command(RPC.Commands.RCON.getNr());

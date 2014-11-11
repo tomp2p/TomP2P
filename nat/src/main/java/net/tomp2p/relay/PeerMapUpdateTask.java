@@ -3,7 +3,6 @@ package net.tomp2p.relay;
 import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -13,8 +12,6 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMapChangeListener;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.RPC;
 
@@ -27,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * routing requests on behalf of the unreachable peers
  * 
  */
-public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListener {
+public class PeerMapUpdateTask extends TimerTask {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PeerMapUpdateTask.class);
 	private static final long BOOTSTRAP_TIMEOUT_MS = 10000;
@@ -35,9 +32,6 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	private final RelayRPC relayRPC;
 	private final BootstrapBuilder bootstrapBuilder;
 	private final DistributedRelay distributedRelay;
-
-	// status whether the map has been updated in the meantime
-	private final AtomicBoolean updated;
 
 	/**
 	 * Create a new peer map update task.
@@ -48,16 +42,12 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	 *            bootstrap builder used to find neighbors of this peer
 	 * @param distributedRelay
 	 *            set of the relay addresses
-	 * @param relayType 
+	 * @param relayType
 	 */
 	public PeerMapUpdateTask(RelayRPC relayRPC, BootstrapBuilder bootstrapBuilder, DistributedRelay distributedRelay) {
 		this.relayRPC = relayRPC;
 		this.bootstrapBuilder = bootstrapBuilder;
 		this.distributedRelay = distributedRelay;
-
-		// register to peer map events
-		this.updated = new AtomicBoolean(true);
-		relayRPC.peer().peerBean().peerMap().addPeerMapChangeListener(this);
 	}
 
 	@Override
@@ -68,16 +58,12 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 			return;
 		}
 
-		if (bootstap() && updated.get()) {
-			// reset the status since it is now sent to all relay peers
-			 updated.set(false);
+		bootstap();
 
-			// send the peer map to the relays
-		}
-		updatePeerMap();
-
-		if(relayRPC.peer().peerAddress().isSlow()) {
-			// TODO: add digest to the relay peer, but this can lead to consistency problems
+		// send the peer map to the relays
+		List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
+		for (final BaseRelayConnection relay : distributedRelay.relays()) {
+			sendPeerMap(relay, peerMapVerified);
 		}
 
 		// try to add more relays
@@ -86,43 +72,9 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 		relayRPC.peer().notifyAutomaticFutures(futureRelay2);
 	}
 
-	@Override
-	public boolean cancel() {
-		// unregister from peer map events
-		relayRPC.peer().peerBean().peerMap().removePeerMapChangeListener(this);
-		return super.cancel();
-	}
-
-	@Override
-	public void peerInserted(PeerAddress peerAddress, boolean verified) {
-		updated.set(true);
-	}
-
-	@Override
-	public void peerRemoved(PeerAddress peerAddress, PeerStatistic storedPeerAddress) {
-		updated.set(true);
-	}
-
-	@Override
-	public void peerUpdated(PeerAddress peerAddress, PeerStatistic storedPeerAddress) {
-		updated.set(true);
-	}
-
 	private boolean bootstap() {
 		// bootstrap to get updated peer map and then push it to the relay peers
 		return bootstrapBuilder.start().awaitUninterruptibly(BOOTSTRAP_TIMEOUT_MS);
-	}
-
-	/**
-	 * Bootstrap to get the latest peer map and then update all relays with the newest version
-	 */
-	private void updatePeerMap() {
-		List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
-
-		// send the map to all relay peers
-		for (final BaseRelayConnection relay : distributedRelay.relays()) {
-			sendPeerMap(relay, peerMapVerified);
-		}
 	}
 
 	/**

@@ -1,6 +1,5 @@
 package net.tomp2p.relay;
 
-import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
 
 /**
@@ -12,12 +11,11 @@ import net.tomp2p.relay.android.MessageBufferConfiguration;
 public class RelayConfig {
 
 	private final RelayType type;
-	private final GCMServerCredentials gcmServerCredentials;
+	private final String registrationId;
 	private final MessageBufferConfiguration bufferConfiguration;
 
 	// configurable
 	private int peerMapUpdateInterval;
-	private int gcmSendRetries;
 
 	/**
 	 * Creates a TCP relay configuration
@@ -25,46 +23,48 @@ public class RelayConfig {
 	 * @return
 	 */
 	public static RelayConfig OpenTCP() {
-		return new RelayConfig(RelayType.OPENTCP, 15, null, 0, null);
+		return new RelayConfig(RelayType.OPENTCP, 15, null, null);
 	}
 
 	/**
 	 * Creates an Android relay configuration. The messages at the relayed peer are not buffered.
 	 * 
-	 * @param gcmServerCredentials to be able to communicate over Google Cloud Messaging
+	 * @param registrationId the Google Cloud Messaging registration ID. This can be obtained on an Android
+	 *            device by providing the correct senderID. The registration ID is unique for each device for
+	 *            each senderID.
 	 * @return
 	 */
-	public static RelayConfig Android(GCMServerCredentials gcmServerCredentials) {
-		return Android(gcmServerCredentials, null);
+	public static RelayConfig Android(String registrationId) {
+		return Android(registrationId, null);
 	}
 
 	/**
 	 * Creates an Android relay configuration having a buffer for received GCM messages.
 	 * 
-	 * @param gcmServerCredentials to be able to communicate over Google Cloud Messaging
+	 * @param registrationId the Google Cloud Messaging registration ID. This can be obtained on an Android
+	 *            device by providing the correct senderID. The registration ID is unique for each device for
+	 *            each senderID.
 	 * @param bufferConfiguration to buffer received GCM messages. Having multiple relays, this can help to
 	 *            reduce battery consumption.
 	 * @return
 	 */
-	public static RelayConfig Android(GCMServerCredentials gcmServerCredentials,
-			MessageBufferConfiguration bufferConfiguration) {
-		return new RelayConfig(RelayType.ANDROID, 60, gcmServerCredentials, 5, bufferConfiguration);
+	public static RelayConfig Android(String registrationId, MessageBufferConfiguration bufferConfiguration) {
+		return new RelayConfig(RelayType.ANDROID, 60, registrationId, bufferConfiguration);
 	}
 
-	private RelayConfig(RelayType type, int peerMapUpdateInterval, GCMServerCredentials gcmServerCredentials,
-			int gcmSendRetries, MessageBufferConfiguration bufferConfiguration) {
+	private RelayConfig(RelayType type, int peerMapUpdateInterval, String registrationId,
+			MessageBufferConfiguration bufferConfiguration) {
 		this.type = type;
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
-		this.gcmServerCredentials = gcmServerCredentials;
-		this.gcmSendRetries = gcmSendRetries;
+		this.registrationId = registrationId;
 		this.bufferConfiguration = bufferConfiguration;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(type.toString());
 		sb.append("[Interval:").append(peerMapUpdateInterval).append("s");
-		if(bufferConfiguration != null) {
+		if (bufferConfiguration != null) {
 			sb.append(", GCM-Buffered");
 		}
 		sb.append("]");
@@ -102,31 +102,11 @@ public class RelayConfig {
 	/**
 	 * <strong>Only used for {@link RelayConfig#ANDROID}</strong><br>
 	 * 
-	 * @return the {@link GCMServerCredentials}. If this peer is an unreachable
-	 *         Android device, these credentials need to be provided.
+	 * @return the GCM registration ID. If this peer is an unreachable Android device, this value needs to be
+	 *         provided.
 	 */
-	public GCMServerCredentials gcmServerCredentials() {
-		return gcmServerCredentials;
-	}
-
-	/**
-	 * <strong>Only used for {@link RelayConfig#ANDROID}</strong><br>
-	 * 
-	 * @return the number of retires sending a GCM message
-	 */
-	public int gcmSendRetries() {
-		return gcmSendRetries;
-	}
-
-	/**
-	 * <strong>Only used for {@link RelayConfig#ANDROID}</strong><br>
-	 * 
-	 * @param gcmSendRetries the number of retries sending a GCM message
-	 * @return this instance
-	 */
-	public RelayConfig gcmSendRetries(int gcmSendRetries) {
-		this.gcmSendRetries = gcmSendRetries;
-		return this;
+	public String registrationId() {
+		return registrationId;
 	}
 
 	/**

@@ -299,18 +299,13 @@ public class DistributedRelay implements GCMMessageHandler {
 
 		// server credentials only used by Android peers
 		if (relayConfig.type() == RelayType.ANDROID) {
-			if (relayConfig.gcmServerCredentials() == null) {
-				LOG.error("No available GCM server found. Seems that they are all occupied. Configure more during peer setup!");
-				return futureDone.failed("No GCM server available");
-			} else if(!relayConfig.gcmServerCredentials().valid()) {
-				LOG.error("GCM Server Configuration is not valid. Please provide a valid configuration");
-				return futureDone.failed("Invalid GCM configuration");
+			if (relayConfig.registrationId() == null) {
+				LOG.error("Registration ID must be provided when using Android mode");
+				return futureDone.failed("No GCM registration ID provided");
 			} else {
 				// add the registration ID, the GCM authentication key and the map update interval
-				message.buffer(RelayUtils.encodeString(relayConfig.gcmServerCredentials().registrationId()));
-				message.buffer(RelayUtils.encodeString(relayConfig.gcmServerCredentials().senderAuthenticationKey()));
+				message.buffer(RelayUtils.encodeString(relayConfig.registrationId()));
 				message.intValue(relayConfig.peerMapUpdateInterval());
-				message.intValue(relayConfig.gcmSendRetries());
 			}
 		}
 
@@ -366,7 +361,7 @@ public class DistributedRelay implements GCMMessageHandler {
 				connection = new OpenTCPRelayConnection(peerConnection, peer, config);
 				break;
 			case ANDROID:
-				connection = new AndroidRelayConnection(relayAddress, relayRPC, peer, config, relayConfig.gcmServerCredentials());
+				connection = new AndroidRelayConnection(relayAddress, relayRPC, peer, config);
 				break;
 			default:
 				LOG.error("Unknown relay type {}", relayConfig);
@@ -388,10 +383,6 @@ public class DistributedRelay implements GCMMessageHandler {
 	 * 
 	 * @param connection
 	 *            the relay connection on which to add a close listener
-<<<<<<< HEAD
-	 * @param relayType 
-=======
->>>>>>> refs/remotes/tomp2p/master
 	 */
 	private void addCloseListener(final BaseRelayConnection connection) {
 		connection.addCloseListener(new RelayListener() {

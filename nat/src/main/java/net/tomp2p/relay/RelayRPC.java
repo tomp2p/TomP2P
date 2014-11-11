@@ -34,8 +34,12 @@ public class RelayRPC extends DispatchHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
     private final Peer peer;
-    private final MessageBufferConfiguration bufferConfig;
     private final ConnectionConfiguration config;
+
+    // only used to serve unreachable android devices
+    private final MessageBufferConfiguration bufferConfig;
+    private final String gcmAuthenticationKey;
+    private final int gcmSendRetries;
 	
 	// holds the forwarder for each client
 	private final Map<Number160, BaseRelayForwarderRPC> forwarders;
@@ -59,14 +63,18 @@ public class RelayRPC extends DispatchHandler {
      *            The peer to register the RelayRPC
      * @param rconRPC the reverse connection RPC
 	 * @param bufferConfig 
+	 * @param gcmSendRetries 
+	 * @param gcmAuthenticationKey 
      * @param gcmAuthToken the authentication key for Google cloud messaging
      * @return
      */
-	public RelayRPC(Peer peer, RconRPC rconRPC, MessageBufferConfiguration bufferConfig, ConnectionConfiguration config) {
+	public RelayRPC(Peer peer, RconRPC rconRPC, MessageBufferConfiguration bufferConfig, ConnectionConfiguration config, String gcmAuthenticationKey, int gcmSendRetries) {
         super(peer.peerBean(), peer.connectionBean());
         this.peer = peer;
 		this.bufferConfig = bufferConfig;
 		this.config = config;
+		this.gcmAuthenticationKey = gcmAuthenticationKey;
+		this.gcmSendRetries = gcmSendRetries;
         this.forwarders = new ConcurrentHashMap<Number160, BaseRelayForwarderRPC>();
         this.rconRPC = rconRPC;
         
@@ -167,8 +175,14 @@ public class RelayRPC extends DispatchHandler {
      * An android device is behind a firewall and wants to be relayed 
      */
     private void handleSetupAndroid(Message message, final PeerConnection peerConnection, Responder responder) {
-        if(message.bufferList().size() < 2) {
-        	LOG.error("Device {} did not send any GCM registration id or the authentication key", peerConnection.remotePeer());
+    	if(gcmAuthenticationKey == null || gcmAuthenticationKey.isEmpty()) {
+    		LOG.error("This relay is unable to serve unreachable Android devices because no GCM Authentication Key is configured");
+    		responder.response(createResponseMessage(message, Type.DENIED));
+            return;
+    	}
+    	
+        if(message.bufferList().size() < 1) {
+        	LOG.error("Device {} did not send any GCM registration id", peerConnection.remotePeer());
             responder.response(createResponseMessage(message, Type.DENIED));
             return;
         }
@@ -180,13 +194,6 @@ public class RelayRPC extends DispatchHandler {
             return;
 		}
 		
-		String authenticationKey = RelayUtils.decodeString(message.buffer(1));
-		if(authenticationKey == null) {
-			LOG.error("Cannot decode the authentication key from the messsage");
-			responder.response(createResponseMessage(message, Type.DENIED));
-	        return;
-		}
-		
 		Integer mapUpdateInterval = message.intAt(1);
 		if(mapUpdateInterval == null) {
 			LOG.error("Android device did not send the peer map update interval.");
@@ -194,15 +201,8 @@ public class RelayRPC extends DispatchHandler {
 	        return;
 		}
 		
-		Integer gcmSendRetries = message.intAt(2);
-		if(gcmSendRetries == null) {
-			LOG.error("Android device did not send the number of GCM send retries");
-			responder.response(createResponseMessage(message, Type.DENIED));
-	        return;
-		}
-        
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
-		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection.remotePeer(), bufferConfig, gcmSendRetries, authenticationKey, registrationId, mapUpdateInterval);
+		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection.remotePeer(), bufferConfig, gcmSendRetries, gcmAuthenticationKey, registrationId, mapUpdateInterval);
 		registerRelayForwarder(forwarderRPC);
 		
         responder.response(createResponseMessage(message, Type.OK));

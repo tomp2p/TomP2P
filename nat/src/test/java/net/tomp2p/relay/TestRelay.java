@@ -39,7 +39,6 @@ import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.android.AndroidForwarderRPC;
 import net.tomp2p.relay.android.GCMMessageHandler;
-import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
 import net.tomp2p.relay.android.MessageBufferListener;
 import net.tomp2p.rpc.DispatchHandler;
@@ -56,7 +55,6 @@ import org.junit.runners.Parameterized;
 public class TestRelay {
 
 	private static final long DEFAULT_GCM_MOCK_DELAY_MS = 100;
-	private static final GCMServerCredentials gcmServerCredentials = new GCMServerCredentials().registrationId("dummy-registration-id").senderAuthenticationKey("dummy-auth-key").senderId(12345l);
 	private static final MessageBufferConfiguration gcmMessageBuffer = new MessageBufferConfiguration().bufferAgeLimit(2000).bufferCountLimit(10).bufferSizeLimit(Long.MAX_VALUE);
 	
 	private final RelayConfig relayConfig;
@@ -70,8 +68,8 @@ public class TestRelay {
 	public static Collection data() {
 		return Arrays.asList(new Object[][] {
 				{ RelayConfig.OpenTCP().peerMapUpdateInterval(5) },
-				{ RelayConfig.Android(gcmServerCredentials).peerMapUpdateInterval(3).gcmSendRetries(0) },
-				{ RelayConfig.Android(gcmServerCredentials, gcmMessageBuffer).peerMapUpdateInterval(3).gcmSendRetries(0) } }
+				{ RelayConfig.Android("dummy-registration-id").peerMapUpdateInterval(3) },
+				{ RelayConfig.Android("dummy-registration-id", gcmMessageBuffer).peerMapUpdateInterval(3) } }
 		);
 	}
 	
@@ -163,7 +161,7 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// Test setting up relay peers
@@ -206,7 +204,7 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// Test setting up relay peers
@@ -287,7 +285,7 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// Test setting up relay peers
@@ -385,7 +383,7 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// setup relay
@@ -438,7 +436,7 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 			
 			// setup relay
@@ -488,7 +486,7 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// Test setting up relay peers
@@ -567,7 +565,7 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 			PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
 			slave = new PeerBuilderDHT(new PeerBuilder(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).start())
@@ -611,7 +609,7 @@ public class TestRelay {
 		try {
 			PeerDHT[] peers = UtilsNAT.createNodesDHT(1, rnd, 4000);
 			master = peers[0]; // the relay peer
-			new PeerBuilderNAT(master.peer()).bufferConfiguration(bufferConfig).start();
+			new PeerBuilderNAT(master.peer()).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 
 			// Test setting up relay peers
 			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
@@ -644,7 +642,7 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// Test setting up relay peers
@@ -693,7 +691,7 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// Test setting up relay peers
@@ -753,7 +751,7 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// Test setting up relay peers
@@ -835,7 +833,7 @@ public class TestRelay {
             master = peers[0]; // the relay peer
             
             for(PeerDHT peer:peers) {
-            	new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
+            	new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
             }
              
             KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
@@ -921,7 +919,7 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// Test setting up relay peers
@@ -969,7 +967,7 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey("dummy-gcm-authentication-key").start();
 			}
 
 			// Test setting up relay peers

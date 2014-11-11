@@ -26,7 +26,6 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
 
 import org.slf4j.Logger;
@@ -58,20 +57,16 @@ public class ExampleRelaySituation {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		String gcmKey = null;
-		long gcmSender = -1;
-		if (args.length != 2) {
-			LOG.warn("Need the GCM Authentication key and GCM sender ID as arguments when using with Android.");
-		} else if (args.length == 2) {
+		if (args.length < 1) {
+			LOG.warn("Need the GCM Authentication key as arguments when using with Android.");
+		} else {
 			LOG.debug("{} is the GCM key used", args[0]);
 			gcmKey = args[0];
-
-			LOG.debug("{} is the sender ID used", args[1]);
-			gcmSender = Long.valueOf(args[1]);
 		}
 
 		// setup relay peers and start querying
 		ExampleRelaySituation situation = new ExampleRelaySituation(NUM_RELAY_PEERS, NUM_MOBILE_PEERS, NUM_QUERY_PEERS,
-				gcmKey, gcmSender);
+				gcmKey);
 		situation.setupPeers();
 
 		// wait for finding each other
@@ -100,7 +95,6 @@ public class ExampleRelaySituation {
 	private static final String GCM_REGISTRATION_ID = "abc";
 	private static final RelayType RELAY_TYPE = RelayType.ANDROID;
 	private final String gcmKey;
-	private final long gcmSenderId;
 
 	/**
 	 * Query peer configuration
@@ -124,9 +118,8 @@ public class ExampleRelaySituation {
 
 	private final MessageBufferConfiguration bufferConfig;
 
-	public ExampleRelaySituation(int relayPeers, int mobilePeers, int queryPeers, String gcmKey, long gcmSenderId) {
+	public ExampleRelaySituation(int relayPeers, int mobilePeers, int queryPeers, String gcmKey) {
 		this.gcmKey = gcmKey;
-		this.gcmSenderId = gcmSenderId;
 		assert relayPeers > 0 && relayPeers <= RELAY_TYPE.maxRelayCount();
 		this.relayPeers = relayPeers;
 		this.mobilePeers = mobilePeers;
@@ -148,7 +141,7 @@ public class ExampleRelaySituation {
 			Peer peer = createPeer(RELAY_START_PORT + i);
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
-			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
+			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey(gcmKey).gcmSendRetries(GCM_SEND_RETIES).start();
 
 			relays.add(peerNAT);
 			LOG.debug("Relay peer {} started", i);
@@ -173,9 +166,7 @@ public class ExampleRelaySituation {
 			RelayConfig config;
 			PeerBuilderNAT builder = new PeerBuilderNAT(peer).relays(relayAddresses);
 			if (RELAY_TYPE == RelayType.ANDROID) {
-				GCMServerCredentials gcmCredentials = new GCMServerCredentials().senderAuthenticationKey(gcmKey)
-						.senderId(gcmSenderId).registrationId(GCM_REGISTRATION_ID);
-				config = RelayConfig.Android(gcmCredentials).gcmSendRetries(GCM_SEND_RETIES);
+				config = RelayConfig.Android(GCM_REGISTRATION_ID);
 			} else {
 				config = RelayConfig.OpenTCP();
 			}

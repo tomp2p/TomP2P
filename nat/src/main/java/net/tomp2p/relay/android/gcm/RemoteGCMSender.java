@@ -28,13 +28,14 @@ public class RemoteGCMSender implements IGCMSender {
 
 	private static final Logger LOG = LoggerFactory.getLogger(RemoteGCMSender.class);
 	private static final int TIMEOUT_MS = 10000;
-	
+
 	private final Peer peer;
 	private final ConnectionConfiguration config;
 	private final DispatchHandler dispatchHandler;
 	private Collection<PeerAddress> gcmServers;
 
-	public RemoteGCMSender(Peer peer, DispatchHandler dispatchHandler, ConnectionConfiguration config, Collection<PeerAddress> gcmServers) {
+	public RemoteGCMSender(Peer peer, DispatchHandler dispatchHandler, ConnectionConfiguration config,
+			Collection<PeerAddress> gcmServers) {
 		this.dispatchHandler = dispatchHandler;
 		this.config = config;
 		this.gcmServers = gcmServers;
@@ -42,29 +43,36 @@ public class RemoteGCMSender implements IGCMSender {
 	}
 
 	@Override
-	public void send(FutureGCM futureGCM) {
-		if(gcmServers == null || gcmServers.isEmpty()) {
+	public void send(final FutureGCM futureGCM) {
+		if (gcmServers == null || gcmServers.isEmpty()) {
 			LOG.error("Cannot send GCM messages because no GCM server is known");
 			futureGCM.failed("Cannot send GCM messages because no GCM server is known");
 			return;
 		}
-		
-		// send to one of the servers
-		for (PeerAddress gcmServer : gcmServers) {
-			LOG.debug("Try sending message to {}", gcmServer);
-			Message message = dispatchHandler.createMessage(gcmServer, RPC.Commands.GCM.getNr(), Type.REQUEST_1);
-			FutureResponse futureResponse = RelayUtils.connectAndSend(peer, message, config);
-			if(futureResponse.awaitUninterruptibly(TIMEOUT_MS) && futureResponse.isSuccess()) {
-				LOG.debug("GCM server {} sent the message successfully", gcmServer);
-				return;
-			} else {
-				LOG.debug("GCM server {} did not accept the message. Reason: {}", futureResponse.failedReason());
-				// go to next server
+
+		// send in separate thread to not block the caller
+		peer.connectionBean().timer().submit(new Runnable() {
+			@Override
+			public void run() {
+				// send to one of the servers
+				for (PeerAddress gcmServer : gcmServers) {
+					LOG.debug("Try sending message to {}", gcmServer);
+					Message message = dispatchHandler.createMessage(gcmServer, RPC.Commands.GCM.getNr(), Type.REQUEST_1);
+					message.buffer(RelayUtils.encodeString(futureGCM.registrationId()));
+					FutureResponse futureResponse = RelayUtils.connectAndSend(peer, message, config);
+					if (futureResponse.awaitUninterruptibly(TIMEOUT_MS) && futureResponse.isSuccess()) {
+						LOG.debug("GCM server {} sent the message successfully", gcmServer);
+						return;
+					} else {
+						LOG.debug("GCM server {} did not accept the message. Reason: {}", futureResponse.failedReason());
+						// go to next server
+					}
+				}
+
+				LOG.error("Could not send the message to any of the {} GCM servers", gcmServers.size());
+				futureGCM.failed("Could not send the message to any of the GCM servers");
 			}
-		}
-		
-		LOG.error("Could not send the message to any of the {} GCM servers", gcmServers.size());
-		futureGCM.failed("Could not send the message to any of the GCM servers");
+		});
 	}
 
 	/**

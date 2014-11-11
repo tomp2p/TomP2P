@@ -52,6 +52,7 @@ public class ExampleRelaySituation {
 	private static final Logger LOG = LoggerFactory.getLogger(ExampleRelaySituation.class);
 
 	private static final int NUM_RELAY_PEERS = 1;
+	private static final int NUM_RELAY_PEERS_GCM = 1;
 	private static final int NUM_MOBILE_PEERS = 0;
 	private static final int NUM_QUERY_PEERS = 3;
 
@@ -65,7 +66,7 @@ public class ExampleRelaySituation {
 		}
 
 		// setup relay peers and start querying
-		ExampleRelaySituation situation = new ExampleRelaySituation(NUM_RELAY_PEERS, NUM_MOBILE_PEERS, NUM_QUERY_PEERS,
+		ExampleRelaySituation situation = new ExampleRelaySituation(NUM_RELAY_PEERS, NUM_RELAY_PEERS_GCM, NUM_MOBILE_PEERS, NUM_QUERY_PEERS,
 				gcmKey);
 		situation.setupPeers();
 
@@ -78,6 +79,7 @@ public class ExampleRelaySituation {
 	 * Port configuration
 	 */
 	private static final int RELAY_START_PORT = 4000;
+	private static final int RELAY_GCM_START_PORT = 5000;
 	private static final int MOBILE_START_PORT = 8000;
 	private static final int QUERY_START_PORT = 6000;
 
@@ -106,6 +108,7 @@ public class ExampleRelaySituation {
 	 * Number of peers of each kind
 	 */
 	private final int relayPeers;
+	private final int relayPeersGCM;
 	private final int mobilePeers;
 	private final int queryPeers;
 
@@ -113,19 +116,23 @@ public class ExampleRelaySituation {
 	 * Holds active peers by each kind
 	 */
 	private final List<PeerNAT> relays;
+	private final List<PeerNAT> relaysGCM;
 	private final List<PeerNAT> mobiles;
 	private final List<QueryNode> queries;
 
 	private final MessageBufferConfiguration bufferConfig;
 
-	public ExampleRelaySituation(int relayPeers, int mobilePeers, int queryPeers, String gcmKey) {
+
+	public ExampleRelaySituation(int relayPeers, int relayPeersGCM, int mobilePeers, int queryPeers, String gcmKey) {
 		this.gcmKey = gcmKey;
 		assert relayPeers > 0 && relayPeers <= RELAY_TYPE.maxRelayCount();
+		this.relayPeersGCM = relayPeersGCM;
 		this.relayPeers = relayPeers;
 		this.mobilePeers = mobilePeers;
 		this.queryPeers = queryPeers;
 
 		this.relays = new ArrayList<PeerNAT>(relayPeers);
+		this.relaysGCM = new ArrayList<PeerNAT>(relayPeersGCM);
 		this.mobiles = new ArrayList<PeerNAT>(mobilePeers);
 		this.queries = new ArrayList<QueryNode>(queryPeers);
 		
@@ -141,10 +148,20 @@ public class ExampleRelaySituation {
 			Peer peer = createPeer(RELAY_START_PORT + i);
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
-			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey(gcmKey).gcmSendRetries(GCM_SEND_RETIES).start();
+			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
 
 			relays.add(peerNAT);
 			LOG.debug("Relay peer {} started", i);
+		}
+		
+		for (int i = 0; i < relayPeersGCM; i++) {
+			Peer peer = createPeer(RELAY_GCM_START_PORT + i);
+			// Note: Does not work if relay does not have a PeerDHT
+			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY-GCM", false)).start();
+			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey(gcmKey).gcmSendRetries(GCM_SEND_RETIES).start();
+			
+			relaysGCM.add(peerNAT);
+			LOG.debug("GCM Relay peer {} started", i);
 		}
 
 		/**

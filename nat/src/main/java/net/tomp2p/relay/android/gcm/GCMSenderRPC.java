@@ -75,10 +75,17 @@ public class GCMSenderRPC extends DispatchHandler implements IGCMSender {
 	private void handleGCMForward(final Message message, final Responder responder) {
 		if (message.bufferList().isEmpty()) {
 			LOG.error("GCM message does not contain the registrationID");
-			responder.response(createResponseMessage(message, Type.NOT_FOUND));
+			responder.response(createResponseMessage(message, Type.EXCEPTION));
+			return;
 		}
 
 		String registrationId = RelayUtils.decodeString(message.buffer(0));
+		if(registrationId == null || registrationId.isEmpty()) {
+			LOG.error("RegistrationID of device cannot be read from message");
+			responder.response(createResponseMessage(message, Type.EXCEPTION));
+			return;
+		}
+		
 		FutureGCM futureGCM = new FutureGCM(null, registrationId, message.sender().peerId());
 		send(futureGCM);
 		futureGCM.addListener(new BaseFutureAdapter<FutureGCM>() {

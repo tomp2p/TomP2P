@@ -33,7 +33,7 @@ public class RelayConfig {
 	 * @return
 	 */
 	public static RelayConfig OpenTCP() {
-		return new RelayConfig(RelayType.OPENTCP, 15, null, null, null, 60, 2);
+		return new RelayConfig(RelayType.OPENTCP, 15, null, null, 60, 2);
 	}
 
 	/**
@@ -59,18 +59,19 @@ public class RelayConfig {
 	 * @return
 	 */
 	public static RelayConfig Android(String registrationId, MessageBufferConfiguration bufferConfiguration) {
-		return new RelayConfig(RelayType.ANDROID, 60, registrationId, null, bufferConfiguration, 120, 2);
+		return new RelayConfig(RelayType.ANDROID, 60, registrationId, bufferConfiguration, 120, 2);
 	}
 
 	private RelayConfig(RelayType type, int peerMapUpdateInterval, String registrationId,
-			Collection<PeerAddress> gcmServers, MessageBufferConfiguration bufferConfiguration, int failedRelayWaitTime, int maxFail) {
+			MessageBufferConfiguration bufferConfiguration, int failedRelayWaitTime, int maxFail) {
 		this.type = type;
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.registrationId = registrationId;
-		this.gcmServers = gcmServers;
 		this.bufferConfiguration = bufferConfiguration;
 		this.failedRelayWaitTime = failedRelayWaitTime;
 		this.maxFail = maxFail;
+
+		this.gcmServers = Collections.emptySet();
 		this.manualRelays = Collections.emptyList();
 	}
 
@@ -129,7 +130,7 @@ public class RelayConfig {
 	 * @return this instance
 	 */
 	public RelayConfig manualRelays(Collection<PeerAddress> manualRelays) {
-		if(manualRelays == null) {
+		if (manualRelays == null) {
 			this.manualRelays = Collections.emptySet();
 		} else {
 			this.manualRelays = manualRelays;
@@ -153,7 +154,7 @@ public class RelayConfig {
 	 * @return this instance
 	 */
 	public RelayConfig failedRelayWaitTime(int failedRelayWaitTime) {
-		if(failedRelayWaitTime < 0) {
+		if (failedRelayWaitTime < 0) {
 			throw new IllegalArgumentException("Negative wait time is not allowed");
 		}
 		this.failedRelayWaitTime = failedRelayWaitTime;
@@ -176,7 +177,7 @@ public class RelayConfig {
 	 * @return this instance
 	 */
 	public RelayConfig maxFail(int maxFail) {
-		if(maxFail < 0) {
+		if (maxFail < 0) {
 			throw new IllegalArgumentException("Negative maximum fail count is not allowed");
 		}
 		this.maxFail = maxFail;
@@ -230,7 +231,11 @@ public class RelayConfig {
 	 * @return this instance
 	 */
 	public RelayConfig gcmServers(Set<PeerAddress> gcmServers) {
-		this.gcmServers = gcmServers;
+		if (gcmServers == null) {
+			this.gcmServers = Collections.emptySet();
+		} else {
+			this.gcmServers = gcmServers;
+		}
 		return this;
 	}
 }

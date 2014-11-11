@@ -3,6 +3,7 @@ package net.tomp2p.relay.android;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,6 +19,7 @@ import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.relay.android.gcm.FutureGCM;
 import net.tomp2p.relay.android.gcm.IGCMSender;
+import net.tomp2p.relay.android.gcm.RemoteGCMSender;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +63,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	public void addBufferListener(MessageBufferListener<Message> listener) {
 		buffer.addListener(listener);
 	}
-
+	
 	@Override
 	public FutureDone<Message> forwardToUnreachable(Message message) {
 		// create temporal OK message
@@ -138,6 +140,14 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		} else {
 			LOG.warn("Device {} did not send any messages for a long time", registrationId);
 			return false;
+		}
+	}
+	
+	public void changeGCMServers(Collection<PeerAddress> gcmServers) {
+		if(sender instanceof RemoteGCMSender) {
+			RemoteGCMSender remoteGCMSender = (RemoteGCMSender) sender;
+			remoteGCMSender.gcmServers(gcmServers);
+			LOG.debug("Received update of the GCM servers");
 		}
 	}
 }

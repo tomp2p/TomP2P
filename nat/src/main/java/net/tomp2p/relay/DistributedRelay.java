@@ -100,6 +100,10 @@ public class DistributedRelay implements GCMMessageHandler {
 		}
 	}
 
+	public RelayConfig relayConfig() {
+		return relayConfig;
+	}
+
 	/**
 	 * Returns connections to current relay peers
 	 * 

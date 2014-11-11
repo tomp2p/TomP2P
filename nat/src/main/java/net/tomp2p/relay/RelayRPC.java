@@ -331,6 +331,10 @@ public class RelayRPC extends DispatchHandler {
 			LOG.error("No forwarder for peer {} found. Need to setup relay first");
 		}
 
+		if(message.neighborsSet(1) != null && forwarder instanceof AndroidForwarderRPC) {
+			((AndroidForwarderRPC) forwarder).changeGCMServers(message.neighborsSet(1).neighbors());
+		}
+		
 		Message response = createResponseMessage(message, Type.OK);
 		responder.response(response);
 	}

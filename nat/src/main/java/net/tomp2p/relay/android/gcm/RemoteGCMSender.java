@@ -1,5 +1,6 @@
 package net.tomp2p.relay.android.gcm;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -44,7 +45,12 @@ public class RemoteGCMSender implements IGCMSender {
 
 	@Override
 	public void send(final FutureGCM futureGCM) {
-		if (gcmServers == null || gcmServers.isEmpty()) {
+		final Collection<PeerAddress> copy;
+		synchronized (gcmServers) {
+			copy = new ArrayList<PeerAddress>(gcmServers);
+		}
+		
+		if (copy.isEmpty()) {
 			LOG.error("Cannot send GCM messages because no GCM server is known");
 			futureGCM.failed("Cannot send GCM messages because no GCM server is known");
 			return;
@@ -55,7 +61,7 @@ public class RemoteGCMSender implements IGCMSender {
 			@Override
 			public void run() {
 				// send to one of the servers
-				for (PeerAddress gcmServer : gcmServers) {
+				for (PeerAddress gcmServer : copy) {
 					LOG.debug("Try sending message to {}", gcmServer);
 					Message message = dispatchHandler.createMessage(gcmServer, RPC.Commands.GCM.getNr(), Type.REQUEST_1);
 					message.buffer(RelayUtils.encodeString(futureGCM.registrationId()));
@@ -69,7 +75,7 @@ public class RemoteGCMSender implements IGCMSender {
 					}
 				}
 
-				LOG.error("Could not send the message to any of the {} GCM servers", gcmServers.size());
+				LOG.error("Could not send the message to any of the GCM servers");
 				futureGCM.failed("Could not send the message to any of the GCM servers");
 			}
 		});
@@ -79,6 +85,8 @@ public class RemoteGCMSender implements IGCMSender {
 	 * Update the gcm servers
 	 */
 	public void gcmServers(Collection<PeerAddress> gcmServers) {
-		this.gcmServers = gcmServers;
+		synchronized (this.gcmServers) {
+			this.gcmServers = gcmServers;
+		}
 	}
 }

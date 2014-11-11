@@ -279,6 +279,8 @@ public class PeerBuilder {
 			peerInit.init(peer);
 		}
 		
+		peer.connectionBean().sender().setPeer(peer);
+		
 		return peer;
 	}
 

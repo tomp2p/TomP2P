@@ -34,7 +34,8 @@ public class HolePTestView extends JFrame {
 		add(punchHoleButton);
 		
 		setTitle(frameName);
-		setPreferredSize(new Dimension(500, 500));
+//		setPreferredSize(new Dimension(500, 500));
+		setSize(300, 400);
 		setVisible(true);
 	}
 

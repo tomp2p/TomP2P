@@ -34,7 +34,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -89,6 +88,8 @@ public class ChannelCreator {
 
 	private boolean shutdownUDP = false;
 	private boolean shutdownTCP = false;
+	
+	private SocketAddress socketAddress = null;
 
 	/**
 	 * Package private constructor, since this is created by
@@ -163,7 +164,8 @@ public class ChannelCreator {
 			} else if (predefinedSocket != null) {
 				channelFuture = b.bind(predefinedSocket);
 			} else {
-				channelFuture = b.bind(externalBindings.wildCardSocket());
+				socketAddress = externalBindings.wildCardSocket();
+				channelFuture = b.bind(socketAddress);
 			}
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
@@ -364,7 +366,7 @@ public class ChannelCreator {
 	    return sb.toString();
 	}
 
-	public SocketAddress createNewWildCardUDPPortSocket() {
-		return externalBindings.wildCardSocket();
+	public SocketAddress currentSocketAddress() {
+			return socketAddress;
 	}
 }

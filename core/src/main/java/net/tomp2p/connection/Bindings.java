@@ -252,14 +252,14 @@ public class Bindings {
     }
 
     public SocketAddress wildCardSocket() {
-        if(!isListenAll()) {
-            if(foundAddresses4.size()>0) {
-                return new InetSocketAddress(foundAddresses4.get(0), 0);
-            }
-            if(foundAddresses6.size()>0) {
-                return new InetSocketAddress(foundAddresses6.get(0), 0);
-            }
-        }
-        return new InetSocketAddress(0);
+    	if(!isListenAll()) {
+			if(foundAddresses4.size()>0) {
+				return new InetSocketAddress(foundAddresses4.get(0), 0);
+			}
+			if(foundAddresses6.size()>0) {
+				return new InetSocketAddress(foundAddresses6.get(0), 0);
+			}
+		}
+    	return new InetSocketAddress(0);
     }
 }

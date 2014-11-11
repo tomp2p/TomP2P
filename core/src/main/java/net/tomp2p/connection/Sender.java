@@ -201,9 +201,9 @@ public class Sender {
 					LOG.debug("Successfully set up the reverse connection to peer {}", message.recipient().peerId());
 					rconResponse.response(msg);
 				} else {
-					LOG.debug("Could not acquire a reverse connection to peer {}", message.recipient().peerId());
-					rconResponse.failed("Could not acquire a reverse connection");
-					futureResponse.failed(rconResponse.failedReason());
+					LOG.debug("Could not acquire a reverse connection, msg: {}", message);
+					rconResponse.failed("Could not acquire a reverse connection, msg: " + message);
+					futureResponse.failed(rconResponse);
 				}
 			}
 		};

@@ -570,7 +570,8 @@ public class Sender {
 			// initiate the rendezvous process
 			socketInfoMessage = createSocketInfoMessage(message, socketAddresses);
 
-			initHolePunch(createSocketInfoMessage(message, socketAddresses), channelCreator, idleUDPSeconds, futureResponse, broadcast, message, handler);
+			initHolePunch(createSocketInfoMessage(message, socketAddresses), channelCreator, idleUDPSeconds, futureResponse, broadcast,
+					message, handler);
 
 			// TODO jwa do something with the old message
 			return;
@@ -635,12 +636,14 @@ public class Sender {
 		// }
 	}
 
-	private void initHolePunch(Message socketInfoMessage, ChannelCreator channelCreator, int idleUDPSeconds, final FutureResponse futureResponse, final boolean broadcast, final Message message, final SimpleChannelInboundHandler<Message> handler) {
+	private void initHolePunch(Message socketInfoMessage, ChannelCreator channelCreator, int idleUDPSeconds,
+			final FutureResponse futureResponse, final boolean broadcast, final Message message,
+			final SimpleChannelInboundHandler<Message> handler) {
 
 		// wait for response (whether the reverse connection setup was
-				// successful)
-				final FutureResponse holePunchResponse = new FutureResponse(socketInfoMessage);
-		
+		// successful)
+		final FutureResponse holePunchResponse = new FutureResponse(socketInfoMessage);
+
 		// TODO jwa
 		SimpleChannelInboundHandler<Message> holePunchHandler = new SimpleChannelInboundHandler<Message>() {
 

@@ -22,6 +22,8 @@ import java.net.UnknownHostException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.StandardProtocolFamily;
@@ -277,6 +279,150 @@ public class TomP2PTests {
         assertTrue(futureGet.dataMap().values().contains(new Data("hallo1")));
         assertTrue(futureGet.dataMap().values().contains(new Data("hallo2")));
         assertTrue(futureGet.dataMap().values().size() == 2);
+    }
+    
+    @Test
+    @Repeat(STRESS_TEST_COUNT)
+    public void testParallelStartupWithPutGet() throws IOException, ClassNotFoundException, InterruptedException {
+        PeerDHT peer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer1")).ports(3006).start()).start();
+        PeerDHT peer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer2")).ports(3007).start()).start();
+
+        PeerAddress masterPeerAddress = new PeerAddress(Number160.createHash(BOOTSTRAP_NODE_ID),
+                                                        BOOTSTRAP_NODE_IP, BOOTSTRAP_NODE_PORT,
+                                                        BOOTSTRAP_NODE_PORT);
+
+        // start both at the same time
+        BaseFuture fb1 = peer1.peer().bootstrap().peerAddress(masterPeerAddress).start();
+        BaseFuture fb2 = peer2.peer().bootstrap().peerAddress(masterPeerAddress).start();
+
+        final BooleanProperty peer1Done = new SimpleBooleanProperty();
+        final BooleanProperty peer2Done = new SimpleBooleanProperty();
+
+        fb1.addListener(new BaseFutureListener<BaseFuture>() {
+            @Override
+            public void operationComplete(BaseFuture future) throws Exception {
+                peer1Done.set(true);
+            }
+
+            @Override
+            public void exceptionCaught(Throwable t) throws Exception {
+            }
+        });
+
+        fb2.addListener(new BaseFutureListener<BaseFuture>() {
+            @Override
+            public void operationComplete(BaseFuture future) throws Exception {
+                peer2Done.set(true);
+            }
+
+            @Override
+            public void exceptionCaught(Throwable t) throws Exception {
+            }
+        });
+
+        while (!peer1Done.get() && !peer2Done.get())
+            Thread.sleep(100);
+
+        // both are started up
+        Assert.assertTrue(fb1.isSuccess());
+        Assert.assertTrue(fb2.isSuccess());
+
+        // peer1 put data
+        FuturePut fp = peer1.put(Number160.ONE).object("test").start().awaitUninterruptibly();
+        Assert.assertTrue(fp.isSuccess());
+
+        // both get data
+        FutureGet fg1 = peer1.get(Number160.ONE).start().awaitUninterruptibly();
+        Assert.assertTrue(fg1.isSuccess());
+        Assert.assertEquals("test", fg1.data().object());
+        FutureGet fg2 = peer2.get(Number160.ONE).start().awaitUninterruptibly();
+        Assert.assertTrue(fg2.isSuccess());
+        Assert.assertEquals("test", fg2.data().object());
+
+        // shutdown both
+        peer1.shutdown().awaitUninterruptibly().awaitListenersUninterruptibly();
+        peer2.shutdown().awaitUninterruptibly().awaitListenersUninterruptibly();
+
+        // start both again at the same time
+        peer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer1")).ports(3005).start()).start();
+        peer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer2")).ports(3006).start()).start();
+
+        fb1 = peer1.peer().bootstrap().peerAddress(masterPeerAddress).start();
+        fb2 = peer2.peer().bootstrap().peerAddress(masterPeerAddress).start();
+
+        peer1Done.set(false);
+        peer2Done.set(false);
+
+        final PeerDHT _peer1 = peer1;
+        fb1.addListener(new BaseFutureListener<BaseFuture>() {
+            @Override
+            public void operationComplete(BaseFuture future) throws Exception {
+                peer1Done.set(true);
+
+                // when peer1 is ready it gets the data
+                final FutureGet fg = _peer1.get(Number160.ONE).start();
+                fg.addListener(new BaseFutureListener<BaseFuture>() {
+                    @Override
+                    public void operationComplete(BaseFuture future) throws Exception {
+                        Assert.assertTrue(fg.isSuccess());
+                        Assert.assertEquals("test", fg.data().object());
+                    }
+
+                    @Override
+                    public void exceptionCaught(Throwable t) throws Exception {
+                    }
+                });
+            }
+
+            @Override
+            public void exceptionCaught(Throwable t) throws Exception {
+            }
+        });
+
+        final PeerDHT _peer2 = peer2;
+        fb2.addListener(new BaseFutureListener<BaseFuture>() {
+            @Override
+            public void operationComplete(BaseFuture future) throws Exception {
+                peer2Done.set(true);
+
+                // when peer2 is ready it gets the data
+                final FutureGet fg = _peer2.get(Number160.ONE).start();
+                fg.addListener(new BaseFutureListener<BaseFuture>() {
+                    @Override
+                    public void operationComplete(BaseFuture future) throws Exception {
+                        Assert.assertTrue(fg.isSuccess());
+                        Assert.assertEquals("test", fg.data().object());
+                    }
+
+                    @Override
+                    public void exceptionCaught(Throwable t) throws Exception {
+                    }
+                });
+            }
+
+            @Override
+            public void exceptionCaught(Throwable t) throws Exception {
+            }
+        });
+
+        while (!peer1Done.get() && !peer2Done.get())
+            Thread.sleep(100);
+
+        // both are started up
+        Assert.assertTrue(fb1.isSuccess());
+        Assert.assertTrue(fb2.isSuccess());
+
+        // get data again for both
+        fg1 = peer1.get(Number160.ONE).start().awaitUninterruptibly();
+        Assert.assertTrue(fg1.isSuccess());
+        Assert.assertEquals("test", fg1.data().object());
+
+        fg2 = peer2.get(Number160.ONE).start().awaitUninterruptibly();
+        Assert.assertTrue(fg2.isSuccess());
+        Assert.assertEquals("test", fg2.data().object());
+
+        peer1.shutdown().awaitUninterruptibly().awaitListenersUninterruptibly();
+        peer2.shutdown().awaitUninterruptibly().awaitListenersUninterruptibly();
     }
 
     @Test

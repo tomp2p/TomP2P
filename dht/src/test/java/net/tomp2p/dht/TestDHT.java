@@ -51,6 +51,7 @@ import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -2062,6 +2063,43 @@ public class TestDHT {
 				master.shutdown().await();
 			}
 		}
+	}
+	
+	@Test
+	public void testShutdown3Peers() throws IOException, ClassNotFoundException {
+	    //create 3 peers, store data, shut one peer down, joins -> data should be there
+	    PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash( "1" ) ).peerNoVerification();
+        PeerMap pm = new PeerMap(pmc);
+	    PeerDHT peer1 = new PeerBuilderDHT( new PeerBuilder( Number160.createHash( "1" ) ).peerMap( pm ).ports( 3000 ).start() ).start();
+	    PeerDHT peer2 = new PeerBuilderDHT( new PeerBuilder( Number160.createHash( "2" ) ).ports( 3001 ).start() ).start();
+	    PeerDHT peer3 = new PeerBuilderDHT( new PeerBuilder( Number160.createHash( "3" ) ).ports( 3002 ).start() ).start();
+	    
+	    BaseFuture fb1 = peer2.peer().bootstrap().peerAddress( peer1.peerAddress() ).start().awaitUninterruptibly();
+	    BaseFuture fb2 = peer3.peer().bootstrap().peerAddress( peer1.peerAddress() ).start().awaitUninterruptibly();
+	    
+	    Assert.assertTrue( fb1.isSuccess() );
+	    Assert.assertTrue( fb2.isSuccess() );
+	    
+	    FuturePut fp = peer2.put( Number160.ONE ).object( "test" ).start().awaitUninterruptibly();
+	    Assert.assertTrue( fp.isSuccess() );
+	    
+	    peer2.shutdown().awaitUninterruptibly();
+	    peer2 = new PeerBuilderDHT( new PeerBuilder( Number160.createHash( "2" ) ).ports( 3001 ).start() ).start();
+	    BaseFuture fb3 = peer2.peer().bootstrap().peerAddress( peer1.peerAddress() ).start().awaitUninterruptibly();
+        Assert.assertTrue( fb3.isSuccess() );
+        
+        FutureGet fg1 = peer2.get( Number160.ONE ).start().awaitUninterruptibly();
+        Assert.assertTrue( fg1.isSuccess() );
+        Assert.assertEquals( "test", fg1.data().object() );
+	    
+	    peer3.shutdown().awaitUninterruptibly();
+        peer3 = new PeerBuilderDHT( new PeerBuilder( Number160.createHash( "3" ) ).ports( 3002 ).start() ).start();
+        BaseFuture fb4 = peer3.peer().bootstrap().peerAddress( peer1.peerAddress() ).start().awaitUninterruptibly();
+        Assert.assertTrue( fb4.isSuccess() );
+	    
+        FutureGet fg2 = peer3.get( Number160.ONE ).start().awaitUninterruptibly();
+        Assert.assertTrue( fg2.isSuccess() );
+        Assert.assertEquals( "test", fg2.data().object() );   
 	}
 
 	private static String generateRandomString() {

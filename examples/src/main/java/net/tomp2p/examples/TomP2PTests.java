@@ -22,8 +22,8 @@ import java.net.UnknownHostException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.StandardProtocolFamily;
@@ -43,6 +43,7 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
+
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -295,8 +296,8 @@ public class TomP2PTests {
         BaseFuture fb1 = peer1.peer().bootstrap().peerAddress(masterPeerAddress).start();
         BaseFuture fb2 = peer2.peer().bootstrap().peerAddress(masterPeerAddress).start();
 
-        final BooleanProperty peer1Done = new SimpleBooleanProperty();
-        final BooleanProperty peer2Done = new SimpleBooleanProperty();
+        final AtomicBoolean peer1Done = new AtomicBoolean();
+        final AtomicBoolean peer2Done = new AtomicBoolean();
 
         fb1.addListener(new BaseFutureListener<BaseFuture>() {
             @Override

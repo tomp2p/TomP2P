@@ -173,13 +173,8 @@ public class ChannelCreator {
 	 *            The timeout for establishing a TCP connection
 	 * @param channelHandlers
 	 *            The handlers to set
-<<<<<<< HEAD
 	 * @param futureResponse
-	 * 			  the response
-=======
-	 * @param futureResponse 
-     *            The futureResponse
->>>>>>> refs/remotes/tomp2p/master
+	 * 			  the futureResponse
 	 * @return The channel future object or null if we are shut down.
 	 */
 	public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
@@ -249,16 +244,10 @@ public class ChannelCreator {
 	 * @param channelFuture
 	 *            The channel future
 	 * @param semaphore
-<<<<<<< HEAD
-	 *            The semaphore to decrease
-	 * @param futureResponse
-	 * 			  The response to fire when the channel is closed. If the response is <code>null</code>, nothing will be done.
-=======
      *            The semaphore to decrease
-     *@param futureResponse
+     * @param futureResponse
      *            The future response
      *            
->>>>>>> refs/remotes/tomp2p/master
 	 * @return The same future that was passed as an argument
 	 */
 	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore, final FutureResponse futureResponse) {

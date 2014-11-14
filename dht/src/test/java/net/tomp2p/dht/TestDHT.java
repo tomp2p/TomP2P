@@ -51,6 +51,7 @@ import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -2067,7 +2068,9 @@ public class TestDHT {
 	@Test
 	public void testShutdown3Peers() throws IOException, ClassNotFoundException {
 	    //create 3 peers, store data, shut one peer down, joins -> data should be there
-	    PeerDHT peer1 = new PeerBuilderDHT( new PeerBuilder( Number160.createHash( "1" ) ).ports( 3000 ).start() ).start();
+	    PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash( "1" ) ).peerNoVerification();
+        PeerMap pm = new PeerMap(pmc);
+	    PeerDHT peer1 = new PeerBuilderDHT( new PeerBuilder( Number160.createHash( "1" ) ).peerMap( pm ).ports( 3000 ).start() ).start();
 	    PeerDHT peer2 = new PeerBuilderDHT( new PeerBuilder( Number160.createHash( "2" ) ).ports( 3001 ).start() ).start();
 	    PeerDHT peer3 = new PeerBuilderDHT( new PeerBuilder( Number160.createHash( "3" ) ).ports( 3002 ).start() ).start();
 	    

@@ -59,7 +59,7 @@ import static org.junit.Assert.*;
  * To configure your test environment edit the static fields for id, IP and port.
  * In the configure method and the connectionType you can define your test scenario.
  */
-@Ignore
+//@Ignore
 public class TomP2PTests {
     private enum ConnectionType {
         UNKNOWN, DIRECT, NAT, RELAY
@@ -87,7 +87,7 @@ public class TomP2PTests {
     }
 
     // Use to stress tests by repeating them
-    private static final int STRESS_TEST_COUNT = 1;
+    private static final int STRESS_TEST_COUNT = 10;
 
     private Peer peer;
     private PeerDHT peer1DHT;
@@ -285,8 +285,16 @@ public class TomP2PTests {
     @Test
     @Repeat(STRESS_TEST_COUNT)
     public void testParallelStartupWithPutGet() throws IOException, ClassNotFoundException, InterruptedException {
-        PeerDHT peer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer1")).ports(3006).start()).start();
-        PeerDHT peer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer2")).ports(3007).start()).start();
+        
+        PeerMapConfiguration pmc1 = new PeerMapConfiguration(Number160.createHash( "peer1" ) ).peerNoVerification();
+        PeerMap pm1 = new PeerMap(pmc1);
+        
+        PeerDHT peer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer1")).ports(3006).peerMap( pm1 ).start()).start();
+        
+        PeerMapConfiguration pmc2 = new PeerMapConfiguration(Number160.createHash( "peer2" ) ).peerNoVerification();
+        PeerMap pm2 = new PeerMap(pmc2);
+        
+        PeerDHT peer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer2")).ports(3007).peerMap( pm2 ).start()).start();
 
         PeerAddress masterPeerAddress = new PeerAddress(Number160.createHash(BOOTSTRAP_NODE_ID),
                                                         BOOTSTRAP_NODE_IP, BOOTSTRAP_NODE_PORT,
@@ -321,11 +329,13 @@ public class TomP2PTests {
             }
         });
 
-        while (!peer1Done.get() && !peer2Done.get())
+        while (!peer1Done.get() || !peer2Done.get())
             Thread.sleep(100);
 
         // both are started up
+        System.err.println(fb1.failedReason());
         Assert.assertTrue(fb1.isSuccess());
+        System.err.println(fb2.failedReason());
         Assert.assertTrue(fb2.isSuccess());
 
         // peer1 put data
@@ -406,12 +416,15 @@ public class TomP2PTests {
             }
         });
 
-        while (!peer1Done.get() && !peer2Done.get())
+        while (!peer1Done.get() || !peer2Done.get())
             Thread.sleep(100);
 
         // both are started up
+        System.err.println(fb1.failedReason());
         Assert.assertTrue(fb1.isSuccess());
+        System.err.println(fb2.failedReason());
         Assert.assertTrue(fb2.isSuccess());
+        
 
         // get data again for both
         fg1 = peer1.get(Number160.ONE).start().awaitUninterruptibly();
@@ -422,8 +435,8 @@ public class TomP2PTests {
         Assert.assertTrue(fg2.isSuccess());
         Assert.assertEquals("test", fg2.data().object());
 
-        peer1.shutdown().awaitUninterruptibly().awaitListenersUninterruptibly();
-        peer2.shutdown().awaitUninterruptibly().awaitListenersUninterruptibly();
+        peer1.shutdown().awaitUninterruptibly();
+        peer2.shutdown().awaitUninterruptibly();
     }
 
     @Test

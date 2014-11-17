@@ -45,6 +45,8 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatistic;
+import net.tomp2p.storage.Data;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -78,15 +80,14 @@ public class DistributedTracker {
 			public void operationComplete(final FutureChannelCreator futureChannelCreator2) throws Exception {
 				if (futureChannelCreator2.isSuccess()) {
 		        	
-					TrackerData peers = trackerStorage.peers(new Number320(builder.locationKey(), builder
-					        .domainKey()));
+					Collection<Pair<PeerStatistic, Data>> value = trackerStorage.peers(new Number320(builder.locationKey(), builder
+					        .domainKey())).values(); 
+					TrackerData peers = new TrackerData(value);
 					NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createComparator(stableRandom));
 					if(peers != null && peers.peerAddresses()!=null) {
-						for (PeerStatistic peerAddress : peers.peerAddresses().keySet()) {
-							queue.add(peerAddress.peerAddress());
-						}
+						queue.addAll(peers.peerAddresses().keySet());
 					}
-
+					
 					if (queue.size() > MIN_TRACKER_PEERS) {
 						startLoop(builder, futureTracker, queue, futureChannelCreator2.channelCreator());
 					}
@@ -260,12 +261,10 @@ public class DistributedTracker {
 					}
 					TrackerData newDataMap = futureResponse.responseMessage().trackerData(0);
 					if (newDataMap != null) {
-						Collection<PeerStatistic> newPeers = newDataMap.peerAddresses().keySet();
+						Collection<PeerAddress> newPeers = newDataMap.peerAddresses().keySet();
 						mergeDiff(secondaryQueue, newPeers, alreadyAsked, queueToAsk);
 						storeResult(peerOnTracker, newDataMap, futureResponse.request().recipient(), knownPeers);
-						for(PeerStatistic peerStatatistic:newPeers) {
-							secondaryQueue.add(peerStatatistic.peerAddress());
-						}
+						secondaryQueue.addAll(newPeers);
 					}
 					int successRequests = isFull ? successfulRequests.get() : successfulRequests.incrementAndGet();
 					finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfullRequests,
@@ -381,14 +380,11 @@ public class DistributedTracker {
 	 *            Those peer we have already asked or are already in the queue
 	 * @return True, if new information has been added to queueToAsk
 	 */
-	private static boolean mergeDiff(Set<PeerAddress> queueToAsk, Collection<PeerStatistic> newPeers,
+	private static boolean mergeDiff(Set<PeerAddress> queueToAsk, Collection<PeerAddress> newPeers,
 	        Collection<PeerAddress> knownPeers1, Collection<PeerAddress> knownPeers2) {
 		// result will be small, so we chose an array list.
 
-		Collection<PeerAddress> newPeers2 = new ArrayList<PeerAddress>();
-		for (PeerStatistic peerStatatistic : newPeers) {
-			newPeers2.add(peerStatatistic.peerAddress());
-		}
+		Collection<PeerAddress> newPeers2 = new ArrayList<PeerAddress>(newPeers);
 
 		@SuppressWarnings("unchecked")
 		final Collection<PeerAddress> result = Utils.difference(newPeers2, new ArrayList<PeerAddress>(), knownPeers1,

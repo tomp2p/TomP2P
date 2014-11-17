@@ -13,7 +13,6 @@ import net.tomp2p.p2p.VotingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerStatistic;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -250,9 +249,9 @@ public class TestTracker {
             ft1.awaitUninterruptibly();
             Assert.assertEquals(true, ft1.isSuccess());
             for (TrackerData pa : ft1.trackers()) {
-                for (PeerStatistic pas : pa.peerAddresses().keySet()) {
-                    System.err.println("found on DHT1: " + pas.peerAddress().peerId());
-                    tmp.remove(pas.peerAddress().peerId());
+                for (PeerAddress pas : pa.peerAddresses().keySet()) {
+                    System.err.println("found on DHT1: " + pas.peerId());
+                    tmp.remove(pas.peerId());
                 }
             }
             // ctg.setUseSecondaryTrackers(true);
@@ -264,9 +263,9 @@ public class TestTracker {
             System.err.println("Reason: " + ft2.failedReason());
             Assert.assertEquals(true, ft2.isSuccess());
             for (TrackerData pa : ft2.trackers()) {
-                for (PeerStatistic pas : pa.peerAddresses().keySet()) {
-                    if (tmp.remove(pas.peerAddress().peerId()))
-                        System.err.println("found on DHT2: " + pas.peerAddress().peerId());
+                for (PeerAddress pas : pa.peerAddresses().keySet()) {
+                    if (tmp.remove(pas.peerId()))
+                        System.err.println("found on DHT2: " + pas.peerId());
                 }
             }
             //

@@ -33,7 +33,7 @@ public class TestTrackerStorage {
 		boolean retVal = trackerStorage.put(n320, selfAddress, null, new Data("test"));
 		Assert.assertTrue(retVal);
 		//
-		TrackerData td = trackerStorage.peers(n320);
+		TrackerData td = trackerStorage.trackerData(n320);
 		Object o = td.peerAddresses().values().iterator().next().object();
 		Assert.assertEquals(o, "test");
 	}
@@ -51,8 +51,8 @@ public class TestTrackerStorage {
 		boolean retVal = trackerStorage.put(n320, selfAddress, null, new Data("test"));
 		Assert.assertTrue(retVal);
 		//
-		TrackerData td = trackerStorage.peers(n320);
-		Assert.assertNull(td);
+		TrackerData td = trackerStorage.trackerData(n320);
+		Assert.assertTrue(td.isEmpty());
 	}
 	
 	@Test
@@ -68,7 +68,7 @@ public class TestTrackerStorage {
 		trackerStorage.put(n320, selfAddress, null, new Data("test"));
 		trackerStorage.peerFound(selfAddress, null, null);
 		
-		TrackerData td = trackerStorage.peers(n320);
+		TrackerData td = trackerStorage.trackerData(n320);
 		Object o = td.peerAddresses().values().iterator().next().object();
 		Assert.assertEquals(o, "test");
 	}
@@ -90,7 +90,7 @@ public class TestTrackerStorage {
 		trackerStorage.peerFound(selfAddress, null, null);
 		trackerStorage.put(n320, selfAddress, pair1.getPublic(), new Data("test1"));
 		
-		TrackerData td = trackerStorage.peers(n320);
+		TrackerData td = trackerStorage.trackerData(n320);
 		Object o = td.peerAddresses().values().iterator().next().object();
 		Assert.assertEquals(o, "test1");
 	}

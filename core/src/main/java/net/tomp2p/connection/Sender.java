@@ -541,8 +541,6 @@ public class Sender {
 	public void sendUDP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator, final int idleUDPSeconds, final boolean broadcast) {
 		List<ChannelCreator> channelCreators = null;
-		List<ChannelFuture> channelFutures = null;
-		final Message socketInfoMessage;
 		// no need to continue if we already finished
 		if (futureResponse.isCompleted()) {
 			return;
@@ -563,17 +561,14 @@ public class Sender {
 			// extract the socketAddresses of the channelCreators
 			final List<SocketAddress> socketAddresses = new ArrayList<SocketAddress>();
 			for (ChannelCreator cc : channelCreators) {
+				cc.bindHole();
 				socketAddresses.add(cc.currentSocketAddress());
 				cachedChannelCreators.put(message.messageId(), cc);
 			}
 
 			// initiate the rendezvous process
-			socketInfoMessage = createSocketInfoMessage(message, socketAddresses);
-
 			initHolePunch(createSocketInfoMessage(message, socketAddresses), channelCreator, idleUDPSeconds, futureResponse, broadcast,
 					message, handler);
-
-			// TODO jwa do something with the old message
 			return;
 		} else {
 			channelCreators = null;
@@ -623,13 +618,13 @@ public class Sender {
 				if (psa.size() > 0) {
 					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
 					message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
-					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null, -1, null);
+					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null);
 				} else {
 					futureResponse.failed("Peer is relayed, but no relay given");
 					return;
 				}
 			} else {
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null, -1, null);
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null);
 			}
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		}
@@ -677,7 +672,7 @@ public class Sender {
 
 		for (int j = 0; j < numberOfChannelCreators; j++) {
 			// create new random socket and make a channelFuture
-			FutureChannelCreator fcc = peer.connectionBean().reservation().create(0, 1);
+			FutureChannelCreator fcc = peer.connectionBean().reservation().create(1,0);
 			// fcc.awaitUninterruptibly();
 			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 

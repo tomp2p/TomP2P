@@ -135,7 +135,7 @@ public class ChannelCreator {
 	 * @return The channel future object or null if we are shut down
 	 */
 	public ChannelFuture createUDP(final boolean broadcast,
-	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse, InetAddress inetAddress, int port, SocketAddress predefinedSocket) {
+	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse, SocketAddress predefinedSocket) {
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
@@ -159,9 +159,10 @@ public class ChannelCreator {
 			// broadcast messages
 			//TODO jwa --> include incoming port
 			final ChannelFuture channelFuture;
-			if (port != -1 && inetAddress != null) {
-				channelFuture = b.bind(inetAddress, port);
-			} else if (predefinedSocket != null) {
+//			if (port != -1 && inetAddress != null) {
+//				channelFuture = b.bind(inetAddress, port);
+//			} else 
+			if (predefinedSocket != null) {
 				channelFuture = b.bind(predefinedSocket);
 			} else {
 				socketAddress = externalBindings.wildCardSocket();
@@ -368,5 +369,9 @@ public class ChannelCreator {
 
 	public SocketAddress currentSocketAddress() {
 			return socketAddress;
+	}
+
+	public void bindHole() {
+		socketAddress = externalBindings.wildCardSocket();
 	}
 }

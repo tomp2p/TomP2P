@@ -132,6 +132,15 @@ public class PeerBean {
     public List<PeerStatusListener> peerStatusListeners() {
         return peerStatusListeners;
     }
+    
+    public PeerBean notifyPeerFound(PeerAddress sender, PeerAddress reporter, PeerConnection peerConnection) {
+    	synchronized (peerStatusListeners) {
+    		for (PeerStatusListener peerStatusListener : peerStatusListeners) {
+    			peerStatusListener.peerFound(sender, reporter, peerConnection);
+    		}
+    	}
+    	return this;
+    }
 
     /**
      * @param peerStatusListener

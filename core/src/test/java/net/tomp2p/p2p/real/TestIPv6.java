@@ -20,9 +20,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Random;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
@@ -35,6 +32,9 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * This class is not suitable for automated integration testing, since it

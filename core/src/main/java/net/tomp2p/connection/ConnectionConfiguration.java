@@ -26,5 +26,10 @@ public interface ConnectionConfiguration {
      * @return Set to true if the communication should be UDP, default is TCP for request
      */
     boolean isForceUDP();
+    
+    /**
+     * @return The time that a requester waits for a slow peer to answer.
+     */
+    int slowResponseTimeoutSeconds();
 
 }

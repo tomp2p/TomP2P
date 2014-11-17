@@ -230,11 +230,7 @@ public class Peer {
     /**
      * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the connection
      * gets closed after that time of inactivity. If the other peer goes offline or closes the connection (due to
-<<<<<<< HEAD
-     * inactivity), further requests with this connections reopens the connection. This methods blocks until a
-=======
      * inactivity), further requests with this connections reopens the connection. This method blocks until a
->>>>>>> refs/remotes/nico/master
      * connection can be reserved.
      * 
      * @param destination

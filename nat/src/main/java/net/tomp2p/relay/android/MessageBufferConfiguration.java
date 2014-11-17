@@ -14,6 +14,10 @@ public class MessageBufferConfiguration {
 	private long bufferAgeLimit = 5 * 60 * 1000; // 5 minutes
 	private int gcmSendRetries = 5;
 
+	/**
+	 * The maximum number of messages in the buffer.
+	 * @return
+	 */
 	public int bufferCountLimit() {
 		return bufferCountLimit;
 	}
@@ -29,6 +33,10 @@ public class MessageBufferConfiguration {
 		return this;
 	}
 
+	/**
+	 * The maximum size of the buffer content.
+	 * @return
+	 */
 	public long bufferSizeLimit() {
 		return bufferSizeLimit;
 	}
@@ -44,6 +52,10 @@ public class MessageBufferConfiguration {
 		return this;
 	}
 
+	/**
+	 * The maximum age of the oldest object in the buffer in milliseconds
+	 * @return
+	 */
 	public long bufferAgeLimit() {
 		return bufferAgeLimit;
 	}
@@ -59,6 +71,10 @@ public class MessageBufferConfiguration {
 		return this;
 	}
 
+	/**
+	 * The number of retries to send the GCM message in case the Google Server fails.
+	 * @return
+	 */
 	public int gcmSendRetries() {
 		return gcmSendRetries;
 	}
@@ -72,5 +88,4 @@ public class MessageBufferConfiguration {
 		this.gcmSendRetries = gcmSendRetries;
 		return this;
 	}
-
 }

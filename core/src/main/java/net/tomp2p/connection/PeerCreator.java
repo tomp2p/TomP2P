@@ -82,7 +82,7 @@ public class PeerCreator {
 	 * @param sendBehavior
 	 * 			  The sending behavior for direct messages
 	 * @throws IOException
-	 *             If the startup of listening to connections failed
+	 *            If the startup of listening to connections failed
 	 */
 	public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
 	        final ChannelServerConfiguration channelServerConfiguration,

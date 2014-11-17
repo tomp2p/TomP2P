@@ -33,6 +33,7 @@ public class ConnectionBean {
     public static final int DEFAULT_UDP_IDLE_SECONDS = 5;
     public static final int DEFAULT_CONNECTION_TIMEOUT_TCP = 3000;
     public static final int UDP_LIMIT = 1400;
+    public static final int DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS = 60;
 
     private final int p2pId;
     private final Dispatcher dispatcher;

@@ -2,15 +2,14 @@ package net.tomp2p.relay.android;
 
 import java.util.List;
 
-import net.tomp2p.message.Message;
-
-public interface MessageBufferListener {
+public interface MessageBufferListener<T> {
 
 	/**
-	 * Notification when the buffer at the relay peer is full. Use
-	 * {@link MessageBuffer#decomposeCompositeBuffer(ByetBuf)} to decompose the buffer
+	 * Notification when the buffer at the relay peer is full. Use {@link MessageBuffer#collectBuffer()} to
+	 * collect the messages
 	 * 
-	 * @param message List of all messages
+	 * @param messages the messages that were buffered. Note that the buffer of {@link MessageBuffer} is
+	 *            cleared as soon as this method call has been set.
 	 */
-	void bufferFull(List<Message> message);
+	void bufferFull(List<T> messages);
 }

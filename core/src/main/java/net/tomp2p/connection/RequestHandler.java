@@ -53,7 +53,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     private final int idleTCPSeconds; // = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
     private final int idleUDPSeconds; // = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
     private final int connectionTimeoutTCPMillis; // = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
-
+    private final int slowResponseTimeoutSeconds; // = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
     /**
      * Create a request handler that can send UDP messages.
      * 
@@ -76,6 +76,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         this.idleTCPSeconds = configuration.idleTCPSeconds();
         this.idleUDPSeconds = configuration.idleUDPSeconds();
         this.connectionTimeoutTCPMillis = configuration.connectionTimeoutTCPMillis();
+        this.slowResponseTimeoutSeconds = configuration.slowResponseTimeoutSeconds();
     }
 
     /**
@@ -275,7 +276,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         if(this.message.recipient().isRelayed() && this.message.recipient().isSlow() && responseMessage.type() == Message.Type.PARTIALLY_OK) {
         	LOG.debug("Received partially ok by the relay peer. Wait for answer of the unreachable peer.");
         	// wait for the (real) answer of the unreachable peer.
-        	connectionBean.dispatcher().addPendingRequest(message.messageId(), futureResponse);
+        	connectionBean.dispatcher().addPendingRequest(message.messageId(), futureResponse, slowResponseTimeoutSeconds, connectionBean.timer());
         	// close the channel to the relay peer
         	ctx.close();
         	return;

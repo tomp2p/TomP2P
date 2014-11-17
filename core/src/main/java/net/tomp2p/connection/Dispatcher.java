@@ -27,6 +27,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.FutureResponse;
@@ -73,8 +76,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	 * responses, however, in case the asked peer has {@link PeerAddress#isSlow()} set to true, the answer
 	 * might arrive later. The key of the map is the expected message id.
 	 */
-    private volatile Map<Integer, FutureResponse> pendingRequests = new HashMap<Integer, FutureResponse>();
+    private volatile Map<Integer, FutureResponse> pendingRequests = new ConcurrentHashMap<Integer, FutureResponse>();
 
+    
     /**
      * 
      * @param p2pID
@@ -152,12 +156,13 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             }
             return;
         }
+        
         if (!message.isRequest()) {
-            LOG.debug("handing message to the next handler {}", message);
-            ctx.fireChannelRead(message);
-            return;
+        	LOG.debug("handing message to the next handler {}", message);
+        	ctx.fireChannelRead(message);
+        	return;
         }
-
+        
         Responder responder = new DirectResponder(ctx, message);
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
@@ -217,8 +222,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         
         @Override
 		public void responseFireAndForget() {
-            LOG.debug("The reply handler was a fire-and-forget handler, "
-                    + "we don't send any message back! {}", requestMessage);    
+            LOG.debug("The reply handler was a fire-and-forget handler, we don't send any message back! {}", requestMessage);    
            if (!(ctx.channel() instanceof DatagramChannel)) {
                LOG.warn("There is no TCP fire and forget, use UDP in that case {}", requestMessage);
                throw new RuntimeException("There is no TCP fire and forget, use UDP in that case.");
@@ -362,10 +366,23 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	 * @param messageId the message id
 	 * @param futureResponse the future to respond as soon as a (satisfying) response from the slow peer
 	 *            arrived.
+	 * @param scheduler 
+	 * @param timeout 
 	 */
-	public void addPendingRequest(int messageId, FutureResponse futureResponse) {
-		// TODO add timeout for the pending requests
+	public void addPendingRequest(final int messageId, final FutureResponse futureResponse, final int timeout, final ScheduledExecutorService scheduler) {
 		pendingRequests.put(messageId, futureResponse);
+		
+		// schedule the timeout of pending request
+    	scheduler.schedule(new Runnable() {
+			@Override
+			public void run() {
+				FutureResponse response = pendingRequests.remove(messageId);
+				if(response != null) {
+					LOG.warn("A slow response did not arrive within {}s. Answer it as failed.", timeout);
+					response.failed("Slow peer did not answer within " + timeout + "s.");
+				}
+			}
+		}, timeout, TimeUnit.SECONDS);
 	}
 
 	/**

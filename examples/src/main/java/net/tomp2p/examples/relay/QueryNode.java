@@ -191,4 +191,9 @@ public class QueryNode {
 		random.nextBytes(data);
 		return new Data(data);
 	}
+	
+	@Override
+	public String toString() {
+		return "Query-Peer " + peerDHT.peerID();
+	}
 }

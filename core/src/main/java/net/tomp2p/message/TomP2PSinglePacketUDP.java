@@ -1,9 +1,9 @@
 package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.socket.DatagramPacket;
 
 import java.net.InetSocketAddress;

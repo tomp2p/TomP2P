@@ -2,8 +2,8 @@ package net.tomp2p.relay.android;
 
 import io.netty.buffer.ByteBuf;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -17,12 +17,12 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.RelayUtils;
+import net.tomp2p.relay.android.gcm.FutureGCM;
+import net.tomp2p.relay.android.gcm.IGCMSender;
+import net.tomp2p.relay.android.gcm.RemoteGCMSender;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.android.gcm.server.Result;
-import com.google.android.gcm.server.Sender;
 
 /**
  * Manages the mapping between a peer address and the registration id. The registration id is sent by the
@@ -31,43 +31,39 @@ import com.google.android.gcm.server.Sender;
  * @author Nico Rutishauser
  *
  */
-public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements MessageBufferListener {
+public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements MessageBufferListener<Message> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
 
-	private final MessageBufferConfiguration bufferConfig;
-	private final Sender sender;
-	private String registrationId;
+	private final String registrationId;
+	private final IGCMSender sender;
 	private final int mapUpdateIntervalMS;
-	private final MessageBuffer buffer;
-	private final List<Message> readyToSend;
+	private final MessageBuffer<Message> buffer;
 	private final AtomicLong lastUpdate;
 
-	// holds the current request. When completed, the android device requested the buffered messages
-	private FutureDone<Void> pendingRequest;
+	// holds the current requests
+	private List<FutureGCM> pendingRequests;
 
 	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, MessageBufferConfiguration bufferConfig,
-			String authenticationToken, String registrationId, int mapUpdateIntervalS) {
+			String registrationId, IGCMSender sender, int mapUpdateIntervalS) {
 		super(peer, unreachablePeer, RelayType.ANDROID);
-		this.bufferConfig = bufferConfig;
 		this.registrationId = registrationId;
+		this.sender = sender;
 
 		// stretch the update interval by factor 1.5 to be tolerant for slow messages
 		this.mapUpdateIntervalMS = (int) (mapUpdateIntervalS * 1000 * 1.5);
 		this.lastUpdate = new AtomicLong(System.currentTimeMillis());
 
-		sender = new Sender(authenticationToken);
-		readyToSend = Collections.synchronizedList(new ArrayList<Message>());
+		this.pendingRequests = Collections.synchronizedList(new ArrayList<FutureGCM>());
 
-		buffer = new MessageBuffer(bufferConfig.bufferCountLimit(), bufferConfig.bufferSizeLimit(),
-				bufferConfig.bufferAgeLimit());
-		addMessageBufferListener(this);
+		buffer = new MessageBuffer<Message>(bufferConfig);
+		addBufferListener(this);
 	}
 
-	public void addMessageBufferListener(MessageBufferListener listener) {
+	public void addBufferListener(MessageBufferListener<Message> listener) {
 		buffer.addListener(listener);
 	}
-
+	
 	@Override
 	public FutureDone<Message> forwardToUnreachable(Message message) {
 		// create temporal OK message
@@ -77,7 +73,9 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		response.sender(unreachablePeerAddress());
 
 		try {
-			buffer.addMessage(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+			int messageSize = RelayUtils.getMessageSize(message, connectionBean().channelServer()
+					.channelServerConfiguration().signatureFactory());
+			buffer.addMessage(message, messageSize);
 		} catch (Exception e) {
 			LOG.error("Cannot encode the message", e);
 			return futureDone.done(createResponseMessage(message, Type.EXCEPTION));
@@ -87,54 +85,20 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		return futureDone.done(response);
 	}
 
-	/**
-	 * Tickle the device through Google Cloud Messaging
-	 */
-	public void sendTickleMessage() {
-		if (pendingRequest == null || pendingRequest.isCompleted()) {
-			// no current pending request or the last one is finished
-			pendingRequest = new FutureDone<Void>();
-		} else {
-			LOG.debug("A GCM message is already sent but not answered yet. Skip to send another.");
-			return;
-		}
-
-		// the collapse key is the relay's peerId
-		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder()
-				.collapseKey(relayPeerId().toString()).delayWhileIdle(false).build();
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					LOG.debug("Send GCM message to the device {}", registrationId);
-					Result result = sender.send(tickleMessage, registrationId, bufferConfig.gcmSendRetries());
-					if (result.getMessageId() == null) {
-						LOG.error("Could not send the tickle messge. Reason: {}", result.getErrorCodeName());
-						pendingRequest.failed("Cannot send message over GCM. Reason: " + result.getErrorCodeName());
-					} else {
-						LOG.debug("Successfully sent the message over GCM");
-						if (result.getCanonicalRegistrationId() != null) {
-							LOG.debug("Update the registration id {} to canonical name {}", registrationId,
-									result.getCanonicalRegistrationId());
-							registrationId = result.getCanonicalRegistrationId();
-						}
-					}
-				} catch (IOException e) {
-					LOG.error("Cannot send tickle message to device {}", registrationId, e);
-					pendingRequest.failed(e);
-				}
-			}
-		}, "Send-GCM-Tickle-Message").start();
-		
-		// TODO watch the pending request and if it takes too long, answer all buffered messages with an error
-	}
-
 	@Override
-	public void bufferFull(List<Message> messageBuffer) {
-		synchronized (readyToSend) {
-			readyToSend.addAll(messageBuffer);
+	public void bufferFull(List<Message> messages) {
+		final FutureGCM futureGCM = new FutureGCM(messages, registrationId, relayPeerId());
+		boolean sendTickle;
+		synchronized (pendingRequests) {
+			sendTickle = pendingRequests.isEmpty();
+			pendingRequests.add(futureGCM);
 		}
-		sendTickleMessage();
+
+		if (sendTickle) {
+			sender.send(futureGCM);
+		} else {
+			LOG.debug("Another tickle message is already on the way to the mobile device");
+		}
 	}
 
 	/**
@@ -143,18 +107,22 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	 * 
 	 * @return the buffer containing all buffered messages
 	 */
-	public Buffer getBufferedMessages() {
-		// finish the pending request
-		pendingRequest.done();
-		
-		ByteBuf buffer;
-		synchronized (readyToSend) {
-			buffer = RelayUtils.composeMessageBuffer(readyToSend, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
-			readyToSend.clear();
+	public Buffer collectBufferedMessages() {
+		// the mobile device seems to be alive
+		lastUpdate.set(System.currentTimeMillis());
+
+		List<Message> messages = new ArrayList<Message>();
+		synchronized (pendingRequests) {
+			for (FutureGCM futureGCM : pendingRequests) {
+				messages.addAll(futureGCM.buffer());
+				futureGCM.done();
+			}
+			pendingRequests.clear();
 		}
 
-		lastUpdate.set(System.currentTimeMillis());
-		return new Buffer(buffer);
+		ByteBuf byteBuffer = RelayUtils.composeMessageBuffer(messages, connectionBean().channelServer()
+				.channelServerConfiguration().signatureFactory());
+		return new Buffer(byteBuffer);
 	}
 
 	@Override
@@ -170,8 +138,16 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 			LOG.trace("Device {} seems to be alive", registrationId);
 			return true;
 		} else {
-			LOG.warn("Device {} did not send the map update for a long time", registrationId);
+			LOG.warn("Device {} did not send any messages for a long time", registrationId);
 			return false;
+		}
+	}
+	
+	public void changeGCMServers(Collection<PeerAddress> gcmServers) {
+		if(sender instanceof RemoteGCMSender) {
+			RemoteGCMSender remoteGCMSender = (RemoteGCMSender) sender;
+			remoteGCMSender.gcmServers(gcmServers);
+			LOG.debug("Received update of the GCM servers");
 		}
 	}
 }

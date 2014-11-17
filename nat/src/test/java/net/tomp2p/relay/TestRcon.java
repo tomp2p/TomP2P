@@ -66,7 +66,7 @@ public class TestRcon {
 		
 		// setup relay
 		PeerNAT uNat = new PeerBuilderNAT(unreachable).start();
-		FutureRelayNAT frn = uNat.startRelay(master.peerAddress());
+		FutureRelayNAT frn = uNat.startRelay(RelayConfig.OpenTCP(), master.peerAddress());
 		frn.awaitUninterruptibly();
 		Assert.assertTrue(frn.isSuccess());
 

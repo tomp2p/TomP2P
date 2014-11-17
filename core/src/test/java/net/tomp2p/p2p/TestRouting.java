@@ -13,11 +13,11 @@ import java.util.TreeSet;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureRouting;
-import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
@@ -27,6 +27,7 @@ import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -553,6 +554,7 @@ public class TestRouting {
         }
     }
 
+    @Ignore
     @Test
     public void testRoutingConcurrently() throws Exception {
         for (int i = 0; i < 3; i++) {
@@ -685,16 +687,24 @@ public class TestRouting {
             }
         }
     }
-
+    
     @Test
     public void testBootstrap() throws Exception {
         Peer master = null;
         Peer client = null;
         try {
-            // Bindings b = new Bindings("wlan0");
-            master = new PeerBuilder(new Number160(rnd)).ports(4000).start();
-            client = new PeerBuilder(new Number160(rnd)).ports(4001).start();
+            //TODO: make this generic
+        	Bindings b = new Bindings().addInterface("wlp3s0");
+            master = new PeerBuilder(new Number160(rnd)).bindings(b).ports(4000).enableMaintenance(false).start();
+            client = new PeerBuilder(new Number160(rnd)).bindings(b).ports(4001).enableMaintenance(false).start();
 
+            DiscoverResults dr = master.connectionBean().channelServer().discoverNetworks().currentDiscoverResults();
+            if(dr.existingBroadcastAddresses().size() == 0) {
+            	System.err.println("this test does not work if none of your interfaces supports broadcast");
+            } else {
+            	System.err.println(dr.existingBroadcastAddresses());
+            }
+            
             BaseFuture tmp = client.ping().broadcast().port(4000).start();
             tmp.awaitUninterruptibly();
             System.err.println(tmp.failedReason());
@@ -717,8 +727,8 @@ public class TestRouting {
         Peer client = null;
         try {
         	Bindings b = new Bindings().addInterface("lo");
-        	master = new PeerBuilder(new Number160(rnd)).externalBindings(b).ports(4002).start();
-            client = new PeerBuilder(new Number160(rnd)).externalBindings(b).ports(4001).start();
+        	master = new PeerBuilder(new Number160(rnd)).bindings(b).ports(4002).start();
+            client = new PeerBuilder(new Number160(rnd)).bindings(b).ports(4001).start();
             BaseFuture tmp = client.ping().broadcast().port(4001).start();
             tmp.awaitUninterruptibly();
             Assert.assertEquals(false, tmp.isSuccess());

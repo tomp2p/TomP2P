@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
+import net.tomp2p.utils.Utils;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -131,7 +133,6 @@ public class TestPeerAddress {
     public void testPeerAddress5() throws UnknownHostException {
 
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        int i = 0;
         psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
         psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
@@ -143,8 +144,8 @@ public class TestPeerAddress {
         psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
-                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true,
-                psa);
+                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true, true,
+                true, psa);
 
         final int length = 200;
         byte[] me = new byte[length];
@@ -164,7 +165,6 @@ public class TestPeerAddress {
     public void testPeerAddress6() throws UnknownHostException {
 
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        int i = 0;
         psa.add(new PeerSocketAddress(InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde1"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
@@ -177,7 +177,7 @@ public class TestPeerAddress {
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde0"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)), true, true, true, psa);
+                RND.nextInt(BIT_16)), true, true, true, true, true, psa);
 
         final int length = 200;
         byte[] me = new byte[length];
@@ -197,7 +197,6 @@ public class TestPeerAddress {
     public void testPeerAddress7() throws UnknownHostException {
 
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        int i = 0;
         psa.add(new PeerSocketAddress(InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde1"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
@@ -210,10 +209,23 @@ public class TestPeerAddress {
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde0"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)), true, true, true, psa);
+                RND.nextInt(BIT_16)), true, true, true, true, true, psa);
         
         Assert.assertEquals(142, pa3.toByteArray().length);
 
+    }
+    
+    @Test
+    public void testSize()
+    {
+    	int header = Integer.MAX_VALUE;
+    	
+    	header = header >>> Utils.BYTE_BITS;
+    	int options = header & Utils.MASK_FF;
+    	
+    	//int options = (header >>> Utils.BYTE_BITS) & Utils.MASK_FF;
+        int relays = header & Utils.MASK_FF;
+    	
     }
 
     /**

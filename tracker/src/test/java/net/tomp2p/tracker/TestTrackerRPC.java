@@ -22,7 +22,7 @@ import org.junit.Test;
 public class TestTrackerRPC {
     final static Random rnd = new Random(0);
 
-    /*@Test
+    @Test
     public void testTrackerPut() throws Exception {
         PeerTracker sender = null;
         PeerTracker recv1 = null;
@@ -36,7 +36,7 @@ public class TestTrackerRPC {
             // can be found
             SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(100, 10);
 
-            FutureChannelCreator fcc = sender.connectionBean().reservation().create(1, 0);
+            FutureChannelCreator fcc = sender.peer().connectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
 
@@ -44,7 +44,7 @@ public class TestTrackerRPC {
             addTrackerBuilder.domainKey(dom);
             addTrackerBuilder.setBloomFilter(bloomFilter);
 
-            FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.peerAddress(),
+            FutureResponse fr = sender.trackerRPC().addToTracker(recv1.peerAddress(),
                     addTrackerBuilder, cc);
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
@@ -54,7 +54,7 @@ public class TestTrackerRPC {
             GetTrackerBuilder getTrackerBuilder = new GetTrackerBuilder(sender, loc);
             getTrackerBuilder.knownPeers(bloomFilter);
 
-            fr = sender.getTrackerRPC().getFromTracker(recv1.peerAddress(), getTrackerBuilder, cc);
+            fr = sender.trackerRPC().getFromTracker(recv1.peerAddress(), getTrackerBuilder, cc);
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
@@ -78,7 +78,7 @@ public class TestTrackerRPC {
         }
     }
 
-    @Test
+    /*@Test
     public void testTrackerPutNoBloomFilter() throws Exception {
         Peer sender = null;
         Peer recv1 = null;

@@ -16,11 +16,12 @@
 
 package net.tomp2p.connection;
 
+import io.netty.channel.ChannelHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
+
 import java.util.Map;
 
 import net.tomp2p.utils.Pair;
-import io.netty.channel.ChannelHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
 
 /**
  * The user may modify the filter by adding, removing, or changing the handlers.
@@ -32,7 +33,7 @@ public interface PipelineFilter {
     /**
      * Filter the handlers. If no filtering should happen, return the same array.
      * 
-     * @param handlers
+     * @param channelHandlers
      *            The created handlers by tomp2p
      * @param tcp
      *            True if the connection is TCP, false for UDP

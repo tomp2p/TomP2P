@@ -85,7 +85,7 @@ public class Utils2 {
             int udpPortSender, boolean firewallUDP, boolean firewallTCP) throws UnknownHostException {
         InetAddress inetSend = InetAddress.getByName(inetSender);
         PeerSocketAddress peerSocketAddress = new PeerSocketAddress(inetSend, tcpPortSender, udpPortSender);
-        PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, firewallTCP, firewallUDP, false,
+        PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, firewallTCP, firewallUDP, false, false, false,
         		PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
         return n1;
     }
@@ -145,7 +145,7 @@ public class Utils2 {
         
         PeerBuilder pm = new PeerBuilder(new Number160(rnd))
                    .ports(port).enableMaintenance(maintenance)
-                   .externalBindings(bindings);
+                   .bindings(bindings);
         
         
         peers[0] = new PeerBuilderDHT(pm.start()).start();
@@ -162,7 +162,7 @@ public class Utils2 {
 
         for (int i = 1; i < nrOfPeers; i++) {
             pm = new PeerBuilder(new Number160(rnd)).enableMaintenance(maintenance)
-                        .externalBindings(bindings).masterPeer(peers[0].peer());
+                        .bindings(bindings).masterPeer(peers[0].peer());
             peers[i] = new PeerBuilderDHT(pm.start()).start();
             
             if(automaticFuture!=null) {

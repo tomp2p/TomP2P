@@ -79,7 +79,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
             final int size = rawResult == null ? 0 : rawResult.size();
             this.minReached = size >= min;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;
-            this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
+            this.reason = minReached ? "Minimum number of results reached" : "Expected " + min
                     + " result, but got " + size;
         }
         notifyListeners();
@@ -145,7 +145,8 @@ public class FuturePut extends FutureDHT<FuturePut> {
         for(Map<Number640, Byte> map:rawResult2.values()) {
             for(Map.Entry<Number640, Byte> entry: map.entrySet()) {
                 if(entry.getValue().intValue() == PutStatus.OK.ordinal()
-                		|| entry.getValue().intValue() == PutStatus.VERSION_FORK.ordinal()) {
+                		|| entry.getValue().intValue() == PutStatus.VERSION_FORK.ordinal()
+                		|| entry.getValue().intValue() == PutStatus.DELETED.ordinal()) {
                     Integer integer = result.get(entry.getKey());
                     if(integer == null) {
                         result.put(entry.getKey(), 1);

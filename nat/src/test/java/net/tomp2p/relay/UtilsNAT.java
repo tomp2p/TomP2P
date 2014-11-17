@@ -16,27 +16,35 @@
 
 package net.tomp2p.relay;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
+import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.rpc.RPC.Commands;
 
 public class UtilsNAT {
 
-    public static PeerDHT[] createNodesPeer(int nrOfPeers, Random rnd, int port) throws Exception {
-        return createNodesPeer(nrOfPeers, rnd, port, null);
+    public static PeerDHT[] createNodesDHT(int nrOfPeers, Random rnd, int port) throws Exception {
+        return createNodesDHT(nrOfPeers, rnd, port, null);
     }
 
-    public static PeerDHT[] createNodesPeer(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture)
+    public static PeerDHT[] createNodesDHT(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture)
             throws Exception {
-        return createNodesPeer(nrOfPeers, rnd, port, automaticFuture, false);
+        return createNodesDHT(nrOfPeers, rnd, port, automaticFuture, false);
     }
 
     /**
@@ -53,12 +61,12 @@ public class UtilsNAT {
      * @throws Exception
      *             If the creation of nodes fail.
      */
-    public static PeerDHT[] createNodesPeer(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
+    public static PeerDHT[] createNodesDHT(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
             boolean maintenance) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
-        Bindings bindings = new Bindings().addInterface("lo");
+        Bindings bindings = new Bindings();// .addInterface("lo");
         PeerDHT[] peers = new PeerDHT[nrOfPeers];
         final Peer master;
         if (automaticFuture != null) {
@@ -66,13 +74,13 @@ public class UtilsNAT {
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
         	master = new PeerBuilder(peerId)
                     .ports(port).enableMaintenance(maintenance)
-                    .externalBindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
+                    .bindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
             peers[0] = new PeerBuilderDHT(master).start(); 
             
         } else {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-        	master = new PeerBuilder(peerId).enableMaintenance(maintenance).externalBindings(bindings)
+        	master = new PeerBuilder(peerId).enableMaintenance(maintenance).bindings(bindings)
                     .peerMap(peerMap).ports(port).start();
         	peers[0] = new PeerBuilderDHT(master).start(); 
         }
@@ -83,13 +91,13 @@ public class UtilsNAT {
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 Peer peer = new PeerBuilder(peerId)
                         .masterPeer(master)
-                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
+                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).bindings(bindings).start().addAutomaticFuture(automaticFuture);
                 peers[i] = new PeerBuilderDHT(peer).start(); 
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
             	Peer peer = new PeerBuilder(peerId).enableMaintenance(maintenance)
-                        .externalBindings(bindings).peerMap(peerMap).masterPeer(master)
+                        .bindings(bindings).peerMap(peerMap).masterPeer(master)
                         .start();
                 peers[i] = new PeerBuilderDHT(peer).start(); 
             }
@@ -114,12 +122,6 @@ public class UtilsNAT {
         }
         System.err.println("perfect routing done.");
     }
-    
-    
-    
-    
-    
-    
     
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
         return createNodes(nrOfPeers, rnd, port, null);
@@ -149,18 +151,19 @@ public class UtilsNAT {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
-        Bindings bindings = new Bindings().addInterface("lo0");
+        Bindings bindings = new Bindings().addAddress(InetAddress.getLocalHost());
+//        Bindings bindings = new Bindings().addInterface("lo0");
         Peer[] peers = new Peer[nrOfPeers];
         if (automaticFuture != null) {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
             peers[0] = new PeerBuilder(peerId)
                     .ports(port).enableMaintenance(maintenance)
-                    .externalBindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
+                    .bindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
         } else {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-            peers[0] = new PeerBuilder(peerId).enableMaintenance(maintenance).externalBindings(bindings)
+            peers[0] = new PeerBuilder(peerId).enableMaintenance(maintenance).bindings(bindings)
                    .peerMap(peerMap).ports(port).start();
         }
 
@@ -170,12 +173,12 @@ public class UtilsNAT {
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 peers[i] = new PeerBuilder(peerId)
                         .masterPeer(peers[0])
-                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
+                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).bindings(bindings).start().addAutomaticFuture(automaticFuture);
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
                 peers[i] = new PeerBuilder(peerId).enableMaintenance(maintenance)
-                        .externalBindings(bindings).peerMap(peerMap).masterPeer(peers[0])
+                        .bindings(bindings).peerMap(peerMap).masterPeer(peers[0])
                         .start();
             }
         }
@@ -197,4 +200,33 @@ public class UtilsNAT {
         }
         System.err.println("perfect routing done.");
     }
+
+    public static PeerAddress createAddress() throws UnknownHostException {
+        return createAddress(new Number160("0x5678"), "127.0.0.1", 8005, 8006, false, false);
+    }
+    
+    public static PeerAddress createAddress(Number160 idSender, String inetSender, int tcpPortSender,
+            int udpPortSender, boolean firewallUDP, boolean firewallTCP) throws UnknownHostException {
+        InetAddress inetSend = InetAddress.getByName(inetSender);
+        PeerSocketAddress peerSocketAddress = new PeerSocketAddress(inetSend, tcpPortSender, udpPortSender);
+        PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, firewallTCP, firewallUDP, false, false, false,
+                PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
+        return n1;
+    }
+
+	/**
+	 * Creates a message with random content
+	 */
+	public static Message createRandomMessage() {
+		Random rnd = new Random();
+
+		Message message = new Message();
+		message.command(Commands.values()[rnd.nextInt(Commands.values().length)].getNr());
+		message.type(Type.values()[rnd.nextInt(Type.values().length)]);
+		message.recipientSocket(new InetSocketAddress(0));
+		message.recipient(new PeerAddress(new Number160(rnd), message.recipientSocket()));
+		message.senderSocket(new InetSocketAddress(0));
+		message.sender(new PeerAddress(new Number160(rnd), message.senderSocket()));
+		return message;
+	}
 }

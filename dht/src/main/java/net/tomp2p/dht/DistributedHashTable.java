@@ -366,9 +366,11 @@ public class DistributedHashTable {
                                                 // the future tells us that the communication was successful, which is
                                                 // ok for digest
                                                 if (future.isSuccess()) {
-
-													rawData.put(future.request().recipient(), future
-															.responseMessage().dataMap(0).dataMap());
+                                                    
+                                                    Map<Number640, Data> data = future.responseMessage().dataMap(0).dataMap();
+                                                    if(data !=null && !data.isEmpty()) {
+                                                        rawData.put(future.request().recipient(), data);
+                                                    }
 													
 													KeyMap640Keys keyMaps = future.responseMessage()
 															.keyMap640Keys(0);
@@ -484,9 +486,7 @@ public class DistributedHashTable {
      * {
      */
     public FutureRemove remove(final RemoveBuilder builder) {
-    	final int dataSize = UtilsDHT.dataSize(builder);
-        final FutureRemove futureDHT = new FutureRemove(builder, builder.requestP2PConfiguration()
-                .minimumResults(), new VotingSchemeDHT(), dataSize);
+        final FutureRemove futureDHT = new FutureRemove(builder, new VotingSchemeDHT());
 
         builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -603,6 +603,11 @@ public class DistributedHashTable {
     private static <K extends FutureDHT<?>> void parallelRequests(RequestP2PConfiguration p2pConfiguration,
     		NavigableSet<PeerAddress> directHit, NavigableSet<PeerAddress> potentialHit, K future, boolean cancleOnFinish, ChannelCreator channelCreator,
             OperationMapper<K> operation) {
+    	//the potential hits may contain same values as in directHit, so remove it from potentialHit
+    	for(PeerAddress peerAddress:directHit) {
+    		potentialHit.remove(peerAddress);
+    	}
+    	
         if (p2pConfiguration.minimumResults() == 0) {
             operation.response(future);
             return;

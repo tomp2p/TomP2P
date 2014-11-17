@@ -16,6 +16,7 @@
 package net.tomp2p.tracker;
 
 import java.security.PublicKey;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,11 +34,12 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -79,12 +81,12 @@ public class TrackerRPC extends DispatchHandler {
 		RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(),
 		        connectionBean(), builder);
 
-		TrackerData trackerData = new TrackerData(new HashMap<PeerStatatistic, Data>());
+		TrackerData trackerData = new TrackerData(new HashMap<PeerAddress, Data>());
 		PeerAddress peerAddressToAnnounce = builder.peerAddressToAnnounce();
 		if (peerAddressToAnnounce == null) {
 			peerAddressToAnnounce = peerBean().serverPeerAddress();
 		}
-		trackerData.put(new PeerStatatistic(peerAddressToAnnounce), builder.attachement());
+		trackerData.put(peerAddressToAnnounce, builder.attachement());
 		trackerData = UtilsTracker.limit(trackerData, TrackerRPC.MAX_MSG_SIZE_UDP);
 		message.trackerData(trackerData);
 
@@ -138,11 +140,11 @@ public class TrackerRPC extends DispatchHandler {
 						return;
 					}
 
-					for (Map.Entry<PeerStatatistic, Data> trackerData : tmp.peerAddresses().entrySet()) {
+					for (Map.Entry<PeerAddress, Data> trackerData : tmp.peerAddresses().entrySet()) {
 						// we don't know the public key, since this is not first
 						// hand information. TTL will be set in tracker storage,
 						// so don't worry about it here.
-						trackerStorage.put(key, trackerData.getKey().peerAddress(), null, trackerData.getValue());
+						trackerStorage.put(key, trackerData.getKey(), null, trackerData.getValue());
 					}
 				} else {
 					LOG.warn("add tracker failed: {}", future.failedReason());
@@ -169,7 +171,8 @@ public class TrackerRPC extends DispatchHandler {
 
 		PublicKey publicKey = message.publicKey(0);
 		//
-		TrackerData meshPeers = trackerStorage.peers(new Number320(locationKey, domainKey));
+		Collection<Pair<PeerStatistic, Data>> value = trackerStorage.peers(new Number320(locationKey, domainKey)).values(); 
+		TrackerData meshPeers = new TrackerData(value);
 		
 		LOG.debug("found peers on tracker: {}", meshPeers == null ? "null " : meshPeers.peerAddresses());
 
@@ -194,8 +197,8 @@ public class TrackerRPC extends DispatchHandler {
 			if (trackerData.size() != 1) {
 				responseMessage.type(Message.Type.EXCEPTION);
 			} else {
-				Map.Entry<PeerStatatistic, Data> entry = trackerData.peerAddresses().entrySet().iterator().next();
-				if (!trackerStorage.put(new Number320(locationKey, domainKey), entry.getKey().peerAddress(), publicKey,
+				Map.Entry<PeerAddress, Data> entry = trackerData.peerAddresses().entrySet().iterator().next();
+				if (!trackerStorage.put(new Number320(locationKey, domainKey), entry.getKey(), publicKey,
 				        entry.getValue())) {
 					responseMessage.type(Message.Type.DENIED);
 					LOG.debug("tracker NOT put on({}) locationKey:{}, domainKey:{}, address:{}", peerBean()

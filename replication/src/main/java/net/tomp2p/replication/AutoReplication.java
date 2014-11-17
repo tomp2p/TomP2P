@@ -8,7 +8,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapChangeListener;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 
 /**
  * AutomaticReplication class observes the local network conditions and predicts
@@ -59,10 +59,10 @@ public class AutoReplication implements PeerMapChangeListener, ReplicationFactor
 	public void peerInserted(PeerAddress peerAddress, boolean verified) {}
 	
 	@Override
-	public void peerUpdated(PeerAddress peerAddress, PeerStatatistic storedPeerAddress) {}
+	public void peerUpdated(PeerAddress peerAddress, PeerStatistic storedPeerAddress) {}
 
 	@Override
-	public void peerRemoved(PeerAddress peerAddress, PeerStatatistic storedPeerAddress) {
+	public void peerRemoved(PeerAddress peerAddress, PeerStatistic storedPeerAddress) {
 		synchronized (removedPeers) {
 			removedPeers.add(peerAddress.peerId());
 		}

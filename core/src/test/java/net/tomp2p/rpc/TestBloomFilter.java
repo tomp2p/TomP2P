@@ -16,10 +16,11 @@
 
 package net.tomp2p.rpc;
 
-import java.util.Random;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+
+import java.util.Random;
+
 import net.tomp2p.peers.Number160;
 
 import org.junit.Assert;
@@ -33,7 +34,7 @@ import org.junit.Test;
  */
 public class TestBloomFilter {
 
-    private final int bfSize = 40;
+	private final int bfSize = 40;
     private final int bfSizeLarge = 200;
 
     /**
@@ -74,9 +75,7 @@ public class TestBloomFilter {
         cbs.add("abd");
         cbs.add("abe");
 
-        // CHECKSTYLE:OFF
         Assert.assertEquals(3, cbs.approximateCount("abc"));
-        // CHECKSTYLE:ON
         Assert.assertEquals(1, cbs.approximateCount("abd"));
         Assert.assertEquals(0, cbs.approximateCount("abg"));
 

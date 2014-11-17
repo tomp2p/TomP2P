@@ -15,8 +15,9 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 public class PeerBuilderTracker {
@@ -86,7 +87,7 @@ public class PeerBuilderTracker {
 			scheduledFuture = null;
 		}
 
-		peer.peerBean().addPeerStatusListeners(trackerStorage);
+		peer.peerBean().addPeerStatusListener(trackerStorage);
 		peer.peerBean().peerMap().addPeerMapChangeListener(trackerStorage);
 		peer.peerBean().maintenanceTask().addMaintainable(trackerStorage);
 		peer.peerBean().digestTracker(trackerStorage);
@@ -163,8 +164,8 @@ public class PeerBuilderTracker {
 
 		@Override
 		public boolean put(Number320 key, TrackerData trackerData, PeerAddress referrer) {
-			for (Map.Entry<PeerStatatistic, Data> entry : trackerData.peerAddresses().entrySet()) {
-				trackerStorage.put(key, entry.getKey().peerAddress(), null, entry.getValue());
+			for (Map.Entry<PeerAddress, Data> entry : trackerData.peerAddresses().entrySet()) {
+				trackerStorage.put(key, entry.getKey(), null, entry.getValue());
 			}
 			return false;
 		}
@@ -176,20 +177,23 @@ public class PeerBuilderTracker {
 				return null;
 			}
 			Number320 key = Utils.pollRandom(keys, rnd);
-			TrackerData trackerData = trackerStorage.peers(key);
-			if (trackerData == null) {
+			Collection<Pair<PeerStatistic, Data>> value = trackerStorage.peers(key).values(); 
+			
+			if (value.isEmpty()) {
 				return null;
 			}
-			Collection<PeerStatatistic> peerStatatistics = trackerData.peerAddresses().keySet();
+			TrackerData trackerData = new TrackerData(value);
+			
+			Collection<PeerAddress> peerStatatistics = trackerData.peerAddresses().keySet();
 			if (peerStatatistics == null || peerStatatistics.size() == 0) {
 				return null;
 			}
-			peerStatatistics.remove(new PeerStatatistic(self));
+			peerStatatistics.remove(new PeerStatistic(self));
 			if (peerStatatistics.size() == 0) {
 				return null;
 			}
-			PeerStatatistic peerStatatistic = Utils.pollRandom(peerStatatistics, rnd);
-			return new TrackerTriple().key(key).data(trackerData).remotePeer(peerStatatistic.peerAddress());
+			PeerAddress peerStatatistic = Utils.pollRandom(peerStatatistics, rnd);
+			return new TrackerTriple().key(key).data(trackerData).remotePeer(peerStatatistic);
 		}
 
 		@Override

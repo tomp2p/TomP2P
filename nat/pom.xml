@@ -20,7 +20,7 @@
 	<parent>
     	<groupId>net.tomp2p</groupId>
     	<artifactId>tomp2p-parent</artifactId>
-    	<version>5.0-Alpha25-SNAPSHOT</version>
+    	<version>5.0-Alpha27-SNAPSHOT</version>
   	</parent>
 	
 	<artifactId>tomp2p-nat</artifactId>
@@ -60,6 +60,13 @@
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-core</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+		
+		<!-- For Android relays -->
+		<dependency>
+			<groupId>com.ganyo</groupId>
+			<artifactId>gcm-server</artifactId>
+			<version>1.0.2</version>
 		</dependency>
 
 		<!-- For testing-->

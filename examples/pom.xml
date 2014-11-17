@@ -20,7 +20,7 @@
 	<parent>
     	<groupId>net.tomp2p</groupId>
     	<artifactId>tomp2p-parent</artifactId>
-    	<version>5.0-Alpha25-SNAPSHOT</version>
+    	<version>5.0-Alpha27-SNAPSHOT</version>
   	</parent>
 	
 	<artifactId>tomp2p-examples</artifactId>
@@ -71,7 +71,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>net.tomp2p.examples.ExampleNAT</mainClass>
+							<mainClass>net.tomp2p.examples.SeedNodeForTesting</mainClass>
 							<addClasspath>true</addClasspath>
 							<classpathPrefix>libs/</classpathPrefix>
 						</manifest>

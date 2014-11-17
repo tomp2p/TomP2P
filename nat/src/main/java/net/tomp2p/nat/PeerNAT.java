@@ -1,9 +1,9 @@
 package net.tomp2p.nat;
 
-import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import net.tomp2p.connection.DefaultConnectionConfiguration;
+import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
@@ -23,6 +23,8 @@ import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
+import net.tomp2p.relay.PeerMapUpdateTask;
+import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.RelayListener;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayUtils;
@@ -35,28 +37,18 @@ public class PeerNAT {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PeerNAT.class);
 
-	final private Peer peer;
-	final private NATUtils natUtils;
-	final private RelayRPC relayRPC;
-	final private int peerMapUpdateInterval;
-	final private int failedRelayWaitTime;
-	final private int maxFail;
-	final private boolean manualPorts;
-	final private Collection<PeerAddress> manualRelays;
-
-	private static final int MESSAGE_VERSION = 1;
-	private static final int PERMANENT_FLAG = 1;
-
-	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, Collection<PeerAddress> manualRelays, int failedRelayWaitTime,
-	        int maxFail, int peerMapUpdateInterval, boolean manualPorts) {
+	private final Peer peer;
+	private final NATUtils natUtils;
+	private final RelayRPC relayRPC;
+	private final boolean manualPorts;
+	private final ConnectionConfiguration config;
+	
+	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, boolean manualPorts, ConnectionConfiguration config) {
 		this.peer = peer;
 		this.natUtils = natUtils;
 		this.relayRPC = relayRPC;
-		this.manualRelays = manualRelays;
-		this.failedRelayWaitTime = failedRelayWaitTime;
-		this.maxFail = maxFail;
-		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.manualPorts = manualPorts;
+		this.config = config;
 	}
 
 	public Peer peer() {
@@ -69,36 +61,6 @@ public class PeerNAT {
 
 	public RelayRPC relayRPC() {
 		return relayRPC;
-	}
-
-	/**
-	 * @return the peer map update interval in seconds
-	 */
-	public int peerMapUpdateInterval() {
-		return peerMapUpdateInterval;
-	}
-
-	/**
-	 * @return How many seconds to wait at least until asking a relay that
-	 *         denied a relay request or a relay that failed to act as a relay
-	 *         again
-	 */
-	public int failedRelayWaitTime() {
-		return failedRelayWaitTime;
-	}
-
-	public int maxFail() {
-		return maxFail;
-	}
-	
-	public void addRelay(PeerAddress relay) {
-	    synchronized (manualRelays) {
-	    	manualRelays.add(relay);
-        }   
-    }
-
-	public Collection<PeerAddress> manualRelays() {
-		return manualRelays;
 	}
 
 	public boolean isManualPorts() {
@@ -129,12 +91,13 @@ public class PeerNAT {
 					futureNAT.reporter(future.reporter());
 				}
 
-				if (future.isFailed() && future.isNat() && !isManualPorts()) {
+				if (future.isFailed() && future.isNat() && !manualPorts) {
 					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress(), peer
-					        .connectionBean().channelServer().channelServerConfiguration().portsForwarding());
+							.connectionBean().channelServer().channelServerConfiguration().portsForwarding());
 					if (externalPorts != null) {
-						final PeerAddress serverAddress = peer.peerBean()
-								.serverPeerAddress().changePorts(externalPorts.tcpPort(), externalPorts.udpPort())
+						final PeerAddress serverAddressOrig = peer.peerBean().serverPeerAddress();
+						final PeerAddress serverAddress = serverAddressOrig
+								.changePorts(externalPorts.tcpPort(), externalPorts.udpPort())
 								.changeAddress(future.externalAddress());
 						
 						//set the new address regardless wheter it will succeed or not. 
@@ -147,11 +110,14 @@ public class PeerNAT {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
 								if (future.isSuccess()) {
+									//UPNP or NAT-PMP was successful, set flag
+									peer.peerBean().serverPeerAddress(serverAddress.changePortForwarding(true));
+									peer.peerBean().serverPeerAddress().internalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
 									futureNAT.done(future.peerAddress(), future.reporter());
 								} else {
 									// indicate relay
 									PeerAddress pa = peer.peerBean().serverPeerAddress().changeFirewalledTCP(true)
-									        .changeFirewalledUDP(true);
+											.changeFirewalledUDP(true);
 									peer.peerBean().serverPeerAddress(pa);
 									futureNAT.failed(future);
 								}
@@ -160,7 +126,7 @@ public class PeerNAT {
 					} else {
 						// indicate relay
 						PeerAddress pa = peer.peerBean().serverPeerAddress().changeFirewalledTCP(true)
-						        .changeFirewalledUDP(true);
+								.changeFirewalledUDP(true);
 						peer.peerBean().serverPeerAddress(pa);
 						futureNAT.failed("could not setup NAT");
 					}
@@ -191,7 +157,7 @@ public class PeerNAT {
 
 		try {
 			success = natUtils.mapUPNP(internalHost, peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
-			        ports.udpPort(), ports.tcpPort());
+					ports.udpPort(), ports.tcpPort());
 		} catch (Exception e) {
 			success = false;
 		}
@@ -202,7 +168,7 @@ public class PeerNAT {
 			}
 			try {
 				success = natUtils.mapPMP(peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(), ports.udpPort(),
-				        ports.tcpPort());
+						ports.tcpPort());
 				if (!success) {
 					if (LOG.isWarnEnabled()) {
 						LOG.warn("cannot find NAT-PMP devices");
@@ -220,34 +186,35 @@ public class PeerNAT {
 		return null;
 	}
 
-	public DistributedRelay startSetupRelay(FutureRelay futureRelay) {
-		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime());
+	private DistributedRelay startSetupRelay(FutureRelay futureRelay, final RelayConfig relayConfig) {
+		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, config, relayConfig);
+		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {
 			@Override
 			public BaseFuture shutdown() {
 				return distributedRelay.shutdown();
 			}
 		});
+
+		// open new relay when one failed
 		distributedRelay.addRelayListener(new RelayListener() {
 			@Override
-			public void relayFailed(final DistributedRelay distributedRelay, final PeerConnection peerConnection) {
-				// one failed, add one
+			public void relayFailed(PeerAddress relayAddress) {
+				// one failed, add new one
 				final FutureRelay futureRelay2 = new FutureRelay();
-				distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail);
+				distributedRelay.setupRelays(futureRelay2);
 				peer.notifyAutomaticFutures(futureRelay2);
 			}
 		});
-		
-		distributedRelay.setupRelays(futureRelay, manualRelays, maxFail);
+
+		distributedRelay.setupRelays(futureRelay);
 		return distributedRelay;
 	}
-
-	public Shutdown startRelayMaintenance(final FutureRelay futureRelay, BootstrapBuilder bootstrapBuilder, 
-			DistributedRelay distributedRelay) {
-		final PeerMapUpdateTask peerMapUpdateTask = new PeerMapUpdateTask(relayRPC, bootstrapBuilder,
-				distributedRelay, manualRelays, maxFail);
-		peer.connectionBean().timer()
-		        .scheduleAtFixedRate(peerMapUpdateTask, 0, peerMapUpdateInterval(), TimeUnit.SECONDS);
+	
+	private Shutdown startRelayMaintenance(final FutureRelay futureRelay, BootstrapBuilder bootstrapBuilder,
+			DistributedRelay distributedRelay, int peerMapUpdateInterval) {
+		final PeerMapUpdateTask peerMapUpdateTask = new PeerMapUpdateTask(relayRPC, bootstrapBuilder, distributedRelay);
+		peer.connectionBean().timer().scheduleAtFixedRate(peerMapUpdateTask, 0, peerMapUpdateInterval, TimeUnit.SECONDS);
 
 		final Shutdown shutdown = new Shutdown() {
 			@Override
@@ -268,31 +235,31 @@ public class PeerNAT {
 		};
 	}
 	
-	public FutureRelayNAT startRelay(final PeerAddress peerAddress) {
+	public FutureRelayNAT startRelay(final RelayConfig relayConfig, final PeerAddress peerAddress) {
 		final BootstrapBuilder bootstrapBuilder = peer.bootstrap().peerAddress(peerAddress);
-		return startRelay(bootstrapBuilder);
+		return startRelay(relayConfig, bootstrapBuilder);
 	}
-	
-	public FutureRelayNAT startRelay(BootstrapBuilder bootstrapBuilder) {
+
+	public FutureRelayNAT startRelay(final RelayConfig relayConfig, BootstrapBuilder bootstrapBuilder) {
 		final FutureRelayNAT futureBootstrapNAT = new FutureRelayNAT();
-		return startRelay(futureBootstrapNAT, bootstrapBuilder);
+		return startRelay(relayConfig, futureBootstrapNAT, bootstrapBuilder);
 	}
 
-	public FutureRelayNAT startRelay(final FutureDiscover futureDiscover) {
-		return startRelay(futureDiscover, null);
+	public FutureRelayNAT startRelay(final RelayConfig relayConfig, final FutureDiscover futureDiscover) {
+		return startRelay(relayConfig, futureDiscover, null);
 	}
 
-	public FutureRelayNAT startRelay(final FutureDiscover futureDiscover, final FutureNAT futureNAT) {
+	public FutureRelayNAT startRelay(final RelayConfig relayConfig, final FutureDiscover futureDiscover, final FutureNAT futureNAT) {
 		final FutureRelayNAT futureRelayNAT = new FutureRelayNAT();
 		futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>() {
 			@Override
 			public void operationComplete(FutureDiscover future) throws Exception {
 				if (future.isFailed()) {
 					if (futureNAT != null) {
-						handleFutureNat(futureDiscover.reporter(), futureNAT, futureRelayNAT);
+						handleFutureNat(relayConfig, futureDiscover.reporter(), futureNAT, futureRelayNAT);
 					} else {
 						BootstrapBuilder bootstrapBuilder = peer.bootstrap().peerAddress(futureDiscover.reporter());
-						startRelay(futureRelayNAT, bootstrapBuilder);
+						startRelay(relayConfig, futureRelayNAT, bootstrapBuilder);
 					}
 				} else {
 					futureRelayNAT.done();
@@ -301,76 +268,71 @@ public class PeerNAT {
 		});
 		return futureRelayNAT;
 	}
-	
-	private void handleFutureNat(final PeerAddress peerAddress, final FutureNAT futureNAT,
-            final FutureRelayNAT futureRelayNAT) {
-        futureNAT.addListener(new BaseFutureAdapter<FutureNAT>() {
-        	@Override
-        	public void operationComplete(FutureNAT future) throws Exception {
-        		if (future.isSuccess()) {
-        			// setup UPNP or NATPMP worked
-        			futureRelayNAT.done();
-        		} else {
-        			BootstrapBuilder bootstrapBuilder = peer.bootstrap().peerAddress(
-        					peerAddress);
-        			startRelay(futureRelayNAT, bootstrapBuilder);
-        		}
-        	}
-        });
-    }
 
-	private FutureRelayNAT startRelay(final FutureRelayNAT futureBootstrapNAT,
-	        final BootstrapBuilder bootstrapBuilder) {
+	private void handleFutureNat(final RelayConfig relayConfig, final PeerAddress peerAddress, final FutureNAT futureNAT,
+			final FutureRelayNAT futureRelayNAT) {
+		futureNAT.addListener(new BaseFutureAdapter<FutureNAT>() {
+			@Override
+			public void operationComplete(FutureNAT future) throws Exception {
+				if (future.isSuccess()) {
+					// setup UPNP or NATPMP worked
+					futureRelayNAT.done();
+				} else {
+					BootstrapBuilder bootstrapBuilder = peer.bootstrap().peerAddress(peerAddress);
+					startRelay(relayConfig, futureRelayNAT, bootstrapBuilder);
+				}
+			}
+		});
+	}
 
+	private FutureRelayNAT startRelay(final RelayConfig relayConfig, final FutureRelayNAT futureRelayNAT, final BootstrapBuilder bootstrapBuilder) {
 		PeerAddress upa = peer.peerBean().serverPeerAddress();
-		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true).changeSlow(relayConfig.type().isSlow());
 		peer.peerBean().serverPeerAddress(upa);
+
 		// find neighbors
-
 		FutureBootstrap futureBootstrap = bootstrapBuilder.start();
-		futureBootstrapNAT.futureBootstrap0(futureBootstrap);
-
 		futureBootstrap.addListener(new BaseFutureAdapter<FutureBootstrap>() {
 			@Override
 			public void operationComplete(FutureBootstrap future) throws Exception {
 				if (future.isSuccess()) {
 					// setup relay
 					LOG.debug("bootstrap completed");
-					final FutureRelay futureRelay = new FutureRelay(); 
-					final DistributedRelay distributedRelay = startSetupRelay(futureRelay);
-					futureBootstrapNAT.futureRelay(futureRelay);
+					final FutureRelay futureRelay = new FutureRelay();
+					final DistributedRelay distributedRelay = startSetupRelay(futureRelay, relayConfig);
+					futureRelayNAT.gcmMessageHandler(distributedRelay);
+					futureRelayNAT.futureRelay(futureRelay);
 					futureRelay.addListener(new BaseFutureAdapter<FutureRelay>() {
 
 						@Override
 						public void operationComplete(FutureRelay future) throws Exception {
-							// find neighbors again
 							if (future.isSuccess()) {
+								// find neighbors again
 								FutureBootstrap futureBootstrap = bootstrapBuilder.start();
-								futureBootstrapNAT.futureBootstrap1(futureBootstrap);
 								futureBootstrap.addListener(new BaseFutureAdapter<FutureBootstrap>() {
 									@Override
 									public void operationComplete(FutureBootstrap future) throws Exception {
 										if (future.isSuccess()) {
-											Shutdown shutdown = startRelayMaintenance(futureRelay, bootstrapBuilder, distributedRelay);
-											futureBootstrapNAT.done(shutdown);
+											Shutdown shutdown = startRelayMaintenance(futureRelay, bootstrapBuilder, distributedRelay, relayConfig.peerMapUpdateInterval());
+											futureRelayNAT.done(shutdown);
 										} else {
-											futureBootstrapNAT.failed("2nd FutureBootstrap failed", future);
+											futureRelayNAT.failed("2nd FutureBootstrap failed", future);
 										}
 									}
 								});
 							} else {
-								futureBootstrapNAT.failed("FutureRelay failed", future);
+								futureRelayNAT.failed("FutureRelay failed", future);
 							}
 						}
 					});
 				} else {
-					futureBootstrapNAT.failed("FutureBootstrap failed", future);
+					futureRelayNAT.failed("FutureBootstrap failed", future);
 				}
 			}
 		});
-		return futureBootstrapNAT;
+		return futureRelayNAT;
 	}
-	
+
 	/**
 	 * This Method creates a {@link PeerConnection} to an unreachable (behind a NAT) peer using an active
 	 * relay of the unreachable peer. The connection will be kept open until close() is called.
@@ -390,38 +352,31 @@ public class PeerNAT {
 			// wait for the connection to the relay Peer
 			@Override
 			public void operationComplete(FuturePeerConnection future) throws Exception {
-				final PeerConnection peerConnection;
-				
 				if (fpc.isSuccess()) {
-					peerConnection = fpc.peerConnection();
+					final PeerConnection peerConnection = fpc.peerConnection();
 					if (peerConnection != null) {
 						// create the necessary messages
 						final Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress);
-						//final Message connectMessage = createConnectMessage(unreachablePeerAddress, setUpMessage);
 
-						FutureResponse futureResponse = new FutureResponse(setUpMessage);
-						// send the message to the relay so it forwards it to
-						// the unreachable peer
-						futureResponse = RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(),
-								new DefaultConnectionConfiguration());
-						//peer.connectionBean().sender().cachedRequests().put(connectMessage.messageId(), connectMessage);
-						
+						// send the message to the relay so it forwards it to the unreachable peer
+						FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(),
+								peer.connectionBean(), config, setUpMessage);
+
 						// wait for the unreachable peer to answer
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
-								if (future.isSuccess()) {
-									// get the PeerConnection which is cached in
-									// the PeerBean object
-									final PeerConnection openPeerConnection = peer.peerBean().peerConnection(
-											unreachablePeerAddress.peerId());
+								// get the PeerConnection which is cached in the PeerBean object
+								final PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
+								if (openPeerConnection != null && openPeerConnection.isOpen()) {
 									futureDone.done(openPeerConnection);
 								} else {
+									LOG.error("The reverse connection to the unreachable peer failed.");
 									handleFail(futureDone, "No reverse connection could be established");
-									// we have to remove the Message from the
-									// cache manually if something went wrong.
-									//peer.connectionBean().sender().cachedMessages().remove(connectMessage.messageId());
 								}
+
+								// can close the connection to the relay peer
+								peerConnection.close();
 							}
 						});
 					} else {
@@ -440,12 +395,12 @@ public class PeerNAT {
 			// this message is sent to the relay peer to initiate the rcon setup
 			private Message createSetupMessage(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress) {
 				Message setUpMessage = new Message();
-				setUpMessage.version(MESSAGE_VERSION);
+				setUpMessage.version(peer.connectionBean().p2pId());
 				setUpMessage.sender(peer.peerAddress());
 				setUpMessage.recipient(relayPeerAddress.changePeerId(unreachablePeerAddress.peerId()));
 				setUpMessage.command(RPC.Commands.RCON.getNr());
 				setUpMessage.type(Type.REQUEST_1);
-				setUpMessage.longValue(PERMANENT_FLAG);
+				// setUpMessage.keepAlive(true);
 				return setUpMessage;
 			}
 		});
@@ -461,15 +416,15 @@ public class PeerNAT {
 	 * @param timeoutSeconds
 	 */
 	private void checkRconPreconditions(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress) {
+		if (relayPeerAddress == null || unreachablePeerAddress == null) {
+			throw new IllegalArgumentException("either the relay PeerAddress or the unreachablePeerAddress or both was/were null!");
+		}
+		
 		// If we are already a relay of the unreachable peer, we shouldn't use a
 		// reverse connection setup. It just doesn't make sense!
 		if (peer.peerAddress().peerId().equals(relayPeerAddress.peerId())) {
 			throw new IllegalStateException(
 					"We are alredy a relay for the target peer. We shouldn't use a reverse connection to connect to the targeted peer!");
-		}
-
-		if (relayPeerAddress == null || unreachablePeerAddress == null) {
-			throw new IllegalArgumentException("either the relay PeerAddress or the unreachablePeerAddress or both was/were null!");
 		}
 	}
 }

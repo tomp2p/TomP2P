@@ -83,7 +83,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 
 	// inspired by https://github.com/magnuss/java-bloomfilter
 	public SimpleBloomFilter(final double falsePositiveProbability, final int expectedElements) {
-		final double c = Math.ceil(-(Math.log(falsePositiveProbability) / Math.log(2))) / Math.log(2);
+		final double c = Math.ceil(-(Math.log(falsePositiveProbability) / Math.log(2.0))) / Math.log(2.0);
 		this.expectedElements = expectedElements;
 		int tmpBitArraySize = (int) Math.ceil(c * expectedElements);
 		this.byteArraySize = ((tmpBitArraySize + 7) / 8);
@@ -96,11 +96,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	}
 
 	/**
-	 * Constructs a SimpleBloomFilter out of existing data. You must specify the
-	 * number of bits in the Bloom Filter, and also you should specify the
-	 * number of items you expect to add. The latter is used to choose some
-	 * optimal internal values to minimize the false-positive rate (which can be
-	 * estimated with expectedFalsePositiveRate()).
+	 * Constructs a SimpleBloomFilter out of existing data.
 	 * 
 	 * @param channelBuffer
 	 *            The byte buffer with the data
@@ -145,7 +141,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 		this.k = (int) Math.ceil(hf);
 		if (hf < 1.0) {
 			LOG.warn(
-			        "bit size too small for storing all expected elements. For optimum result increase bf length to {}",
+			        "Bit size too small for storing all expected elements. For optimum result increase byteArraySize to {}",
 			        expectedElements / Math.log(2.0));
 		}
 		this.bitSet = bitSet;
@@ -390,9 +386,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	@Override
 	public int hashCode() {
 		final int magic = 31;
-		// CHECKSTYLE:OFF
 		int hash = 7;
-		// CHECKSTYLE:ON
 		hash = magic * hash + bitSet.hashCode();
 		hash = magic * hash + k;
 		hash = magic * hash + expectedElements;

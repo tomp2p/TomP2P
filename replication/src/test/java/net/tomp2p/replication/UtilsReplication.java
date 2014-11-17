@@ -26,13 +26,13 @@ public class UtilsReplication {
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
         	master = new PeerBuilder(peerId)
                     .ports(port)
-                    .externalBindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
+                    .bindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
         	peers[0] = new PeerBuilderDHT(master).start(); 
             
         } else {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-        	master = new PeerBuilder(peerId).externalBindings(bindings)
+        	master = new PeerBuilder(peerId).bindings(bindings)
                     .peerMap(peerMap).ports(port).start();
         	peers[0] = new PeerBuilderDHT(master).start(); 
         }
@@ -49,13 +49,13 @@ public class UtilsReplication {
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 Peer peer = new PeerBuilder(peerId)
                         .masterPeer(master)
-                        .peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
+                        .peerMap(peerMap).bindings(bindings).start().addAutomaticFuture(automaticFuture);
                 peers[i] = new PeerBuilderDHT(peer).start(); 
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
             	Peer peer = new PeerBuilder(peerId)
-                        .externalBindings(bindings).peerMap(peerMap).masterPeer(master)
+                        .bindings(bindings).peerMap(peerMap).masterPeer(master)
                         .start();
                 peers[i] = new PeerBuilderDHT(peer).start(); 
             }

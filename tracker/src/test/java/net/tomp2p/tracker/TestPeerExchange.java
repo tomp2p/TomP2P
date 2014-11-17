@@ -16,7 +16,7 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
@@ -35,8 +35,9 @@ public class TestPeerExchange {
             
             
             final CountDownLatch c = new CountDownLatch(2);
-            TrackerStorage trackerStorage = new TrackerStorage(60, new int[]{1,2}, 20, recv1Peer.peerBean().peerMap(), recv1.peerAddress(), false);
+            TrackerStorage trackerStorage = new TrackerStorage(60, new int[]{1,2}, 20, recv1Peer.peerBean().peerMap(), recv1Peer.peerAddress(), false);
             Random rnd = new Random(42);
+            
             PeerBuilderTracker.DefaultPeerExchangeHandler pe = new PeerBuilderTracker.DefaultPeerExchangeHandler(trackerStorage, recv1Peer.peerAddress(), rnd) {
             	@Override
             	public boolean put(Number320 key, TrackerData trackerData, PeerAddress referrer) {
@@ -53,7 +54,7 @@ public class TestPeerExchange {
             Number320 key = new Number320(locationKey, domainKey);
             
             sender.trackerStorage().put(key, recv1.peerAddress(), null, new Data("test"));
-            PeerStatatistic ps = sender.trackerStorage().nextForMaintenance(new ArrayList<PeerAddress>());
+            PeerStatistic ps = sender.trackerStorage().nextForMaintenance(new ArrayList<PeerAddress>());
             FuturePing fp = sender.peer().ping().peerAddress(ps.peerAddress()).start().awaitListeners();
             Assert.assertEquals(true, fp.isSuccess());
             
@@ -76,8 +77,6 @@ public class TestPeerExchange {
             
             c.await();
             Assert.assertEquals(1, recv1.trackerStorage().sizeUnverified() + recv1.trackerStorage().size());
-        } catch (Exception e) {
-            e.printStackTrace();
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();

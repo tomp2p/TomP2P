@@ -34,6 +34,7 @@ public class ConnectionBean {
     public static final int DEFAULT_UDP_IDLE_SECONDS = 5;
     public static final int DEFAULT_CONNECTION_TIMEOUT_TCP = 3000;
     public static final int UDP_LIMIT = 1400;
+    public static final int DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS = 60;
 
     private final int p2pId;
     private final Dispatcher dispatcher;
@@ -59,8 +60,6 @@ public class ConnectionBean {
      *            The connection reservation that is responsible for resource management
      * @param resourceConfiguration
      *            The configuration that is responsible for the resource numbers
-     * @param natUtils
-     *            The NAT helper tools
      * @param timer
      *            The timer for the discovery process
      */

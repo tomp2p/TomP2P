@@ -32,7 +32,7 @@ public final class Number320 extends Number implements Comparable<Number320> {
     private final Number160 domainKey;
 
     /**
-     * Constructor with a given location key and domain key.
+     * Creates a new Number320 key from given location and domain keys.
      * 
      * @param locationKey
      *            The location key
@@ -101,14 +101,14 @@ public final class Number320 extends Number implements Comparable<Number320> {
     /**
      * @return The minimum value of a content key
      */
-    public Number480 min() {
+    public Number480 minContentKey() {
         return new Number480(locationKey, domainKey, Number160.ZERO);
     }
 
     /**
      * @return The maxium value of a content key
      */
-    public Number480 max() {
+    public Number480 maxContentKey() {
         return new Number480(locationKey, domainKey, Number160.MAX_VALUE);
     }
 

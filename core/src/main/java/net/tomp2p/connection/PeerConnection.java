@@ -56,6 +56,8 @@ public class PeerConnection {
      *            The remote peer to connect to
      * @param cc
      *            The channel creator where we can open a TCP connection
+     * @param heartBeatMillis
+     *            The heart beat in milliseconds
      */
     public PeerConnection(PeerAddress remotePeer, ChannelCreator cc, int heartBeatMillis) {
         this.remotePeer = remotePeer;
@@ -74,6 +76,8 @@ public class PeerConnection {
      *            The remote peer to connect to
      * @param channelFuture
      *            The channel future of an already open TCP connection
+     * @param heartBeatMillis
+     *            The heart beat in milliseconds
      */
     public PeerConnection(PeerAddress remotePeer, ChannelFuture channelFuture, int heartBeatMillis) {
         this.remotePeer = remotePeer;
@@ -192,6 +196,16 @@ public class PeerConnection {
     public PeerConnection changeRemotePeer(PeerAddress remotePeer) {
     	return new PeerConnection(oneConnection, remotePeer, cc, initiator, map, closeFuture, heartBeatMillis, channelFuture);
     }
+    
+	@Override
+	public int hashCode() {
+		if(channelFuture!=null) {
+			channelFuture.hashCode();
+		} else if(remotePeer != null) {
+			return remotePeer.hashCode();
+		}
+		return super.hashCode();
+	}
     
     @Override
     public boolean equals(Object obj) {

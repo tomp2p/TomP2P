@@ -15,7 +15,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
@@ -31,7 +30,7 @@ public class Encoder {
     private boolean resume = false;
     private Message message;
 
-    private SignatureFactory signatureFactory;
+    private final SignatureFactory signatureFactory;
 
     public Encoder(SignatureFactory signatureFactory) {
         this.signatureFactory = signatureFactory;
@@ -42,12 +41,16 @@ public class Encoder {
 
         this.message = message;
         LOG.debug("message for outbound {}", message);
+        
+        if (message.sender().isRelayed() && message.peerSocketAddresses().isEmpty()) {
+        	message.peerSocketAddresses(message.sender().peerSocketAddresses());
+        }
 
         if (!header) {
             MessageHeaderCodec.encodeHeader(buf, message);
             header = true;
         } else {
-            LOG.debug("send a follow up message {}", message);
+            LOG.debug("send a follow-up message {}", message);
             resume = true;
         }
 
@@ -63,7 +66,7 @@ public class Encoder {
             	if(signatureCodec == null) {
             		signatureCodec = signatureFactory.sign(message.privateKey(), buf);
             	}
-            	//in case of relay, we hava a signature, so we need to reuse this
+            	//in case of relay, we have a signature, so we need to reuse this
             	signatureCodec.write(buf);
             }
         }
@@ -71,50 +74,51 @@ public class Encoder {
     }
 
     private boolean loop(AlternativeCompositeByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
-        NumberType next;
-        while ((next = message.contentRefencencs().peek()) != null) {
+        MessageContentIndex next;
+        while ((next = message.contentReferences().peek()) != null) {
         	final int start = buf.writerIndex();
         	final Content content = next.content(); 
             switch (content) {
             case KEY:
-                buf.writeBytes(message.key(next.number()).toByteArray());
-                message.contentRefencencs().poll();
+                buf.writeBytes(message.key(next.index()).toByteArray());
+                message.contentReferences().poll();
                 break;
             case INTEGER:
-                buf.writeInt(message.intAt(next.number()));
-                message.contentRefencencs().poll();
+                buf.writeInt(message.intAt(next.index()));
+                message.contentReferences().poll();
                 break;
             case LONG:
-                buf.writeLong(message.longAt(next.number()));
-                message.contentRefencencs().poll();
+                buf.writeLong(message.longAt(next.index()));
+                message.contentReferences().poll();
                 break;
             case SET_NEIGHBORS:
-                NeighborSet neighborSet = message.neighborsSet(next.number());
+                NeighborSet neighborSet = message.neighborsSet(next.index());
                 // length
                 buf.writeByte(neighborSet.size());
                 for (PeerAddress neighbor : neighborSet.neighbors()) {
                     buf.writeBytes(neighbor.toByteArray());
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case SET_PEER_SOCKET:
                 List<PeerSocketAddress> list = message.peerSocketAddresses();
                 // length
                 buf.writeByte(list.size());
-                for (PeerSocketAddress addr : list) {
-                	buf.writeByte(addr.isIPv4() ? 0:1);
-                    buf.writeBytes(addr.toByteArray());
+                for (PeerSocketAddress psa : list) {
+                	// IP version flag
+                	buf.writeByte(psa.isIPv4() ? 0:1);
+                    buf.writeBytes(psa.toByteArray());
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case BLOOM_FILTER:
-                SimpleBloomFilter<Number160> simpleBloomFilter = message.bloomFilter(next.number());
+                SimpleBloomFilter<Number160> simpleBloomFilter = message.bloomFilter(next.index());
                 simpleBloomFilter.toByteBuf(buf);
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case SET_KEY640:
+                KeyCollection keys = message.keyCollection(next.index());
                 // length
-                KeyCollection keys = message.keyCollection(next.number());
                 buf.writeInt(keys.size());
                 if (keys.isConvert()) {
                     for (Number160 key : keys.keysConvert()) {
@@ -131,11 +135,11 @@ public class Encoder {
                         buf.writeBytes(key.versionKey().toByteArray());
                     }
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case MAP_KEY640_DATA:
-                DataMap dataMap = message.dataMap(next.number());
-                
+                DataMap dataMap = message.dataMap(next.index());
+                // legnth
                 buf.writeInt(dataMap.size());
                 if (dataMap.isConvert()) {
                     for (Entry<Number160, Data> entry : dataMap.dataMapConvert().entrySet()) {
@@ -154,27 +158,29 @@ public class Encoder {
                         encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
                     }
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case MAP_KEY640_KEYS:
-                KeyMap640Keys keyMap640Keys = message.keyMap640Keys(next.number());
+                KeyMap640Keys keyMap640Keys = message.keyMap640Keys(next.index());
+                // length
                 buf.writeInt(keyMap640Keys.size());
                 for (Entry<Number640, Collection<Number160>> entry : keyMap640Keys.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().locationKey().toByteArray());
                     buf.writeBytes(entry.getKey().domainKey().toByteArray());
                     buf.writeBytes(entry.getKey().contentKey().toByteArray());
                     buf.writeBytes(entry.getKey().versionKey().toByteArray());
-                    // write # of based on keys
+                    // write number of based-on keys
                     buf.writeByte(entry.getValue().size());
-                    // write based on keys
+                    // write based-on keys
                     for (Number160 basedOnKey : entry.getValue()) {
                         buf.writeBytes(basedOnKey.toByteArray());
                     }
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case MAP_KEY640_BYTE:
-                KeyMapByte keysMap = message.keyMapByte(next.number());
+                KeyMapByte keysMap = message.keyMapByte(next.index());
+                // length
                 buf.writeInt(keysMap.size());
                 for (Entry<Number640, Byte> entry : keysMap.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().locationKey().toByteArray());
@@ -183,48 +189,48 @@ public class Encoder {
                     buf.writeBytes(entry.getKey().versionKey().toByteArray());
                     buf.writeByte(entry.getValue());
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case BYTE_BUFFER:
-                Buffer buffer = message.buffer(next.number());
+                Buffer buffer = message.buffer(next.index());
                 if (!resume) {
                     buf.writeInt(buffer.length());
                 }
+                // length
                 int readable = buffer.readable();
                 buf.writeBytes(buffer.buffer(), readable);
                 if (buffer.incRead(readable) == buffer.length()) {
-                    message.contentRefencencs().poll();
+                    message.contentReferences().poll();
                 } else if (message.isStreaming()) {
-                    LOG.debug("we sent a partial message of length {}", readable);
+                    LOG.debug("Partial message of lengt {} sent.", readable);
                     return false;
                 } else {
-                    LOG.debug("Announced a larger buffer, but not in streaming mode. This is wrong.");
-                    throw new RuntimeException(
-                            "Announced a larger buffer, but not in streaming mode. This is wrong.");
+                	final String description = "Larger buffer has been announced, but not in message streaming mode. This is wrong.";
+                    LOG.error(description);
+                    throw new RuntimeException(description);
                 }
                 break;
             case SET_TRACKER_DATA:
-                TrackerData trackerData = message.trackerData(next.number());
+                TrackerData trackerData = message.trackerData(next.index());
                 buf.writeByte(trackerData.peerAddresses().size()); // 1 bytes - length, max. 255
-                for (Map.Entry<PeerStatatistic, Data> entry : trackerData.peerAddresses().entrySet()) {
-                	byte[] me = entry.getKey().peerAddress().toByteArray();
+                for (Map.Entry<PeerAddress, Data> entry : trackerData.peerAddresses().entrySet()) {
+                	byte[] me = entry.getKey().toByteArray();
                     buf.writeBytes(me);
                     Data data = entry.getValue().duplicate();
                     encodeData(buf, data, false, !message.isRequest());
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case PUBLIC_KEY_SIGNATURE:
                 // flag to encode public key
                 message.setHintSign();
-                // then do the regular public key stuff
+                // then do the regular public key stuff -> no break
             case PUBLIC_KEY:
-            	PublicKey publicKey = message.publicKey(next.number());
+            	PublicKey publicKey = message.publicKey(next.index());
             	signatureFactory.encodePublicKey(publicKey, buf);
-            	message.contentRefencencs().poll();
+            	message.contentReferences().poll();
             	break;
             default:
-            case USER1:
                 throw new RuntimeException("Unknown type: " + next.content());
             }
             LOG.debug("wrote in encoder for {} {}", content, buf.writerIndex() - start);
@@ -233,7 +239,7 @@ public class Encoder {
         return true;
     }
 
-	private int encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
+	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
 		if(isConvertMeta) {
 			data = data.duplicateMeta();
 		} else {
@@ -241,13 +247,12 @@ public class Encoder {
 		}
 		if(isReply) {
 			int ttl = (int) ((data.expirationMillis() - System.currentTimeMillis()) / 1000);
-			data.ttlSeconds(ttl < 0 ? 0:ttl);
+			data.ttlSeconds(ttl < 0 ? 0 : ttl);
 		}
-		final int startWriter = buf.writerIndex();
+		//final int startWriter = buf.writerIndex();
 	    data.encodeHeader(buf, signatureFactory);
 	    data.encodeBuffer(buf);
 	    data.encodeDone(buf, signatureFactory, message.privateKey());
-	    return buf.writerIndex() - startWriter;
     }
 
     public Message message() {

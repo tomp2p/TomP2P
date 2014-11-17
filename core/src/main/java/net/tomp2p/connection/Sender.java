@@ -85,6 +85,7 @@ public class Sender {
 	private final List<PeerStatusListener> peerStatusListeners;
 	private final ChannelClientConfiguration channelClientConfiguration;
 	private final Dispatcher dispatcher;
+	private final SendBehavior sendBehavior;
 	private final Random random;
 	private static Peer peer;
 
@@ -110,12 +111,14 @@ public class Sender {
 	 * @param channelClientConfiguration
 	 *            The configuration used to get the signature factory
 	 * @param dispatcher
+	 * @param concurrentHashMap 
 	 */
 	public Sender(final Number160 peerId, final List<PeerStatusListener> peerStatusListeners,
-			final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher) {
+	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior) {
 		this.peerStatusListeners = peerStatusListeners;
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.dispatcher = dispatcher;
+		this.sendBehavior = sendBehavior;
 		this.random = new Random(peerId.hashCode());
 	}
 
@@ -152,60 +155,58 @@ public class Sender {
 	 * @param connectTimeoutMillis
 	 *            The idle we set for the connection setup
 	 */
-	public void sendTCP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int idleTCPSeconds, final int connectTimeoutMillis,
-			final PeerConnection peerConnection) {
+	public void sendTCP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
+	        final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds,
+	        final int connectTimeoutMillis, final PeerConnection peerConnection) {
 		// no need to continue if we already finished
 		if (futureResponse.isCompleted()) {
 			return;
 		}
 		removePeerIfFailed(futureResponse, message);
 
-		// we need to set the neighbors if we use relays
-		if (message.sender().isRelayed() && !message.sender().peerSocketAddresses().isEmpty()) {
-			message.peerSocketAddresses(message.sender().peerSocketAddresses());
-		}
-
 		final ChannelFuture channelFuture;
-		if (peerConnection != null && peerConnection.channelFuture() != null && peerConnection.channelFuture().channel().isActive()) {
+		if (peerConnection != null && peerConnection.channelFuture() != null
+		        && peerConnection.channelFuture().channel().isActive()) {
 			channelFuture = sendTCPPeerConnection(peerConnection, handler, channelCreator, futureResponse);
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		} else if (channelCreator != null) {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
-			// check relay
-			if (message.recipient().isRelayed()) {
-				// check if reverse connection is possible
-				if (!message.sender().isRelayed()) {
+			
+			switch (sendBehavior.tcpSendBehavior(message)) {
+				case DIRECT:
+					connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
+					break;
+				case RCON:
 					handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler);
-				} else {
-					handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection,
+					break;
+				case RELAY:
+					handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection, 
 							timeoutHandler);
-				}
-			} else {
-				connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
+					break;
+				default:
+					throw new IllegalArgumentException("Illegal sending behavior");
 			}
 		}
 	}
-
-	/**
-	 * This method initiates the reverse connection setup (or short: rconSetup).
-	 * It creates a new Message and sends it via relay to the unreachable peer
-	 * which then connects to this peer again. After the connectMessage from the
-	 * unreachable peer this peer will send the original Message and its content
-	 * directly.
-	 * 
-	 * @param handler
-	 * @param futureResponse
-	 * @param message
-	 * @param channelCreator
-	 * @param connectTimeoutMillis
-	 * @param peerConnection
-	 * @param timeoutHandler
-	 */
-	private void handleRcon(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
-			final TimeoutFactory timeoutHandler) {
-
+	
+	 /**
+		 * This method initiates the reverse connection setup (or short: rconSetup).
+		 * It creates a new Message and sends it via relay to the unreachable peer
+		 * which then connects to this peer again. After the connectMessage from the
+		 * unreachable peer this peer will send the original Message and its content
+		 * directly.
+		 * 
+		 * @param handler
+		 * @param futureResponse
+		 * @param message
+		 * @param channelCreator
+		 * @param connectTimeoutMillis
+		 * @param peerConnection
+		 * @param timeoutHandler
+		 */
+		private void handleRcon(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
+				final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
+				final TimeoutFactory timeoutHandler) {
 		message.keepAlive(true);
 
 		LOG.debug("initiate reverse connection setup to peer with peerAddress {}", message.recipient());
@@ -214,28 +215,23 @@ public class Sender {
 		// cache the original message until the connection is established
 		cachedRequests.put(message.messageId(), futureResponse);
 
-		// wait for response (whether the reverse connection setup was
-		// successful)
+		// wait for response (whether the reverse connection setup was successful)
 		final FutureResponse rconResponse = new FutureResponse(rconMessage);
-
-		// TODO: expose peer somehow in sender to be able to notify on automatic
-		// requests
-		// peer.notifyAutomaticFutures(rconResponse);
-
+		
 		SimpleChannelInboundHandler<Message> rconInboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
 			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-				if (msg.command() == Commands.RCON.getNr() && msg.type() == Type.OK) {
+				if(msg.command() == Commands.RCON.getNr() && msg.type() == Type.OK) {
 					LOG.debug("Successfully set up the reverse connection to peer {}", message.recipient().peerId());
 					rconResponse.response(msg);
 				} else {
-					LOG.debug("Could not acquire a reverse connection to peer {}", message.recipient().peerId());
-					rconResponse.failed("Could not acquire a reverse connection, got: " + msg);
-					futureResponse.failed(rconResponse.failedReason());
+					LOG.debug("Could not acquire a reverse connection, msg: {}", message);
+					rconResponse.failed("Could not acquire a reverse connection, msg: " + message);
+					futureResponse.failed(rconResponse);
 				}
 			}
 		};
-
+		
 		// send reverse connection request instead of normal message
 		sendTCP(rconInboundHandler, rconResponse, rconMessage, channelCreator, connectTimeoutMillis, connectTimeoutMillis, peerConnection);
 	}
@@ -243,7 +239,7 @@ public class Sender {
 	/**
 	 * This method makes a copy of the original Message and prepares it for
 	 * sending it to the relay.
-	 * 
+	 *
 	 * @param message
 	 * @return rconMessage
 	 */
@@ -255,8 +251,13 @@ public class Sender {
 		Message rconMessage = new Message();
 		rconMessage.sender(message.sender());
 		rconMessage.version(message.version());
-		rconMessage.intValue(message.messageId());
 
+		// store the message id in the payload to get the cached message later
+		rconMessage.intValue(message.messageId());
+		
+		// the message must have set the keepAlive Flag true. If not, the relay
+		// peer will close the PeerConnection to the unreachable peer.
+		rconMessage.keepAlive(true);
 		// making the message ready to send
 		readyToSend(message, socketAddress, rconMessage, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_1);
 
@@ -276,7 +277,6 @@ public class Sender {
 	private static PeerSocketAddress extractRandomRelay(final Message message) {
 		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
 		PeerSocketAddress socketAddress = null;
-
 		if (relayInetAdresses.length > 0) {
 			// we should be fair and choose one of the relays randomly
 			socketAddress = (PeerSocketAddress) relayInetAdresses[Utils.randomPositiveInt(relayInetAdresses.length)];
@@ -319,7 +319,7 @@ public class Sender {
 	/**
 	 * This method is extracted by @author jonaswagner to ensure that no
 	 * duplicate code exist.
-	 * 
+	 *
 	 * @param handler
 	 * @param futureResponse
 	 * @param channelCreator
@@ -328,17 +328,19 @@ public class Sender {
 	 * @param timeoutHandler
 	 * @param message
 	 */
-	private void connectAndSend(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
-			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
-			final TimeoutFactory timeoutHandler, final Message message) {
+	private void connectAndSend(final SimpleChannelInboundHandler<Message> handler,
+	        final FutureResponse futureResponse, final ChannelCreator channelCreator, final int connectTimeoutMillis,
+	        final PeerConnection peerConnection, final TimeoutFactory timeoutHandler, final Message message) {
 		InetSocketAddress recipient = message.recipient().createSocketTCP();
-		final ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler,
-				connectTimeoutMillis, futureResponse);
+		final ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
+		        timeoutHandler, connectTimeoutMillis, futureResponse);
 		afterConnect(futureResponse, message, channelFuture, handler == null);
 	}
 
 	/**
-	 * TODO: document what is done here
+	 * Both peers are relayed, thus sending directly or over reverse connection
+	 * is not possible. Send the message to one of the receiver's relays.
+	 * 
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -350,9 +352,9 @@ public class Sender {
 	 * @param timeoutHandler
 	 */
 	private void handleRelay(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
-			final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds, final int connectTimeoutMillis,
-			final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
-		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses(), pingBuilderFactory);
+	        final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds,
+	        final int connectTimeoutMillis, final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
+		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses());
 		futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
 			@Override
 			public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
@@ -366,7 +368,8 @@ public class Sender {
 						@Override
 						public void operationComplete(FutureResponse future) throws Exception {
 							if (future.isFailed()) {
-								if (future.responseMessage() != null && future.responseMessage().type() != Message.Type.USER1) {
+								if (future.responseMessage() != null && future.responseMessage().type() != Message.Type.DENIED) {
+									// remove the failed relay and try again
 									clearInactivePeerSocketAddress(futureDone);
 									sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
 											peerConnection);
@@ -395,13 +398,12 @@ public class Sender {
 	}
 
 	/**
-	 * TODO: say what we are doing here
+	 * Ping all relays of the receiver. The first one answering is picked as the responsible relay for this message.
 	 * 
-	 * @param peerSocketAddresses
-	 * @param pingBuilder
+	 * @param peerSocketAddresses a collection of relay addresses
 	 * @return
 	 */
-	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses, PingBuilderFactory pingBuilderFactory) {
+	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses) {
 		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
 
 		FuturePing[] forks = new FuturePing[peerSocketAddresses.size()];
@@ -410,10 +412,12 @@ public class Sender {
 			if (psa != null) {
 				InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(psa);
 				PingBuilder pingBuilder = pingBuilderFactory.create();
-				forks[index++] = pingBuilder.inetAddress(inetSocketAddress.getAddress()).port(inetSocketAddress.getPort()).start();
+				forks[index++] = pingBuilder.inetAddress(inetSocketAddress.getAddress())
+				        .port(inetSocketAddress.getPort()).start();
 			}
 		}
-		FutureForkJoin<FuturePing> ffk = new FutureForkJoin<FuturePing>(1, true, new AtomicReferenceArray<FuturePing>(forks));
+		FutureForkJoin<FuturePing> ffk = new FutureForkJoin<FuturePing>(1, true, new AtomicReferenceArray<FuturePing>(
+		        forks));
 		ffk.addListener(new BaseFutureAdapter<FutureForkJoin<FuturePing>>() {
 			@Override
 			public void operationComplete(FutureForkJoin<FuturePing> future) throws Exception {
@@ -427,24 +431,25 @@ public class Sender {
 		return futureDone;
 	}
 
-	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator, PeerConnection peerConnection,
-			ChannelHandler handler, TimeoutFactory timeoutHandler, int connectTimeoutMillis, FutureResponse futureResponse) {
+	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator,
+	        PeerConnection peerConnection, ChannelHandler handler, TimeoutFactory timeoutHandler,
+	        int connectTimeoutMillis, FutureResponse futureResponse) {
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 
 		if (timeoutHandler != null) {
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
-			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
+			handlers.put("timeout0",
+			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
 			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
 		} else {
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
 		}
 
-		handlers.put("decoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(channelClientConfiguration.signatureFactory())));
-		handlers.put(
-				"encoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
+		handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(
+		        channelClientConfiguration.signatureFactory())));
+		handlers.put("encoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false,
+		        channelClientConfiguration.signatureFactory())));
 
 		if (peerConnection != null) {
 			// we expect replies on this connection
@@ -460,8 +465,10 @@ public class Sender {
 			heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingBuilderFactory);
 			handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
 		}
+		
+		InetSocketAddress reflectedRecipient = Utils.natReflection(recipient, false, dispatcher.peerBean().serverPeerAddress());
 
-		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers, futureResponse);
+		ChannelFuture channelFuture = channelCreator.createTCP(reflectedRecipient, connectTimeoutMillis, handlers, futureResponse);
 
 		if (peerConnection != null && channelFuture != null) {
 			peerConnection.channelFuture(channelFuture);
@@ -470,8 +477,8 @@ public class Sender {
 		return channelFuture;
 	}
 
-	private ChannelFuture sendTCPPeerConnection(PeerConnection peerConnection, ChannelHandler handler, final ChannelCreator channelCreator,
-			final FutureResponse futureResponse) {
+	private ChannelFuture sendTCPPeerConnection(PeerConnection peerConnection, ChannelHandler handler,
+	        final ChannelCreator channelCreator, final FutureResponse futureResponse) {
 		// if the channel gets closed, the future should get notified
 		ChannelFuture channelFuture = peerConnection.channelFuture();
 		// channelCreator can be null if we don't need to create any channels
@@ -481,7 +488,7 @@ public class Sender {
 		ChannelPipeline pipeline = channelFuture.channel().pipeline();
 
 		// we need to replace the handler if this comes from the peer that
-		// create a peerconnection, otherwise we
+		// create a peerConnection, otherwise we
 		// need to add a handler
 		addOrReplace(pipeline, "dispatcher", "handler", handler);
 		// uncomment this if the recipient should also heartbeat
@@ -490,9 +497,9 @@ public class Sender {
 		return channelFuture;
 	}
 
-	// ChannelHandler channelHandler) {
 	// private boolean addIfAbsent(ChannelPipeline pipeline, String before,
 	// String name,
+	// ChannelHandler channelHandler) {
 	// List<String> names = pipeline.names();
 	// if (names.contains(name)) {
 	// return false;
@@ -539,8 +546,10 @@ public class Sender {
 	 */
 	// TODO: if message.getRecipient() is me, than call dispatcher directly
 	// without sending over Internet.
-	public void sendUDP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int idleUDPSeconds, final boolean broadcast) {
+	public void sendUDP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
+	        final Message message, final ChannelCreator channelCreator, final int idleUDPSeconds,
+	        final boolean broadcast) {
+		
 		List<ChannelCreator> channelCreators = null;
 		// no need to continue if we already finished
 		if (futureResponse.isCompleted()) {
@@ -585,51 +594,45 @@ public class Sender {
 			final int nrTCPHandlers = 7; // 5 / 0.75
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds, isFireAndForget);
-			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
+			handlers.put("timeout0",
+			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
 			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
 		}
 
-		handlers.put(
-				"decoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(channelClientConfiguration.signatureFactory())));
-		handlers.put(
-				"encoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
+		handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(
+		        channelClientConfiguration.signatureFactory())));
+		handlers.put("encoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false,
+		        channelClientConfiguration.signatureFactory())));
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-
-		// TODO jwa this is not longer needed!, we want to make this possible
-		// if (message.recipient().isRelayed() && message.command() !=
-		// RPC.Commands.NEIGHBOR.getNr()
-		// && message.command() != RPC.Commands.PING.getNr()) {
-		// LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}",
-		// message);
-		// futureResponse.failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
-		// } else {
-		final ChannelFuture channelFuture;
-		// TODO jwa check if holePunch should be made
-
-		if (channelCreators == null) {
-
-			if (message.recipient().isRelayed()) {
-
-				List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
-				LOG.debug("send neighbor request to random relay peer {}", psa);
-				if (psa.size() > 0) {
-					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-					message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
-					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null);
-				} else {
-					futureResponse.failed("Peer is relayed, but no relay given");
-					return;
-				}
-			} else {
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null);
+		try {
+			final ChannelFuture channelFuture;
+			switch (sendBehavior.udpSendBehavior(message)) {
+				case DIRECT:
+					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+					break;
+				case RELAY:
+					List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
+					LOG.debug("send neighbor request to random relay peer {}", psa);
+					if (psa.size() > 0) {
+						PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
+						message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+						channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+					} else {
+						futureResponse.failed("Peer is relayed, but no relay given");
+						return;
+					}
+					break;
+				default:
+					throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");
 			}
 			afterConnect(futureResponse, message, channelFuture, handler == null);
+		} catch (UnsupportedOperationException e) {
+			LOG.warn(e.getMessage());
+			futureResponse.failed(e);
+
 		}
-		// }
 	}
 
 	private void initHolePunch(Message socketInfoMessage, ChannelCreator channelCreator, int idleUDPSeconds,
@@ -708,7 +711,8 @@ public class Sender {
 	 *            True, if we don't expect a message
 	 * @return The timeout creator that will create timeout handlers
 	 */
-	private TimeoutFactory createTimeoutHandler(final FutureResponse futureResponse, final int idleMillis, final boolean fireAndForget) {
+	private TimeoutFactory createTimeoutHandler(final FutureResponse futureResponse, final int idleMillis,
+	        final boolean fireAndForget) {
 		return fireAndForget ? null : new TimeoutFactory(futureResponse, idleMillis, peerStatusListeners, "Sender");
 	}
 
@@ -724,8 +728,8 @@ public class Sender {
 	 * @param fireAndForget
 	 *            True, if we don't expect a message
 	 */
-	private void afterConnect(final FutureResponse futureResponse, final Message message, final ChannelFuture channelFuture,
-			final boolean fireAndForget) {
+	private void afterConnect(final FutureResponse futureResponse, final Message message,
+	        final ChannelFuture channelFuture, final boolean fireAndForget) {
 		if (channelFuture == null) {
 			futureResponse.failed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
 			return;
@@ -752,8 +756,9 @@ public class Sender {
 					futureResponse.failed("Channel creation failed " + future.channel() + "/" + future.cause());
 					// may have been closed by the other side,
 					// or it may have been canceled from this side
-					if (!(future.cause() instanceof CancellationException) && !(future.cause() instanceof ClosedChannelException)
-							&& !(future.cause() instanceof ConnectException)) {
+					if (!(future.cause() instanceof CancellationException)
+					        && !(future.cause() instanceof ClosedChannelException)
+					        && !(future.cause() instanceof ConnectException)) {
 						LOG.warn("Channel creation failed to {} for {}", future.channel(), message);
 					}
 				}
@@ -772,7 +777,8 @@ public class Sender {
 	 * @param fireAndForget
 	 *            True, if we don't expect a message
 	 */
-	private void afterSend(final ChannelFuture writeFuture, final FutureResponse futureResponse, final boolean fireAndForget) {
+	private void afterSend(final ChannelFuture writeFuture, final FutureResponse futureResponse,
+	        final boolean fireAndForget) {
 		final Cancel writeCancel = createCancel(writeFuture);
 		writeFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 
@@ -801,8 +807,6 @@ public class Sender {
 	 *            The future to set the response
 	 * @param close
 	 *            The close future
-	 * @param cause
-	 *            The response message
 	 */
 	private void reportFailed(final FutureResponse futureResponse, final ChannelFuture close) {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {
@@ -820,8 +824,6 @@ public class Sender {
 	 *            The future to set the response
 	 * @param close
 	 *            The close future
-	 * @param responseMessage
-	 *            The response message
 	 */
 	private void reportMessage(final FutureResponse futureResponse, final ChannelFuture close) {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {
@@ -865,6 +867,11 @@ public class Sender {
 		});
 	}
 
+	/**
+	 * Get currently cached requests. They are cached because for example the receiver is behind a NAT. Instead
+	 * of sending the message directly, a reverse connection is set up beforehand. After a successful connection
+	 * establishment, the cached messages are sent through the direct channel.
+	 */
 	public ConcurrentHashMap<Integer, FutureResponse> cachedRequests() {
 		return cachedRequests;
 	}

@@ -38,9 +38,6 @@ public interface Digest {
      *            The start key for the digest
      * @param to
      *            The end key for the digest
-     * @param contentKey
-     *            The content key to look for. The key that is not found is ignored. Can be set to null -> gets the
-     *            information for all content keys
      * @return A list of all hashes for the content keys. To return a predictable amount (important for routing), the
      *         hashes can be xored.
      */

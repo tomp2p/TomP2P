@@ -24,6 +24,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
+import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -221,6 +222,9 @@ public class DiscoverBuilder {
             public void operationComplete(FutureResponse future) throws Exception {
                 PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
                 if (futureResponseTCP.isSuccess()) {
+                	//now we know our internal address, set it as it could be a wrong one, e.g. 127.0.0.1
+                	serverAddress = serverAddress.changeAddress(futureResponseTCP.responseMessage().recipient().inetAddress());
+                	
                     Collection<PeerAddress> tmp = futureResponseTCP.responseMessage().neighborsSet(0)
                             .neighbors();
                     futureDiscover.reporter(futureResponseTCP.responseMessage().sender());
@@ -232,10 +236,12 @@ public class DiscoverBuilder {
                             // check if we have this interface in that we can
                             // listen to
                             Bindings bindings2 = new Bindings().addAddress(seenAs.inetAddress());
-                            String status = DiscoverNetworks.discoverInterfaces(bindings2);
+                          
+                            DiscoverResults discoverResults = DiscoverNetworks.discoverInterfaces(bindings2);
+                            String status = discoverResults.status();
                             LOG.info("2nd interface discovery: {}", status);
-                            if (bindings2.foundAddresses().size() > 0
-                                    && bindings2.foundAddresses().contains(seenAs.inetAddress())) {
+                            if (discoverResults.newAddresses().size() > 0
+                                    && discoverResults.newAddresses().contains(seenAs.inetAddress())) {
                                 serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
                                 peer.peerBean().serverPeerAddress(serverAddress);
                                 LOG.info("we were having the wrong interface, change it to: {}", serverAddress);
@@ -244,10 +250,14 @@ public class DiscoverBuilder {
                                 // packets
                                 final Ports ports = peer.connectionBean().channelServer().channelServerConfiguration().portsForwarding();
                                 if (ports.isManualPort()) {
+                                	final PeerAddress serverAddressOrig = serverAddress;
                                     serverAddress = serverAddress.changePorts(ports.tcpPort(),
                                             ports.udpPort());
                                     serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
+                                    //manual port forwarding detected, set flag
+                                    serverAddress = serverAddress.changePortForwarding(true);
                                     peer.peerBean().serverPeerAddress(serverAddress);
+                                    peer.peerBean().serverPeerAddress().internalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
                                     LOG.info("manual ports, change it to: {}", serverAddress);
                                 } else {
                                     // we need to find a relay, because there is a NAT in the way.

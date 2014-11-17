@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Encodes and decodes the header using a Netty Buffer.
+ * Encodes and decodes the header of a {@code Message} sing a Netty Buffer.
  * 
  * @author Thomas Bocek
  * 
@@ -47,22 +47,21 @@ public final class MessageHeaderCodec {
     public static final int HEADER_SIZE = 58;
 
     /**
-     * Encodes the message object.
+     * Encodes a message object.
      * 
-     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit id - 8bit message command - 160bit
-     * sender id - 16bit tcp port - 16bit udp port - 160bit recipient id - 32bit content types - 8bit options. It total,
+     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit message id - 8bit message command - 160bit
+     * sender id - 16bit sender tcp port - 16bit sender udp port - 160bit recipient id - 32bit content types - 8bit options. It total,
      * the header is of size 58 bytes.
      * 
      * @param buffer
-     *            The Netty buffer to fill
+     *            The buffer to encode to
      * @param message
-     *            The message with the header that will be serialized
+     *            The message with the header that will be encoded
      * @return The buffer passed as an argument
      */
-    public static ByteBuf encodeHeader(final ByteBuf buffer, final Message message) {
-        // CHECKSTYLE:OFF
-        final int versionAndType = message.version() << 4 | (message.type().ordinal() & 0xf);
-        // CHECKSTYLE:ON
+    public static void encodeHeader(final ByteBuf buffer, final Message message) {
+        
+    	final int versionAndType = message.version() << 4 | (message.type().ordinal() & Utils.MASK_0F);
         buffer.writeInt(versionAndType); // 4
         buffer.writeInt(message.messageId()); // 8
         buffer.writeByte(message.command()); // 9
@@ -71,64 +70,59 @@ public final class MessageHeaderCodec {
         buffer.writeShort((short) message.sender().udpPort()); // 33
         buffer.writeBytes(message.recipient().peerId().toByteArray()); // 53
         buffer.writeInt(encodeContentTypes(message.contentTypes())); // 57
-        // CHECKSTYLE:OFF
-        buffer.writeByte((message.sender().options() << 4) | message.options()); // 58
-        // CHECKSTYLE:ON
-        return buffer;
+        // three bits for the message options, 5 bits for the sender options
+        buffer.writeByte((message.sender().options() << 3) | message.options()); // 58
     }
 
     /**
-     * Decode a message header from a Netty buffer.
+     * Decodes a message object.
      * 
-     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit id - 8bit message command - 160bit
-     * sender id - 16bit tcp port - 16bit udp port - 160bit recipient id - 32bit content types - 8bit options. It total,
+     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit message id - 8bit message command - 160bit
+     * sender id - 16bit sender tcp port - 16bit sender udp port - 160bit recipient id - 32bit content types - 8bit options. It total,
      * the header is of size 58 bytes.
      * 
      * @param buffer
      *            The buffer to decode from
-     * @param recipient
+     * @param recipientSocket
      *            The recipient of the message
-     * @param sender
+     * @param senderSocket
      *            The sender of the packet, which has been set in the socket class
-     * @return The partial message, only the header fields are filled
+     * @return The partial message where only the header fields are set
      */
-    public static Message decodeHeader(final ByteBuf buffer, final InetSocketAddress recipient,
-            final InetSocketAddress sender) {
-        LOG.debug("Decode message, recipient={}, sender={}", recipient, sender);
+    public static Message decodeHeader(final ByteBuf buffer, final InetSocketAddress recipientSocket,
+            final InetSocketAddress senderSocket) {
+        LOG.debug("Decode message. Recipient: {}, Sender:{}.", recipientSocket, senderSocket);
         final Message message = new Message();
         final int versionAndType = buffer.readInt();
-        // CHECKSTYLE:OFF
         message.version(versionAndType >>> 4);
-        message.type(Type.values()[(versionAndType & 0xf)]);
-        // CHECKSTYLE:ON
+        message.type(Type.values()[(versionAndType & Utils.MASK_0F)]);
         message.messageId(buffer.readInt());
         final int command = buffer.readUnsignedByte();
         message.command((byte) command);
         final Number160 senderID = readID(buffer);
-        final int portTCP = buffer.readUnsignedShort();
-        final int portUDP = buffer.readUnsignedShort();
+        final int tcpPort = buffer.readUnsignedShort();
+        final int udpPort = buffer.readUnsignedShort();
         final Number160 recipientID = readID(buffer);
-        message.recipient(new PeerAddress(recipientID, recipient));
+        message.recipient(new PeerAddress(recipientID, recipientSocket));
         final int contentTypes = buffer.readInt();
         message.hasContent(contentTypes != 0);
         message.contentTypes(decodeContentTypes(contentTypes, message));
         // set the address as we see it, important for port forwarding
         // identification
         final int options = buffer.readUnsignedByte();
-        // CHECKSTYLE:OFF
-        message.options(options & 0xf);
-        final int senderOptions = options >>> 4;
-        // CHECKSTYLE:ON
-        final PeerAddress peerAddress = new PeerAddress(senderID, sender.getAddress(), portTCP, portUDP,
-                senderOptions);
+        // three bits for the message options, 5 bits for the sender options
+		message.options(options & 0x7);
+        final int senderOptions = options >>> 3;
+        final PeerAddress peerAddress = new PeerAddress(senderID, 
+        		senderSocket.getAddress(), tcpPort, udpPort, senderOptions);
         message.sender(peerAddress);
-        message.senderSocket(sender);
-        message.recipientSocket(recipient);
+        message.senderSocket(senderSocket);
+        message.recipientSocket(recipientSocket);
         return message;
     }
 
     /**
-     * Read a 160bit number from a Netty buffer. I did not want to include ChannelBuffer in the class Number160.
+     * Reads a {@code Number160} number from a Netty buffer. I did not want to include ChannelBuffer in the class Number160.
      * 
      * @param buffer
      *            The Netty buffer
@@ -141,48 +135,42 @@ public final class MessageHeaderCodec {
     }
 
     /**
-     * Encodes the content types to a 32bit number. Opposite of {@link #decodeContentTypes(int)}.
+     * Encodes the 8 content types to an integer (32 bit).
      * 
      * @param contentTypes
-     *            The 8 content types. Null means Empty
-     * @return The encoded 32bit number
+     *            The 8 content types to be encoded. Null means Content.Empty
+     * @return The encoded 32bit integer
      */
     public static int encodeContentTypes(final Content[] contentTypes) {
         int result = 0;
         for (int i = 0; i < Message.CONTENT_TYPE_LENGTH / 2; i++) {
             if (contentTypes[i * 2] != null) {
-                // CHECKSTYLE:OFF
                 result |= (contentTypes[i * 2].ordinal() << (i * 8));
-                // CHECKSTYLE:ON
             }
             if (contentTypes[(i * 2) + 1] != null) {
-                // CHECKSTYLE:OFF
                 result |= ((contentTypes[(i * 2) + 1].ordinal() << 4) << (i * 8));
-                // CHECKSTYLE:ON
             }
         }
         return result;
     }
 
     /**
-     * Decodes the content types from a 32bit number. Opposite of {@link #encodeContentTypes(Content[])}.
+     * Decodes the 8 content types from an integer (32 bit).
      * 
      * @param contentTypes
-     *            The 8 content types. No null values are returned
+     *            The 8 content types to be decoded. No null values are returned
      * @param message 
      * @return The decoded content types
      */
-    // CHECKSTYLE:OFF
     public static Content[] decodeContentTypes(int contentTypes, Message message) {
         Content[] result = new Content[Message.CONTENT_TYPE_LENGTH];
         for (int i = 0; i < Message.CONTENT_TYPE_LENGTH; i++) {
-            Content type = Content.values()[contentTypes & Utils.MASK_0F];
-            result[i] = type;
-            if(type == Content.PUBLIC_KEY_SIGNATURE) {
+            Content content = Content.values()[contentTypes & Utils.MASK_0F];
+            result[i] = content;
+            if(content == Content.PUBLIC_KEY_SIGNATURE) {
                 message.setHintSign();
             }
             contentTypes >>>= 4;
-            // CHECKSTYLE:ON
         }
         return result;
     }

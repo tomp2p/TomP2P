@@ -60,12 +60,11 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
 	private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
 	private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
+	private int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
 
 	private boolean forceTCP = false;
 
 	private ProgressListener progressListener;
-	
-	private int sourcePort;
 
 	public SendDirectBuilder(Peer peer, PeerAddress recipientAddress) {
 		this.peer = peer;
@@ -205,6 +204,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 						} else {
 							final FutureResponse futureResponse = request.sendTCP(future.channelCreator());
 						}
+						request.sendTCP(future.channelCreator());
 					} else {
 						request.futureResponse().failed("could not create channel", future);
 					}
@@ -336,6 +336,22 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		this.forceTCP = true;
 		return this;
 	}
+	
+
+	@Override
+	public int slowResponseTimeoutSeconds() {
+		return slowResponseTimeoutSeconds;
+	}
+	
+	/**
+	 * @param slowResponseTimeoutSeconds the amount of seconds a requester waits for the final answer of a
+	 *            slow peer. If the slow peer does not answer within this time, the request fails.
+	 * @return This class
+	 */
+	public SendDirectBuilder slowResponseTimeoutSeconds(final int slowResponseTimeoutSeconds) {
+		this.slowResponseTimeoutSeconds = slowResponseTimeoutSeconds;
+		return this;
+	}
 
 	public SendDirectBuilder progressListener(ProgressListener progressListener) {
 		this.progressListener = progressListener;
@@ -396,10 +412,5 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 */
 	public KeyPair keyPair() {
 		return keyPair;
-	}
-
-	public SendDirectBuilder sourcePort(int port) {
-		this.sourcePort = port;
-		return this;
 	}
 }

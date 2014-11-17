@@ -1,4 +1,4 @@
-package net.tomp2p.rcon;
+package net.tomp2p.relay;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -17,7 +17,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.UtilsNAT;
 import net.tomp2p.rpc.ObjectDataReply;
 
 import org.junit.After;
@@ -36,7 +35,7 @@ public class TestRcon {
 	private static final int PORTS = 4001;
 	private static final int NUMBER_OF_NODES = 5;
 	private static final Random RND = new Random();
-	
+
 	@Before
 	public void setupRelay() throws Exception {
 		// setup test peers
@@ -59,13 +58,15 @@ public class TestRcon {
 		PeerAddress pa = unreachable.peerBean().serverPeerAddress();
 		pa = pa.changeFirewalledTCP(true).changeFirewalledUDP(true);
 		unreachable.peerBean().serverPeerAddress(pa);
+		
 		// find neighbors
 		FutureBootstrap futureBootstrap = unreachable.bootstrap().peerAddress(peers[0].peerAddress()).start();
 		futureBootstrap.awaitUninterruptibly();
 		Assert.assertTrue(futureBootstrap.isSuccess());
+		
 		// setup relay
 		PeerNAT uNat = new PeerBuilderNAT(unreachable).start();
-		FutureRelayNAT frn = uNat.startRelay(master.peerAddress());
+		FutureRelayNAT frn = uNat.startRelay(RelayConfig.OpenTCP(), master.peerAddress());
 		frn.awaitUninterruptibly();
 		Assert.assertTrue(frn.isSuccess());
 
@@ -88,7 +89,6 @@ public class TestRcon {
 		final CountDownLatch cLatch = new CountDownLatch(3);
 
 		unreachable.objectDataReply(new ObjectDataReply() {
-
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
 				if (requestString.equals((String) request)) {
@@ -105,32 +105,29 @@ public class TestRcon {
 			@Override
 			public void operationComplete(FutureDone<PeerConnection> future) throws Exception {
 				if (future.isSuccess()) {
-					if (PeerConnection.class.equals(future.object().getClass())) {
+					System.err.println("received: " + future.object().toString());
 
-						System.err.println("received: " + future.object().toString());
+					FutureDirect fd2 = reachable.sendDirect(future.object()).object(requestString).start();
+					fd2.addListener(new BaseFutureAdapter<FutureDirect>() {
 
-						FutureDirect fd2 = reachable.sendDirect(future.object()).object(requestString).start();
-						fd2.addListener(new BaseFutureAdapter<FutureDirect>() {
-
-							@Override
-							public void operationComplete(FutureDirect future) throws Exception {
-								if (future.isSuccess()) {
-									if (replyString.equals((String) future.object())) {
-										System.err.println("received: " + (String) future.object());
-										cLatch.countDown();
-									}
+						@Override
+						public void operationComplete(FutureDirect future) throws Exception {
+							if (future.isSuccess()) {
+								if (replyString.equals((String) future.object())) {
+									System.err.println("received: " + (String) future.object());
+									cLatch.countDown();
 								}
 							}
-						});
-						cLatch.countDown();
-					}
+						}
+					});
+					cLatch.countDown();
 				}
 			}
 		});
 		fd.awaitUninterruptibly();
 
 		checkFail(cLatch);
-		
+
 		System.err.println("testPermanentReverseConnection() end!");
 	}
 
@@ -157,14 +154,13 @@ public class TestRcon {
 		fd.awaitUninterruptibly();
 
 		checkFail(cLatch);
-		
+
 		System.err.println("testReverseConnection() end!");
 	}
 
 	private void checkFail(final CountDownLatch cLatch) throws InterruptedException {
-		cLatch.await(10, TimeUnit.SECONDS);
-		if (cLatch.getCount() > 0) {
-			Assert.fail("The test method did not complete successfully!");
+		if (!cLatch.await(10, TimeUnit.SECONDS)) {
+			Assert.fail("The test method did not complete successfully! Still has " + cLatch.getCount() + " counts.");
 		}
 	}
 

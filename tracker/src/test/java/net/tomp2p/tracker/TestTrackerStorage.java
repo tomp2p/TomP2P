@@ -12,7 +12,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
@@ -33,7 +33,7 @@ public class TestTrackerStorage {
 		boolean retVal = trackerStorage.put(n320, selfAddress, null, new Data("test"));
 		Assert.assertTrue(retVal);
 		//
-		TrackerData td = trackerStorage.peers(n320);
+		TrackerData td = trackerStorage.trackerData(n320);
 		Object o = td.peerAddresses().values().iterator().next().object();
 		Assert.assertEquals(o, "test");
 	}
@@ -51,8 +51,8 @@ public class TestTrackerStorage {
 		boolean retVal = trackerStorage.put(n320, selfAddress, null, new Data("test"));
 		Assert.assertTrue(retVal);
 		//
-		TrackerData td = trackerStorage.peers(n320);
-		Assert.assertNull(td);
+		TrackerData td = trackerStorage.trackerData(n320);
+		Assert.assertTrue(td.isEmpty());
 	}
 	
 	@Test
@@ -68,7 +68,7 @@ public class TestTrackerStorage {
 		trackerStorage.put(n320, selfAddress, null, new Data("test"));
 		trackerStorage.peerFound(selfAddress, null, null);
 		
-		TrackerData td = trackerStorage.peers(n320);
+		TrackerData td = trackerStorage.trackerData(n320);
 		Object o = td.peerAddresses().values().iterator().next().object();
 		Assert.assertEquals(o, "test");
 	}
@@ -90,9 +90,9 @@ public class TestTrackerStorage {
 		trackerStorage.peerFound(selfAddress, null, null);
 		trackerStorage.put(n320, selfAddress, pair1.getPublic(), new Data("test1"));
 		
-		TrackerData td = trackerStorage.peers(n320);
+		TrackerData td = trackerStorage.trackerData(n320);
 		Object o = td.peerAddresses().values().iterator().next().object();
-		Assert.assertEquals(o, "test1");
+		Assert.assertEquals(o, "test");
 	}
 	
 	@Test
@@ -136,7 +136,7 @@ public class TestTrackerStorage {
 		Number320 n320 = new Number320(Number160.ZERO, Number160.ZERO);
 
 		trackerStorage.put(n320, selfAddress, null, new Data("test"));
-		PeerStatatistic ps = trackerStorage.nextForMaintenance(null);
+		PeerStatistic ps = trackerStorage.nextForMaintenance(null);
 		Assert.assertEquals(ps.peerAddress().peerId(), self);	
 	}
 	
@@ -151,7 +151,7 @@ public class TestTrackerStorage {
 		Number320 n320 = new Number320(Number160.ZERO, Number160.ZERO);
 
 		trackerStorage.put(n320, selfAddress, null, new Data("test"));
-		PeerStatatistic ps = trackerStorage.nextForMaintenance(null);
+		PeerStatistic ps = trackerStorage.nextForMaintenance(null);
 		trackerStorage.peerFound(selfAddress, null, null);
 		ps = trackerStorage.nextForMaintenance(null);
 		Assert.assertNull(ps);

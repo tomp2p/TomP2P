@@ -5,6 +5,7 @@ import io.netty.buffer.Unpooled;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DataBuffer {
@@ -36,7 +37,7 @@ public class DataBuffer {
 	 * Creates a DataBuffer and adds the ByteBuf to this DataBuffer
 	 * 
 	 * @param buf
-	 *            The ByteBuf is only added, but no retain() is called!
+	 *            The ByteBuf to add
 	 */
 	public DataBuffer(final ByteBuf buf) {
 		buffers = new ArrayList<ByteBuf>(1);
@@ -185,7 +186,7 @@ public class DataBuffer {
 
 	@Override
 	public int hashCode() {
-		return toByteBuffer().hashCode();
+		return Arrays.hashCode(toByteBuffer());
 	}
 
 	@Override

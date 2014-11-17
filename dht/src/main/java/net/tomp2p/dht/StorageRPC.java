@@ -654,6 +654,7 @@ public class StorageRPC extends DispatchHandler {
         if (sign) {
             responseMessage.publicKeyAndSign(peerBean().getKeyPair());
         }
+        LOG.debug("response for storage request: {}", responseMessage);
         responder.response(responseMessage);
     }
 
@@ -686,6 +687,7 @@ public class StorageRPC extends DispatchHandler {
     }
     
     private void handlePutMeta(Message message, Message responseMessage, boolean isDomain) {
+    	LOG.debug("handlePutMeta {}", message);
     	final PublicKey publicKey = message.publicKey(0);
         final DataMap toStore = message.dataMap(0);
         final Map<Number640, Byte> result;
@@ -716,6 +718,7 @@ public class StorageRPC extends DispatchHandler {
 
     private Message handlePut(final Message message, final Message responseMessage,
             final boolean putIfAbsent, final boolean protectDomain) throws IOException {
+    	LOG.debug("handlePut {}", message);
         final PublicKey publicKey = message.publicKey(0);
         final DataMap toStore = message.dataMap(0);
         final int dataSize = toStore.size();
@@ -726,7 +729,7 @@ public class StorageRPC extends DispatchHandler {
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (!entry.getValue().hasPrepareFlag()) {
-            	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK)
+            	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK || putStatus == PutStatus.DELETED)
             			&& replicationListener != null) {
             		replicationListener.dataInserted(
             				entry.getKey().locationKey());
@@ -741,6 +744,7 @@ public class StorageRPC extends DispatchHandler {
     }
 
 	private void handlePutConfirm(final Message message, final Message responseMessage) throws IOException {
+		LOG.debug("handlePutConfirm {}", message);
 		final PublicKey publicKey = message.publicKey(0);
 		final DataMap toStore = message.dataMap(0);
 		final int dataSize = toStore.size();
@@ -763,9 +767,8 @@ public class StorageRPC extends DispatchHandler {
 
     private Message handleAdd(final Message message, final Message responseMessage,
             final boolean protectDomain) {
-
+    	LOG.debug("handleAdd {}", message);
         Utils.nullCheck(message.dataMap(0));
-
         final Map<Number640, Byte> result = new HashMap<Number640, Byte>();
         final DataMap dataMap = message.dataMap(0);
         final PublicKey publicKey = message.publicKey(0);
@@ -818,8 +821,8 @@ public class StorageRPC extends DispatchHandler {
     }
 
     private Message handleGet(final Message message, final Message responseMessage) {
+    	LOG.debug("handleGet {}", message);
         final Number160 locationKey = message.key(0);
-        LOG.debug("get data with key {} on {}", locationKey, peerBean().serverPeerAddress());
         final Number160 domainKey = message.key(1);
         final KeyCollection contentKeys = message.keyCollection(0);
         final SimpleBloomFilter<Number160> contentBloomFilter = message.bloomFilter(0);
@@ -830,7 +833,6 @@ public class StorageRPC extends DispatchHandler {
         final boolean isRange = contentKeys != null && returnNr != null;
         final boolean isCollection = contentKeys != null && returnNr == null;
         final boolean isBloomFilterAnd = isBloomFilterAnd(message);
-
         final Map<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
                 versionBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
         responseMessage.setDataMap(new DataMap(result));
@@ -872,6 +874,7 @@ public class StorageRPC extends DispatchHandler {
 
 	private Message handleGetLatest(final Message message, final Message responseMessage,
 			final boolean withDigest) {
+		LOG.debug("handleGetLatest {}", message);
 		final Number160 locationKey = message.key(0);
 		final Number160 domainKey = message.key(1);
 		final Number160 contentKey = message.key(2);
@@ -889,9 +892,8 @@ public class StorageRPC extends DispatchHandler {
 	}
 
     private Message handleDigest(final Message message, final Message responseMessage) {
-
+    	LOG.debug("handleDigest {}", message);
         final Number160 locationKey = message.key(0);
-        LOG.debug("get data with key {} on {}", locationKey, peerBean().serverPeerAddress());
         final Number160 domainKey = message.key(1);
         final KeyCollection contentKeys = message.keyCollection(0);
         final SimpleBloomFilter<Number160> contentBloomFilter = message.bloomFilter(0);
@@ -954,6 +956,7 @@ public class StorageRPC extends DispatchHandler {
 
     private Message handleRemove(final Message message, final Message responseMessage,
             final boolean sendBackResults) {
+    	LOG.debug("handleRemove {}", message);
         final Number160 locationKey = message.key(0);
         final Number160 domainKey = message.key(1);
         final KeyCollection keys = message.keyCollection(0);

@@ -3,12 +3,10 @@ package net.tomp2p.utils;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 public class TestUtils {
-    @SuppressWarnings("unchecked")
     @Test
     public void testDifference1() {
         Collection<String> collection1 = new ArrayList<String>();

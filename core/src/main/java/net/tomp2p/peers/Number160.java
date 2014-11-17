@@ -31,8 +31,6 @@ public final class Number160 extends Number implements Comparable<Number160> {
     // This key has *always* 160 bit. Do not change.
     public static final int BITS = 160;
 
-    public static final Number160 MAX_VALUE = new Number160(new int[] { -1, -1, -1, -1, -1 });
-
     private static final long LONG_MASK = 0xffffffffL;
 
     private static final int BYTE_MASK = 0xff;
@@ -60,6 +58,8 @@ public final class Number160 extends Number implements Comparable<Number160> {
     public static final Number160 ZERO = new Number160(0);
 
     public static final Number160 ONE = new Number160(1);
+
+    public static final Number160 MAX_VALUE = new Number160(new int[] { -1, -1, -1, -1, -1 });
 
     /**
      * Create a Key with value 0.
@@ -105,7 +105,6 @@ public final class Number160 extends Number implements Comparable<Number160> {
         final char[] tmp = val.toCharArray();
         final int len = tmp.length;
         for (int i = STRING_LENGTH - len, j = 2; i < (STRING_LENGTH - 2); i++, j++) {
-            // CHECKSTYLE:OFF
             this.val[i >> 3] <<= 4;
 
             int digit = Character.digit(tmp[j], 16);
@@ -115,7 +114,6 @@ public final class Number160 extends Number implements Comparable<Number160> {
             }
             // += or |= does not matter here
             this.val[i >> 3] += digit & CHAR_MASK;
-            // CHECKSTYLE:ON
         }
     }
 
@@ -169,9 +167,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
         this.val = new int[INT_ARRAY_SIZE];
         for (int i = length + offset - 1, j = BYTE_ARRAY_SIZE - 1, k = 0; i >= offset; i--, j--, k++) {
             // += or |= does not matter here
-            // CHECKSTYLE:OFF
             this.val[j >> 2] |= (val[i] & BYTE_MASK) << ((k % 4) << 3);
-            // CHECKSTYLE:ON
         }
     }
 
@@ -264,12 +260,10 @@ public final class Number160 extends Number implements Comparable<Number160> {
         for (int i = 0; i < INT_ARRAY_SIZE; i++) {
             // multiply by four
             final int idx = offset + (i << 2);
-            // CHECKSTYLE:OFF
             me[idx + 0] = (byte) (val[i] >> 24);
             me[idx + 1] = (byte) (val[i] >> 16);
             me[idx + 2] = (byte) (val[i] >> 8);
             me[idx + 3] = (byte) (val[i]);
-            // CHECKSTYLE:ON
         }
         return offset + BYTE_ARRAY_SIZE;
     }
@@ -412,9 +406,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
     public int hashCode() {
         int hashCode = 0;
         for (int i = 0; i < INT_ARRAY_SIZE; i++) {
-            // CHECKSTYLE:OFF
             hashCode = (int) (31 * hashCode + (val[i] & LONG_MASK));
-            // CHECKSTYLE:ON
         }
         return hashCode;
     }
@@ -440,9 +432,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
             buf[--charPos] = DIGITS[integer & CHAR_MASK];
             // for hexadecimal, we have 4 bits per char, which ranges from
             // [0-9a-f]
-            // CHECKSTYLE:OFF
             integer >>>= 4;
-            // CHECKSTYLE:ON
         }
         sb.append(buf, charPos, (CHARS_PER_INT - charPos));
     }

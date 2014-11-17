@@ -47,12 +47,10 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			decoding(ctx, sender);
 		} catch (Throwable t) {
 			LOG.error("Error in TCP decoding", t);
-			try {
-				throw t;
-			} catch (Throwable e) {
-				e.printStackTrace();
-			}
+            throw new Exception(t);
 		} finally {
+			//the cumulation buffer now maintains the buffer buf, so we can release it here
+			buf.release();
 			if (!cumulation.isReadable()) {
                 cumulation.release();
                 cumulation = null;
@@ -72,11 +70,14 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 				moreData = cumulation.readableBytes() > 0;
 				ctx.fireChannelRead(decoder.prepareFinish());
 			} else {
+				if(decoder.message() == null) {
+					//wait for more data. This may happen if we don't get the first 58 bytes, 
+					//which is the size of the header.
+					return;
+				}
 				// this id was the same as the last and the last message already
 				// finished the parsing. So this message
 				// is finished as well although it may send only partial data.
-				//TODO testBroadcast
-				//if(decoder.message() != null) {
 				if (lastId == decoder.message().messageId()) {
 					finished = true;
 					moreData = cumulation.readableBytes() > 0;
@@ -99,11 +100,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			}
 		} catch (Throwable t) {
 			LOG.error("Error in TCP (inactive) decoding", t);
-            try {
-				throw t;
-			} catch (Throwable e) {
-				e.printStackTrace();
-			}
+            throw new Exception(t);
 		} finally {
 			if (cumulation != null) {
 				cumulation.release();
@@ -116,6 +113,10 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 	@Override
 	public void exceptionCaught(final ChannelHandlerContext ctx,
 			final Throwable cause) throws Exception {
+		if (cumulation != null) {
+			cumulation.release();
+			cumulation = null;
+		}
 		Message msg = decoder.message();
 		// don't use getLocalizedMessage() -
 		// http://stackoverflow.com/questions/8699521/any-way-to-ignore-only-connection-reset-by-peer-ioexceptions

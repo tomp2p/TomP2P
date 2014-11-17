@@ -214,8 +214,8 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	public boolean peerFailed(PeerAddress remotePeer, PeerException reason) {
 		peerOffline.put(remotePeer.peerId(), Boolean.TRUE);
 		boolean removed = false;
-		removed = removeFromMap(remotePeer, dataMapUnverified) != null;
-		removed = removed || (removeFromMap(remotePeer, dataMap) != null);
+		removed = !removeFromMap(remotePeer, dataMapUnverified).isEmpty();
+		removed = (!removeFromMap(remotePeer, dataMap).isEmpty()) || removed;
 		return removed;
 	}
 
@@ -224,7 +224,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	    for (Map.Entry<Number320, Map<PeerAddress, Pair<PeerStatistic, Data>>> entry : map.entrySet()) {
 	    	Pair<PeerStatistic, Data> oldPair = entry.getValue().remove(remotePeer);
 	    	if(oldPair != null) {
-	    		removed.put(entry.getKey(), entry.getValue());
+	    		Map<PeerAddress, Pair<PeerStatistic, Data>> map2 = new ConcurrentCacheMap<PeerAddress, Pair<PeerStatistic, Data>>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true); 
+	    		map2.put(remotePeer, oldPair);
+	    		removed.put(entry.getKey(), map2);
 	    	}
 	    	
 			if(entry.getValue().isEmpty()) {

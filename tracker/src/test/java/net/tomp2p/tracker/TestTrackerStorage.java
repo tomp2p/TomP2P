@@ -92,7 +92,7 @@ public class TestTrackerStorage {
 		
 		TrackerData td = trackerStorage.trackerData(n320);
 		Object o = td.peerAddresses().values().iterator().next().object();
-		Assert.assertEquals(o, "test1");
+		Assert.assertEquals(o, "test");
 	}
 	
 	@Test

@@ -1,10 +1,11 @@
 package net.tomp2p.relay;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -15,7 +16,6 @@ import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMapChangeListener;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.RPC;
 
@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * routing requests on behalf of the unreachable peers
  * 
  */
-public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListener {
+public class PeerMapUpdateTask extends TimerTask {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PeerMapUpdateTask.class);
 	private static final long BOOTSTRAP_TIMEOUT_MS = 10000;
@@ -36,11 +36,8 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	private final RelayRPC relayRPC;
 	private final BootstrapBuilder bootstrapBuilder;
 	private final DistributedRelay distributedRelay;
-	private final Collection<PeerAddress> manualRelays;
-	private final int maxFail;
 
-	// status whether the map has been updated in the meantime
-	private final AtomicBoolean updated;
+	private Set<PeerAddress> gcmServersLast;
 
 	/**
 	 * Create a new peer map update task.
@@ -51,18 +48,13 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	 *            bootstrap builder used to find neighbors of this peer
 	 * @param distributedRelay
 	 *            set of the relay addresses
+	 * @param relayType
 	 */
-	public PeerMapUpdateTask(RelayRPC relayRPC, BootstrapBuilder bootstrapBuilder, DistributedRelay distributedRelay,
-			Collection<PeerAddress> manualRelays, int maxFail) {
+	public PeerMapUpdateTask(RelayRPC relayRPC, BootstrapBuilder bootstrapBuilder, DistributedRelay distributedRelay) {
 		this.relayRPC = relayRPC;
 		this.bootstrapBuilder = bootstrapBuilder;
 		this.distributedRelay = distributedRelay;
-		this.manualRelays = manualRelays;
-		this.maxFail = maxFail;
-
-		// register to peer map events
-		this.updated = new AtomicBoolean(true);
-		relayRPC.peer().peerBean().peerMap().addPeerMapChangeListener(this);
+		this.gcmServersLast = new HashSet<PeerAddress>(distributedRelay.relayConfig().gcmServers());
 	}
 
 	@Override
@@ -73,61 +65,22 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 			return;
 		}
 
-		if (bootstap() && updated.get()) {
-			// reset the status since it is now sent to all relay peers
-			 updated.set(false);
+		// bootstrap to get updated peer map and then push it to the relay peers
+		bootstrapBuilder.start().awaitUninterruptibly(BOOTSTRAP_TIMEOUT_MS);
 
-			// send the peer map to the relays
+		// send the peer map to the relays
+		List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
+		boolean gcmServersChanged = distributedRelay.relayConfig().type() == RelayType.ANDROID && gcmServersChanged();
+		for (final BaseRelayConnection relay : distributedRelay.relays()) {
+			sendPeerMap(relay, peerMapVerified, gcmServersChanged);
 		}
-		updatePeerMap();
-
-		if(relayRPC.peer().peerAddress().isSlow()) {
-			// TODO: add digest to the relay peer, but this can lead to consistency problems
-		}
+		// copy to compare with next iteration
+		gcmServersLast = new HashSet<PeerAddress>(distributedRelay.relayConfig().gcmServers());
 
 		// try to add more relays
 		final FutureRelay futureRelay2 = new FutureRelay();
-		distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail);
+		distributedRelay.setupRelays(futureRelay2);
 		relayRPC.peer().notifyAutomaticFutures(futureRelay2);
-	}
-
-	@Override
-	public boolean cancel() {
-		// unregister from peer map events
-		relayRPC.peer().peerBean().peerMap().removePeerMapChangeListener(this);
-		return super.cancel();
-	}
-
-	@Override
-	public void peerInserted(PeerAddress peerAddress, boolean verified) {
-		updated.set(true);
-	}
-
-	@Override
-	public void peerRemoved(PeerAddress peerAddress, PeerStatistic storedPeerAddress) {
-		updated.set(true);
-	}
-
-	@Override
-	public void peerUpdated(PeerAddress peerAddress, PeerStatistic storedPeerAddress) {
-		updated.set(true);
-	}
-
-	private boolean bootstap() {
-		// bootstrap to get updated peer map and then push it to the relay peers
-		return bootstrapBuilder.start().awaitUninterruptibly(BOOTSTRAP_TIMEOUT_MS);
-	}
-
-	/**
-	 * Bootstrap to get the latest peer map and then update all relays with the newest version
-	 */
-	private void updatePeerMap() {
-		List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
-
-		// send the map to all relay peers
-		for (final BaseRelayConnection relay : distributedRelay.relays()) {
-			sendPeerMap(relay, peerMapVerified);
-		}
 	}
 
 	/**
@@ -140,13 +93,19 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	 * @param map
 	 *            The unreachable peer's peer map.
 	 */
-	private void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatistic>> map) {
+	private void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatistic>> map,
+			boolean gcmServersChanged) {
 		LOG.debug("Sending current routing table to relay {}", connection.relayAddress());
 
 		final Message message = relayRPC
 				.createMessage(connection.relayAddress(), RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
 		// TODO: neighbor size limit is 256, we might have more here
 		message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
+
+		if (gcmServersChanged) {
+			LOG.debug("Sending updated GCM server list as well");
+			message.neighborsSet(new NeighborSet(-1, distributedRelay.relayConfig().gcmServers()));
+		}
 
 		final FutureResponse fr = connection.sendToRelay(message);
 		fr.addListener(new BaseFutureAdapter<BaseFuture>() {
@@ -161,5 +120,21 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 				}
 			}
 		});
+	}
+
+	/**
+	 * Checks the GCM Server map in the last run with the current server map. If they differ,
+	 * <code>true</code> is returned.
+	 */
+	private boolean gcmServersChanged() {
+		Collection<PeerAddress> newServers = distributedRelay.relayConfig().gcmServers();
+		if (newServers == null && gcmServersLast == null) {
+			return false;
+		} else if (newServers != null && gcmServersLast == null || newServers == null && gcmServersLast != null) {
+			return true;
+		} else {
+			// compare content
+			return !new HashSet<PeerAddress>(newServers).equals(gcmServersLast);
+		}
 	}
 }

@@ -24,8 +24,8 @@ import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
 
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * The firewalled nodes are relayed by the relay nodes. The query nodes try to make put / get / remove
  * requests on these nodes.
  * 
- * The Google Cloud Messaging Authentication Key is required as argument when using {@link RelayType#ANDROID}
+ * The Google Cloud Messaging Authentication Key is required as argument when using {@link RelayConfig#ANDROID}
  * 
  * @author Nico Rutishauser
  * 
@@ -53,24 +53,20 @@ public class ExampleRelaySituation {
 
 	private static final int NUM_RELAY_PEERS = 1;
 	private static final int NUM_MOBILE_PEERS = 0;
-	private static final int NUM_QUERY_PEERS = 1;
+	private static final int NUM_QUERY_PEERS = 3;
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		String gcmKey = null;
-		long gcmSender = -1;
-		if (args.length != 2) {
-			LOG.warn("Need the GCM Authentication key and GCM sender ID as arguments when using with Android.");
-		} else if (args.length == 2) {
+		if (args.length < 1) {
+			LOG.warn("Need the GCM Authentication key as arguments when using with Android.");
+		} else {
 			LOG.debug("{} is the GCM key used", args[0]);
 			gcmKey = args[0];
-
-			LOG.debug("{} is the sender ID used", args[1]);
-			gcmSender = Long.valueOf(args[1]);
 		}
 
 		// setup relay peers and start querying
 		ExampleRelaySituation situation = new ExampleRelaySituation(NUM_RELAY_PEERS, NUM_MOBILE_PEERS, NUM_QUERY_PEERS,
-				gcmKey, gcmSender);
+				gcmKey);
 		situation.setupPeers();
 
 		// wait for finding each other
@@ -96,11 +92,9 @@ public class ExampleRelaySituation {
 	/**
 	 * Unreachable peer configuration
 	 */
-	private static final int PEER_MAP_UPDATE_INTERVAL_S = 60;
 	private static final String GCM_REGISTRATION_ID = "abc";
 	private static final RelayType RELAY_TYPE = RelayType.ANDROID;
 	private final String gcmKey;
-	private final long gcmSenderId;
 
 	/**
 	 * Query peer configuration
@@ -124,9 +118,9 @@ public class ExampleRelaySituation {
 
 	private final MessageBufferConfiguration bufferConfig;
 
-	public ExampleRelaySituation(int relayPeers, int mobilePeers, int queryPeers, String gcmKey, long gcmSenderId) {
+
+	public ExampleRelaySituation(int relayPeers, int mobilePeers, int queryPeers, String gcmKey) {
 		this.gcmKey = gcmKey;
-		this.gcmSenderId = gcmSenderId;
 		assert relayPeers > 0 && relayPeers <= RELAY_TYPE.maxRelayCount();
 		this.relayPeers = relayPeers;
 		this.mobilePeers = mobilePeers;
@@ -137,7 +131,7 @@ public class ExampleRelaySituation {
 		this.queries = new ArrayList<QueryNode>(queryPeers);
 		
 		bufferConfig = new MessageBufferConfiguration().bufferAgeLimit(MAX_BUFFER_AGE).bufferCountLimit(MAX_MESSAGE_NUM)
-				.bufferSizeLimit(MAX_BUFFER_SIZE).gcmSendRetries(GCM_SEND_RETIES);
+				.bufferSizeLimit(MAX_BUFFER_SIZE);
 	}
 
 	public void setupPeers() throws IOException {
@@ -148,12 +142,12 @@ public class ExampleRelaySituation {
 			Peer peer = createPeer(RELAY_START_PORT + i);
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
-			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
+			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey(gcmKey).gcmSendRetries(GCM_SEND_RETIES).start();
 
 			relays.add(peerNAT);
 			LOG.debug("Relay peer {} started", i);
 		}
-
+		
 		/**
 		 * Then init the mobile peers
 		 */
@@ -170,16 +164,16 @@ public class ExampleRelaySituation {
 				relayAddresses.add(relay.peer().peerAddress());
 			}
 
-			PeerBuilderNAT builder = new PeerBuilderNAT(peer).peerMapUpdateInterval(PEER_MAP_UPDATE_INTERVAL_S)
-					.relays(relayAddresses).relayType(RELAY_TYPE);
+			RelayConfig config;
+			PeerBuilderNAT builder = new PeerBuilderNAT(peer);
 			if (RELAY_TYPE == RelayType.ANDROID) {
-				GCMServerCredentials gcmCredentials = new GCMServerCredentials().senderAuthenticationKey(gcmKey)
-						.senderId(gcmSenderId).registrationId(GCM_REGISTRATION_ID);
-				builder.gcmServerCredentials(gcmCredentials);
+				config = RelayConfig.Android(GCM_REGISTRATION_ID).manualRelays(relayAddresses);
+			} else {
+				config = RelayConfig.OpenTCP();
 			}
 
 			PeerNAT peerNat = builder.start();
-			FutureRelayNAT futureRelayNAT = peerNat.startRelay(relays.get(0).peer().peerAddress()).awaitUninterruptibly();
+			FutureRelayNAT futureRelayNAT = peerNat.startRelay(config, relays.get(0).peer().peerAddress()).awaitUninterruptibly();
 			if (!futureRelayNAT.isSuccess()) {
 				LOG.error("Cannot connect to Relay(s). Reason: {}", futureRelayNAT.failedReason());
 				return;
@@ -246,7 +240,7 @@ public class ExampleRelaySituation {
 						LOG.error("Cannot put / get / remove", e);
 					}
 				}
-			}, "Query node").start();
+			}, queryPeer.toString()).start();
 		}
 	}
 

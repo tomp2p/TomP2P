@@ -77,8 +77,7 @@ public class Sender {
 	private final SendBehavior sendBehavior;
 	private final Random random;
 
-	// this map caches all messages which are meant to be sent by a reverse
-	// connection setup
+	// this map caches all messages which are meant to be sent by a reverse connection setup
 	private final ConcurrentHashMap<Integer, FutureResponse> cachedRequests = new ConcurrentHashMap<Integer, FutureResponse>();
 
 	private PingBuilderFactory pingBuilderFactory;
@@ -234,8 +233,10 @@ public class Sender {
 		Message rconMessage = new Message();
 		rconMessage.sender(message.sender());
 		rconMessage.version(message.version());
+
 		// store the message id in the payload to get the cached message later
 		rconMessage.intValue(message.messageId());
+		
 		// the message must have set the keepAlive Flag true. If not, the relay
 		// peer will close the PeerConnection to the unreachable peer.
 		rconMessage.keepAlive(true);
@@ -272,7 +273,10 @@ public class Sender {
 	/**
 	 * Both peers are relayed, thus sending directly or over reverse connection
 	 * is not possible. Send the message to one of the receiver's relays.
+<<<<<<< HEAD
+=======
 	 * 
+>>>>>>> refs/remotes/tomp2p/master
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -509,6 +513,7 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
+
 		try {
 			final ChannelFuture channelFuture;
 			switch (sendBehavior.udpSendBehavior(message)) {

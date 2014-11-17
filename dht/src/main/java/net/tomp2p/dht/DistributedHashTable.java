@@ -366,9 +366,11 @@ public class DistributedHashTable {
                                                 // the future tells us that the communication was successful, which is
                                                 // ok for digest
                                                 if (future.isSuccess()) {
-
-													rawData.put(future.request().recipient(), future
-															.responseMessage().dataMap(0).dataMap());
+                                                    
+                                                    Map<Number640, Data> data = future.responseMessage().dataMap(0).dataMap();
+                                                    if(data !=null && !data.isEmpty()) {
+                                                        rawData.put(future.request().recipient(), data);
+                                                    }
 													
 													KeyMap640Keys keyMaps = future.responseMessage()
 															.keyMap640Keys(0);

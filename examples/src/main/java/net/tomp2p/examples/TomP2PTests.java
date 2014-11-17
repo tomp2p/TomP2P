@@ -17,18 +17,33 @@
 
 package net.tomp2p.examples;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.StandardProtocolFamily;
-import net.tomp2p.dht.*;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.FutureRemove;
+import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.examples.utils.Repeat;
 import net.tomp2p.examples.utils.RepeatRule;
-import net.tomp2p.futures.*;
+import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureDiscover;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.nat.FutureNAT;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
@@ -39,13 +54,17 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
+import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
-import org.junit.*;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.*;
 
 /**
  * Test bootstrapping, DHT operations like put/get/add/remove and sendDirect in both LAN and WAN environment
@@ -56,7 +75,7 @@ import static org.junit.Assert.*;
  * To configure your test environment edit the static fields for id, IP and port.
  * In the configure method and the connectionType you can define your test scenario.
  */
-@Ignore
+//@Ignore
 public class TomP2PTests {
     private enum ConnectionType {
         UNKNOWN, DIRECT, NAT, RELAY
@@ -84,7 +103,7 @@ public class TomP2PTests {
     }
 
     // Use to stress tests by repeating them
-    private static final int STRESS_TEST_COUNT = 1;
+    private static final int STRESS_TEST_COUNT = 10;
 
     private Peer peer;
     private PeerDHT peer1DHT;
@@ -278,6 +297,163 @@ public class TomP2PTests {
         assertTrue(futureGet.dataMap().values().contains(new Data("hallo2")));
         assertTrue(futureGet.dataMap().values().size() == 2);
     }
+    
+    @Test
+    @Repeat(STRESS_TEST_COUNT)
+    public void testParallelStartupWithPutGet() throws IOException, ClassNotFoundException, InterruptedException {
+        
+        PeerMapConfiguration pmc1 = new PeerMapConfiguration(Number160.createHash( "peer1" ) ).peerNoVerification();
+        PeerMap pm1 = new PeerMap(pmc1);
+        
+        PeerDHT peer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer1")).ports(3006).peerMap( pm1 ).start()).start();
+        
+        PeerMapConfiguration pmc2 = new PeerMapConfiguration(Number160.createHash( "peer2" ) ).peerNoVerification();
+        PeerMap pm2 = new PeerMap(pmc2);
+        
+        PeerDHT peer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer2")).ports(3007).peerMap( pm2 ).start()).start();
+
+        PeerAddress masterPeerAddress = new PeerAddress(Number160.createHash(BOOTSTRAP_NODE_ID),
+                                                        BOOTSTRAP_NODE_IP, BOOTSTRAP_NODE_PORT,
+                                                        BOOTSTRAP_NODE_PORT);
+
+        // start both at the same time
+        BaseFuture fb1 = peer1.peer().bootstrap().peerAddress(masterPeerAddress).start();
+        BaseFuture fb2 = peer2.peer().bootstrap().peerAddress(masterPeerAddress).start();
+
+        final AtomicBoolean peer1Done = new AtomicBoolean();
+        final AtomicBoolean peer2Done = new AtomicBoolean();
+
+        fb1.addListener(new BaseFutureListener<BaseFuture>() {
+            @Override
+            public void operationComplete(BaseFuture future) throws Exception {
+                peer1Done.set(true);
+            }
+
+            @Override
+            public void exceptionCaught(Throwable t) throws Exception {
+            }
+        });
+
+        fb2.addListener(new BaseFutureListener<BaseFuture>() {
+            @Override
+            public void operationComplete(BaseFuture future) throws Exception {
+                peer2Done.set(true);
+            }
+
+            @Override
+            public void exceptionCaught(Throwable t) throws Exception {
+            }
+        });
+
+        while (!peer1Done.get() || !peer2Done.get())
+            Thread.sleep(100);
+
+        // both are started up
+        System.err.println(fb1.failedReason());
+        Assert.assertTrue(fb1.isSuccess());
+        System.err.println(fb2.failedReason());
+        Assert.assertTrue(fb2.isSuccess());
+
+        // peer1 put data
+        FuturePut fp = peer1.put(Number160.ONE).object("test").start().awaitUninterruptibly();
+        Assert.assertTrue(fp.isSuccess());
+
+        // both get data
+        FutureGet fg1 = peer1.get(Number160.ONE).start().awaitUninterruptibly();
+        Assert.assertTrue(fg1.isSuccess());
+        Assert.assertEquals("test", fg1.data().object());
+        FutureGet fg2 = peer2.get(Number160.ONE).start().awaitUninterruptibly();
+        Assert.assertTrue(fg2.isSuccess());
+        Assert.assertEquals("test", fg2.data().object());
+
+        // shutdown both
+        peer1.shutdown().awaitUninterruptibly().awaitListenersUninterruptibly();
+        peer2.shutdown().awaitUninterruptibly().awaitListenersUninterruptibly();
+
+        // start both again at the same time
+        peer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer1")).ports(3005).start()).start();
+        peer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("peer2")).ports(3006).start()).start();
+
+        fb1 = peer1.peer().bootstrap().peerAddress(masterPeerAddress).start();
+        fb2 = peer2.peer().bootstrap().peerAddress(masterPeerAddress).start();
+
+        peer1Done.set(false);
+        peer2Done.set(false);
+
+        final PeerDHT _peer1 = peer1;
+        fb1.addListener(new BaseFutureListener<BaseFuture>() {
+            @Override
+            public void operationComplete(BaseFuture future) throws Exception {
+                peer1Done.set(true);
+
+                // when peer1 is ready it gets the data
+                final FutureGet fg = _peer1.get(Number160.ONE).start();
+                fg.addListener(new BaseFutureListener<BaseFuture>() {
+                    @Override
+                    public void operationComplete(BaseFuture future) throws Exception {
+                        Assert.assertTrue(fg.isSuccess());
+                        Assert.assertEquals("test", fg.data().object());
+                    }
+
+                    @Override
+                    public void exceptionCaught(Throwable t) throws Exception {
+                    }
+                });
+            }
+
+            @Override
+            public void exceptionCaught(Throwable t) throws Exception {
+            }
+        });
+
+        final PeerDHT _peer2 = peer2;
+        fb2.addListener(new BaseFutureListener<BaseFuture>() {
+            @Override
+            public void operationComplete(BaseFuture future) throws Exception {
+                peer2Done.set(true);
+
+                // when peer2 is ready it gets the data
+                final FutureGet fg = _peer2.get(Number160.ONE).start();
+                fg.addListener(new BaseFutureListener<BaseFuture>() {
+                    @Override
+                    public void operationComplete(BaseFuture future) throws Exception {
+                        Assert.assertTrue(fg.isSuccess());
+                        Assert.assertEquals("test", fg.data().object());
+                    }
+
+                    @Override
+                    public void exceptionCaught(Throwable t) throws Exception {
+                    }
+                });
+            }
+
+            @Override
+            public void exceptionCaught(Throwable t) throws Exception {
+            }
+        });
+
+        while (!peer1Done.get() || !peer2Done.get())
+            Thread.sleep(100);
+
+        // both are started up
+        System.err.println(fb1.failedReason());
+        Assert.assertTrue(fb1.isSuccess());
+        System.err.println(fb2.failedReason());
+        Assert.assertTrue(fb2.isSuccess());
+        
+
+        // get data again for both
+        fg1 = peer1.get(Number160.ONE).start().awaitUninterruptibly();
+        Assert.assertTrue(fg1.isSuccess());
+        Assert.assertEquals("test", fg1.data().object());
+
+        fg2 = peer2.get(Number160.ONE).start().awaitUninterruptibly();
+        Assert.assertTrue(fg2.isSuccess());
+        Assert.assertEquals("test", fg2.data().object());
+
+        peer1.shutdown().awaitUninterruptibly();
+        peer2.shutdown().awaitUninterruptibly();
+    }
 
     @Test
     @Repeat(STRESS_TEST_COUNT)
@@ -380,143 +556,125 @@ public class TomP2PTests {
         assertEquals("pong", futureDirect.object());
     }
 
-    private Peer bootstrapDirectConnection(int clientPort) {
-        Peer peer = null;
-        try {
-            Number160 peerId = new Number160(new Random(43L));
-            PeerMapConfiguration pmc = new PeerMapConfiguration(peerId).peerNoVerification();
-            PeerMap pm = new PeerMap(pmc);
-            ChannelClientConfiguration cc = PeerBuilder.createDefaultChannelClientConfiguration();
-            cc.maxPermitsTCP(100);
-            cc.maxPermitsUDP(100);
-            peer = new PeerBuilder(peerId).bindings(getBindings()).channelClientConfiguration(cc).peerMap(pm)
-                                          .ports(clientPort).start();
-            FutureDiscover futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-            futureDiscover.awaitUninterruptibly();
-            if (futureDiscover.isSuccess()) {
-                log.info("Discover with direct connection successful. Address = " + futureDiscover.peerAddress());
+	private Peer bootstrapDirectConnection(int clientPort) {
+		Peer peer = null;
+		Number160 peerId = new Number160(new Random(43L));
+		PeerMapConfiguration pmc = new PeerMapConfiguration(peerId).peerNoVerification();
+		PeerMap pm = new PeerMap(pmc);
+		ChannelClientConfiguration cc = PeerBuilder.createDefaultChannelClientConfiguration();
+		cc.maxPermitsTCP(100);
+		cc.maxPermitsUDP(100);
+		
+		try {
+			peer = new PeerBuilder(peerId).bindings(getBindings()).channelClientConfiguration(cc).peerMap(pm)
+					.ports(clientPort).start();
+		} catch (IOException e) {
+			log.warn("Discover with direct connection failed. Exception = " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		}
+		
+		FutureDiscover futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
+		futureDiscover.awaitUninterruptibly();
+		if (futureDiscover.isSuccess()) {
+			log.info("Discover with direct connection successful. Address = " + futureDiscover.peerAddress());
 
-                FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-                futureBootstrap.awaitUninterruptibly();
-                if (futureBootstrap.isSuccess()) {
-                    return peer;
-                }
-                else {
-                    log.warn("Bootstrap failed. Reason = " + futureBootstrap.failedReason());
-                    peer.shutdown().awaitUninterruptibly();
-                    return null;
-                }
-            }
-            else {
-                log.warn("Discover with direct connection failed. Reason = " + futureDiscover.failedReason());
-                peer.shutdown().awaitUninterruptibly();
-                return null;
-            }
-        } catch (IOException e) {
-            log.warn("Discover with direct connection failed. Exception = " + e.getMessage());
-            if (peer != null)
-                peer.shutdown().awaitUninterruptibly();
+			FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
+			futureBootstrap.awaitUninterruptibly();
+			if (futureBootstrap.isSuccess()) {
+				return peer;
+			} else {
+				log.warn("Bootstrap failed. Reason = " + futureBootstrap.failedReason());
+				peer.shutdown().awaitUninterruptibly();
+				return null;
+			}
+		} else {
+			log.warn("Discover with direct connection failed. Reason = " + futureDiscover.failedReason());
+			peer.shutdown().awaitUninterruptibly();
+			return null;
+		}
+	}
 
-            e.printStackTrace();
-            return null;
-        }
-    }
+	private Peer bootstrapWithPortForwarding(int clientPort) {
+		Number160 peerId = new Number160(new Random(43L));
+		Peer peer = null;
+		try {
+			peer = new PeerBuilder(peerId).bindings(getBindings()).behindFirewall().ports(clientPort).start();
+		} catch (IOException e) {
+			log.warn("Discover with automatic port forwarding failed. Exception = " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		}
 
-    private Peer bootstrapWithPortForwarding(int clientPort) {
-        Number160 peerId = new Number160(new Random(43L));
-        Peer peer = null;
-        try {
-            peer = new PeerBuilder(peerId).bindings(getBindings()).behindFirewall()
-                                          .ports(clientPort).start();
+		PeerNAT peerNAT = new PeerBuilderNAT(peer).start();
+		FutureDiscover futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
+		FutureNAT futureNAT = peerNAT.startSetupPortforwarding(futureDiscover);
+		futureNAT.awaitUninterruptibly();
+		if (futureNAT.isSuccess()) {
+			log.info("Automatic port forwarding is setup. Now we do a futureDiscover again. Address = "
+					+ futureNAT.peerAddress());
+			futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
+			futureDiscover.awaitUninterruptibly();
+			if (futureDiscover.isSuccess()) {
+				log.info("Discover with automatic port forwarding was successful. Address = " + futureDiscover.peerAddress());
 
-            PeerNAT peerNAT = new PeerBuilderNAT(peer).start();
-            FutureDiscover futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-            FutureNAT futureNAT = peerNAT.startSetupPortforwarding(futureDiscover);
-            futureNAT.awaitUninterruptibly();
-            if (futureNAT.isSuccess()) {
-                log.info("Automatic port forwarding is setup. Now we do a futureDiscover again. Address = " +
-                                 futureNAT.peerAddress());
-                futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-                futureDiscover.awaitUninterruptibly();
-                if (futureDiscover.isSuccess()) {
-                    log.info("Discover with automatic port forwarding was successful. Address = " + futureDiscover
-                            .peerAddress());
+				FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
+				futureBootstrap.awaitUninterruptibly();
+				if (futureBootstrap.isSuccess()) {
+					return peer;
+				} else {
+					log.warn("Bootstrap failed. Reason = " + futureBootstrap.failedReason());
+					peer.shutdown().awaitUninterruptibly();
+					return null;
+				}
+			} else {
+				log.warn("Discover with automatic port forwarding failed. Reason = " + futureDiscover.failedReason());
+				peer.shutdown().awaitUninterruptibly();
+				return null;
+			}
+		} else {
+			log.warn("StartSetupPortforwarding failed. Reason = " + futureNAT.failedReason());
+			peer.shutdown().awaitUninterruptibly();
+			return null;
+		}
+	}
 
-                    FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-                    futureBootstrap.awaitUninterruptibly();
-                    if (futureBootstrap.isSuccess()) {
-                        return peer;
-                    }
-                    else {
-                        log.warn("Bootstrap failed. Reason = " + futureBootstrap.failedReason());
-                        peer.shutdown().awaitUninterruptibly();
-                        return null;
-                    }
-                }
-                else {
-                    log.warn("Discover with automatic port forwarding failed. Reason = " + futureDiscover
-                            .failedReason());
-                    peer.shutdown().awaitUninterruptibly();
-                    return null;
-                }
-            }
-            else {
-                log.warn("StartSetupPortforwarding failed. Reason = " + futureNAT
-                        .failedReason());
-                peer.shutdown().awaitUninterruptibly();
-                return null;
-            }
-        } catch (IOException e) {
-            log.warn("Discover with automatic port forwarding failed. Exception = " + e.getMessage());
-            if (peer != null)
-                peer.shutdown().awaitUninterruptibly();
+	private Peer bootstrapInRelayMode(int clientPort) {
+		Number160 peerId = new Number160(new Random(43L));
+		Peer peer = null;
+		try {
+			peer = new PeerBuilder(peerId).bindings(getBindings()).behindFirewall().ports(clientPort).start();
+		} catch (IOException e) {
+			log.error("Bootstrap using relay failed. Exception " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		}
 
-            e.printStackTrace();
-            return null;
-        }
-    }
+		PeerNAT peerNAT = new PeerBuilderNAT(peer).start();
+		FutureDiscover futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
+		FutureNAT futureNAT = peerNAT.startSetupPortforwarding(futureDiscover);
+		FutureRelayNAT futureRelayNAT = peerNAT.startRelay(RelayConfig.OpenTCP(), futureDiscover, futureNAT);
+		futureRelayNAT.awaitUninterruptibly();
+		if (futureRelayNAT.isSuccess()) {
+			log.info("Bootstrap using relay was successful. Address = " + peer.peerAddress());
 
-    private Peer bootstrapInRelayMode(int clientPort) {
-        Number160 peerId = new Number160(new Random(43L));
-        Peer peer = null;
-        try {
-            peer = new PeerBuilder(peerId).bindings(getBindings()).behindFirewall()
-                                          .ports(clientPort).start();
+			FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
+			futureBootstrap.awaitUninterruptibly();
+			if (futureBootstrap.isSuccess()) {
+				return peer;
+			} else {
+				log.warn("Bootstrap failed. Reason = " + futureBootstrap.failedReason());
+				peer.shutdown().awaitUninterruptibly();
+				return null;
+			}
+		} else {
+			log.error("Bootstrap using relay failed " + futureRelayNAT.failedReason());
+			futureRelayNAT.shutdown();
+			peer.shutdown().awaitUninterruptibly();
+			return null;
+		}
 
-            PeerNAT peerNAT = new PeerBuilderNAT(peer).start();
-            FutureDiscover futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-            FutureNAT futureNAT = peerNAT.startSetupPortforwarding(futureDiscover);
-            FutureRelayNAT futureRelayNAT = peerNAT.startRelay(futureDiscover, futureNAT);
-            futureRelayNAT.awaitUninterruptibly();
-            if (futureRelayNAT.isSuccess()) {
-                log.info("Bootstrap using relay was successful. Address = " + peer.peerAddress());
-
-                FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-                futureBootstrap.awaitUninterruptibly();
-                if (futureBootstrap.isSuccess()) {
-                    return peer;
-                }
-                else {
-                    log.warn("Bootstrap failed. Reason = " + futureBootstrap.failedReason());
-                    peer.shutdown().awaitUninterruptibly();
-                    return null;
-                }
-            }
-            else {
-                log.error("Bootstrap using relay failed " + futureRelayNAT.failedReason());
-                futureRelayNAT.shutdown();
-                peer.shutdown().awaitUninterruptibly();
-                return null;
-            }
-        } catch (IOException e) {
-            log.error("Bootstrap using relay failed. Exception " + e.getMessage());
-            if (peer != null)
-                peer.shutdown().awaitUninterruptibly();
-
-            e.printStackTrace();
-            return null;
-        }
-    }
+	}
 
     private Peer bootstrapInUnknownMode(int clientPort) {
         resolvedConnectionType = ConnectionType.DIRECT;

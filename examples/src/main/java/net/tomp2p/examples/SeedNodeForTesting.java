@@ -23,8 +23,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.rpc.ObjectDataReply;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +38,9 @@ public class SeedNodeForTesting {
     public static void main(String[] args) throws Exception {
         try {
             Number160 peerId = Number160.createHash(TomP2PTests.BOOTSTRAP_NODE_ID);
-            PeerMapConfiguration pmc = new PeerMapConfiguration(peerId).peerNoVerification();
-            PeerMap pm = new PeerMap(pmc);
-            peer = new PeerBuilder(peerId).ports(TomP2PTests.BOOTSTRAP_NODE_PORT).peerMap(pm).start();
+           /* PeerMapConfiguration pmc = new PeerMapConfiguration(peerId).peerNoVerification();
+            PeerMap pm = new PeerMap(pmc);*/
+            peer = new PeerBuilder(peerId).ports(TomP2PTests.BOOTSTRAP_NODE_PORT)/*.peerMap(pm)*/.start();
             peer.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(PeerAddress sender, Object request) throws Exception {

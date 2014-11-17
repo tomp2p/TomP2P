@@ -1,5 +1,7 @@
 package net.tomp2p.relay.android;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -35,22 +37,26 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	private final DispatchHandler dispatchHandler;
 	private final Peer peer;
 	private final ConnectionConfiguration config;
-	private final GCMServerCredentials gcmServerCredentials;
 	private int reachRelayFailCounter = 0;
 	private final BufferedMessageHandler bufferedMessageHandler;
+	private final AtomicBoolean shutdown;
 
 	public AndroidRelayConnection(PeerAddress relayAddress, DispatchHandler dispatchHandler, Peer peer,
-			ConnectionConfiguration config, GCMServerCredentials gcmServerCredentials) {
+			ConnectionConfiguration config) {
 		super(relayAddress);
 		this.dispatchHandler = dispatchHandler;
 		this.peer = peer;
 		this.config = config;
-		this.gcmServerCredentials = gcmServerCredentials;
-		this.bufferedMessageHandler = new BufferedMessageHandler(peer, dispatchHandler, config);
+		this.bufferedMessageHandler = new BufferedMessageHandler(peer, config);
+		this.shutdown = new AtomicBoolean(false);
 	}
 
 	@Override
 	public FutureResponse sendToRelay(Message message) {
+		if (shutdown.get()) {
+			return new FutureResponse(message).failed("Relay connection is already shut down");
+		}
+
 		// send it over a newly opened connection
 		return RelayUtils.connectAndSend(peer, message, config);
 	}
@@ -62,6 +68,11 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	 * @return when the buffer request is done
 	 */
 	public FutureDone<Void> sendBufferRequest() {
+		if (shutdown.get()) {
+			return new FutureDone<Void>().failed("Relay connection is already shut down");
+		}
+
+		LOG.debug("Sending buffer request to relay {}", relayAddress());
 		final FutureDone<Void> futureDone = new FutureDone<Void>();
 
 		Message message = dispatchHandler.createMessage(relayAddress(), Commands.RELAY.getNr(), Type.REQUEST_4);
@@ -75,11 +86,12 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 				if (futureResponse.isSuccess()) {
 					// reset the fail counter
 					reachRelayFailCounter = 0;
-					
+
 					LOG.debug("Successfully got the buffer from relay {}", relayAddress());
 					bufferedMessageHandler.handleBufferResponse(futureResponse.responseMessage(), futureDone);
 				} else {
-					LOG.error("Cannot get the buffer from relay {}. Reason: {}", relayAddress(), futureResponse.failedReason());
+					LOG.error("Cannot get the buffer from relay {}. Reason: {}", relayAddress(),
+							futureResponse.failedReason());
 					futureDone.failed(futureResponse);
 					failedToContactRelay();
 				}
@@ -91,14 +103,15 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 
 	@Override
 	public FutureDone<Void> shutdown() {
-		// Nothing to do
+		shutdown.set(true);
+		// else, nothing to do
 		return new FutureDone<Void>().done();
 	}
-	
+
 	private void failedToContactRelay() {
 		LOG.warn("Failed to contact the relay peer. Increase the counter to detect long-term disconnections");
 		reachRelayFailCounter++;
-		if(reachRelayFailCounter > MAX_FAIL_COUNT) {
+		if (reachRelayFailCounter > MAX_FAIL_COUNT) {
 			LOG.error("The relay {} was not reachable for {} send attempts", relayAddress(), reachRelayFailCounter);
 			notifyCloseListeners();
 		}
@@ -114,9 +127,4 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 		// reset the couter
 		reachRelayFailCounter = 0;
 	}
-
-	public GCMServerCredentials gcmServerCredentials() {
-		return gcmServerCredentials;
-	}
-
 }

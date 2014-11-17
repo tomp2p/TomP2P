@@ -12,20 +12,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.tomp2p.connection.SignatureFactory;
-import net.tomp2p.message.Message;
-import net.tomp2p.relay.RelayUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Buffers messages for the unreachable peers. This class is thread-safe.
+ * If the buffer is full, the {@link MessageBufferListener}s are triggered. In the mean time, another list
+ * holds the previously buffered messages, until the buffer is collected.
  * 
  * @author Nico Rutishauser
  *
  */
-public class MessageBuffer {
+public class MessageBuffer<T> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MessageBuffer.class);
 	private static final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor();
@@ -35,22 +33,37 @@ public class MessageBuffer {
 	private final long bufferAgeLimitMS;
 
 	private final AtomicLong bufferSize;
-	private final List<MessageBufferListener> listeners;
+	private final List<MessageBufferListener<T>> listeners;
 
-	private final List<Message> buffer;
+	private final List<T> buffer;
 
 	private BufferAgeRunnable task;
 
-	public MessageBuffer(int messageCountLimit, long bufferSizeLimit, long bufferAgeLimitMS) {
-		this.messageCountLimit = messageCountLimit;
+	/**
+	 * Create a new buffer using the configuration
+	 * @param config the buffer limit configuration
+	 */
+	public MessageBuffer(MessageBufferConfiguration config) {
+		this(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit());
+	}
+
+	/**
+	 * Create a new buffer with given limits
+	 * 
+	 * @param bufferCountLimit the number of messages
+	 * @param bufferSizeLimit the size of all messages (in bytes)
+	 * @param bufferAgeLimitMS the maximum age of the oldest message
+	 */
+	public MessageBuffer(int bufferCountLimit, long bufferSizeLimit, long bufferAgeLimitMS) {
+		this.messageCountLimit = bufferCountLimit;
 		this.bufferSizeLimit = bufferSizeLimit;
 		this.bufferAgeLimitMS = bufferAgeLimitMS;
-		this.listeners = new ArrayList<MessageBufferListener>();
-		this.buffer = Collections.synchronizedList(new ArrayList<Message>());
+		this.listeners = new ArrayList<MessageBufferListener<T>>();
+		this.buffer = Collections.synchronizedList(new ArrayList<T>());
 		this.bufferSize = new AtomicLong();
 	}
 
-	public void addListener(MessageBufferListener listener) {
+	public void addListener(MessageBufferListener<T> listener) {
 		listeners.add(listener);
 	}
 
@@ -61,8 +74,7 @@ public class MessageBuffer {
 	 * @throws SignatureException
 	 * @throws InvalidKeyException
 	 */
-	public void addMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException,
-			SignatureException, IOException {
+	public void addMessage(T message, long messageSize) {
 		synchronized (buffer) {
 			if (buffer.isEmpty()) {
 				task = new BufferAgeRunnable();
@@ -73,7 +85,7 @@ public class MessageBuffer {
 			buffer.add(message);
 		}
 
-		bufferSize.addAndGet(RelayUtils.getMessageSize(message, signatureFactory));
+		bufferSize.addAndGet(messageSize);
 
 		LOG.debug("Added to the buffer: {}", message);
 		checkFull();
@@ -108,19 +120,20 @@ public class MessageBuffer {
 	 * <code>false</code>.
 	 */
 	private void notifyAndClear() {
-		List<Message> copy;
+		List<T> copy;
 		synchronized (buffer) {
 			if (buffer.isEmpty()) {
 				LOG.warn("Buffer is empty. Listener won't be notified.");
 				return;
 			}
-			copy = new ArrayList<Message>(buffer);
+			
+			copy = new ArrayList<T>(buffer);
 			buffer.clear();
 			bufferSize.set(0);
 		}
-
+		
 		// notify the listeners with a copy of the buffer and the segmentation indices
-		for (MessageBufferListener listener : listeners) {
+		for (MessageBufferListener<T> listener : listeners) {
 			listener.bufferFull(copy);
 		}
 	}

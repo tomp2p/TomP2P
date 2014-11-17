@@ -131,7 +131,7 @@ public class ChannelCreator {
      * @return The channel future object or null if we are shut down
      */
 	public ChannelFuture createUDP(final boolean broadcast,
-	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
+			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
@@ -173,8 +173,8 @@ public class ChannelCreator {
 	 *            The timeout for establishing a TCP connection
 	 * @param channelHandlers
 	 *            The handlers to set
-	 * @param futureResponse 
-     *            The futureResponse
+	 * @param futureResponse
+	 * 			  the futureResponse
 	 * @return The channel future object or null if we are shut down.
 	 */
 	public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
@@ -245,7 +245,7 @@ public class ChannelCreator {
 	 *            The channel future
 	 * @param semaphore
      *            The semaphore to decrease
-     *@param futureResponse
+     * @param futureResponse
      *            The future response
      *            
 	 * @return The same future that was passed as an argument
@@ -366,6 +366,4 @@ public class ChannelCreator {
 	    sb.append(semaphoreUPD);
 	    return sb.toString();
 	}
-
-	
 }

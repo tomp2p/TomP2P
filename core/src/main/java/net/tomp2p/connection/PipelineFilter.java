@@ -16,11 +16,12 @@
 
 package net.tomp2p.connection;
 
+import io.netty.channel.ChannelHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
+
 import java.util.Map;
 
 import net.tomp2p.utils.Pair;
-import io.netty.channel.ChannelHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
 
 /**
  * The user may modify the filter by adding, removing, or changing the handlers.

@@ -44,6 +44,9 @@ public class OpenTCPRelayConnection extends BaseRelayConnection {
 
 	@Override
 	public FutureResponse sendToRelay(Message message) {
+		if(!connection.isOpen()) {
+			return new FutureResponse(message).failed("Connection to relay has been closed");
+		}
 		message.keepAlive(true);
 		return RelayUtils.send(connection, peer.peerBean(), peer.connectionBean(), config, message);
 	}

@@ -1,13 +1,14 @@
 package net.tomp2p.message;
 
-import java.net.InetSocketAddress;
-
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
+
+import java.net.InetSocketAddress;
+
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.utils.Utils;

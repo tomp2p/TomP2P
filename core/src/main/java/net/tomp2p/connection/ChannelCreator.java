@@ -47,6 +47,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 
+import org.mockito.internal.stubbing.answers.Returns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,7 +134,7 @@ public class ChannelCreator {
      * @return The channel future object or null if we are shut down
      */
 	public ChannelFuture createUDP(final boolean broadcast,
-			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
+			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse, SocketAddress predefinedSocket) {
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
@@ -155,7 +156,12 @@ public class ChannelCreator {
 			// Here we need to bind, as opposed to the TCP, were we connect if
 			// we do a connect, we cannot receive
 			// broadcast messages
-			final ChannelFuture channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
+			final ChannelFuture channelFuture;
+			if (predefinedSocket != null) {
+				channelFuture = b.bind(predefinedSocket);
+			} else {
+				channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
+			}
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;
@@ -372,6 +378,8 @@ public class ChannelCreator {
 	}
 
 	public void bindHole() {
-//		socketAddress = externalBindings.wildCardSocket();
+		Bootstrap b = new Bootstrap();
+		final ChannelFuture channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
+		socketAddress = channelFuture.channel().remoteAddress();
 	}
 }

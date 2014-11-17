@@ -610,7 +610,7 @@ public class Sender {
 			final ChannelFuture channelFuture;
 			switch (sendBehavior.udpSendBehavior(message)) {
 				case DIRECT:
-					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null);
 					break;
 				case RELAY:
 					List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
@@ -618,7 +618,7 @@ public class Sender {
 					if (psa.size() > 0) {
 						PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
 						message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
-						channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+						channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null);
 					} else {
 						futureResponse.failed("Peer is relayed, but no relay given");
 						return;
@@ -673,7 +673,7 @@ public class Sender {
 
 		int numberOfChannelCreators = 3;
 		final List<ChannelCreator> channelCreators = new ArrayList<ChannelCreator>(3);
-
+		
 		for (int j = 0; j < numberOfChannelCreators; j++) {
 			// create new random socket and make a channelFuture
 			FutureChannelCreator fcc = peer.connectionBean().reservation().create(1,0);
@@ -683,7 +683,8 @@ public class Sender {
 				@Override
 				public void operationComplete(FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
-						channelCreators.add(future.channelCreator());
+						ChannelCreator cc = future.channelCreator();
+						channelCreators.add(cc);
 					} else {
 						LOG.error("No hole punch possible with ChannelCreator = " + future.channelCreator().toString());
 					}

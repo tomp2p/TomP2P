@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.holep.HolePunchRPC;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.PeerAddress;
@@ -106,7 +107,8 @@ public class PeerBuilderNAT {
 	public PeerNAT start() {
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
-		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC);
+		final HolePunchRPC holePunchRPC = new HolePunchRPC(peer);
+		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC);
 
 		if (failedRelayWaitTime == -1) {
 			failedRelayWaitTime = 60;

@@ -295,6 +295,7 @@ public class Sender {
 		socketInfoMessage.messageId(message.messageId());
 		socketInfoMessage.sender(message.sender());
 		socketInfoMessage.version(message.version());
+		socketInfoMessage.udp(true);
 
 		// making the message ready to send
 		readyToSend(message, socketAddress, socketInfoMessage, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);

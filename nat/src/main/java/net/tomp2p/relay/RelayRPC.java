@@ -14,6 +14,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.holep.HolePunchRPC;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -44,6 +45,7 @@ public class RelayRPC extends DispatchHandler {
 	 * @author jonaswagner
 	 */
 	private final RconRPC rconRPC;
+	private final HolePunchRPC holePunchRPC;
 
 	/**
      * Register the RelayRPC. After the setup, the peer is ready to act as a
@@ -53,11 +55,12 @@ public class RelayRPC extends DispatchHandler {
      *            The peer to register the RelayRPC
      * @return
      */
-	public RelayRPC(Peer peer, RconRPC rconRPC) {
+	public RelayRPC(Peer peer, RconRPC rconRPC, HolePunchRPC holePunchRPC) {
         super(peer.peerBean(), peer.connectionBean());
         register(RPC.Commands.RELAY.getNr());
         this.peer = peer;
 		this.rconRPC = rconRPC;
+		this.holePunchRPC = holePunchRPC;
         config = new DefaultConnectionConfiguration();
     }
 
@@ -167,7 +170,7 @@ public class RelayRPC extends DispatchHandler {
         }
 
         // register relay forwarder
-        RelayForwarderRPC.register(peerConnection, peer, this, rconRPC);
+        RelayForwarderRPC.register(peerConnection, peer, this, rconRPC, holePunchRPC);
 
         LOG.debug("I'll be your relay! {}", message);
         responder.response(createResponseMessage(message, Type.OK));

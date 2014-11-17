@@ -16,6 +16,7 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.holep.HolePunchRPC;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -64,6 +65,17 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	private final RconRPC rconRPC;
 
 	/**
+	 * This variable is needed, because a relay peer overwrites every RPC of an
+	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. It
+	 * guarantees the existence of a {@link HolePunchRPC} object in the
+	 * iohandlers map of the {@link Dispatcher}. Without this variable, no hole
+	 * punch connections would be possible.
+	 * 
+	 * @author jonaswagner
+	 */
+	private final HolePunchRPC holePunchRPC;
+
+	/**
 	 * 
 	 * @param peerConnection
 	 *            A peer connection to an unreachable peer that is permanently
@@ -71,78 +83,87 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	 * @param peer
 	 *            The relay peer
 	 */
-	public RelayForwarderRPC(final PeerConnection peerConnection, final Peer peer, final RelayRPC relayRPC, RconRPC rconRPC) {
+	public RelayForwarderRPC(final PeerConnection peerConnection, final Peer peer, final RelayRPC relayRPC, RconRPC rconRPC,
+			HolePunchRPC holePunchRPC) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peerConnection = peerConnection.changeRemotePeer(peerConnection.remotePeer().changeRelayed(true));
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
-            public void operationComplete(FutureDone<Void> future) throws Exception {
+			public void operationComplete(FutureDone<Void> future) throws Exception {
 				peer.peerBean().removePeerStatusListeners(RelayForwarderRPC.this);
 				peer.connectionBean().dispatcher().removeIoHandler(peer.peerID(), unreachablePeer.peerId());
-            }
+			}
 		});
-		
+
 		this.unreachablePeer = peerConnection.remotePeer().changeRelayed(true);
 		this.relayRPC = relayRPC;
 		this.rconRPC = rconRPC;
+		this.holePunchRPC = holePunchRPC;
 		LOG.debug("created forwarder from peer {} to peer {}", peer.peerAddress(), unreachablePeer);
 	}
-	
-	@Override
-    public boolean peerFailed(PeerAddress remotePeer, PeerException exception) {
-	    //not handled here
-	    return false;
-    }
 
 	@Override
-    public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection2) {
+	public boolean peerFailed(PeerAddress remotePeer, PeerException exception) {
+		// not handled here
+		return false;
+	}
+
+	@Override
+	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection2) {
 		boolean firstHand = referrer == null;
 		boolean secondHand = remotePeer.equals(referrer);
 		boolean samePeerConnection = peerConnection.equals(peerConnection2);
-		//if firsthand, then full trust, if second hand and a stable peerconnection, we can trust as well
-		if((firstHand || (secondHand && samePeerConnection)) 
-				&& remotePeer.peerId().equals(unreachablePeer.peerId()) 
+		// if firsthand, then full trust, if second hand and a stable
+		// peerconnection, we can trust as well
+		if ((firstHand || (secondHand && samePeerConnection)) && remotePeer.peerId().equals(unreachablePeer.peerId())
 				&& remotePeer.isRelayed()) {
-			//we got new information about this peer, e.g. its active relays
+			// we got new information about this peer, e.g. its active relays
 			LOG.debug("update the unreachable peer to {} based on {}, ref {}", unreachablePeer, remotePeer, referrer);
 			unreachablePeer = remotePeer;
 		}
-	    return false;
-    }
-	
+		return false;
+	}
+
 	public void register(Peer peer) {
 		for (Commands command : RPC.Commands.values()) {
 			if (command != RPC.Commands.RELAY && command != RPC.Commands.RCON) {
-				peer.connectionBean().dispatcher().registerIoHandler(peer.peerID(), peerConnection.remotePeer().peerId(), this, command.getNr());
+				peer.connectionBean().dispatcher()
+						.registerIoHandler(peer.peerID(), peerConnection.remotePeer().peerId(), this, command.getNr());
 			} else if (command == RPC.Commands.RCON) {
 				// We must register the rconRPC for every unreachable peer that
 				// we serve as a relay. Without this registration, no reverse
 				// connection setup is possible.
 				peer.connectionBean().dispatcher()
 						.registerIoHandler(peer.peerID(), peerConnection.remotePeer().peerId(), rconRPC, RPC.Commands.RCON.getNr());
+			} else if (command == RPC.Commands.HOLEP) {
+				// We must register the holePunchRPC for every unreachable peer that
+				// we serve as a relay. Without this registration, no hole punch
+				// connection setup is possible.
+				peer.connectionBean().dispatcher()
+						.registerIoHandler(peer.peerID(), peerConnection.remotePeer().peerId(), holePunchRPC, RPC.Commands.HOLEP.getNr());
 			}
 		}
 		peer.peerBean().addPeerStatusListeners(this);
 	}
-	
-	public static void register(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC, RconRPC rconRPC) {
-		RelayForwarderRPC relayForwarderRPC = new RelayForwarderRPC(peerConnection, peer, relayRPC, rconRPC);
+
+	public static void register(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC, RconRPC rconRPC, HolePunchRPC holePunchRPC) {
+		RelayForwarderRPC relayForwarderRPC = new RelayForwarderRPC(peerConnection, peer, relayRPC, rconRPC, holePunchRPC);
 		relayForwarderRPC.register(peer);
 	}
-	
+
 	public static RelayForwarderRPC find(Peer peer, Number160 peerId) {
-		//we can search for any command, except RELAY, which is not handled here
-		return (RelayForwarderRPC) peer.connectionBean().dispatcher().searchHandler(peer.peerID(),
-				peerId, RPC.Commands.NEIGHBOR.getNr());
-    }
+		// we can search for any command, except RELAY, which is not handled
+		// here
+		return (RelayForwarderRPC) peer.connectionBean().dispatcher().searchHandler(peer.peerID(), peerId, RPC.Commands.NEIGHBOR.getNr());
+	}
 
 	@Override
-	public void handleResponse(final Message message, PeerConnection peerConnectionUnused, final boolean sign,
-	        final Responder responder) throws Exception {
-		//TODO
+	public void handleResponse(final Message message, PeerConnection peerConnectionUnused, final boolean sign, final Responder responder)
+			throws Exception {
+		// TODO
 		// the sender should have the ip/port from the releay peer, the peerId
 		// from the unreachabel peer, in order to have 6 relays instead of 5
-		final PeerAddress sender = unreachablePeer; 
+		final PeerAddress sender = unreachablePeer;
 
 		// special treatment for ping and neighbor
 		if (message.command() == RPC.Commands.PING.getNr()) {
@@ -157,12 +178,13 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		}
 	}
 
-	private void handleRelay(final Message message, final Responder responder, final PeerAddress sender)
-	        throws InvalidKeyException, SignatureException, IOException {
+	private void handleRelay(final Message message, final Responder responder, final PeerAddress sender) throws InvalidKeyException,
+			SignatureException, IOException {
 		// Send message via direct message through the open connection to the
 		// unreachable peer
 		message.restoreContentReferences();
-		final Buffer buf = RelayUtils.encodeMessage(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+		final Buffer buf = RelayUtils.encodeMessage(message, connectionBean().channelServer().channelServerConfiguration()
+				.signatureFactory());
 
 		FutureResponse fr = relayRPC.forwardMessage(peerConnection, buf);
 
@@ -171,7 +193,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 				if (future.isSuccess()) {
 					Buffer buffer = future.responseMessage().buffer(0);
 					Message responseFromUnreachablePeer = RelayUtils.decodeMessage(buffer, message.recipientSocket(),
-					        message.senderSocket(), connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+							message.senderSocket(), connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 					responseFromUnreachablePeer.restoreContentReferences();
 					responseFromUnreachablePeer.sender(sender);
 					responseFromUnreachablePeer.recipient(message.sender());
@@ -195,9 +217,8 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("We need the location and domain key at least");
 		}
-		if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2
-		        || message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4)
-		        && (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
+		if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4)
+				&& (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
 		Number160 locationKey = message.key(0);
@@ -206,50 +227,51 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		if (neighbors == null) {
 			// return empty neighbor set
 			Message response = createResponseMessage(message, Type.NOT_FOUND, sender);
-			response.neighborsSet(new NeighborSet(-1, Collections.<PeerAddress>emptyList()));
+			response.neighborsSet(new NeighborSet(-1, Collections.<PeerAddress> emptyList()));
 			responder.response(response);
 			return;
 		}
 
 		// Create response message and set neighbors
 		final Message responseMessage = createResponseMessage(message, Type.OK, sender);
-		
-		//TODO: the relayed peer must be up-to-date here
-		//neighbors.add(peerConnection.remotePeer());
-		
+
+		// TODO: the relayed peer must be up-to-date here
+		// neighbors.add(peerConnection.remotePeer());
+
 		LOG.debug("found the following neighbors {}", neighbors);
-		
+
 		NeighborSet neighborSet = new NeighborSet(NeighborRPC.NEIGHBOR_LIMIT, neighbors);
 		responseMessage.neighborsSet(neighborSet);
-		
-		//we can't do fast get here, as we only send over the neighbors and not the keys stored
+
+		// we can't do fast get here, as we only send over the neighbors and not
+		// the keys stored
 		responder.response(responseMessage);
 	}
-	
+
 	private SortedSet<PeerAddress> neighbors(Number160 id, int atLeast) {
-        LOG.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", unreachablePeer, id);
-        if(peerMap == null) {
-            return null;
-        } else {
-            return PeerMap.closePeers(unreachablePeer.peerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
-        }
-    }
-	
+		LOG.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", unreachablePeer, id);
+		if (peerMap == null) {
+			return null;
+		} else {
+			return PeerMap.closePeers(unreachablePeer.peerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
+		}
+	}
+
 	public Collection<PeerAddress> all() {
 		Collection<PeerStatatistic> result1 = new ArrayList<PeerStatatistic>();
-		for(Map<Number160, PeerStatatistic> map:peerMap) {
+		for (Map<Number160, PeerStatatistic> map : peerMap) {
 			result1.addAll(map.values());
 		}
 		Collection<PeerAddress> result2 = new ArrayList<PeerAddress>();
-	    for(PeerStatatistic peerStatatistic:result1) {
-	    	result2.add(peerStatatistic.peerAddress());
-	    }
-	    return result2;
-    }
+		for (PeerStatatistic peerStatatistic : result1) {
+			result2.add(peerStatatistic.peerAddress());
+		}
+		return result2;
+	}
 
 	public void setMap(List<Map<Number160, PeerStatatistic>> peerMap) {
-	    this.peerMap = peerMap;
-    }
+		this.peerMap = peerMap;
+	}
 
 	public PeerConnection peerConnection() {
 		return peerConnection;

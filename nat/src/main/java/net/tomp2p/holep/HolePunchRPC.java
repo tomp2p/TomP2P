@@ -1,6 +1,7 @@
 package net.tomp2p.holep;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,8 @@ import net.tomp2p.utils.Pair;
 
 public class HolePunchRPC extends DispatchHandler {
 
-	private static final Logger LOG = LoggerFactory.getLogger(HolePunchRPC.class);
+	private static final Logger LOG = LoggerFactory
+			.getLogger(HolePunchRPC.class);
 
 	private final Peer peer;
 	private final ConnectionConfiguration config;
@@ -46,16 +48,20 @@ public class HolePunchRPC extends DispatchHandler {
 	}
 
 	@Override
-	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) throws Exception {
+	public void handleResponse(Message message, PeerConnection peerConnection,
+			boolean sign, Responder responder) throws Exception {
 		// This means, that a new Holepunch has been initiated.
 		if (message.type() == Message.Type.REQUEST_1) {
-			LOG.debug("New HolePunch process initiated from peer " + message.sender().peerId() + " to peer " + message.recipient().peerId()
-					+ " on ports: " + message.intList().toString());
+			LOG.debug("New HolePunch process initiated from peer "
+					+ message.sender().peerId() + " to peer "
+					+ message.recipient().peerId() + " on ports: "
+					+ message.intList().toString());
 			forwardPorts(message, peerConnection, responder);
 		}
 		// This means that peer1 has answered
 		else if (message.type() == Message.Type.REQUEST_2) {
-			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
+			LOG.debug("HolePunch initiated on peer: "
+					+ message.recipient().peerId());
 			handleHolePunch(message, peerConnection, responder);
 		} else {
 			throw new IllegalArgumentException("Message Content is wrong!");
@@ -69,39 +75,44 @@ public class HolePunchRPC extends DispatchHandler {
 
 		for (int i = 0; i < remotePorts.size(); i++) {
 			final PeerAddress originalSender = (PeerAddress) message.neighborsSetList().get(0).neighbors().toArray()[0];
-			originalSender.changeFirewalledUDP(false).changeRelayed(false).changePorts(-1, remotePorts.get(i));
-			SendDirectBuilder sdb = peer.sendDirect(originalSender).forceUDP(true).idleUDPSeconds(60).object("Dummy").slowResponseTimeoutSeconds(60);
-			FutureChannelCreator fcc = sdb.futureChannelCreator();
+			final PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false).changePorts(-1, remotePorts.get(i));
+			final SendDirectBuilder sdb = peer.sendDirect(recipient).forceUDP(true).idleUDPSeconds(60).object("Dummy").slowResponseTimeoutSeconds(60);
 			FutureDirect fd = sdb.start();
+			sdb.start();
+			sdb.start();
+			sdb.start();
+			final int current = i;
 			fd.addListener(new BaseFutureAdapter<FutureDirect>() {
 
 				@Override
-				public void operationComplete(FutureDirect future) throws Exception {
-					if (future.isSuccess()) {
-						
-					} else {
-						handleFail(message, responder, "No connection could be established!");
-					}
+				public void operationComplete(FutureDirect future)
+						throws Exception {
+					portMappings.add(new Pair<Integer, Integer>(current, ((InetSocketAddress) sdb.futureChannelCreator().channelCreator().currentSocketAddress()).getPort()));
 				}
 			});
-			InetSocketAddress socketAddress = (InetSocketAddress) fcc.channelCreator().currentSocketAddress();
-			portMappings.add(new Pair<Integer, Integer>(i, socketAddress.getPort()));
+			
 			
 		}
 	}
 
-	private void forwardPorts(Message message, PeerConnection peerConnection, Responder responder) {
+	private void forwardPorts(Message message, PeerConnection peerConnection,
+			Responder responder) {
 		final BaseRelayForwarderRPC forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
-			final Message forwardMessage = createForwardPeer1Message(message, forwarder.unreachablePeerAddress());
+			final Message forwardMessage = createForwardPeer1Message(message,
+					forwarder.unreachablePeerAddress());
 			forwarder.handleResponse(forwardMessage, responder);
 		} else {
-			handleFail(message, responder, "No RelayForwarder registered for peerId=" + message.recipient().peerId().toString());
+			handleFail(message, responder,
+					"No RelayForwarder registered for peerId="
+							+ message.recipient().peerId().toString());
 		}
 	}
 
-	private Message createForwardPeer1Message(Message message, PeerAddress recipient) {
-		Message forwardMessage = createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_2);
+	private Message createForwardPeer1Message(Message message,
+			PeerAddress recipient) {
+		Message forwardMessage = createMessage(recipient,
+				RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_2);
 		forwardMessage.version(message.version());
 		forwardMessage.messageId(message.messageId());
 
@@ -129,7 +140,8 @@ public class HolePunchRPC extends DispatchHandler {
 	 */
 	private BaseRelayForwarderRPC extractRelayForwarder(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(peer.peerID(), message.recipient().peerId());
+		final Map<Integer, DispatchHandler> ioHandlers = dispatcher
+				.searchHandlerMap(peer.peerID(), message.recipient().peerId());
 		for (DispatchHandler handler : ioHandlers.values()) {
 			if (handler instanceof BaseRelayForwarderRPC) {
 				return (BaseRelayForwarderRPC) handler;
@@ -146,7 +158,8 @@ public class HolePunchRPC extends DispatchHandler {
 	 * @param responder
 	 * @param failReason
 	 */
-	private void handleFail(final Message message, final Responder responder, final String failReason) {
+	private void handleFail(final Message message, final Responder responder,
+			final String failReason) {
 		LOG.error(failReason);
 		responder.response(createResponseMessage(message, Type.EXCEPTION));
 	}

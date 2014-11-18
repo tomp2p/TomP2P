@@ -329,6 +329,8 @@ public class RelayRPC extends DispatchHandler {
 			forwarder.setPeerMap(RelayUtils.unflatten(map, message.sender()));
 		} else {
 			LOG.error("No forwarder for peer {} found. Need to setup relay first");
+			responder.response(createResponseMessage(message, Type.NOT_FOUND));
+			return;
 		}
 
 		if(message.neighborsSet(1) != null && forwarder instanceof AndroidForwarderRPC) {

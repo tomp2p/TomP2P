@@ -300,18 +300,10 @@ public class Sender {
 		// making the message ready to send
 		readyToSend(message, socketAddress, socketInfoMessage, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
 
-		List<PeerSocketAddress> peerSocketAddresses = new ArrayList<PeerSocketAddress>();
 		for (SocketAddress soAddress : socketAddresses) {
-			InetSocketAddress inetSoAddress = (InetSocketAddress) soAddress;
-			PeerSocketAddress peerSocketAddress = new PeerSocketAddress(inetSoAddress.getAddress(), -1, inetSoAddress.getPort());
-			peerSocketAddresses.add(peerSocketAddress);
+			InetSocketAddress address = (InetSocketAddress) soAddress;
+			socketInfoMessage.intValue(address.getPort());
 		}
-
-		// make sure the other peer knows our peerSocketAddresses!
-		socketInfoMessage.peerSocketAddresses().clear();
-		socketInfoMessage.peerSocketAddresses(peerSocketAddresses);
-
-		// store the destination point to the message
 
 		return socketInfoMessage;
 	}
@@ -561,29 +553,6 @@ public class Sender {
 			message.peerSocketAddresses(message.sender().peerSocketAddresses());
 		}
 
-		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
-			try {
-				channelCreators = prepareHolePunch(futureResponse, message);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			// extract the socketAddresses of the channelCreators
-			final List<SocketAddress> socketAddresses = new ArrayList<SocketAddress>();
-			for (ChannelCreator cc : channelCreators) {
-				cc.bindHole();
-				socketAddresses.add(cc.currentSocketAddress());
-				cachedChannelCreators.put(message.messageId(), cc);
-			}
-
-			// initiate the rendezvous process
-			initHolePunch(createSocketInfoMessage(message, socketAddresses), channelCreator, idleUDPSeconds, futureResponse, broadcast,
-					message, handler);
-			return;
-		} else {
-			channelCreators = null;
-		}
-
 		boolean isFireAndForget = handler == null;
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
@@ -606,6 +575,29 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
+		
+		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
+			try {
+				channelCreators = prepareHolePunch(futureResponse, message);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			// extract the socketAddresses of the channelCreators
+			final List<SocketAddress> socketAddresses = new ArrayList<SocketAddress>();
+			for (ChannelCreator cc : channelCreators) {
+				socketAddresses.add(cc.bindHole(message));
+				cachedChannelCreators.put(message.messageId(), cc);
+			}
+
+			// initiate the rendezvous process
+			initHolePunch(createSocketInfoMessage(message, socketAddresses), channelCreator, idleUDPSeconds, futureResponse, broadcast,
+					message, handler);
+			return;
+		} else {
+			channelCreators = null;
+		}
+		
 		try {
 			final ChannelFuture channelFuture;
 			switch (sendBehavior.udpSendBehavior(message)) {
@@ -875,5 +867,9 @@ public class Sender {
 	 */
 	public ConcurrentHashMap<Integer, FutureResponse> cachedRequests() {
 		return cachedRequests;
+	}
+	
+	public List<PeerStatusListener> peerStatusListeners() {
+		return peerStatusListeners;
 	}
 }

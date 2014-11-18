@@ -36,6 +36,7 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -47,7 +48,6 @@ import net.tomp2p.message.Message;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 
-import org.mockito.internal.stubbing.answers.Returns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,6 +91,7 @@ public class ChannelCreator {
 	private boolean shutdownTCP = false;
 	
 	private SocketAddress socketAddress = null;
+	private static final Random channelRandom = new Random();
 
 	/**
 	 * Package private constructor, since this is created by
@@ -162,6 +163,7 @@ public class ChannelCreator {
 			} else {
 				channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
 			}
+			socketAddress = channelFuture.channel().localAddress();
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;
@@ -377,9 +379,11 @@ public class ChannelCreator {
 			return socketAddress;
 	}
 
-	public void bindHole() {
-		Bootstrap b = new Bootstrap();
-		final ChannelFuture channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
-		socketAddress = channelFuture.channel().remoteAddress();
+	public SocketAddress bindHole(Message message) {
+		int channelPort = 0;
+		while (channelPort < 1024) {
+			channelPort = channelRandom.nextInt(65536);
+		}
+		return new InetSocketAddress(message.sender().inetAddress(), channelPort);
 	}
 }

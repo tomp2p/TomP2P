@@ -379,11 +379,6 @@ public class ChannelCreator {
 			return socketAddress;
 	}
 
-	public SocketAddress randomHole(Message message) {
-		int channelPort = randomPort();
-		return new InetSocketAddress(message.sender().inetAddress(), channelPort);
-	}
-
 	public int randomPort() {
 		int channelPort = 0;
 		while (channelPort < 1024) {//2^10

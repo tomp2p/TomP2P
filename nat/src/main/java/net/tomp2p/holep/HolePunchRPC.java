@@ -152,7 +152,7 @@ public class HolePunchRPC extends DispatchHandler {
 		responder.response(replyMessage);
 	}
 
-	private void forwardPorts(Message message, PeerConnection peerConnection, final Responder responder) {
+	private void forwardPorts(final Message message, PeerConnection peerConnection, final Responder responder) {
 		final BaseRelayForwarderRPC forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardPortsMessage(message, forwarder.unreachablePeerAddress());
@@ -162,7 +162,12 @@ public class HolePunchRPC extends DispatchHandler {
 				@Override
 				public void operationComplete(FutureDone<Message> future) throws Exception {
 					if (future.isSuccess()) {
-						Message answerMessage = future.object();
+						Message answerMessage = createResponseMessage(message, Message.Type.OK);
+						for (Integer i : future.object().intList()) {
+							answerMessage.intValue(i);
+						}
+						answerMessage.command(Commands.HOLEP.getNr());
+						
 						LOG.debug("Returing from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);
 					} else {

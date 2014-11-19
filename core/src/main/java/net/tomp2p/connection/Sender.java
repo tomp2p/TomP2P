@@ -87,7 +87,7 @@ public class Sender {
 	private final Dispatcher dispatcher;
 	private final SendBehavior sendBehavior;
 	private final Random random;
-	private static Peer peer;
+	private Peer peer;
 
 	// this map caches all messages which are meant to be sent by a reverse
 	private final ConcurrentHashMap<Integer, FutureResponse> cachedRequests = new ConcurrentHashMap<Integer, FutureResponse>();
@@ -95,11 +95,6 @@ public class Sender {
 	// this map caches all messages which are meant to be sent by a reverse
 	// connection setup
 	private final ConcurrentHashMap<Integer, Message> cachedMessages = new ConcurrentHashMap<Integer, Message>();
-
-	/**
-	 * this map caches all @link{ChannelCreators} for the holepunching procedure
-	 */
-	private final ConcurrentHashMap<Integer, ChannelCreator> cachedChannelCreators = new ConcurrentHashMap<Integer, ChannelCreator>();
 
 	private PingBuilderFactory pingBuilderFactory;
 
@@ -120,10 +115,6 @@ public class Sender {
 		this.dispatcher = dispatcher;
 		this.sendBehavior = sendBehavior;
 		this.random = new Random(peerId.hashCode());
-	}
-
-	public void setPeer(Peer peer) {
-		this.peer = peer;
 	}
 
 	public ChannelClientConfiguration channelClientConfiguration() {
@@ -287,7 +278,7 @@ public class Sender {
 		return socketAddress;
 	}
 
-	private static Message createSocketInfoMessage(final Message message, List<SocketAddress> socketAddresses) {
+	private static Message createSocketInfoMessage(final Message message, final ChannelCreator channelCreator) {
 		PeerSocketAddress socketAddress = extractRandomRelay(message);
 
 		// we need to make a copy of the original Message
@@ -300,9 +291,8 @@ public class Sender {
 		// making the message ready to send
 		readyToSend(message, socketAddress, socketInfoMessage, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
 
-		for (SocketAddress soAddress : socketAddresses) {
-			InetSocketAddress address = (InetSocketAddress) soAddress;
-			socketInfoMessage.intValue(address.getPort());
+		for (int i=0; i<3; i++) {
+			socketInfoMessage.intValue(channelCreator.randomPort());
 		}
 
 		return socketInfoMessage;
@@ -540,7 +530,7 @@ public class Sender {
 	public void sendUDP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator, final int idleUDPSeconds, final boolean broadcast) {
 
-		List<ChannelCreator> channelCreators = null;
+//		List<ChannelCreator> channelCreators = null;
 		// no need to continue if we already finished
 		if (futureResponse.isCompleted()) {
 			return;
@@ -576,25 +566,24 @@ public class Sender {
 		}
 
 		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
-			try {
-				channelCreators = prepareHolePunch(futureResponse, message);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			// extract the socketAddresses of the channelCreators
-			final List<SocketAddress> socketAddresses = new ArrayList<SocketAddress>();
-			for (ChannelCreator cc : channelCreators) {
-				socketAddresses.add(cc.randomHole(message));
-				cachedChannelCreators.put(message.messageId(), cc);
-			}
+//			try {
+//				channelCreators = prepareHolePunch(futureResponse, message);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//
+//			// extract the socketAddresses of the channelCreators
+//			final List<SocketAddress> socketAddresses = new ArrayList<SocketAddress>();
+//			for (ChannelCreator cc : channelCreators) {
+//				socketAddresses.add(cc.randomHole(message));
+//			}
 
 			// initiate the rendezvous process
-			initHolePunch(createSocketInfoMessage(message, socketAddresses), channelCreator, idleUDPSeconds, futureResponse, broadcast,
+			initHolePunch(createSocketInfoMessage(message, channelCreator), channelCreator, idleUDPSeconds, futureResponse, broadcast,
 					message, handler);
 			return;
 		} else {
-			channelCreators = null;
+//			channelCreators = null;
 		}
 
 		try {
@@ -626,7 +615,7 @@ public class Sender {
 		}
 	}
 
-	private void initHolePunch(Message socketInfoMessage, ChannelCreator channelCreator, int idleUDPSeconds,
+	private void initHolePunch(final Message socketInfoMessage, final ChannelCreator channelCreator, final int idleUDPSeconds,
 			final FutureResponse futureResponse, final boolean broadcast, final Message message,
 			final SimpleChannelInboundHandler<Message> handler) {
 
@@ -640,13 +629,29 @@ public class Sender {
 			@Override
 			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
 				if (msg.command() == Commands.HOLEP.getNr() && msg.type() == Type.OK) {
-					LOG.debug("Successfully set up the connection via hole punching to peer {}", message.recipient().peerId());
-					holePunchResponse.response(msg);
+
+					if (msg.intList() == null || msg.intList().isEmpty()) {
+						handleFail("IntList in replyMessage was null or Empty! No ports available!!!!");
+					} else {
+						
+						List<Pair<Integer, Integer>> ports = new ArrayList<Pair<Integer,Integer>>();
+						for (int i=0; i<msg.intList().size(); i++) {
+							ports.add(new Pair<Integer, Integer>(msg.intAt(i), msg.intAt(i+1)));
+							i++;
+						}
+						
+						LOG.debug("Successfully set up the connection via hole punching to peer {}", message.recipient().peerId());
+						// holePunchResponse.response(msg);
+					}
 				} else {
-					LOG.debug("Could not acquire a connection via hole punching to peer {}", message.recipient().peerId());
-					holePunchResponse.failed("Could not acquire a connection via hole punching, got: " + msg);
-					futureResponse.failed(holePunchResponse.failedReason());
+					handleFail("Could not acquire a connection via hole punching, got: " + msg);
 				}
+			}
+
+			private void handleFail(final String failMessage) {
+				LOG.debug("Could not acquire a connection via hole punching to peer {}", message.recipient().peerId());
+				holePunchResponse.failed(failMessage);
+				futureResponse.failed(holePunchResponse.failedReason());
 			}
 		};
 
@@ -871,7 +876,8 @@ public class Sender {
 	}
 
 	/**
-	 * This method is used to fire dummy UDP Messages in order to punch a hole into the firewall.
+	 * This method is used to fire dummy UDP Messages in order to punch a hole
+	 * into the firewall.
 	 * 
 	 * @param futureResponse
 	 * @param message
@@ -881,10 +887,10 @@ public class Sender {
 	 */
 	public void punchHole(final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
 			final InetSocketAddress socket) {
-		
+
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 		final int nrTCPHandlers = 3; // 2 / 0.75
-		
+
 		handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
 		handlers.put(
 				"decoder",
@@ -902,5 +908,9 @@ public class Sender {
 			LOG.warn(e.getMessage());
 			futureResponse.failed(e);
 		}
+	}
+
+	public void peer(Peer peer) {
+		this.peer = peer;
 	}
 }

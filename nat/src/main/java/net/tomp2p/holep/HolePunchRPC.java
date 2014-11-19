@@ -87,7 +87,7 @@ public class HolePunchRPC extends DispatchHandler {
 		else if (message.type() == Message.Type.REQUEST_2) {
 			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
 			handleHolePunch(message, peerConnection, responder);
-		} else if (message.type() == Message.Type.REQUEST_3) {
+		} else if (message.type() == Message.Type.OK) {
 			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
 			handleHolePunchReply(message, peerConnection, responder);
 		} else {
@@ -143,7 +143,8 @@ public class HolePunchRPC extends DispatchHandler {
 				//wait
 			}
 		}
-		Message replyMessage = createMessage(originalSender, Commands.HOLEP.getNr(), Message.Type.REQUEST_3);
+		Message replyMessage = createMessage(originalSender, Commands.HOLEP.getNr(), Message.Type.OK);
+		replyMessage.messageId(message.messageId());
 		for (Pair<Integer, Integer> pair : portMappings) {
 			replyMessage.intValue(pair.element0());
 			replyMessage.intValue(pair.element1());
@@ -156,7 +157,7 @@ public class HolePunchRPC extends DispatchHandler {
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardPortsMessage(message, forwarder.unreachablePeerAddress());
 			
-			FutureDone<Message> response = forwarder.forwardToUnreachable(message);
+			FutureDone<Message> response = forwarder.forwardToUnreachable(forwardMessage);
 			response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 				@Override
 				public void operationComplete(FutureDone<Message> future) throws Exception {

@@ -1,5 +1,6 @@
 package net.tomp2p;
 
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -178,11 +179,11 @@ public class MessageEncodeDecode {
 	public static byte[] encodeMessageSetNeighbors() throws Exception {
 
 		// create sample neighbor sets
-		PeerAddress sampleAddress1 = new PeerAddress(sample160_1);
-		PeerAddress sampleAddress2 = new PeerAddress(sample160_2);
-		PeerAddress sampleAddress3 = new PeerAddress(sample160_3);
-		PeerAddress sampleAddress4 = new PeerAddress(sample160_4);
-		PeerAddress sampleAddress5 = new PeerAddress(sample160_5);
+		PeerAddress sampleAddress1 = new PeerAddress(sample160_1, InetAddress.getByName("192.168.1.1"));
+		PeerAddress sampleAddress2 = new PeerAddress(sample160_2, InetAddress.getByName("255.255.255.255"));
+		PeerAddress sampleAddress3 = new PeerAddress(sample160_3, InetAddress.getByName("127.0.0.1"));
+		PeerAddress sampleAddress4 = new PeerAddress(sample160_4, InetAddress.getByName("0:1:2:3:4:5:6:7"));
+		PeerAddress sampleAddress5 = new PeerAddress(sample160_5, InetAddress.getByName("7:6:5:4:3:2:1:0"));
 		
 		Collection<PeerAddress> sampleNeighbours1 = new ArrayList<PeerAddress>();
 		sampleNeighbours1.add(sampleAddress1);
@@ -200,14 +201,14 @@ public class MessageEncodeDecode {
 		sampleNeighbours3.add(sampleAddress5);
 		
 		Message m = Utils2.createDummyMessage();
-		m.neighborsSet(new NeighborSet(0, sampleNeighbours1));
-		m.neighborsSet(new NeighborSet(1, sampleNeighbours2));
-		m.neighborsSet(new NeighborSet(2, sampleNeighbours3));
-		m.neighborsSet(new NeighborSet(3, sampleNeighbours1));
-		m.neighborsSet(new NeighborSet(4, sampleNeighbours2));
-		m.neighborsSet(new NeighborSet(5, sampleNeighbours3));
-		m.neighborsSet(new NeighborSet(6, sampleNeighbours1));
-		m.neighborsSet(new NeighborSet(7, sampleNeighbours2));
+		m.neighborsSet(new NeighborSet(-1, sampleNeighbours1));
+		m.neighborsSet(new NeighborSet(-1, sampleNeighbours2));
+		m.neighborsSet(new NeighborSet(-1, sampleNeighbours3));
+		m.neighborsSet(new NeighborSet(-1, sampleNeighbours1));
+		m.neighborsSet(new NeighborSet(-1, sampleNeighbours2));
+		m.neighborsSet(new NeighborSet(-1, sampleNeighbours3));
+		m.neighborsSet(new NeighborSet(-1, sampleNeighbours1));
+		m.neighborsSet(new NeighborSet(-1, sampleNeighbours2));
 		
 		return encodeMessage(m);
 	}

@@ -66,6 +66,9 @@ public class Inbox {
 				case "TestMessageDecodeSetKey640":
 					result = MessageEncodeDecode.encodeMessageSetKey640();
 					break;
+				case "TestMessageDecodeSetNeighbors":
+					result = MessageEncodeDecode.encodeMessageSetNeighbors();
+					break;
 				
 				default:
 					System.out.println(String.format("Invalid argument: %s.", argument));

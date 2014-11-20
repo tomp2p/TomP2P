@@ -15,8 +15,10 @@ import net.tomp2p.message.Encoder;
 import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.KeyMap640Keys;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.NeighborSet;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 
@@ -144,7 +146,7 @@ public class MessageEncodeDecode {
 	
 	public static byte[] encodeMessageSetKey640() throws Exception {
 		
-		// create a sample key collections
+		// create sample key collections
 		Collection<Number160> sampleCollection1 = new ArrayList<Number160>();
 		sampleCollection1.add(sample160_1);
 		sampleCollection1.add(sample160_2);
@@ -169,6 +171,43 @@ public class MessageEncodeDecode {
 		m.keyCollection(new KeyCollection(sample160_1, sample160_2, sample160_3, sampleCollection3));
 		m.keyCollection(new KeyCollection(sample160_2, sample160_3, sample160_4, sampleCollection1));
 		m.keyCollection(new KeyCollection(sample160_3, sample160_4, sample160_5, sampleCollection2));
+		
+		return encodeMessage(m);
+	}
+	
+	public static byte[] encodeMessageSetNeighbors() throws Exception {
+
+		// create sample neighbor sets
+		PeerAddress sampleAddress1 = new PeerAddress(sample160_1);
+		PeerAddress sampleAddress2 = new PeerAddress(sample160_2);
+		PeerAddress sampleAddress3 = new PeerAddress(sample160_3);
+		PeerAddress sampleAddress4 = new PeerAddress(sample160_4);
+		PeerAddress sampleAddress5 = new PeerAddress(sample160_5);
+		
+		Collection<PeerAddress> sampleNeighbours1 = new ArrayList<PeerAddress>();
+		sampleNeighbours1.add(sampleAddress1);
+		sampleNeighbours1.add(sampleAddress2);
+		sampleNeighbours1.add(sampleAddress3);
+		
+		Collection<PeerAddress> sampleNeighbours2 = new ArrayList<PeerAddress>();
+		sampleNeighbours2.add(sampleAddress2);
+		sampleNeighbours2.add(sampleAddress3);
+		sampleNeighbours2.add(sampleAddress4);
+		
+		Collection<PeerAddress> sampleNeighbours3 = new ArrayList<PeerAddress>();
+		sampleNeighbours3.add(sampleAddress3);
+		sampleNeighbours3.add(sampleAddress4);
+		sampleNeighbours3.add(sampleAddress5);
+		
+		Message m = Utils2.createDummyMessage();
+		m.neighborsSet(new NeighborSet(0, sampleNeighbours1));
+		m.neighborsSet(new NeighborSet(1, sampleNeighbours2));
+		m.neighborsSet(new NeighborSet(2, sampleNeighbours3));
+		m.neighborsSet(new NeighborSet(3, sampleNeighbours1));
+		m.neighborsSet(new NeighborSet(4, sampleNeighbours2));
+		m.neighborsSet(new NeighborSet(5, sampleNeighbours3));
+		m.neighborsSet(new NeighborSet(6, sampleNeighbours1));
+		m.neighborsSet(new NeighborSet(7, sampleNeighbours2));
 		
 		return encodeMessage(m);
 	}

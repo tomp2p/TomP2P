@@ -502,7 +502,7 @@ public class TestMessage {
 	 * @return The message that was decoded.
 	 * @throws Exception .
 	 */
-	private Message encodeDecode(final Message m1) throws Exception {
+	public static Message encodeDecode(final Message m1) throws Exception {
 		AtomicReference<Message> m2 = new AtomicReference<Message>();
 		final AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
 		TomP2POutbound encoder = new TomP2POutbound(true, new DSASignatureFactory(), new CompByteBufAllocator() {
@@ -535,7 +535,7 @@ public class TestMessage {
 	 * @return The mocked ChannelHandlerContext
 	 */
 	@SuppressWarnings("unchecked")
-	private ChannelHandlerContext mockChannelHandlerContext(final AlternativeCompositeByteBuf buf,
+	private static ChannelHandlerContext mockChannelHandlerContext(final AlternativeCompositeByteBuf buf,
 			final AtomicReference<Message> m2) {
 		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
 		ByteBufAllocator alloc = mock(ByteBufAllocator.class);

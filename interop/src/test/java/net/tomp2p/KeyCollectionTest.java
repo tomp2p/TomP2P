@@ -2,19 +2,15 @@ package net.tomp2p;
 
 import static org.junit.Assert.assertTrue;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import net.tomp2p.message.Decoder;
-import net.tomp2p.message.Encoder;
 import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TestMessage;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 import org.junit.Test;
 
@@ -67,39 +63,7 @@ public class KeyCollectionTest {
 		
 		assertTrue(CheckIsSameList(m1.keyCollectionList(), m2.keyCollectionList()));
 	}
-	
-	/*private static byte[] encodeMessage(Message message) throws Exception {
 		
-		Encoder encoder = new Encoder(null);
-		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
-		encoder.write(buf, message, null);
-		
-		return extractBytes(buf);
-	}
-	
-	private static Message decodeMessage(byte[] bytes) throws Exception {
-		
-		Decoder decoder = new Decoder(null);
-		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
-		buf.writeBytes(bytes);
-		
-		// create dummy sender for decoding
-		Message message = Utils2.createDummyMessage();
-		decoder.decode(null, buf, message.recipient().createSocketTCP(), message.sender().createSocketTCP());
-		
-		return decoder.message();
-	}
-	
-	private static byte[] extractBytes(AlternativeCompositeByteBuf buf) {
-		
-		ByteBuffer buffer = buf.nioBuffer();
-		buffer.position(0);
-		
-		byte[] bytes = new byte[buffer.remaining()];
-		buffer.get(bytes);
-		return bytes;
-	}*/
-	
 	private static <T> boolean CheckIsSameList(List<T> list1, List<T> list2) {
         if (list1 == null ^ list2 == null) // XOR
         {

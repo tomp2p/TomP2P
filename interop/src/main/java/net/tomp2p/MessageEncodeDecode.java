@@ -45,7 +45,7 @@ public class MessageEncodeDecode {
 		
 		return extractBytes(buf);
 	}
-
+	
 	public static byte[] encodeMessageMapKey640Keys() throws Exception {
 		
 		// create a sample KeyMap640Keys object
@@ -131,9 +131,16 @@ public class MessageEncodeDecode {
 	 * @return
 	 */
 	private static byte[] extractBytes(AlternativeCompositeByteBuf buf) {
-		ByteBuffer buf2 = ByteBuffer.allocate(buf.nioBuffer().remaining());
+		/*ByteBuffer buf2 = ByteBuffer.allocate(buf.nioBuffer().remaining());
 		byte[] bytes = new byte[buf.nioBuffer().remaining()];
 		buf2.get(bytes);
+		return bytes;*/
+		
+		ByteBuffer buffer = buf.nioBuffer();
+		buffer.position(0);
+		
+		byte[] bytes = new byte[buffer.remaining()];
+		buffer.get(bytes);
 		return bytes;
 	}
 }

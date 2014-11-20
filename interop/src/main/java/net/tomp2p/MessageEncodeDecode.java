@@ -35,7 +35,7 @@ public class MessageEncodeDecode {
 	
 	static Number640 sample640_1 = Number640.ZERO;
 	static Number640 sample640_2 = new Number640(new Number160(sampleBytes1), new Number160(sampleBytes2), new Number160(sampleBytes3), Number160.MAX_VALUE);
-	static Number640 sample640_3 = new Number640(Number160.MAX_VALUE, new Number160(sampleBytes1), new Number160(sampleBytes2), new Number160(sampleBytes3));
+	static Number640 sample640_3 = new Number640(Number160.MAX_VALUE, new Number160(sampleBytes3), new Number160(sampleBytes2), new Number160(sampleBytes1));
 	
 	public static byte[] encodeMessageEmpty() throws Exception {
 

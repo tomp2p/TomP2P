@@ -1,6 +1,7 @@
 package net.tomp2p;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,6 +12,7 @@ import java.util.TreeMap;
 
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Encoder;
+import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.KeyMap640Keys;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.Number160;
@@ -136,6 +138,37 @@ public class MessageEncodeDecode {
 		m.keyMap640Keys(new KeyMap640Keys(keysMap));
 		m.keyMap640Keys(new KeyMap640Keys(keysMap));
 		m.keyMap640Keys(new KeyMap640Keys(keysMap));
+		
+		return encodeMessage(m);
+	}
+	
+	public static byte[] encodeMessageSetKey640() throws Exception {
+		
+		// create a sample key collections
+		Collection<Number160> sampleCollection1 = new ArrayList<Number160>();
+		sampleCollection1.add(sample160_1);
+		sampleCollection1.add(sample160_2);
+		sampleCollection1.add(sample160_3);
+		
+		Collection<Number160> sampleCollection2 = new ArrayList<Number160>();
+		sampleCollection2.add(sample160_2);
+		sampleCollection2.add(sample160_3);
+		sampleCollection2.add(sample160_4);
+		
+		Collection<Number160> sampleCollection3 = new ArrayList<Number160>();
+		sampleCollection3.add(sample160_3);
+		sampleCollection3.add(sample160_4);
+		sampleCollection3.add(sample160_5);
+		
+		Message m = Utils2.createDummyMessage();
+		m.keyCollection(new KeyCollection(sample160_1, sample160_1, sample160_1, sampleCollection1));
+		m.keyCollection(new KeyCollection(sample160_2, sample160_2, sample160_2, sampleCollection2));
+		m.keyCollection(new KeyCollection(sample160_3, sample160_3, sample160_3, sampleCollection3));
+		m.keyCollection(new KeyCollection(sample160_4, sample160_4, sample160_4, sampleCollection1));
+		m.keyCollection(new KeyCollection(sample160_5, sample160_5, sample160_5, sampleCollection2));
+		m.keyCollection(new KeyCollection(sample160_1, sample160_2, sample160_3, sampleCollection3));
+		m.keyCollection(new KeyCollection(sample160_2, sample160_3, sample160_4, sampleCollection1));
+		m.keyCollection(new KeyCollection(sample160_3, sample160_4, sample160_5, sampleCollection2));
 		
 		return encodeMessage(m);
 	}

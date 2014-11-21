@@ -543,27 +543,8 @@ public class Sender {
 
 		boolean isFireAndForget = handler == null;
 
-		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
-		if (isFireAndForget) {
-			final int nrTCPHandlers = 3; // 2 / 0.75
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
-		} else {
-			final int nrTCPHandlers = 7; // 5 / 0.75
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
-			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds, isFireAndForget);
-			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
-			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
-		}
-
-		handlers.put(
-				"decoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(channelClientConfiguration.signatureFactory())));
-		handlers.put(
-				"encoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
-		if (!isFireAndForget) {
-			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
-		}
+		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPSeconds,
+				isFireAndForget);
 
 		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
 //			try {
@@ -615,6 +596,32 @@ public class Sender {
 		}
 	}
 
+	public Map<String, Pair<EventExecutorGroup, ChannelHandler>> configureHandlers(final SimpleChannelInboundHandler<Message> handler,
+			final FutureResponse futureResponse, final int idleUDPSeconds, boolean isFireAndForget) {
+		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
+		if (isFireAndForget) {
+			final int nrTCPHandlers = 3; // 2 / 0.75
+			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
+		} else {
+			final int nrTCPHandlers = 7; // 5 / 0.75
+			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
+			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds, isFireAndForget);
+			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
+			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
+		}
+
+		handlers.put(
+				"decoder",
+				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(channelClientConfiguration.signatureFactory())));
+		handlers.put(
+				"encoder",
+				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
+		if (!isFireAndForget) {
+			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
+		}
+		return handlers;
+	}
+
 	private void initHolePunch(final Message socketInfoMessage, final ChannelCreator channelCreator, final int idleUDPSeconds,
 			final FutureResponse futureResponse, final boolean broadcast, final Message message,
 			final SimpleChannelInboundHandler<Message> handler) {
@@ -634,10 +641,46 @@ public class Sender {
 						handleFail("IntList in replyMessage was null or Empty! No ports available!!!!");
 					} else {
 						
-						List<Pair<Integer, Integer>> ports = new ArrayList<Pair<Integer,Integer>>();
 						for (int i=0; i<msg.intList().size(); i++) {
-							ports.add(new Pair<Integer, Integer>(msg.intAt(i), msg.intAt(i+1)));
+							final int senderPort = msg.intAt(i);
 							i++;
+							final int recipientPort = msg.intAt(i);
+							
+							FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
+							fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+
+								@Override
+								public void operationComplete(FutureChannelCreator future) throws Exception {
+									if (future.isSuccess()) {
+										InetSocketAddress predefinedSocket = new InetSocketAddress(message.sender().inetAddress(), senderPort);
+										
+										SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
+
+											@Override
+											protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+												if (Message.Type.OK == msg.type() && Commands.DIRECT_DATA.getNr() == msg.command()) {
+													System.err.println("IT FINALLY WORKED!!!");
+												} else {
+													System.err.println("IT DIDN'T WORK YET!!!");
+												}
+											}};
+										final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(inboundHandler, futureResponse, idleUDPSeconds,
+												false);
+										
+										ChannelCreator cc = future.channelCreator();
+										ChannelFuture channelFuture = cc.createUDP(broadcast, handlers, futureResponse, predefinedSocket);
+										Message sendMessage = message;
+										PeerAddress sender = sendMessage.sender().changePorts(-1, senderPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
+										PeerAddress recipient = sendMessage.recipient().changePorts(-1, recipientPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
+										sendMessage.recipient(recipient);
+										sendMessage.sender(sender);
+										afterConnect(futureResponse, sendMessage, channelFuture, false);
+									} else {
+										handleFail("could not create a channel!");
+									}
+								}
+								
+							});
 						}
 						
 						LOG.debug("Successfully set up the connection via hole punching to peer {}", message.recipient().peerId());
@@ -724,7 +767,7 @@ public class Sender {
 	 * @param fireAndForget
 	 *            True, if we don't expect a message
 	 */
-	private void afterConnect(final FutureResponse futureResponse, final Message message, final ChannelFuture channelFuture,
+	public void afterConnect(final FutureResponse futureResponse, final Message message, final ChannelFuture channelFuture,
 			final boolean fireAndForget) {
 		if (channelFuture == null) {
 			futureResponse.failed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
@@ -902,7 +945,6 @@ public class Sender {
 		try {
 			final ChannelFuture channelFuture;
 			channelFuture = channelCreator.createUDP(false, handlers, futureResponse, socket);
-			afterConnect(futureResponse, message, channelFuture, true);
 			afterConnect(futureResponse, message, channelFuture, true);
 		} catch (UnsupportedOperationException e) {
 			LOG.warn(e.getMessage());

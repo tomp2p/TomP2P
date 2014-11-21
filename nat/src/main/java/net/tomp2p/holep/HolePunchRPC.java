@@ -31,6 +31,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RSASignatureFactory;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.connection.Sender;
 import net.tomp2p.connection.TimeoutFactory;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -112,26 +113,42 @@ public class HolePunchRPC extends DispatchHandler {
 					.changePorts(-1, currentPort);
 			
 			final Message dummyMessage = this.createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_4);
-			final FutureResponse futureResponse = new FutureResponse(dummyMessage);
 			
 			final FutureChannelCreator fcc = peer.connectionBean().reservation().create(3, 0);
 			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 
-				@SuppressWarnings("static-access")
 				@Override
 				public void operationComplete(FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
+						final FutureResponse futureResponse = new FutureResponse(dummyMessage);
 						ChannelCreator channelCreator = future.channelCreator();
+						Sender sender = peer.connectionBean().sender();
 						
 						// we must predefine a socket in order to make sure that the outgoing port is known to us
 						final InetAddress inetAddress = peer.peerBean().serverPeerAddress().createSocketUDP().getAddress();
 						int outgoingPort = channelCreator.randomPort();
 						InetSocketAddress socket = new InetSocketAddress(inetAddress, outgoingPort);
 						
-						// send Dummy twice in order to get the [ASSURED] Tag on the conntrack module
-						peer.connectionBean().sender().punchHole(futureResponse, dummyMessage, channelCreator, socket);
-						peer.connectionBean().sender().punchHole(futureResponse, dummyMessage, channelCreator, socket);
+						// we must create a special handler to handle the connection
+						SimpleChannelInboundHandler<Message> holePunchHandler = new SimpleChannelInboundHandler<Message>() {
+							
+							@Override
+							protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+								if (msg.isOk()) {
+									System.err.println("SUCCESS!!!!!");
+								} else {
+									System.err.println("FAIL AS EXPECTED!");
+								}
+							}
+						};
 						
+						Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = sender.configureHandlers(holePunchHandler, futureResponse, 30, false);
+						
+						final ChannelFuture channelFuture = channelCreator.createUDP(false, handlers, futureResponse, socket);
+						channelFuture.channel().writeAndFlush(dummyMessage);
+//						sender.afterConnect(futureResponse, dummyMessage, channelFuture, false);
+						
+						peer.peerBean().peerMap().all().remove(recipient);
 						portMappings.add(new Pair<Integer, Integer>(currentPort, socket.getPort()));
 					} else {
 						handleFail(message, responder, "could not create channel!");

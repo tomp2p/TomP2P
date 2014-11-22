@@ -298,7 +298,7 @@ public class Message {
         for (int i = 0, reference = 0; i < CONTENT_TYPE_LENGTH; i++) {
             if (contentTypes[i] == null) {
                 if (contentType == Content.PUBLIC_KEY_SIGNATURE && i != 0) {
-                    throw new IllegalStateException("The public key needs to be the first to be set");
+                    throw new IllegalStateException("The public key needs to be the first to be set.");
                 }
                 contentTypes[i] = contentType;
                 contentReferences.add(new MessageContentIndex(reference, contentType));
@@ -312,7 +312,7 @@ public class Message {
             	}
             }
         }
-        throw new IllegalStateException("Already set 8 content types");
+        throw new IllegalStateException("Already set 8 content types.");
     }
     
 	/**

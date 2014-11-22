@@ -21,9 +21,11 @@ import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.KeyMap640Keys;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.NeighborSet;
+import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 
@@ -43,6 +45,10 @@ public class MessageEncodeDecode {
 	static Number640 sample640_1 = Number640.ZERO;
 	static Number640 sample640_2 = new Number640(new Number160(sampleBytes1), new Number160(sampleBytes2), new Number160(sampleBytes3), Number160.MAX_VALUE);
 	static Number640 sample640_3 = new Number640(Number160.MAX_VALUE, new Number160(sampleBytes3), new Number160(sampleBytes2), new Number160(sampleBytes1));
+	
+	static Data sampleData1 = new Data(sampleBytes1);
+	static Data sampleData2 = new Data(sampleBytes2);
+	static Data sampleData3 = new Data(sampleBytes3);
 	
 	public static byte[] encodeMessageEmpty() throws Exception {
 
@@ -69,9 +75,6 @@ public class MessageEncodeDecode {
 	public static byte[] encodeMessageMapKey640Data() throws Exception {
 		
 		// create sample data maps
-		Data sampleData1 = new Data(sampleBytes1);
-		Data sampleData2 = new Data(sampleBytes2);
-		Data sampleData3 = new Data(sampleBytes3);
 				
 		Map<Number640, Data> sampleMap1 = new HashMap<Number640, Data>();
 		sampleMap1.put(sample640_1, sampleData1);
@@ -281,6 +284,65 @@ public class MessageEncodeDecode {
 		m.longValue(1);
 		m.longValue(128);
 		m.longValue(Long.MAX_VALUE);
+		
+		return encodeMessage(m);
+	}
+	
+	public static byte[] encodeMessagePublicKeySignature() throws Exception {
+		
+		// TODO implement
+		Message m = Utils2.createDummyMessage();
+		
+		return encodeMessage(m);
+	}
+	
+	public static byte[] encodeMessagePublicKey() throws Exception
+	{
+		// TODO implement
+		Message m = Utils2.createDummyMessage();
+		
+		return encodeMessage(m);
+	}
+	
+	public static byte[] encodeMessageSetTrackerData() throws Exception {
+		
+		// create sample tracker data
+		PeerAddress sampleAddress1 = new PeerAddress(sample160_1, InetAddress.getByName("192.168.1.1"));
+		PeerAddress sampleAddress2 = new PeerAddress(sample160_2, InetAddress.getByName("255.255.255.255"));
+		PeerAddress sampleAddress3 = new PeerAddress(sample160_3, InetAddress.getByName("127.0.0.1"));
+		PeerAddress sampleAddress4 = new PeerAddress(sample160_4, InetAddress.getByName("0:1:2:3:4:5:6:7"));
+		PeerAddress sampleAddress5 = new PeerAddress(sample160_5, InetAddress.getByName("7:6:5:4:3:2:1:0"));
+		
+		PeerStatistic sampleStatistic1 = new PeerStatistic(sampleAddress1);
+		PeerStatistic sampleStatistic2 = new PeerStatistic(sampleAddress2);
+		PeerStatistic sampleStatistic3 = new PeerStatistic(sampleAddress3);
+		PeerStatistic sampleStatistic4 = new PeerStatistic(sampleAddress4);
+		PeerStatistic sampleStatistic5 = new PeerStatistic(sampleAddress5);
+		
+		Map<PeerStatistic, Data> sampleMap1 = new HashMap<PeerStatistic, Data>();
+		sampleMap1.put(sampleStatistic1, sampleData1);
+		sampleMap1.put(sampleStatistic2, sampleData2);
+		sampleMap1.put(sampleStatistic3, sampleData3);
+		
+		Map<PeerStatistic, Data> sampleMap2 = new HashMap<PeerStatistic, Data>();
+		sampleMap2.put(sampleStatistic2, sampleData1);
+		sampleMap2.put(sampleStatistic3, sampleData2);
+		sampleMap2.put(sampleStatistic4, sampleData3);
+		
+		Map<PeerStatistic, Data> sampleMap3 = new HashMap<PeerStatistic, Data>();
+		sampleMap3.put(sampleStatistic3, sampleData1);
+		sampleMap3.put(sampleStatistic4, sampleData2);
+		sampleMap3.put(sampleStatistic5, sampleData3);
+		
+		Message m = Utils2.createDummyMessage();
+		m.trackerData(new TrackerData(sampleMap1, true));
+		m.trackerData(new TrackerData(sampleMap1, false));
+		m.trackerData(new TrackerData(sampleMap2, true));
+		m.trackerData(new TrackerData(sampleMap2, false));
+		m.trackerData(new TrackerData(sampleMap3, true));
+		m.trackerData(new TrackerData(sampleMap3, false));
+		m.trackerData(new TrackerData(sampleMap1, true));
+		m.trackerData(new TrackerData(sampleMap1, false));
 		
 		return encodeMessage(m);
 	}

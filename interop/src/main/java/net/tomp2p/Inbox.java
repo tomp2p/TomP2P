@@ -51,12 +51,6 @@ public class Inbox {
 				case "TestMessageDecodeKey":
 					result = MessageEncodeDecode.encodeMessageKey();
 					break;
-				case "TestMessageDecodeInt":
-					result = MessageEncodeDecode.encodeMessageInt();
-					break;
-				case "TestMessageDecodeLong":
-					result = MessageEncodeDecode.encodeMessageLong();
-					break;
 				case "TestMessageDecodeMapKey640Data":
 					result = MessageEncodeDecode.encodeMessageMapKey640Data();
 					break;
@@ -71,6 +65,21 @@ public class Inbox {
 					break;
 				case "TestMessageDecodeByteBuffer":
 					result = MessageEncodeDecode.encodeMessageByteBuffer();
+					break;
+				case "TestMessageDecodeInteger":
+					result = MessageEncodeDecode.encodeMessageInt();
+					break;
+				case "TestMessageDecodeLong":
+					result = MessageEncodeDecode.encodeMessageLong();
+					break;
+				case "TestMessageDecodePublicKeySignature":
+					result = MessageEncodeDecode.encodeMessagePublicKeySignature();
+					break;
+				case "TestMessageDecodePublicKey":
+					result = MessageEncodeDecode.encodeMessagePublicKey();
+					break;
+				case "TestMessageDecodeSetTrackerData":
+					result = MessageEncodeDecode.encodeMessageSetTrackerData();
 					break;
 				
 				default:

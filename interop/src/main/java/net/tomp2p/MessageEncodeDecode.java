@@ -1,5 +1,8 @@
 package net.tomp2p;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -11,6 +14,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 
+import net.tomp2p.message.Buffer;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.KeyCollection;
@@ -209,6 +213,44 @@ public class MessageEncodeDecode {
 		m.neighborsSet(new NeighborSet(-1, sampleNeighbours3));
 		m.neighborsSet(new NeighborSet(-1, sampleNeighbours1));
 		m.neighborsSet(new NeighborSet(-1, sampleNeighbours2));
+		
+		return encodeMessage(m);
+	}
+	
+	public static byte[] encodeMessageByteBuffer() throws Exception {
+		
+		// TODO figure out how messages work exactly
+		
+		// create sample buffers
+		ByteBuf sampleBuf1 = Unpooled.buffer();
+		sampleBuf1.writeBytes(sampleBytes1);
+		sampleBuf1.writeBytes(sampleBytes1);
+		sampleBuf1.writeBytes(sampleBytes1);
+		
+		/*ByteBuf sampleBuf2 = Unpooled.buffer();
+		sampleBuf2.writeBytes(sampleBytes2);
+		sampleBuf2.writeBytes(sampleBytes2);
+		sampleBuf2.writeBytes(sampleBytes2);
+		
+		ByteBuf sampleBuf3 = Unpooled.buffer();
+		sampleBuf3.writeBytes(sampleBytes3);
+		sampleBuf3.writeBytes(sampleBytes3);
+		sampleBuf3.writeBytes(sampleBytes3);
+		
+		ByteBuf sampleBuf4 = Unpooled.buffer();
+		sampleBuf4.writeBytes(sampleBytes1);
+		sampleBuf4.writeBytes(sampleBytes2);
+		sampleBuf4.writeBytes(sampleBytes3);*/
+		
+		Message m = Utils2.createDummyMessage();
+		m.buffer(new Buffer(sampleBuf1));
+		/*m.buffer(new Buffer(sampleBuf2));
+		m.buffer(new Buffer(sampleBuf3));
+		m.buffer(new Buffer(sampleBuf4));
+		m.buffer(new Buffer(sampleBuf1));
+		m.buffer(new Buffer(sampleBuf2));
+		m.buffer(new Buffer(sampleBuf3));
+		m.buffer(new Buffer(sampleBuf4));*/
 		
 		return encodeMessage(m);
 	}

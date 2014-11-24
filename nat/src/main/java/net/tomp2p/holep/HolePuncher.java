@@ -72,6 +72,11 @@ public class HolePuncher implements IPunchHole {
 		ChannelFuture channelFuture = channelCreator.createUDP(false, handlers, futureResponse, localAddress);
 //		channelFuture = channelFuture.channel().connect(remoteAddress, localAddress);
 		
+		System.err.println("##### HolePuncher #####");
+		System.err.println("localAddress = " + localAddress.toString());
+		System.err.println("remoteAddress = "+ message.recipient().createSocketUDP());
+		System.err.println("##### HolePuncher #####");
+		
 		sender.afterConnect(futureResponse, message, channelFuture, false);
 		
 		return channelFuture;

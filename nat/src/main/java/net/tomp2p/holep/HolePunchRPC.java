@@ -61,19 +61,12 @@ public class HolePunchRPC extends DispatchHandler {
 
 	private final Peer peer;
 	private final ConnectionConfiguration config;
-	private final ChannelClientConfiguration clientConfig;
 
 	public HolePunchRPC(Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.HOLEP.getNr());
 		this.peer = peer;
 		this.config = new DefaultConnectionConfiguration();
-		this.clientConfig = PeerBuilder.createDefaultChannelClientConfiguration();
-		try {
-			this.clientConfig.senderUDP(InetAddress.getByName("192.168.56.1"));
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
 	}
 
 	@Override
@@ -88,7 +81,7 @@ public class HolePunchRPC extends DispatchHandler {
 		else if (message.type() == Message.Type.REQUEST_2) {
 			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
 			handleHolePunch(message, peerConnection, responder);
-		} else if (message.type() == Message.Type.OK) {
+		} else if (message.type() == Message.Type.REQUEST_3) {
 			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
 			handleHolePunchReply(message, peerConnection, responder);
 		} else {
@@ -97,8 +90,15 @@ public class HolePunchRPC extends DispatchHandler {
 	}
 
 	private void handleHolePunchReply(Message message, PeerConnection peerConnection, Responder responder) {
-		// TODO Auto-generated method stub
-		
+		System.err.println("#############################################");
+		System.out.println();
+		System.out.println();
+		System.out.println();
+		System.err.println("HUGE SUCCESS!!!!");
+		System.out.println();
+		System.out.println();
+		System.out.println();
+		System.err.println("#############################################");
 	}
 
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
@@ -110,9 +110,8 @@ public class HolePunchRPC extends DispatchHandler {
 		for (int i = 0; i < remotePorts.size(); i++) {
 			final int currentPort = remotePorts.get(i);
 			final PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false)
-					.changePorts(-1, currentPort);
-			
-			final Message dummyMessage = this.createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_4);
+					.changePorts(currentPort, currentPort);
+			final HolePunchRPC thisInstance = this;
 			
 			final FutureChannelCreator fcc = peer.connectionBean().reservation().create(3, 0);
 			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -120,36 +119,13 @@ public class HolePunchRPC extends DispatchHandler {
 				@Override
 				public void operationComplete(FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
-						final FutureResponse futureResponse = new FutureResponse(dummyMessage);
-						ChannelCreator channelCreator = future.channelCreator();
-						Sender sender = peer.connectionBean().sender();
+						Message dummyMessage = thisInstance.createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_3);
+						HolePuncher holePuncher = new HolePuncher(dummyMessage, future.channelCreator(), peer, future.channelCreator().randomPort(), currentPort);
+						holePuncher.createAndSendUDP();
+//						new Thread(new HolePunchScheduler(30, holePuncher)).start();
 						
-						// we must predefine a socket in order to make sure that the outgoing port is known to us
-						final InetAddress inetAddress = peer.peerBean().serverPeerAddress().createSocketUDP().getAddress();
-						int outgoingPort = channelCreator.randomPort();
-						InetSocketAddress socket = new InetSocketAddress(inetAddress, outgoingPort);
-						
-						// we must create a special handler to handle the connection
-						SimpleChannelInboundHandler<Message> holePunchHandler = new SimpleChannelInboundHandler<Message>() {
-							
-							@Override
-							protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-								if (msg.isOk()) {
-									System.err.println("SUCCESS!!!!!");
-								} else {
-									System.err.println("FAIL AS EXPECTED!");
-								}
-							}
-						};
-						
-						Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = sender.configureHandlers(holePunchHandler, futureResponse, 30, false);
-						
-						final ChannelFuture channelFuture = channelCreator.createUDP(false, handlers, futureResponse, socket);
-						channelFuture.channel().writeAndFlush(dummyMessage);
-//						sender.afterConnect(futureResponse, dummyMessage, channelFuture, false);
-						
-						peer.peerBean().peerMap().all().remove(recipient);
-						portMappings.add(new Pair<Integer, Integer>(currentPort, socket.getPort()));
+						peer.peerBean().peerMap().peerFound(recipient, recipient, null);
+						portMappings.add(new Pair<Integer, Integer>(currentPort, holePuncher.outgoingPort()));
 					} else {
 						handleFail(message, responder, "could not create channel!");
 					}

@@ -38,6 +38,8 @@ import net.tomp2p.message.SignatureCodec;
  */
 public interface SignatureFactory extends Serializable {
 
+	void encodePublicKey(PublicKey publicKey, ByteBuf buf);
+
 	/**
 	 * The public key is sent over the wire, thus the decoding of it needs
 	 * special handling.
@@ -49,8 +51,6 @@ public interface SignatureFactory extends Serializable {
 	PublicKey decodePublicKey(byte[] me);
 
 	PublicKey decodePublicKey(ByteBuf buf);
-
-	void encodePublicKey(PublicKey publicKey, ByteBuf buf);
 
 	SignatureCodec sign(PrivateKey privateKey, ByteBuf buf) throws InvalidKeyException,
 			SignatureException, IOException;

@@ -478,13 +478,13 @@ public class Data {
 		return signNow(keyPair, signatureFactory, true);
 	}	
 	
-	private Data signNow(KeyPair keyPair, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
+	private Data signNow(KeyPair keyPair, SignatureFactory signatureFactory, boolean isProtectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signature = signatureFactory.sign(keyPair.getPrivate(), buffer.toByteBuf());
 			this.signed = true;
 			this.publicKey = keyPair.getPublic();
 			this.publicKeyFlag = true;
-			this.protectedEntry = protectedEntry;
+			this.protectedEntry = isProtectedEntry;
 		}
 		return this;
 	}
@@ -497,12 +497,12 @@ public class Data {
 		return signNow(privateKey, signatureFactory, true);
 	}	
 
-	private Data signNow(PrivateKey privateKey, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
+	private Data signNow(PrivateKey privateKey, SignatureFactory signatureFactory, boolean isProtectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
-			this.signed = true;
 			this.signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
+			this.signed = true;
 			this.publicKeyFlag = true;
-			this.protectedEntry = protectedEntry;
+			this.protectedEntry = isProtectedEntry;
 		}
 		return this;
 	}

@@ -418,8 +418,8 @@ public class RelayRPC extends DispatchHandler {
 				LOG.error("Forwarder for the relayed peer not found. Cannot send late response {}", realMessage);
 				responder.response(createResponseMessage(message, Type.NOT_FOUND));
 			} else {
+				LOG.debug("We're just a relay peer. Send wrapped late response to requester wrapper: {} content: {}", message, realMessage);
 				// because buffer is re-encoded when forwarding it to unreachable
-				LOG.debug("We're just a relay peer. Send late response to requester {}", message);
 				message.restoreBuffers();
 				forwarder.forwardToUnreachable(message);
 			}

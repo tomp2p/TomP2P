@@ -123,7 +123,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	protected void peerMapUpdated() {
 		// take this event as an indicator that the mobile device is online
 		lastUpdate.set(System.currentTimeMillis());
-		LOG.debug("Timeout for {} refreshed", registrationId);
+		LOG.trace("Timeout for {} refreshed", registrationId);
 	}
 
 	@Override

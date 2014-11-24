@@ -6,13 +6,13 @@ import java.io.IOException;
 
 public interface SignatureCodec {
 
-	public SignatureCodec decode(byte[] encodedData) throws IOException;
-
 	/**
 	 * @return ASN1 encoded signature
 	 * @throws IOException
 	 */
 	public byte[] encode() throws IOException;
+
+	public SignatureCodec decode(byte[] encodedData) throws IOException;
 
 	public SignatureCodec write(ByteBuf buf);
 

@@ -284,7 +284,7 @@ public class Utils {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutputStream oos = new ObjectOutputStream(bos);
 		oos.writeObject(attachement);
-		// no need to call close of flush since we use ByteArrayOutputStream
+		// no need to call close or flush since we use ByteArrayOutputStream
 		byte[] data = bos.toByteArray();
 		return data;
 	}

@@ -39,7 +39,7 @@ import net.tomp2p.utils.Utils;
  * This class holds the data for the transport. The data is already serialized
  * and a hash may be created. It is reasonable to create the hash on the remote
  * peer, but not on the local peer. The remote peer uses the hash to tell the
- * other peers, which version is stored and its used quite often.
+ * other peers, which version is stored and it's used quite often.
  * 
  * @author Thomas Bocek
  */
@@ -48,7 +48,7 @@ public class Data {
 	private static final int MAX_BYTE_SIZE = 256;
 
 	/**
-	 * small means 8 bit, medium is 32bit.
+	 * Small: 8 bit, Large: 32 bit.
 	 * 
 	 * @author Thomas Bocek
 	 * 
@@ -57,15 +57,14 @@ public class Data {
 
 	private final Type type;
 	private final int length;
-	// the buffer contains data without the header
-	private final DataBuffer buffer;
+	private final DataBuffer buffer; // contains data without the header
 
 	// these flags can be modified
 	private boolean basedOnFlag;
 	private boolean signed;
 	private boolean flag1;
-	private boolean ttl;
 	private boolean flag2;
+	private boolean ttl;
 	private boolean protectedEntry;
 	private boolean publicKeyFlag;
 	private boolean prepareFlag;
@@ -75,8 +74,7 @@ public class Data {
 	private int ttlSeconds = -1;
 	private Collection<Number160> basedOnSet = new ArrayList<Number160>(0);
 	private PublicKey publicKey;
-	//this goes never over the network! If this is set, we have to sign lazy
-	private transient PrivateKey privateKey;
+	private transient PrivateKey privateKey; //this goes never over the network! If this is set, we have to sign lazy
 
 	// never serialized over the network in this object
 	private long validFromMillis;
@@ -115,13 +113,13 @@ public class Data {
 	}
 
 	/**
-	 * Creates an empty data object. The data can be filled at a later stage
+	 * Creates an empty Data object. The data can be filled at a later stage
 	 * using {@link #append(ByteBuf)}.
 	 * 
 	 * @param header
 	 *            The 8 bit header
 	 * @param length
-	 *            The length, which depends on the header values
+	 *            The length, depending on the header values.
 	 */
 	public Data(final int header, final int length) {
 		this.publicKeyFlag = hasPublicKey(header);
@@ -135,9 +133,9 @@ public class Data {
 		this.prepareFlag = hasPrepareFlag(header);
 
 		if (type == Type.SMALL && length > 255) {
-			throw new IllegalArgumentException("Type is not small");
+			throw new IllegalArgumentException("Type is small, but should be large.");
 		} else if (type == Type.LARGE && (length <= 255)) {
-			throw new IllegalArgumentException("Type is not large");
+			throw new IllegalArgumentException("Type is large, but should be small.");
 		}
 
 		this.length = length;

@@ -29,11 +29,14 @@ public class ConnectionBean {
      * The thread name is important to identify threads where blocking (wait) is possible.
      */
     public static final String THREAD_NAME = "NETTY-TOMP2P - ";
-    public static final int DEFAULT_TCP_IDLE_SECONDS = 5;
-    public static final int DEFAULT_UDP_IDLE_SECONDS = 5;
-    public static final int DEFAULT_CONNECTION_TIMEOUT_TCP = 3000;
-    public static final int UDP_LIMIT = 1400;
-    public static final int DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS = 60;
+    
+    //non-final to be able to adapt changes
+    public static int DEFAULT_TCP_IDLE_SECONDS = 5;
+    public static int DEFAULT_UDP_IDLE_SECONDS = 5;
+    public static int DEFAULT_CONNECTION_TIMEOUT_TCP = 3000;
+    public static int DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS = 60;
+    
+    public static int UDP_LIMIT = 1400;
 
     private final int p2pId;
     private final Dispatcher dispatcher;

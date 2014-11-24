@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -84,6 +83,7 @@ public class Utils {
 	public static final int SHORT_BYTE_SIZE = 2; // 16 bits
 	public static final int INTEGER_BYTE_SIZE = 4; // 32 bits
 	public static final int LONG_BYTE_SIZE = 8; // 64 bits
+	
 	public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
 	public static ByteBuffer loadFile(File file) throws IOException {

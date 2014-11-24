@@ -195,13 +195,13 @@ public class Data {
 		// 2 is the smallest packet size, we could start if we know 1 byte to
 		// decode the header, but we always need
 		// a second byte. Thus, we are waiting for at least 2 bytes.
-		if (buf.readableBytes() < Utils.BYTE_BYTE_SIZE + Utils.BYTE_BYTE_SIZE) {
+		if (buf.readableBytes() < 2 * Utils.BYTE_BYTE_SIZE) {
 			return null;
 		}
 		final int header = buf.getUnsignedByte(buf.readerIndex());
-		final Data.Type type = Data.type(header);
+		final Data.Type type = type(header);
 		
-		//Data length
+		// length
 		final int length;
 		final int indexLength = Utils.BYTE_BYTE_SIZE;
 		final int indexTTL;
@@ -218,10 +218,10 @@ public class Data {
 			length = buf.getInt(buf.readerIndex() + indexLength);
 			break;
 		default:
-			throw new IllegalArgumentException("unknown type");
+			throw new IllegalArgumentException("Unknown Type.");
 		}
 		
-		//TTL
+		// TTL
 		final int ttl;
 		final int indexBasedOnNr;
 		if(hasTTL(header)) {
@@ -231,17 +231,17 @@ public class Data {
 			}
 			ttl = buf.getInt(buf.readerIndex() + indexTTL);
 		} else {
-			ttl = -1;
 			indexBasedOnNr = indexTTL;
+			ttl = -1;
 		}
 		
-		//Nr BasedOn + basedon
+		// nr basedOn + basedOn
 		final int numBasedOn;
 		final int indexPublicKeySize;
 		final int indexBasedOn;
 		final Collection<Number160> basedOn = new ArrayList<Number160>();
 		if (hasBasedOn(header)) {
-			// get # of based on keys
+			// get nr of based on keys
 			indexBasedOn = indexBasedOnNr + Utils.BYTE_BYTE_SIZE;
 			if (buf.readableBytes() < indexBasedOn) {
 				return null;
@@ -251,7 +251,7 @@ public class Data {
 			if (buf.readableBytes() < indexPublicKeySize) {
 				return null;
 			}
-			//get basedon
+			// get basedon
 			int index = buf.readerIndex() + indexBasedOnNr + Utils.BYTE_BYTE_SIZE;
 			final byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
 			for (int i = 0; i < numBasedOn; i++) {
@@ -259,19 +259,18 @@ public class Data {
 				index += Number160.BYTE_ARRAY_SIZE;
 				basedOn.add(new Number160(me));
 			}
-			
 		} else {
-			// no based on keys
 			indexPublicKeySize = indexBasedOnNr;
 			numBasedOn = 0;
 		}
 		
-		//public key and size
+		// public key size + public key
 		final int publicKeySize;
 		final int indexPublicKey;
 		final int indexEnd;
 		final PublicKey publicKey;
 		if(hasPublicKey(header)) {
+			// get public key size
 			indexPublicKey = indexPublicKeySize + Utils.SHORT_BYTE_SIZE;
 			if (buf.readableBytes() < indexPublicKey) {
 				return null;
@@ -281,7 +280,7 @@ public class Data {
 			if (buf.readableBytes() < indexEnd) {
 				return null;
 			}
-			//get public key
+			// get public key
 			buf.skipBytes(indexPublicKeySize);
 			publicKey = signatureFactory.decodePublicKey(buf);
 			
@@ -292,7 +291,7 @@ public class Data {
 			publicKey = null;
 		}
 		
-		//now we have read the header and the length
+		// now, we have read the header and the length
 		final Data data = new Data(header, length);
 		data.ttlSeconds = ttl;
 		data.basedOnSet = basedOn;
@@ -310,13 +309,12 @@ public class Data {
 	public boolean decodeBuffer(final ByteBuf buf) {
 		final int already = buffer.alreadyTransferred();
 		final int remaining = length() - already;
-		// already finished
 		if (remaining == 0) {
+			// already finished
 			return true;
 		}
 		// make sure it gets not garbage collected. But we need to keep track of
-		// it and when this object gets collected,
-		// we need to release the buffer
+		// it and when this object gets collected, we need to release the buffer
 		final int transfered = buffer.transferFrom(buf, remaining);
 		return transfered == remaining;
 	}
@@ -337,11 +335,7 @@ public class Data {
 			if(publicKey == PeerBuilder.EMPTY_PUBLICKEY) {
 				this.publicKey = publicKey;	
 			}
-			signature = signatureFactory.signatureCodec();
-			if(buf.readableBytes() < signature.signatureSize()) {
-				return false;
-			}
-			signature.read(buf);
+			return decodeDone(buf, signatureFactory);
 		}
 		return true;
 	}
@@ -696,8 +690,7 @@ public class Data {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("Data[l:");
+		StringBuilder sb = new StringBuilder("Data[l:");
 		sb.append(length).append(",t:");
 		sb.append(ttlSeconds()).append(",hasPK:");
 		sb.append(publicKey != null).append(",h:");
@@ -716,10 +709,12 @@ public class Data {
 	public Data duplicate() {
 		Data data = new Data(buffer.shallowCopy(), length).publicKey(publicKey)
 				.signature(signature).ttlSeconds(ttlSeconds);
+		
 		// duplicate based on keys
 		data.basedOnSet.addAll(basedOnSet);
-		// set all the flags. Although signature, basedOn, and ttlSeconds set a
-		// flag, they will be overwritten with the data from this class
+		
+		// duplicate all the flags. 
+		// although signature, basedOn, and ttlSeconds set a flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
 		data.flag1 = flag1;
 		data.flag2 = flag2;
@@ -736,10 +731,12 @@ public class Data {
 	public Data duplicateMeta() {
 		Data data = new Data().publicKey(publicKey)
 				.signature(signature).ttlSeconds(ttlSeconds);
+		
 		// duplicate based on keys
 		data.basedOnSet.addAll(basedOnSet);
-		// set all the flags. Although signature, basedOn, and ttlSeconds set a
-		// flag, they will be overwritten with the data from this class
+		
+		// duplicate all the flags. 
+		// although signature, basedOn, and ttlSeconds set a flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
 		data.flag1 = flag1;
 		data.flag2 = flag2;
@@ -819,8 +816,8 @@ public class Data {
 	}
 
 	public Data publicKey(PublicKey publicKey) {
-		this.publicKeyFlag = true;
 		this.publicKey = publicKey;
+		this.publicKeyFlag = true;
 		return this;
 	}
 
@@ -835,7 +832,7 @@ public class Data {
 
 	@Override
 	public int hashCode() {
-		BitSet bs = new BitSet(5);
+		BitSet bs = new BitSet(8);
 		bs.set(0, signed);
 		bs.set(1, ttl);
 		bs.set(2, basedOnFlag);
@@ -864,16 +861,15 @@ public class Data {
 		//ignore ttl -> it's still the same data even if ttl is different
 		if (d.signed != signed  || d.basedOnFlag != basedOnFlag 
 				|| d.protectedEntry != protectedEntry || d.publicKeyFlag != publicKeyFlag 
-				|| flag1!=d.flag1 || flag2!=d.flag2 || prepareFlag!=d.prepareFlag) {
+				|| d.flag1!=flag1 || d.flag2!=flag2 || d.prepareFlag!=prepareFlag) {
 			return false;
 		}
 		if (d.type != type || d.length != length) {
 			return false;
 		}
-		//ignore ttl -> it's still the same data even if ttl is different
-		return Utils.equals(basedOnSet, d.basedOnSet) && Utils.equals(signature, d.signature)
-				&& d.buffer.equals(buffer); // This is a slow operation, use
-											// with care!
+		// This is a slow operation, use with care!
+		return Utils.equals(d.basedOnSet, basedOnSet) && Utils.equals(d.signature, signature)
+				&& d.buffer.equals(buffer); 
 	}
 
 	public Number160 hash() {

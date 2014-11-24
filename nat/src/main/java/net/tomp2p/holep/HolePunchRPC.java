@@ -1,59 +1,32 @@
 package net.tomp2p.holep;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelClientConfiguration;
-import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.RSASignatureFactory;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.connection.Sender;
-import net.tomp2p.connection.TimeoutFactory;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
-import net.tomp2p.message.TomP2POutbound;
-import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerBuilder;
-import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
-import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Utils;
 
 public class HolePunchRPC extends DispatchHandler {
 
@@ -106,6 +79,7 @@ public class HolePunchRPC extends DispatchHandler {
 		// this list holds all the port mappings for the hole punch procedure
 		final List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
 		final PeerAddress originalSender = (PeerAddress) message.neighborsSetList().get(0).neighbors().toArray()[0];
+		final CountDownLatch cLatch = new CountDownLatch(remotePorts.size());
 
 		for (int i = 0; i < remotePorts.size(); i++) {
 			final int currentPort = remotePorts.get(i);
@@ -125,22 +99,31 @@ public class HolePunchRPC extends DispatchHandler {
 //						new Thread(new HolePunchScheduler(30, holePuncher)).start();
 						
 						peer.peerBean().peerMap().peerFound(recipient, recipient, null);
-						portMappings.add(new Pair<Integer, Integer>(currentPort, holePuncher.outgoingPort()));
+						portMappings.add(new Pair<Integer, Integer>(holePuncher.remotePort(), holePuncher.localPort()));
 					} else {
 						handleFail(message, responder, "could not create channel!");
 					}
+					System.err.println("CountdownLatch = " + (cLatch.getCount()-1));
+					cLatch.countDown();
 				}
 			});
-			
-			while (!fcc.isCompleted()) {
-				//wait
-			}
 		}
+		
+		try {
+			cLatch.await(5, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
 		Message replyMessage = createMessage(originalSender, Commands.HOLEP.getNr(), Message.Type.OK);
 		replyMessage.messageId(message.messageId());
 		for (Pair<Integer, Integer> pair : portMappings) {
+			if (!(pair == null || pair.isEmpty() || pair.element0() == null || pair.element1() == null)) {
+			System.err.println("remotePort: " + pair.element0().toString());
 			replyMessage.intValue(pair.element0());
+			System.err.println("localPort: " + pair.element1().toString());
 			replyMessage.intValue(pair.element1());
+			}
 		}
 		responder.response(replyMessage);
 	}

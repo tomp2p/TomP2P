@@ -26,15 +26,15 @@ public class HolePuncher implements IPunchHole {
 	private final Message message;
 	private final ChannelCreator channelCreator;
 	private final Peer peer;
-	private int outgoingPort = 0;
-	private int incomingPort = 0;
+	private int localPort = 0;
+	private int remotePort = 0;
 
-	public HolePuncher(final Message message, final ChannelCreator channelCreator, Peer peer, int outgoingPort, int incomingPort) {
+	public HolePuncher(final Message message, final ChannelCreator channelCreator, Peer peer, int localPort, int remotePort) {
 		this.message = message;
 		this.channelCreator = channelCreator;
 		this.peer = peer;
-		this.outgoingPort = outgoingPort;
-		this.incomingPort = incomingPort;
+		this.localPort = localPort;
+		this.remotePort = remotePort;
 	}
 	
 	public static Ports punchHoleUDP() {
@@ -43,24 +43,16 @@ public class HolePuncher implements IPunchHole {
 	}
 	
 	public ChannelFuture createAndSendUDP() {
-		ChannelFuture future = createUDP();
-		return sendUDP(future);
-	}
 
-	public ChannelFuture sendUDP(ChannelFuture future) {
-		return future.channel().writeAndFlush(message);
-	}
-
-	private ChannelFuture createUDP() {
 		final FutureResponse futureResponse = new FutureResponse(message);
 		Sender sender = peer.connectionBean().sender();
 		
 		// we must predefine a socket in order to make sure that the outgoing port is known to us
 		final InetAddress localInetAddress = peer.peerBean().serverPeerAddress().createSocketUDP().getAddress();
-		InetSocketAddress localAddress = new InetSocketAddress(localInetAddress, outgoingPort);
+		InetSocketAddress localAddress = new InetSocketAddress(localInetAddress, localPort);
 		
-		final InetAddress remoteInetAddress = message.recipient().inetAddress();
-		InetSocketAddress remoteAddress = new InetSocketAddress(remoteInetAddress, incomingPort);
+//		final InetAddress remoteInetAddress = message.recipient().inetAddress();
+//		InetSocketAddress remoteAddress = new InetSocketAddress(remoteInetAddress, incomingPort);
 		
 		// we must create a special handler to handle the connection
 		SimpleChannelInboundHandler<Message> holePunchHandler = new SimpleChannelInboundHandler<Message>() {
@@ -78,14 +70,10 @@ public class HolePuncher implements IPunchHole {
 		Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = sender.configureHandlers(holePunchHandler, futureResponse, 30, false);
 		
 		ChannelFuture channelFuture = channelCreator.createUDP(false, handlers, futureResponse, localAddress);
-		channelFuture = channelFuture.channel().connect(remoteAddress, localAddress);
-		channelFuture.addListener(new GenericFutureListener<Future<? super Void>>() {
-
-			@Override
-			public void operationComplete(Future<? super Void> future) throws Exception {
-				System.out.println("TURN DOWN FOR WHAT?");
-			}
-		});
+//		channelFuture = channelFuture.channel().connect(remoteAddress, localAddress);
+		
+		sender.afterConnect(futureResponse, message, channelFuture, false);
+		
 		return channelFuture;
 	}
 
@@ -93,12 +81,12 @@ public class HolePuncher implements IPunchHole {
 		return channelCreator;
 	}
 
-	public int outgoingPort() {
-		return outgoingPort;
+	public int localPort() {
+		return localPort;
 	}
 
-	public int incomingPort() {
-		return incomingPort;
+	public int remotePort() {
+		return remotePort;
 	}
 	
 	@Override

@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -642,9 +643,9 @@ public class Sender {
 					} else {
 						
 						for (int i=0; i<msg.intList().size(); i++) {
-							final int senderPort = msg.intAt(i);
+							final int localPort = msg.intAt(i);
 							i++;
-							final int recipientPort = msg.intAt(i);
+							final int remotePort = msg.intAt(i);
 							
 							FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
 							fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -652,7 +653,7 @@ public class Sender {
 								@Override
 								public void operationComplete(FutureChannelCreator future) throws Exception {
 									if (future.isSuccess()) {
-										InetSocketAddress predefinedSocket = new InetSocketAddress(message.sender().inetAddress(), senderPort);
+										InetSocketAddress predefinedSocket = new InetSocketAddress(message.sender().inetAddress(), localPort);
 										
 										SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
 
@@ -670,8 +671,8 @@ public class Sender {
 										ChannelCreator cc = future.channelCreator();
 										ChannelFuture channelFuture = cc.createUDP(broadcast, handlers, futureResponse, predefinedSocket);
 										Message sendMessage = message;
-										PeerAddress sender = sendMessage.sender().changePorts(-1, senderPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
-										PeerAddress recipient = sendMessage.recipient().changePorts(-1, recipientPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
+										PeerAddress sender = sendMessage.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
+										PeerAddress recipient = sendMessage.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
 										sendMessage.recipient(recipient);
 										sendMessage.sender(sender);
 										afterConnect(futureResponse, sendMessage, channelFuture, false);

@@ -87,19 +87,13 @@ public class Data {
 	}
 
 	/**
-	 * Create a data object that does have the complete data, but not the complete header
+	 * Creates a Data object that does have the complete data, but not the complete header.
 	 * 
+	 * @param buffer
+	 * 			  The buffer containing the data.
 	 * @param length
 	 *            The expected length of the buffer. This does not include the
 	 *            header + size (2, 5, or 9).
-	 * @param version
-	 *            The version of a data object, optional
-	 * @param ttlSeconds
-	 *            The TTL of a data object, optional
-	 * @param hasHash
-	 *            Indication if a hash should also be transmitted
-	 * @param isProtectedEntry
-	 *            True if this entry is protected
 	 */
 	public Data(final DataBuffer buffer, final int length) {
 		this.length = length;
@@ -156,18 +150,7 @@ public class Data {
 	}
 
 	/**
-	 * Creates a data object from an already existing byte buffer.
-	 * 
-	 * @param buffer
-	 *            The data buffer
-	 * @param version
-	 *            The version of a data object, optional
-	 * @param ttlSeconds
-	 *            The ttl of a data object, optional
-	 * @param hasHash
-	 *            Indication if a hash should also be transmitted
-	 * @param isProtectedEntry
-	 *            True if this entry is protected
+	 * Creates a Data object from an already existing buffer.
 	 */
 	public Data(final byte[] buffer, final int offest, final int length) {
 		if(buffer.length == 0) {

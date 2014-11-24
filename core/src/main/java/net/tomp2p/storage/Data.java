@@ -132,9 +132,9 @@ public class Data {
 		this.type = type(header);
 		this.prepareFlag = hasPrepareFlag(header);
 
-		if (type == Type.SMALL && length > 255) {
+		if (type == Type.SMALL && length >= MAX_BYTE_SIZE) {
 			throw new IllegalArgumentException("Type is small, but should be large.");
-		} else if (type == Type.LARGE && (length <= 255)) {
+		} else if (type == Type.LARGE && (length < MAX_BYTE_SIZE)) {
 			throw new IllegalArgumentException("Type is large, but should be small.");
 		}
 

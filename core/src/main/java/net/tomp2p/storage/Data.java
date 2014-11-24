@@ -515,12 +515,12 @@ public class Data {
 		return sign(keyPair, true);
 	}
 	
-	private Data sign(KeyPair keyPair, boolean protectedEntry) {
+	private Data sign(KeyPair keyPair, boolean isProtectedEntry) {
 		this.signed = true;
 		this.privateKey = keyPair.getPrivate();
 		this.publicKey = keyPair.getPublic();
 		this.publicKeyFlag = true;
-		this.protectedEntry = protectedEntry;
+		this.protectedEntry = isProtectedEntry;
 		return this;
 	}
 	
@@ -540,11 +540,11 @@ public class Data {
 		return sign(privateKey, true);
 	}	
 	
-	private Data sign(PrivateKey privateKey, boolean protectedEntry) {
+	private Data sign(PrivateKey privateKey, boolean isProtectedEntry) {
 		this.signed = true;
 		this.privateKey = privateKey;
 		this.publicKeyFlag = true;
-		this.protectedEntry = protectedEntry;
+		this.protectedEntry = isProtectedEntry;
 		return this;
 	}
 
@@ -579,9 +579,8 @@ public class Data {
 	public SignatureFactory signatureFactory() {
 		if (signatureFactory == null) {
 			return new DSASignatureFactory();
-		} else {
-			return signatureFactory;
 		}
+		return signatureFactory;
 	}
 
 	public Data signatureFactory(SignatureFactory signatureFactory) {
@@ -604,8 +603,7 @@ public class Data {
 	}
 	
 	public Data signed() {
-		signed(true);
-		return this;
+		return signed(true);
 	}
 
 	public boolean isFlag1() {
@@ -614,7 +612,7 @@ public class Data {
 
 	public Data flag1(boolean flag1) {
 		if(flag1 && this.flag2) {
-			throw new IllegalArgumentException("cannot set both flags, this means data is deleted");
+			throw new IllegalArgumentException("Cannot set both flags. This means that data is deleted.");
 		}
 		this.flag1 = flag1;
 		return this;
@@ -630,7 +628,7 @@ public class Data {
 
 	public Data flag2(boolean flag2) {
 		if(flag2 && this.flag1) {
-			throw new IllegalArgumentException("cannot set both flags, this means data is deleted");
+			throw new IllegalArgumentException("Cannot set both flags. This means that data is deleted.");
 		}
 		this.flag2 = flag2;
 		return this;
@@ -650,8 +648,7 @@ public class Data {
 	}
 
 	public Data prepareFlag() {
-		this.prepareFlag = true;
-		return this;
+		return prepareFlag(true);
 	}
 	
 	public Data deleted() {
@@ -660,7 +657,7 @@ public class Data {
 	
 	public Data deleted(boolean deleted) {
 		if(this.flag1 || this.flag2) {
-			throw new IllegalArgumentException("cannot set deleted, as one flag is already set");
+			throw new IllegalArgumentException("Cannot set deleted, because one flag is already set.");
 		}
 		this.flag1 = deleted;
 		this.flag2 = deleted;
@@ -681,8 +678,7 @@ public class Data {
 	}
 
 	public Data publicKeyFlag() {
-		this.publicKeyFlag = true;
-		return this;
+		return publicKeyFlag(true);
 	}
 	
 	public boolean isMeta() {
@@ -695,8 +691,7 @@ public class Data {
 	}
 
 	public Data meta() {
-		this.meta = true;
-		return this;
+		return meta(true);
 	}
 
 	@Override

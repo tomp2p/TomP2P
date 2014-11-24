@@ -93,7 +93,7 @@ public class Data {
 	 * 			  The buffer containing the data.
 	 * @param length
 	 *            The expected length of the buffer. This does not include the
-	 *            header + size (2, 5, or 9).
+	 *            header + size (2, 5 or 9).
 	 */
 	public Data(final DataBuffer buffer, final int length) {
 		this.length = length;
@@ -403,7 +403,7 @@ public class Data {
 			buf.writeInt(length);
 			break;
 		default:
-			throw new IllegalArgumentException("unknown size");
+			throw new IllegalArgumentException("Unknown Type.");
 		}
 		if (ttl) {
 			buf.writeInt(ttlSeconds);
@@ -425,12 +425,13 @@ public class Data {
 	
 	public boolean encodeBuffer(final AlternativeCompositeByteBuf buf) {
 		int already = buffer.alreadyTransferred();
-
 		int remaining = length() - already;
-		// already finished
+		
 		if (remaining == 0) {
+			// already finished
 			return true;
 		}
+		
 		buffer.transferTo(buf);
 		return buffer.alreadyTransferred() == length();
 	}
@@ -446,7 +447,7 @@ public class Data {
 			} else if (signature == null && messagePrivateKey != null) {
 				signature = signatureFactory.sign(messagePrivateKey, buffer.toByteBuf());
 			} else if (signature == null) {
-				throw new IllegalArgumentException("you need a private key from somewhere");
+				throw new IllegalArgumentException("A private key is required to sign.");
 			}
 			signature.write(buf);
 		}
@@ -479,8 +480,8 @@ public class Data {
 	
 	private Data signNow(KeyPair keyPair, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
-			this.signed = true;
 			this.signature = signatureFactory.sign(keyPair.getPrivate(), buffer.toByteBuf());
+			this.signed = true;
 			this.publicKey = keyPair.getPublic();
 			this.publicKeyFlag = true;
 			this.protectedEntry = protectedEntry;

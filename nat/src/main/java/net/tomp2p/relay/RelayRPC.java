@@ -333,10 +333,10 @@ public class RelayRPC extends DispatchHandler {
 			return;
 		}
 
-		if(message.neighborsSet(1) != null && forwarder instanceof AndroidForwarderRPC) {
+		if (message.neighborsSet(1) != null && forwarder instanceof AndroidForwarderRPC) {
 			((AndroidForwarderRPC) forwarder).changeGCMServers(message.neighborsSet(1).neighbors());
 		}
-		
+
 		Message response = createResponseMessage(message, Type.OK);
 		responder.response(response);
 	}
@@ -410,6 +410,10 @@ public class RelayRPC extends DispatchHandler {
 			// send ok, not fire and forget - style
 			LOG.debug("Successfully answered pending request {} with {}", pendingRequest.request(), realMessage);
 			responder.response(createResponseMessage(message, Type.OK, message.recipient()));
+		} else if (peer().peerAddress().isSlow()) {
+			// we're a slow peer but the pending request was not found. Don't send a reply, else we might end
+			// in a loop. Just trust in the timeout at the requester (might also be this peer).
+			LOG.error("No pending request found for message {}. Ignore it.", realMessage);
 		} else {
 			// handle Relayed <--> Relayed.
 			// This could be a pending message for one of the relayed peers, not for this peer
@@ -418,7 +422,8 @@ public class RelayRPC extends DispatchHandler {
 				LOG.error("Forwarder for the relayed peer not found. Cannot send late response {}", realMessage);
 				responder.response(createResponseMessage(message, Type.NOT_FOUND));
 			} else {
-				LOG.debug("We're just a relay peer. Send wrapped late response to requester wrapper: {} content: {}", message, realMessage);
+				LOG.debug("We're just a relay peer. Send wrapped late response to requester wrapper: {} content: {}",
+						message, realMessage);
 				// because buffer is re-encoded when forwarding it to unreachable
 				message.restoreBuffers();
 				forwarder.forwardToUnreachable(message);

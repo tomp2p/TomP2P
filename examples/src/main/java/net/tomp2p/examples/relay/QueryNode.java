@@ -117,11 +117,11 @@ public class QueryNode {
 
 	public boolean put(Number640 key) {
 		Data data = generateRandomData();
-		putStats.start();
+		long startTime = System.currentTimeMillis();
 		FuturePut futurePut = peerDHT.put(key.locationKey()).domainKey(key.domainKey()).versionKey(key.versionKey())
 				.data(key.contentKey(), data).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
 				.start().awaitUninterruptibly();
-		putStats.finished(futurePut.isSuccess());
+		putStats.report(System.currentTimeMillis() - startTime, futurePut.isSuccess());
 		
 		LOG.debug("Put of {} bytes is success = {}. Reason: {}", data.length(), futurePut.isSuccess(),
 				futurePut.failedReason());
@@ -138,11 +138,11 @@ public class QueryNode {
 	}
 
 	public Data get(Number640 key) {
-		getStats.start();
+		long startTime = System.currentTimeMillis();
 		FutureGet futureGet = peerDHT.get(key.locationKey()).contentKey(key.contentKey()).domainKey(key.domainKey())
 				.versionKey(key.versionKey()).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
 				.start().awaitUninterruptibly();
-		getStats.finished(futureGet.isSuccess());
+		putStats.report(System.currentTimeMillis() - startTime, futureGet.isSuccess());
 		LOG.debug("Get is success {}. Reason: {}", futureGet.isSuccess(), futureGet.failedReason());
 
 		if (futureGet.data() != null) {
@@ -162,11 +162,11 @@ public class QueryNode {
 	}
 
 	public boolean remove(Number640 key) {
-		rmvStats.start();
+		long startTime = System.currentTimeMillis();
 		FutureRemove remove = peerDHT.remove(key.locationKey()).contentKey(key.contentKey()).domainKey(key.domainKey())
 				.versionKey(key.versionKey()).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
 				.start().awaitUninterruptibly();
-		rmvStats.finished(remove.isSuccess());
+		putStats.report(System.currentTimeMillis() - startTime, remove.isSuccess());
 		LOG.debug("Remove is success {}. Reason: {}", remove.isSuccess(), remove.failedReason());
 
 		return remove.isSuccess();

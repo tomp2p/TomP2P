@@ -12,7 +12,6 @@ public class DHTQueryStatistics {
 
 	// timing
 	private final List<Long> times;
-	private long startTime;
 	
 	// success rate
 	private final List<Boolean> successes;
@@ -22,12 +21,8 @@ public class DHTQueryStatistics {
 		this.successes = new ArrayList<Boolean>();
 	}
 	
-	public void start() {
-		startTime = System.currentTimeMillis();
-	}
-	
-	public void finished(boolean success) {
-		times.add(System.currentTimeMillis() - startTime);
+	public synchronized void report(long time, boolean success) {
+		times.add(time);
 		successes.add(success);
 	}
 	

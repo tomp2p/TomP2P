@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.Set;
 
 import net.tomp2p.connection.ChannelServerConfiguration;
+import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
@@ -22,7 +23,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.RelayType;
@@ -42,7 +42,8 @@ import org.slf4j.LoggerFactory;
  * The firewalled nodes are relayed by the relay nodes. The query nodes try to make put / get / remove
  * requests on these nodes.
  * 
- * The Google Cloud Messaging Authentication Key is required as argument when using {@link RelayConfig#ANDROID}
+ * The Google Cloud Messaging Authentication Key is required as argument when using
+ * {@link RelayConfig#ANDROID}
  * 
  * @author Nico Rutishauser
  * 
@@ -53,7 +54,7 @@ public class ExampleRelaySituation {
 
 	private static final int NUM_RELAY_PEERS = 1;
 	private static final int NUM_MOBILE_PEERS = 0;
-	private static final int NUM_QUERY_PEERS = 3;
+	private static final int NUM_QUERY_PEERS = 1;
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		String gcmKey = null;
@@ -65,8 +66,7 @@ public class ExampleRelaySituation {
 		}
 
 		// setup relay peers and start querying
-		ExampleRelaySituation situation = new ExampleRelaySituation(NUM_RELAY_PEERS, NUM_MOBILE_PEERS, NUM_QUERY_PEERS,
-				gcmKey);
+		ExampleRelaySituation situation = new ExampleRelaySituation(gcmKey);
 		situation.setupPeers();
 
 		// wait for finding each other
@@ -84,74 +84,69 @@ public class ExampleRelaySituation {
 	/**
 	 * Relay buffer configuration
 	 */
-	private static final int MAX_MESSAGE_NUM = 10;
+	private static final int MAX_MESSAGE_NUM = Integer.MAX_VALUE;
 	private static final long MAX_BUFFER_SIZE = Long.MAX_VALUE;
-	private static final long MAX_BUFFER_AGE = 10 * 1000;
+	private static final long MAX_BUFFER_AGE = 15 * 1000;
 	private static final int GCM_SEND_RETIES = 5;
-	
+
 	/**
 	 * Unreachable peer configuration
 	 */
-	private static final String GCM_REGISTRATION_ID = "abc";
 	private static final RelayType RELAY_TYPE = RelayType.ANDROID;
 	private final String gcmKey;
 
 	/**
 	 * Query peer configuration
 	 */
-	private static final long MEDIUM_SLEEP_TIME_MS = 5000;
-	private static final int MEDIUM_DATA_SIZE_BYTES = 1024;
-
-	/**
-	 * Number of peers of each kind
-	 */
-	private final int relayPeers;
-	private final int mobilePeers;
-	private final int queryPeers;
+	private static final long INTERVAL_MS = 2000;
+	private static final long DURATION_MS = 5 * 60 * 1000;
+	private static final int DATA_SIZE_BYTES = 128;
 
 	/**
 	 * Holds active peers by each kind
 	 */
 	private final List<PeerNAT> relays;
 	private final List<PeerNAT> mobiles;
-	private final List<QueryNode> queries;
+	private final List<PeriodicQueryNode> queries;
 
 	private final MessageBufferConfiguration bufferConfig;
 
-
-	public ExampleRelaySituation(int relayPeers, int mobilePeers, int queryPeers, String gcmKey) {
+	public ExampleRelaySituation(String gcmKey) {
 		this.gcmKey = gcmKey;
-		assert relayPeers > 0 && relayPeers <= RELAY_TYPE.maxRelayCount();
-		this.relayPeers = relayPeers;
-		this.mobilePeers = mobilePeers;
-		this.queryPeers = queryPeers;
+		assert NUM_RELAY_PEERS > 0 && NUM_RELAY_PEERS <= RELAY_TYPE.maxRelayCount();
 
-		this.relays = new ArrayList<PeerNAT>(relayPeers);
-		this.mobiles = new ArrayList<PeerNAT>(mobilePeers);
-		this.queries = new ArrayList<QueryNode>(queryPeers);
-		
+		this.relays = new ArrayList<PeerNAT>(NUM_RELAY_PEERS);
+		this.mobiles = new ArrayList<PeerNAT>(NUM_MOBILE_PEERS);
+		this.queries = new ArrayList<PeriodicQueryNode>(NUM_QUERY_PEERS);
+
 		bufferConfig = new MessageBufferConfiguration().bufferAgeLimit(MAX_BUFFER_AGE).bufferCountLimit(MAX_MESSAGE_NUM)
 				.bufferSizeLimit(MAX_BUFFER_SIZE);
 	}
 
 	public void setupPeers() throws IOException {
+		// global configuration
+		ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP = 10 * 1000;
+		ConnectionBean.DEFAULT_TCP_IDLE_SECONDS = 10;
+		ConnectionBean.DEFAULT_UDP_IDLE_SECONDS = 10;
+		
 		/**
 		 * Init the relay peers first
 		 */
-		for (int i = 0; i < relayPeers; i++) {
+		for (int i = 0; i < NUM_RELAY_PEERS; i++) {
 			Peer peer = createPeer(RELAY_START_PORT + i);
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
-			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey(gcmKey).gcmSendRetries(GCM_SEND_RETIES).start();
+			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).gcmAuthenticationKey(gcmKey)
+					.gcmSendRetries(GCM_SEND_RETIES).start();
 
 			relays.add(peerNAT);
 			LOG.debug("Relay peer {} started", i);
 		}
-		
+
 		/**
 		 * Then init the mobile peers
 		 */
-		for (int i = 0; i < mobilePeers; i++) {
+		for (int i = 0; i < NUM_MOBILE_PEERS; i++) {
 			Peer peer = createPeer(MOBILE_START_PORT + i);
 			bootstrap(peer);
 
@@ -159,7 +154,7 @@ public class ExampleRelaySituation {
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("UNREACHABLE", true)).start();
 
 			LOG.debug("Connecting to Relay now");
-			Set<PeerAddress> relayAddresses = new HashSet<PeerAddress>(relayPeers);
+			Set<PeerAddress> relayAddresses = new HashSet<PeerAddress>(NUM_RELAY_PEERS);
 			for (PeerNAT relay : relays) {
 				relayAddresses.add(relay.peer().peerAddress());
 			}
@@ -167,13 +162,14 @@ public class ExampleRelaySituation {
 			RelayConfig config;
 			PeerBuilderNAT builder = new PeerBuilderNAT(peer);
 			if (RELAY_TYPE == RelayType.ANDROID) {
-				config = RelayConfig.Android(GCM_REGISTRATION_ID).manualRelays(relayAddresses);
+				config = RelayConfig.Android("abc").manualRelays(relayAddresses);
 			} else {
 				config = RelayConfig.OpenTCP();
 			}
 
 			PeerNAT peerNat = builder.start();
-			FutureRelayNAT futureRelayNAT = peerNat.startRelay(config, relays.get(0).peer().peerAddress()).awaitUninterruptibly();
+			FutureRelayNAT futureRelayNAT = peerNat.startRelay(config, relays.get(0).peer().peerAddress())
+					.awaitUninterruptibly();
 			if (!futureRelayNAT.isSuccess()) {
 				LOG.error("Cannot connect to Relay(s). Reason: {}", futureRelayNAT.failedReason());
 				return;
@@ -186,17 +182,17 @@ public class ExampleRelaySituation {
 		/**
 		 * Finally init the query peers
 		 */
-		for (int i = 0; i < queryPeers; i++) {
+		for (int i = 0; i < NUM_QUERY_PEERS; i++) {
 			Peer peer = createPeer(QUERY_START_PORT + i);
 			bootstrap(peer);
 
 			PeerDHT peerDHT = new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("QUERY", false)).start();
 			new PeerBuilderNAT(peer).start();
 
-			queries.add(new QueryNode(peerDHT, MEDIUM_SLEEP_TIME_MS, MEDIUM_DATA_SIZE_BYTES));
+			queries.add(new PeriodicQueryNode(peerDHT, INTERVAL_MS, DURATION_MS, DATA_SIZE_BYTES));
 			LOG.debug("Query peer {} started", i);
 		}
-		
+
 	}
 
 	private Peer createPeer(int port) throws IOException {
@@ -208,6 +204,7 @@ public class ExampleRelaySituation {
 		csc.idleUDPSeconds(10);
 		
 		return new PeerBuilder(new Number160(port)).ports(port).channelServerConfiguration(csc).start();
+		
 	}
 
 	private boolean bootstrap(Peer peer) throws UnknownHostException {
@@ -229,18 +226,8 @@ public class ExampleRelaySituation {
 	}
 
 	public void startQueries() {
-		for (final QueryNode queryPeer : queries) {
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						queryPeer.querySpecific(new Number640(getRandomUnreachable().peerId(), Number160.ZERO,
-								new Number160(new Random()), Number160.ZERO));
-					} catch (Exception e) {
-						LOG.error("Cannot put / get / remove", e);
-					}
-				}
-			}, queryPeer.toString()).start();
+		for (final PeriodicQueryNode queryPeer : queries) {
+			queryPeer.start(getRandomUnreachable().peerId());
 		}
 	}
 
@@ -259,7 +246,7 @@ public class ExampleRelaySituation {
 			// no connected unreachable peer found
 			return null;
 		} else {
-			return mobiles.get(rnd.nextInt(mobilePeers)).peer().peerAddress();
+			return mobiles.get(rnd.nextInt(NUM_MOBILE_PEERS)).peer().peerAddress();
 		}
 	}
 }

@@ -16,8 +16,7 @@ public class DefaultSendBehavior implements SendBehavior {
 	public SendMethod tcpSendBehavior(Message message) {
 		if(message.recipient().equals(message.sender())) {
 			// shortcut, just send to yourself
-			// TODO this should probably be handled earlier
-			return SendMethod.DIRECT;
+			return SendMethod.SELF;
 		}
 		
 		if (message.recipient().isRelayed()) {
@@ -43,8 +42,7 @@ public class DefaultSendBehavior implements SendBehavior {
 	public SendMethod udpSendBehavior(Message message) throws UnsupportedOperationException {
 		if(message.recipient().equals(message.sender())) {
 			// shortcut, just send to yourself
-			// TODO this should probably be handled earlier
-			return SendMethod.DIRECT;
+			return SendMethod.SELF;
 		}
 		
 		if (message.recipient().isRelayed()) {

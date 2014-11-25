@@ -25,7 +25,12 @@ public interface SendBehavior {
 		 * Open a reverse connection to the receiver and send the message. The reverse conneciton is closed
 		 * afterwards.
 		 */
-		RCON
+		RCON,
+		
+		/**
+		 * Don't send the message over the network but directly pass it to the own dispatcher
+		 */
+		SELF
 	}
 
 	/**

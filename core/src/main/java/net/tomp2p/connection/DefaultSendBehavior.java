@@ -14,6 +14,12 @@ public class DefaultSendBehavior implements SendBehavior {
 
 	@Override
 	public SendMethod tcpSendBehavior(Message message) {
+		if(message.recipient().equals(message.sender())) {
+			// shortcut, just send to yourself
+			// TODO this should probably be handled earlier
+			return SendMethod.DIRECT;
+		}
+		
 		if (message.recipient().isRelayed()) {
 			if (message.sender().isRelayed()) {
 				// reverse connection is not possible because both peers are relayed. Thus send the message to
@@ -35,6 +41,12 @@ public class DefaultSendBehavior implements SendBehavior {
 
 	@Override
 	public SendMethod udpSendBehavior(Message message) throws UnsupportedOperationException {
+		if(message.recipient().equals(message.sender())) {
+			// shortcut, just send to yourself
+			// TODO this should probably be handled earlier
+			return SendMethod.DIRECT;
+		}
+		
 		if (message.recipient().isRelayed()) {
 			if (message.command() == RPC.Commands.NEIGHBOR.getNr() || message.command() == RPC.Commands.PING.getNr()) {
 				return SendMethod.RELAY;

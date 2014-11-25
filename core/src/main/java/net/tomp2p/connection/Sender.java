@@ -273,10 +273,6 @@ public class Sender {
 	/**
 	 * Both peers are relayed, thus sending directly or over reverse connection
 	 * is not possible. Send the message to one of the receiver's relays.
-<<<<<<< HEAD
-=======
-	 * 
->>>>>>> refs/remotes/tomp2p/master
 	 * 
 	 * @param handler
 	 * @param futureResponse

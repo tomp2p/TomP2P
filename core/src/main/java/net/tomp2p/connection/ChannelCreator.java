@@ -265,7 +265,7 @@ public class ChannelCreator {
 						semaphore.release();
 						
 						Message request = futureResponse.request();
-						if(request.recipient().isSlow() && request.command() != Commands.PING.getNr() && request.command() != Commands.NEIGHBOR.getNr()) {
+						if(futureResponse.responseMessage() == null && request.recipient().isSlow() && request.command() != Commands.PING.getNr() && request.command() != Commands.NEIGHBOR.getNr()) {
 							// If the request goes to a slow peer, the channel can be closed until the response arrives
 							LOG.debug("Ignoring channel close event because recipient is slow peer");
 						} else {

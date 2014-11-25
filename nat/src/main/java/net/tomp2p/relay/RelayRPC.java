@@ -249,7 +249,7 @@ public class RelayRPC extends DispatchHandler {
 				dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), forwarder, command.getNr());
 			}
 		}
-
+		
 		peer.peerBean().addPeerStatusListener(forwarder);
 		forwarders.put(forwarder.unreachablePeerId(), forwarder);
 	}

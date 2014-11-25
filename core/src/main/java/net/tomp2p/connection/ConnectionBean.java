@@ -30,12 +30,13 @@ public class ConnectionBean {
      */
     public static final String THREAD_NAME = "NETTY-TOMP2P - ";
     
+    //non-final to be able to adapt changes
     public static int DEFAULT_TCP_IDLE_SECONDS = 5;
     public static int DEFAULT_UDP_IDLE_SECONDS = 5;
     public static int DEFAULT_CONNECTION_TIMEOUT_TCP = 3000;
     public static int DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS = 60;
     
-    public static final int UDP_LIMIT = 1400;
+    public static int UDP_LIMIT = 1400;
 
     private final int p2pId;
     private final Dispatcher dispatcher;

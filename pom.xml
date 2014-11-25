@@ -150,6 +150,19 @@
                 			<!-- <additionalparam>-Xdoclint:none</additionalparam> -->
             			</configuration>
 					</execution>
+					<execution>
+            			<id>aggregate</id>
+            			<goals>
+              				<goal>aggregate</goal>
+            			</goals>
+            			<phase>site</phase>
+            			<configuration>
+            				<!-- if you compile with 1.7, but want that 1.8 should generate the jar use failOnError -->
+            				<failOnError>false</failOnError>
+            				<!-- if you compile with 1.8, but want that 1.7 should generate the jar use Xdoclint -->
+                			<!-- <additionalparam>-Xdoclint:none</additionalparam> -->
+            			</configuration>
+          			</execution>
 				</executions>
 			</plugin>
 			<plugin>

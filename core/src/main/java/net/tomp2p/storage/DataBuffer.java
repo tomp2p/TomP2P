@@ -16,11 +16,11 @@ public class DataBuffer {
 	public DataBuffer() {
 		this(1);
 	}
-	
-	public DataBuffer(int nrArrays) {
-		buffers = new ArrayList<ByteBuf>(nrArrays);
+
+	public DataBuffer(int nrOfBuffers) {
+		buffers = new ArrayList<ByteBuf>(nrOfBuffers);
 	}
-	
+
 	public DataBuffer(final byte[] buffer) {
 		this(buffer, 0, buffer.length);
 	}
@@ -33,10 +33,7 @@ public class DataBuffer {
 	}
 
 	/**
-	 * Creates a DataBuffer and adds the ByteBuf to this DataBuffer
-	 * 
-	 * @param buf
-	 *            The ByteBuf is only added, but no retain() is called!
+	 * Creates a DataBuffer and adds the ByteBuf to it.
 	 */
 	public DataBuffer(final ByteBuf buf) {
 		buffers = new ArrayList<ByteBuf>(1);
@@ -51,7 +48,7 @@ public class DataBuffer {
 			buf.retain();
 		}
 	}
-	
+
 	public DataBuffer add(DataBuffer dataBuffer) {
 		synchronized (dataBuffer.buffers) {
 			for (final ByteBuf buf : dataBuffer.buffers) {
@@ -60,9 +57,12 @@ public class DataBuffer {
 			}
 		}
 		return this;
-    }
+	}
 
-	// from here, work with shallow copies
+	/**
+	 * From here, work with shallow copies.
+	 * @return Shallow copy of this DataBuffer.
+	 */
 	public DataBuffer shallowCopy() {
 		final DataBuffer db;
 		synchronized (buffers) {
@@ -79,8 +79,7 @@ public class DataBuffer {
 	 */
 	public List<ByteBuffer> bufferList() {
 		final DataBuffer copy = shallowCopy();
-		final List<ByteBuffer> nioBuffers = new ArrayList<ByteBuffer>(
-				copy.buffers.size());
+		final List<ByteBuffer> nioBuffers = new ArrayList<ByteBuffer>(copy.buffers.size());
 		for (final ByteBuf buf : copy.buffers) {
 			for (final ByteBuffer bb : buf.nioBuffers()) {
 				nioBuffers.add(bb);
@@ -88,7 +87,7 @@ public class DataBuffer {
 		}
 		return nioBuffers;
 	}
-	
+
 	/**
 	 * @return The length of the data that is backed by the data buffer
 	 */
@@ -109,7 +108,7 @@ public class DataBuffer {
 		final DataBuffer copy = shallowCopy();
 		return Unpooled.wrappedBuffer(copy.buffers.toArray(new ByteBuf[0]));
 	}
-	
+
 	/**
 	 * @return The ByteBuf arrays backed by the buffers stored in here. The buffer is
 	 *         not deep copied here.
@@ -152,8 +151,7 @@ public class DataBuffer {
 		}
 
 		if (buf instanceof AlternativeCompositeByteBuf) {
-			final List<ByteBuf> decoms = ((AlternativeCompositeByteBuf) buf)
-					.decompose(index, length);
+			final List<ByteBuf> decoms = ((AlternativeCompositeByteBuf) buf).decompose(index, length);
 
 			for (final ByteBuf decom : decoms) {
 				synchronized (buffers) {

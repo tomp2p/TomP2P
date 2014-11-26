@@ -127,10 +127,10 @@ public class DataBuffer {
 	}
 
 	/**
-	 * Transfers the data from this buffer the CompositeByteBuf.
+	 * Transfers the data from this buffer to the AlternativeCompositeByteBuf.
 	 * 
 	 * @param buf
-	 *            The CompositeByteBuf, where the data from this buffer is
+	 *            The AlternativeCompositeByteBuf, where the data from this buffer is
 	 *            transfered to
 	 */
 	public void transferTo(final AlternativeCompositeByteBuf buf) {

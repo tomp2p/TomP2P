@@ -78,17 +78,17 @@ public class MessageEncodeDecode {
 				
 		Map<Number640, Data> sampleMap1 = new HashMap<Number640, Data>();
 		sampleMap1.put(sample640_1, sampleData1);
-		sampleMap1.put(sample640_1, sampleData2);
-		sampleMap1.put(sample640_1, sampleData3);
+		sampleMap1.put(sample640_2, sampleData1);
+		sampleMap1.put(sample640_3, sampleData1);
 		
 		Map<Number640, Data> sampleMap2 = new HashMap<Number640, Data>();
-		sampleMap2.put(sample640_2, sampleData1);
+		sampleMap2.put(sample640_1, sampleData2);
 		sampleMap2.put(sample640_2, sampleData2);
-		sampleMap2.put(sample640_2, sampleData3);
+		sampleMap2.put(sample640_3, sampleData2);
 		
 		Map<Number640, Data> sampleMap3 = new HashMap<Number640, Data>();
-		sampleMap3.put(sample640_3, sampleData1);
-		sampleMap3.put(sample640_3, sampleData2);
+		sampleMap3.put(sample640_1, sampleData3);
+		sampleMap3.put(sample640_2, sampleData3);
 		sampleMap3.put(sample640_3, sampleData3);
 		
 		Map<Number640, Data> sampleMap4 = new HashMap<Number640, Data>();

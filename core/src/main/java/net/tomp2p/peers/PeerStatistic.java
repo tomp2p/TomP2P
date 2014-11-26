@@ -29,27 +29,18 @@ public class PeerStatistic implements Serializable {
     
 	private static final long serialVersionUID = -6225586345726672194L;
 
-	private final AtomicLong lastSeenOnline = new AtomicLong(0);
-
     private final long created = System.currentTimeMillis();
 
+    private final AtomicLong lastSeenOnline = new AtomicLong(0);
     private final AtomicInteger successfullyChecked = new AtomicInteger(0);
-
     private final AtomicInteger failed = new AtomicInteger(0);
     
     private final Number160 peerId;
-
     private PeerAddress peerAddress;
 
-    /**
-     * Constructor. Sets the peer address
-     * 
-     * @param peerAddress
-     *            The peer address that belongs to this statistics
-     */
     public PeerStatistic(final PeerAddress peerAddress) {
         if (peerAddress == null) {
-            throw new IllegalArgumentException("PeerAddress cannot be null");
+            throw new IllegalArgumentException("PeerAddress cannot be null.");
         }
         this.peerId = peerAddress.peerId();
         this.peerAddress = peerAddress;
@@ -58,7 +49,7 @@ public class PeerStatistic implements Serializable {
     /**
      * Sets the time when last seen online to now.
      * 
-     * @return The number of successful checks
+     * @return The number of successful checks.
      */
     public int successfullyChecked() {
         lastSeenOnline.set(System.currentTimeMillis());
@@ -68,14 +59,18 @@ public class PeerStatistic implements Serializable {
     }
 
     /**
-     * @return The time last seen online
+     * Gets the time the peer has last been seen online.
+     * 
+     * @return The time the peer has last been seen online.
      */
     public long lastSeenOnline() {
         return lastSeenOnline.get();
     }
 
     /**
-     * @return The number of times the peer has been successfully checked
+     * Gets the number of times the peer has been successfully checked.
+     * 
+     * @return The number of times the peer has been successfully checked.
      */
     public int successfullyCheckedCounter() {
         return successfullyChecked.get();
@@ -91,40 +86,40 @@ public class PeerStatistic implements Serializable {
     }
 
     /**
-     * @return The time of creating this peer (statistic)
+     * @return The time of this PeerStatistic creation.
      */
     public long created() {
         return created;
     }
 
     /**
-     * @return The time that this peer is online
+     * @return The time that this peer is online.
      */
     public int onlineTime() {
         return (int) (lastSeenOnline.get() - created);
     }
 
     /**
-     * @return the peer address associated with this peer address
+     * @return The PeerAddress associated with this peer.
      */
     public PeerAddress peerAddress() {
         return peerAddress;
     }
 
     /**
-     * Set the peer address only if the previous peer address that had the same peer ID.
+     * Sets a new PeerAddress, but only if the previous had the same peer ID.
      * 
      * @param peerAddress
-     *            The updated peer ID
-     * @return The old peer address
+     *            The new peer address.
+     * @return The old peer address.
      */
     public PeerAddress peerAddress(final PeerAddress peerAddress) {
         if (!peerId.equals(peerAddress.peerId())) {
-            throw new IllegalArgumentException("can only update the same peer address");
+            throw new IllegalArgumentException("Can only update PeerAddress with the same peer ID.");
         }
-        PeerAddress previousPeerAddress = this.peerAddress;
+        PeerAddress previous = this.peerAddress;
         this.peerAddress = peerAddress;
-        return previousPeerAddress;
+        return previous;
     }
     
     @Override

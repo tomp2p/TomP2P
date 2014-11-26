@@ -215,14 +215,15 @@ public class DataBuffer {
 
 	public byte[] bytes() {
 		final ByteBuffer[] bufs = toByteBuffer();
-		final int bufLength = bufs.length;
+		final int bufsLength = bufs.length;
 		int size = 0;
-		for (int i = 0; i < bufLength; i++) {
+		for (int i = 0; i < bufsLength; i++) {
 			size += bufs[i].remaining();
 		}
 
 		byte[] retVal = new byte[size];
-		for (int i = 0, offset = 0; i < bufLength; i++) {
+		int offset = 0;
+		for (int i = 0; i < bufsLength; i++) {
 			final int remaining = bufs[i].remaining();
 			bufs[i].get(retVal, offset, remaining);
 			offset += remaining;

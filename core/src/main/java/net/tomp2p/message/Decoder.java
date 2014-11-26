@@ -347,8 +347,7 @@ public class Decoder {
 				}
 				for (int i = dataMap.size(); i < mapSize; i++) {
 					if (key == null) {
-						if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-								+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
+						if (buf.readableBytes() < 4 * Number160.BYTE_ARRAY_SIZE) {
 							return false;
 						}
 						byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];

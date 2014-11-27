@@ -81,6 +81,9 @@ public class Inbox {
 				case "TestMessageDecodeSetTrackerData":
 					result = MessageEncodeDecode.encodeMessageSetTrackerData();
 					break;
+				case "TestMessageDecodeBloomFilter":
+					result = MessageEncodeDecode.encodeMessageBloomFilter();
+					break;
 				
 				default:
 					System.out.println(String.format("Invalid argument: %s.", argument));

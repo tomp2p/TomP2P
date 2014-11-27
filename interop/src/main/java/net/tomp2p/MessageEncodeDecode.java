@@ -346,6 +346,17 @@ public class MessageEncodeDecode {
 		
 		return encodeMessage(m);
 	}
+	
+	public static byte[] encodeMessageBloomFilter() throws Exception {
+		
+		// create sample
+		
+		
+		Message m = Utils2.createDummyMessage();
+		m.bloomFilter(bloomFilter)
+		
+		return encodeMessage(m);
+	}
 
 	private static byte[] encodeMessage(Message message) throws Exception {
 		

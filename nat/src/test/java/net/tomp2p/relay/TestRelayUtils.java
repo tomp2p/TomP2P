@@ -1,11 +1,11 @@
 package net.tomp2p.relay;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
@@ -36,13 +36,13 @@ public class TestRelayUtils {
 		messages.add(UtilsNAT.createRandomMessage());
 
 		ByteBuf buffer = RelayUtils.composeMessageBuffer(messages, signature);
-		List<Message> decomposed = RelayUtils.decomposeCompositeBuffer(buffer, new InetSocketAddress(0), new InetSocketAddress(0), signature);
+		List<Message> decomposed = RelayUtils.decomposeCompositeBuffer(buffer, messages.get(0).recipientSocket(), messages.get(1).recipientSocket(), signature);
 		
 		assertEquals(messages.size(), decomposed.size());
-		assertEquals(messages.get(0).messageId(), decomposed.get(0).messageId());
-		assertEquals(messages.get(1).messageId(), decomposed.get(1).messageId());
-		assertEquals(messages.get(2).messageId(), decomposed.get(2).messageId());
-		assertEquals(messages.get(3).messageId(), decomposed.get(3).messageId());
+		assertTrue(UtilsNAT.messagesEqual(messages.get(0), decomposed.get(0)));
+		assertTrue(UtilsNAT.messagesEqual(messages.get(1), decomposed.get(1)));
+		assertTrue(UtilsNAT.messagesEqual(messages.get(2), decomposed.get(2)));
+		assertTrue(UtilsNAT.messagesEqual(messages.get(3), decomposed.get(3)));
 	}
 	
 
@@ -56,12 +56,12 @@ public class TestRelayUtils {
 		relays.add(new PeerSocketAddress(InetAddress.getLocalHost(), 8001, 9001));
 		relays.add(new PeerSocketAddress(InetAddress.getLocalHost(), 8002, 9002));
 
-		PeerAddress sender = UtilsNAT.createAddress().changeRelayed(true).changePeerSocketAddresses(relays)
+		PeerAddress sender = UtilsNAT.createRandomAddress().changeRelayed(true).changePeerSocketAddresses(relays)
 				.changeFirewalledTCP(true).changeFirewalledUDP(true);
 		message.sender(sender);
 		message.senderSocket(sender.createSocketTCP());
 		
-		PeerAddress receiver = UtilsNAT.createAddress();
+		PeerAddress receiver = UtilsNAT.createRandomAddress();
 		message.recipient(receiver);
 		message.recipientSocket(receiver.createSocketTCP());
 		

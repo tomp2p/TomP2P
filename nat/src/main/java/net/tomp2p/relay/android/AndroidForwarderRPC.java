@@ -88,17 +88,11 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	@Override
 	public void bufferFull(List<Message> messages) {
 		final FutureGCM futureGCM = new FutureGCM(messages, registrationId, relayPeerId());
-		boolean sendTickle;
 		synchronized (pendingRequests) {
-			sendTickle = pendingRequests.isEmpty();
 			pendingRequests.add(futureGCM);
 		}
 
-		if (sendTickle) {
-			sender.send(futureGCM);
-		} else {
-			LOG.debug("Another tickle message is already on the way to the mobile device");
-		}
+		sender.send(futureGCM);
 	}
 
 	/**
@@ -129,6 +123,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	protected void peerMapUpdated() {
 		// take this event as an indicator that the mobile device is online
 		lastUpdate.set(System.currentTimeMillis());
+		LOG.trace("Timeout for {} refreshed", registrationId);
 	}
 
 	@Override

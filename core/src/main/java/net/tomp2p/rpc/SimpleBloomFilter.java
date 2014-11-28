@@ -22,10 +22,10 @@ import java.io.Serializable;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Random;
 import java.util.Set;
 
 import net.tomp2p.peers.Number160;
+import net.tomp2p.utils.InteropRandom;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,7 +176,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	 */
 	@Override
 	public boolean add(final E o) {
-		Random r = new Random(o.hashCode());
+		InteropRandom r = new InteropRandom(o.hashCode());
 		for (int x = 0; x < k; x++) {
 			bitSet.set(r.nextInt(bitArraySize), true);
 		}
@@ -215,7 +215,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	 */
 	@Override
 	public boolean contains(final Object o) {
-		Random r = new Random(o.hashCode());
+		InteropRandom r = new InteropRandom(o.hashCode());
 		for (int x = 0; x < k; x++) {
 			if (!bitSet.get(r.nextInt(bitArraySize))) {
 				return false;

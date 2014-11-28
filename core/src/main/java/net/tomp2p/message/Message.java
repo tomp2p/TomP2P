@@ -133,7 +133,15 @@ public class Message {
 		 * </ul>
 		 */
 		REQUEST_FF_2,
+		
+		/**
+		 * The request was processed and everything is alright
+		 */
 		OK,
+		
+		/**
+		 * When the called node has {@link PeerAddress#isSlow()} activated, the relay peer returns a partial ok
+		 */
 		PARTIALLY_OK,
 		NOT_FOUND,
 		DENIED,

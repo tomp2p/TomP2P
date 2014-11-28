@@ -121,6 +121,13 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     public int connectionTimeoutTCPMillis() {
         return connectionTimeoutTCPMillis;
     }
+    
+    /**
+     * @return The time when a slow response time outs
+     */
+    public int slowResponseTimeoutSeconds() {
+    	return slowResponseTimeoutSeconds;
+    }
 
     /**
      * Send a UDP message and expect a reply.

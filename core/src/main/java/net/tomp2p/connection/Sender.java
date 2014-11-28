@@ -56,6 +56,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
@@ -170,6 +171,9 @@ public class Sender {
 				case RELAY:
 					handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection, 
 							timeoutHandler);
+					break;
+				case SELF:
+					sendSelf(futureResponse, message);
 					break;
 				default:
 					throw new IllegalArgumentException("Illegal sending behavior");
@@ -286,10 +290,6 @@ public class Sender {
 	/**
 	 * Both peers are relayed, thus sending directly or over reverse connection
 	 * is not possible. Send the message to one of the receiver's relays.
-<<<<<<< HEAD
-=======
-	 * 
->>>>>>> refs/remotes/tomp2p/master
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -380,6 +380,35 @@ public class Sender {
 		return futureDone;
 	}
 
+	/**
+	 * In case a message is sent to the sender itself, this is the cutoff.
+	 * 
+	 * @param futureResponse the future to respond as soon as the proper handler returns it
+	 * @param message the request
+	 */
+	public void sendSelf(final FutureResponse futureResponse, final Message message) {
+		LOG.debug("Handle message that is intended for the sender itself {}", message);
+		final DispatchHandler handler = dispatcher.associatedHandler(message);
+		handler.forwardMessage(message, null, new Responder() {
+
+			@Override
+			public void response(Message responseMessage) {
+				futureResponse.response(responseMessage);
+			}
+
+			@Override
+			public void failed(Type type, String reason) {
+				futureResponse.failed("Failed with type " + type.name() + ". Reason: " + reason);
+			}
+
+			@Override
+			public void responseFireAndForget() {
+				futureResponse.emptyResponse();
+			}
+
+		});
+	}
+	
 	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator,
 	        PeerConnection peerConnection, ChannelHandler handler, TimeoutFactory timeoutHandler,
 	        int connectTimeoutMillis, FutureResponse futureResponse) {
@@ -554,6 +583,10 @@ public class Sender {
 						futureResponse.failed("Peer is relayed, but no relay given");
 						return;
 					}
+					break;
+				case SELF:
+					sendSelf(futureResponse, message);
+					channelFuture = null;
 					break;
 				default:
 					throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");

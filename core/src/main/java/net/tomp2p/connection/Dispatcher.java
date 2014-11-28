@@ -201,7 +201,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     	return retVal;
     }
     
-    public class DirectResponder implements Responder {
+    private class DirectResponder implements Responder {
         final ChannelHandlerContext ctx;
         final Message requestMessage;
         DirectResponder(final ChannelHandlerContext ctx, final Message requestMessage) {

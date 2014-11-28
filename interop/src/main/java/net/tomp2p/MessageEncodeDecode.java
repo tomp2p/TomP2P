@@ -442,7 +442,7 @@ public class MessageEncodeDecode {
 		InetAddress sampleAddress5 = InetAddress.getByName("7:6:5:4:3:2:1:0");
 		
 		PeerSocketAddress samplePsa1 = new PeerSocketAddress(sampleAddress1, 0, 0);
-		PeerSocketAddress samplePsa2 = new PeerSocketAddress(sampleAddress2, 65530, 65530);
+		PeerSocketAddress samplePsa2 = new PeerSocketAddress(sampleAddress2, 65535, 65535);
 		PeerSocketAddress samplePsa3 = new PeerSocketAddress(sampleAddress3, 1, 1);
 		PeerSocketAddress samplePsa4 = new PeerSocketAddress(sampleAddress4, 2, 2);
 		PeerSocketAddress samplePsa5 = new PeerSocketAddress(sampleAddress5, 30, 40);

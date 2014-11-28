@@ -452,35 +452,21 @@ public class MessageEncodeDecode {
 		PeerSocketAddress samplePsa9 = new PeerSocketAddress(sampleAddress4, 99, 100);
 		PeerSocketAddress samplePsa10 = new PeerSocketAddress(sampleAddress5, 13, 1234);
 
-		Collection<PeerSocketAddress> sampleAddresses1 = new ArrayList<PeerSocketAddress>();
-		sampleAddresses1.add(samplePsa1);
-		sampleAddresses1.add(samplePsa2);
-		sampleAddresses1.add(samplePsa3);
-		
-		Collection<PeerSocketAddress> sampleAddresses2 = new ArrayList<PeerSocketAddress>();
-		sampleAddresses2.add(samplePsa3);
-		sampleAddresses2.add(samplePsa4);
-		sampleAddresses2.add(samplePsa5);
-		
-		Collection<PeerSocketAddress> sampleAddresses3 = new ArrayList<PeerSocketAddress>();
-		sampleAddresses3.add(samplePsa6);
-		sampleAddresses3.add(samplePsa7);
-		sampleAddresses3.add(samplePsa8);
-		
-		Collection<PeerSocketAddress> sampleAddresses4 = new ArrayList<PeerSocketAddress>();
-		sampleAddresses4.add(samplePsa9);
-		sampleAddresses4.add(samplePsa10);
-		sampleAddresses4.add(samplePsa1);
+		Collection<PeerSocketAddress> sampleAddresses = new ArrayList<PeerSocketAddress>();
+		sampleAddresses.add(samplePsa1);
+		sampleAddresses.add(samplePsa2);
+		sampleAddresses.add(samplePsa3);
+		sampleAddresses.add(samplePsa3);
+		sampleAddresses.add(samplePsa4);
+		sampleAddresses.add(samplePsa5);
+		sampleAddresses.add(samplePsa6);
+		sampleAddresses.add(samplePsa7);
+		sampleAddresses.add(samplePsa8);
+		sampleAddresses.add(samplePsa9);
+		sampleAddresses.add(samplePsa10);
 		
 		Message m = Utils2.createDummyMessage();
-		m.peerSocketAddresses(sampleAddresses1);
-		m.peerSocketAddresses(sampleAddresses2);
-		m.peerSocketAddresses(sampleAddresses3);
-		m.peerSocketAddresses(sampleAddresses4);
-		m.peerSocketAddresses(sampleAddresses1);
-		m.peerSocketAddresses(sampleAddresses2);
-		m.peerSocketAddresses(sampleAddresses3);
-		m.peerSocketAddresses(sampleAddresses4);
+		m.peerSocketAddresses(sampleAddresses);
 		
 		return encodeMessage(m);
 	}

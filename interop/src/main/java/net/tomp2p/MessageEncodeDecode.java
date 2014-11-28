@@ -19,6 +19,7 @@ import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.KeyMap640Keys;
+import net.tomp2p.message.KeyMapByte;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.message.TrackerData;
@@ -385,6 +386,47 @@ public class MessageEncodeDecode {
 		m.bloomFilter(sampleBf1);
 		m.bloomFilter(sampleBf2);
 		m.bloomFilter(sampleBf3);
+		
+		return encodeMessage(m);
+	}
+	
+	public static byte[] encodeMessageMapKey640Byte() throws Exception {
+		
+		// create sample keymapbytes
+		Map<Number640, Byte> sampleMap1 = new HashMap<Number640, Byte>();
+		sampleMap1.put(sample640_1, sampleBytes1[0]);
+		sampleMap1.put(sample640_2, sampleBytes1[1]);
+		sampleMap1.put(sample640_3, sampleBytes1[2]);
+		
+		Map<Number640, Byte> sampleMap2 = new HashMap<Number640, Byte>();
+		sampleMap2.put(sample640_1, sampleBytes1[3]);
+		sampleMap2.put(sample640_2, sampleBytes1[4]);
+		sampleMap2.put(sample640_3, sampleBytes1[5]);
+		
+		Map<Number640, Byte> sampleMap3= new HashMap<Number640, Byte>();
+		sampleMap3.put(sample640_1, sampleBytes1[6]);
+		sampleMap3.put(sample640_2, sampleBytes1[7]);
+		sampleMap3.put(sample640_3, sampleBytes1[8]);
+		
+		Map<Number640, Byte> sampleMap4 = new HashMap<Number640, Byte>();
+		sampleMap4.put(sample640_1, sampleBytes1[9]);
+		sampleMap4.put(sample640_2, sampleBytes1[10]);
+		sampleMap4.put(sample640_3, sampleBytes1[11]);
+		
+		Map<Number640, Byte> sampleMap5 = new HashMap<Number640, Byte>();
+		sampleMap5.put(sample640_1, sampleBytes1[12]);
+		sampleMap5.put(sample640_2, sampleBytes1[13]);
+		sampleMap5.put(sample640_3, sampleBytes1[14]);
+		
+		Message m = Utils2.createDummyMessage();
+		m.keyMapByte(new KeyMapByte(sampleMap1));
+		m.keyMapByte(new KeyMapByte(sampleMap2));
+		m.keyMapByte(new KeyMapByte(sampleMap3));
+		m.keyMapByte(new KeyMapByte(sampleMap4));
+		m.keyMapByte(new KeyMapByte(sampleMap5));
+		m.keyMapByte(new KeyMapByte(sampleMap1));
+		m.keyMapByte(new KeyMapByte(sampleMap2));
+		m.keyMapByte(new KeyMapByte(sampleMap3));
 		
 		return encodeMessage(m);
 	}

@@ -8,6 +8,7 @@ import net.tomp2p.utils.Utils;
 public class KeyMapByte {
 
     private final Map<Number640, Byte> keysMap;
+    
     public KeyMapByte(Map<Number640, Byte> keysMap) {
         this.keysMap = keysMap;
     }

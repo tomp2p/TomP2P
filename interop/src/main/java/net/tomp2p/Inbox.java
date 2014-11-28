@@ -84,6 +84,9 @@ public class Inbox {
 				case "TestMessageDecodeBloomFilter":
 					result = MessageEncodeDecode.encodeMessageBloomFilter();
 					break;
+				case "TestMessageDecodeMapKey640Byte":
+					result = MessageEncodeDecode.encodeMessageMapKey640Byte();
+					break;
 				
 				default:
 					System.out.println(String.format("Invalid argument: %s.", argument));

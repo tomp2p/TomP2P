@@ -26,6 +26,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 
@@ -349,11 +350,41 @@ public class MessageEncodeDecode {
 	
 	public static byte[] encodeMessageBloomFilter() throws Exception {
 		
-		// create sample
+		// create sample bloom filters		
+		SimpleBloomFilter<Number160> sampleBf1 = new SimpleBloomFilter<Number160>(2, 5);
+		sampleBf1.add(sample160_1);
 		
+		SimpleBloomFilter<Number160> sampleBf2 = new SimpleBloomFilter<Number160>(2, 5);
+		sampleBf2.add(sample160_2);
+		sampleBf2.add(sample160_1);
+		
+		SimpleBloomFilter<Number160> sampleBf3 = new SimpleBloomFilter<Number160>(2, 5);
+		sampleBf3.add(sample160_1);
+		sampleBf3.add(sample160_2);
+		sampleBf3.add(sample160_3);
+		
+		SimpleBloomFilter<Number160> sampleBf4 = new SimpleBloomFilter<Number160>(2, 5);
+		sampleBf4.add(sample160_1);
+		sampleBf4.add(sample160_2);
+		sampleBf4.add(sample160_3);
+		sampleBf4.add(sample160_4);
+		
+		SimpleBloomFilter<Number160> sampleBf5 = new SimpleBloomFilter<Number160>(2, 5);
+		sampleBf5.add(sample160_1);
+		sampleBf5.add(sample160_2);
+		sampleBf5.add(sample160_3);
+		sampleBf5.add(sample160_4);
+		sampleBf5.add(sample160_5);
 		
 		Message m = Utils2.createDummyMessage();
-		m.bloomFilter(bloomFilter)
+		m.bloomFilter(sampleBf1);
+		m.bloomFilter(sampleBf2);
+		m.bloomFilter(sampleBf3);
+		m.bloomFilter(sampleBf4);
+		m.bloomFilter(sampleBf5);
+		m.bloomFilter(sampleBf1);
+		m.bloomFilter(sampleBf2);
+		m.bloomFilter(sampleBf3);
 		
 		return encodeMessage(m);
 	}

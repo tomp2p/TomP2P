@@ -102,7 +102,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	 *            The byte buffer with the data
 	 */
 	public SimpleBloomFilter(final ByteBuf channelBuffer) {
-		this.byteArraySize = channelBuffer.readUnsignedShort() - (SIZE_HEADER_ELEMENTS + SIZE_HEADER_LENGTH);
+		this.byteArraySize = channelBuffer.readUnsignedShort() - SIZE_HEADER;
 		this.bitArraySize = byteArraySize * Byte.SIZE;
 		int expectedElements = channelBuffer.readInt();
 		this.expectedElements = expectedElements;

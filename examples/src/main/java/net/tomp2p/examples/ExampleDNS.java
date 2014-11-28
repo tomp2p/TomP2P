@@ -35,7 +35,7 @@ public class ExampleDNS {
 
 	public ExampleDNS(int nodeId) throws Exception {
 		peer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(nodeId)).ports(4000 + nodeId).start()).start();
-		FutureBootstrap fb = this.peer.peer().bootstrap().broadcast(true).ports(4001).start();
+		FutureBootstrap fb = this.peer.peer().bootstrap().ports(4001).start();
 		fb.awaitUninterruptibly();
 		if(fb.isSuccess()) {
 			peer.peer().discover().peerAddress(fb.bootstrapTo().iterator().next()).start().awaitUninterruptibly();

@@ -23,9 +23,9 @@ import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.dht.RemoveBuilder;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.p2p.AutomaticFuture;
+import net.tomp2p.p2p.JobScheduler;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.replication.DirectReplication;
 import net.tomp2p.storage.Data;
 
 /**
@@ -77,7 +77,7 @@ public final class ExampleDirectReplication {
      */
     private static void exmpleDirectReplication(final PeerDHT[] peers) throws IOException, InterruptedException {
         PutBuilder putBuilder = peers[1].put(Number160.ONE).data(new Data("test"));
-        DirectReplication replication = new DirectReplication(peers[1].peer());
+        JobScheduler replication = new JobScheduler(peers[1].peer());
         Shutdown shutdown = replication.start(putBuilder, 1000, -1, new AutomaticFuture() {
 			@Override
 			public void futureCreated(BaseFuture future) {

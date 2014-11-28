@@ -80,8 +80,6 @@ public class BootstrapBuilder {
 
     private boolean forceRoutingOnlyToSelf = false;
 
-    private boolean broadcast = false;
-
     public BootstrapBuilder(Peer peer) {
         this.peer = peer;
     }
@@ -180,20 +178,6 @@ public class BootstrapBuilder {
         return this;
     }
 
-    public boolean isBroadcast() {
-        return broadcast;
-    }
-
-    public BootstrapBuilder broadcast() {
-        this.broadcast = true;
-        return this;
-    }
-
-    public BootstrapBuilder broadcast(boolean broadcast) {
-        this.broadcast = broadcast;
-        return this;
-    }
-
     public FutureBootstrap start() {
         if (peer.isShutdown()) {
             return FUTURE_BOOTSTRAP_SHUTDOWN;
@@ -201,10 +185,6 @@ public class BootstrapBuilder {
 
         if (routingConfiguration == null) {
             routingConfiguration = new RoutingConfiguration(8, 10, 2);
-        }
-        //
-        if (broadcast) {
-            return broadcast0();
         }
         if (peerAddress == null && inetAddress != null && bootstrapTo == null) {
             peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
@@ -273,30 +253,4 @@ public class BootstrapBuilder {
         });
         return result;
     }
-
-    private FutureWrappedBootstrap<FutureBootstrap> broadcast0() {
-        final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-        final FuturePing futurePing = peer.ping().broadcast().port(portUDP).start();
-        futurePing.addListener(new BaseFutureAdapter<FuturePing>() {
-            @Override
-            public void operationComplete(final FuturePing future) throws Exception {
-                if (future.isSuccess()) {
-                    if (bootstrapTo != null && bootstrapTo.size() > 0) {
-                        logger.info("you added peers to bootstrapTo. However with broadcast we found our own peers.");
-                    }
-                    peerAddress = future.remotePeer();
-                    bootstrapTo = new ArrayList<PeerAddress>(1);
-                    bootstrapTo.add(peerAddress);
-                    result.bootstrapTo(bootstrapTo);
-                    result.waitFor(bootstrap());
-                } else {
-                    result.failed("could not reach anyone with the broadcast", future);
-                }
-            }
-        });
-        return result;
-    }
-
-	
-
 }

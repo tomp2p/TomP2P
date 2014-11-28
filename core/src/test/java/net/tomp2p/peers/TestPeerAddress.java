@@ -23,8 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
-import net.tomp2p.utils.Utils;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -213,19 +211,6 @@ public class TestPeerAddress {
         
         Assert.assertEquals(142, pa3.toByteArray().length);
 
-    }
-    
-    @Test
-    public void testSize()
-    {
-    	int header = Integer.MAX_VALUE;
-    	
-    	header = header >>> Utils.BYTE_BITS;
-    	int options = header & Utils.MASK_FF;
-    	
-    	//int options = (header >>> Utils.BYTE_BITS) & Utils.MASK_FF;
-        int relays = header & Utils.MASK_FF;
-    	
     }
 
     /**

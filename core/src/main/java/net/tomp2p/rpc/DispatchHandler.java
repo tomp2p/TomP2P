@@ -157,11 +157,9 @@ public abstract class DispatchHandler {
         // here we need a referral, since we got contacted and we don't know
         // if we can contact the peer with its address. The peer may be
         // behind a NAT
-        synchronized (peerBean.peerStatusListeners()) {
-			for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-				peerStatusListener.peerFound(requestMessage.sender(), requestMessage.sender(), peerConnection);
-			}
-		}
+    	if(requestMessage.command() != RPC.Commands.LOCAL_ANNOUNCE.getNr()) {
+    		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection);
+    	}
         
         try {
             handleResponse(requestMessage, peerConnection, sign, responder);

@@ -142,11 +142,7 @@ public class NeighborRPC extends DispatchHandler {
 	            		NeighborSet ns = response.neighborsSet(0);
 	            		if(ns!=null) {
 	            			for(PeerAddress neighbors:ns.neighbors()) {
-	            				synchronized (peerBean().peerStatusListeners()) {
-	            					for (PeerStatusListener peerStatusListener : peerBean().peerStatusListeners()) {
-	            						peerStatusListener.peerFound(neighbors, response.sender(), null);
-	            					}
-	            				}
+	            				peerBean().notifyPeerFound(neighbors, response.sender(), null);
 	            			}
 	            		}
 	            	}

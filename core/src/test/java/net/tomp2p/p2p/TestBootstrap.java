@@ -131,50 +131,6 @@ public class TestBootstrap {
     }
 
     @Test
-    public void testBootstrap3() throws Exception {
-        final Random rnd = new Random(42);
-        Peer master = null;
-        try {
-            // setup
-            Peer[] peers = Utils2.createNonMaintenanceNodes(100, rnd, 4001);
-            master = peers[0];
-            // do testing
-            List<FutureBootstrap> tmp = new ArrayList<FutureBootstrap>();
-            // we start from 1, because a broadcast to ourself will not get
-            // replied.
-            for (int i = 1; i < peers.length; i++) {
-                FutureBootstrap res = peers[i].bootstrap().ports(4001).broadcast().start();
-                tmp.add(res);
-            }
-        } finally {
-            if (master != null) {
-                master.shutdown().await();
-            }
-        }
-    }
-
-    @Test
-    public void testBootstrap4() throws Exception {
-        final Random rnd = new Random(42);
-        Peer master = null;
-        Peer slave = null;
-        try {
-            master = new PeerBuilder(new Number160(rnd)).ports(4001).start();
-            slave = new PeerBuilder(new Number160(rnd)).ports(4002).start();
-            BaseFuture res = slave.ping().port(4001).broadcast().start();
-            res.awaitUninterruptibly();
-            Assert.assertEquals(true, res.isSuccess());
-        } finally {
-            if (master != null) {
-                master.shutdown().await();
-            }
-            if (slave != null) {
-                slave.shutdown().await();
-            }
-        }
-    }
-
-    @Test
     public void testBootstrap5() throws Exception {
         final Random rnd = new Random(42);
         Peer peer = null;

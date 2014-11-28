@@ -26,6 +26,7 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
@@ -431,6 +432,60 @@ public class MessageEncodeDecode {
 		return encodeMessage(m);
 	}
 
+	public static byte[] encodeMessageSetPeerSocket() throws Exception {
+		
+		// create sample peersocketaddresses
+		InetAddress sampleAddress1 = InetAddress.getByName("192.168.1.1");
+		InetAddress sampleAddress2 = InetAddress.getByName("255.255.255.255");
+		InetAddress sampleAddress3 = InetAddress.getByName("127.0.0.1");
+		InetAddress sampleAddress4 = InetAddress.getByName("0:1:2:3:4:5:6:7");
+		InetAddress sampleAddress5 = InetAddress.getByName("7:6:5:4:3:2:1:0");
+		
+		
+		PeerSocketAddress samplePsa1 = new PeerSocketAddress(sampleAddress1, Short.MIN_VALUE, Short.MIN_VALUE);
+		PeerSocketAddress samplePsa2 = new PeerSocketAddress(sampleAddress2, 65536, 65536);
+		PeerSocketAddress samplePsa3 = new PeerSocketAddress(sampleAddress3, 1, 1);
+		PeerSocketAddress samplePsa4 = new PeerSocketAddress(sampleAddress4, 2, 2);
+		PeerSocketAddress samplePsa5 = new PeerSocketAddress(sampleAddress5, 30, 40);
+		PeerSocketAddress samplePsa6 = new PeerSocketAddress(sampleAddress1, 88, 88);
+		PeerSocketAddress samplePsa7 = new PeerSocketAddress(sampleAddress2, 177, 177);
+		PeerSocketAddress samplePsa8 = new PeerSocketAddress(sampleAddress3, 60000, 65000);
+		PeerSocketAddress samplePsa9 = new PeerSocketAddress(sampleAddress4, 99, 100);
+		PeerSocketAddress samplePsa10 = new PeerSocketAddress(sampleAddress5, 13, 1234);
+
+		Collection<PeerSocketAddress> sampleAddresses1 = new ArrayList<PeerSocketAddress>();
+		sampleAddresses1.add(samplePsa1);
+		sampleAddresses1.add(samplePsa2);
+		sampleAddresses1.add(samplePsa3);
+		
+		Collection<PeerSocketAddress> sampleAddresses2 = new ArrayList<PeerSocketAddress>();
+		sampleAddresses2.add(samplePsa3);
+		sampleAddresses2.add(samplePsa4);
+		sampleAddresses2.add(samplePsa5);
+		
+		Collection<PeerSocketAddress> sampleAddresses3 = new ArrayList<PeerSocketAddress>();
+		sampleAddresses3.add(samplePsa6);
+		sampleAddresses3.add(samplePsa7);
+		sampleAddresses3.add(samplePsa8);
+		
+		Collection<PeerSocketAddress> sampleAddresses4 = new ArrayList<PeerSocketAddress>();
+		sampleAddresses4.add(samplePsa9);
+		sampleAddresses4.add(samplePsa10);
+		sampleAddresses4.add(samplePsa1);
+		
+		Message m = Utils2.createDummyMessage();
+		m.peerSocketAddresses(sampleAddresses1);
+		m.peerSocketAddresses(sampleAddresses2);
+		m.peerSocketAddresses(sampleAddresses3);
+		m.peerSocketAddresses(sampleAddresses4);
+		m.peerSocketAddresses(sampleAddresses1);
+		m.peerSocketAddresses(sampleAddresses2);
+		m.peerSocketAddresses(sampleAddresses3);
+		m.peerSocketAddresses(sampleAddresses4);
+		
+		return encodeMessage(m);
+	}
+	
 	private static byte[] encodeMessage(Message message) throws Exception {
 		
 		Encoder encoder = new Encoder(null);

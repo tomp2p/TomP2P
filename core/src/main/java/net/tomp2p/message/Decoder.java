@@ -448,8 +448,7 @@ public class Decoder {
 				}
 
 				for (int i = keyMapByte.size(); i < keyMapByteSize; i++) {
-					if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-							+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE + 1) {
+					if (buf.readableBytes() < 4 * Number160.BYTE_ARRAY_SIZE + 1) {
 						return false;
 					}
 					byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -461,6 +460,7 @@ public class Decoder {
 					Number160 contentKey = new Number160(me3);
 					buf.readBytes(me3);
 					Number160 versionKey = new Number160(me3);
+					
 					byte value = buf.readByte();
 					keyMapByte.put(new Number640(locationKey, domainKey, contentKey, versionKey), value);
 				}

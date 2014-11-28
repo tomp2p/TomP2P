@@ -87,6 +87,9 @@ public class Inbox {
 				case "TestMessageDecodeMapKey640Byte":
 					result = MessageEncodeDecode.encodeMessageMapKey640Byte();
 					break;
+				case "TestMessageDecodeSetPeerSocket":
+					result = MessageEncodeDecode.encodeMessageSetPeerSocket();
+					break;
 				
 				default:
 					System.out.println(String.format("Invalid argument: %s.", argument));

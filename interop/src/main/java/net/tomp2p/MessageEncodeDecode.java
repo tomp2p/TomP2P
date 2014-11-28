@@ -456,7 +456,6 @@ public class MessageEncodeDecode {
 		sampleAddresses.add(samplePsa1);
 		sampleAddresses.add(samplePsa2);
 		sampleAddresses.add(samplePsa3);
-		sampleAddresses.add(samplePsa3);
 		sampleAddresses.add(samplePsa4);
 		sampleAddresses.add(samplePsa5);
 		sampleAddresses.add(samplePsa6);

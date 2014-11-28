@@ -441,9 +441,8 @@ public class MessageEncodeDecode {
 		InetAddress sampleAddress4 = InetAddress.getByName("0:1:2:3:4:5:6:7");
 		InetAddress sampleAddress5 = InetAddress.getByName("7:6:5:4:3:2:1:0");
 		
-		
-		PeerSocketAddress samplePsa1 = new PeerSocketAddress(sampleAddress1, Short.MIN_VALUE, Short.MIN_VALUE);
-		PeerSocketAddress samplePsa2 = new PeerSocketAddress(sampleAddress2, 65536, 65536);
+		PeerSocketAddress samplePsa1 = new PeerSocketAddress(sampleAddress1, 0, 0);
+		PeerSocketAddress samplePsa2 = new PeerSocketAddress(sampleAddress2, 65530, 65530);
 		PeerSocketAddress samplePsa3 = new PeerSocketAddress(sampleAddress3, 1, 1);
 		PeerSocketAddress samplePsa4 = new PeerSocketAddress(sampleAddress4, 2, 2);
 		PeerSocketAddress samplePsa5 = new PeerSocketAddress(sampleAddress5, 30, 40);

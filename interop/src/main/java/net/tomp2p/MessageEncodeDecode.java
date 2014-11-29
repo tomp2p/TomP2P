@@ -487,6 +487,17 @@ public class MessageEncodeDecode {
 		// create same message object as in .NET
 		Message m1 = Utils2.createDummyMessage();
 		
+		// set empty contents because Java default would be null
+		// .NET, however, has default value EMPTY
+		m1.contentType(Content.EMPTY);
+		m1.contentType(Content.EMPTY);
+		m1.contentType(Content.EMPTY);
+		m1.contentType(Content.EMPTY);
+		m1.contentType(Content.EMPTY);
+		m1.contentType(Content.EMPTY);
+		m1.contentType(Content.EMPTY);
+		m1.contentType(Content.EMPTY);
+		
 		// compare .NET encoded and Java decoded objects
 		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
 		
@@ -524,6 +535,8 @@ public class MessageEncodeDecode {
 		Message message = Utils2.createDummyMessage();
 
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
+		buf.writeBytes(bytes);
+		
 		AtomicReference<Message> m2 = new AtomicReference<Message>();
 		decoder.decode(TestMessage.mockChannelHandlerContext(buf, m2), buf, message.recipient()
 				.createSocketTCP(), message.sender().createSocketTCP());

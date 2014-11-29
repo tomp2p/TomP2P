@@ -5,13 +5,12 @@ public class Inbox {
 	public static void main(String[] args) {
 
 		if (args.length < 1) {
-			System.out.println("Argument missing.");
 			System.err.println("Argument missing.");
 			System.exit(-1);
 		}
 
 		String argument = args[0];
-		System.out.print(String.format("Argument: %s ", argument));
+		System.out.println(String.format("Argument: %s ", argument));
 		byte[] result = null;
 		
 		try {
@@ -95,7 +94,6 @@ public class Inbox {
 					break;
 				
 				default:
-					System.out.println(String.format("Invalid argument: %s.", argument));
 					System.err.println(String.format("Invalid argument: %s.", argument));
 					System.exit(-1);
 					break;
@@ -104,12 +102,10 @@ public class Inbox {
 			InteropUtil.writeToFile(argument, result);
 
 		} catch (Exception ex) {
-			System.out.println(String.format("Exception occurred: %s\n%s.", ex.getCause(), ex));
-			System.err.println(String.format("Exception occurred: %s\n%s.", ex.getCause(), ex));
+			System.err.println(String.format("Exception occurred:\n%s.", ex));
 			System.exit(-1);
 		}
 
 		System.exit(0);
 	}
-
 }

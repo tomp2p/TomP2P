@@ -71,19 +71,9 @@ public class MessageEncodeDecode {
 
 	public static byte[] encodeMessageKey() throws Exception {
 
-		Message m = Utils2.createDummyMessage();
-		m.key(sample160_1);
-		m.key(sample160_2);
-		m.key(sample160_3);
-		m.key(sample160_4);
-		m.key(sample160_5);
-		m.key(sample160_1);
-		m.key(sample160_2);
-		m.key(sample160_3);
-
-		return encodeMessage(m);
+		return encodeMessage(createMessageKey());
 	}
-
+	
 	public static byte[] encodeMessageMapKey640Data() throws Exception {
 
 		// create sample data maps
@@ -483,10 +473,10 @@ public class MessageEncodeDecode {
 	}
 
 	public static byte[] decodeMessageEmpty(String argument) throws Exception {
-		
+
 		// create same message object as in .NET
 		Message m1 = Utils2.createDummyMessage();
-		
+
 		// set empty contents because Java default would be null
 		// .NET, however, has default value EMPTY
 		m1.contentType(Content.EMPTY);
@@ -497,13 +487,40 @@ public class MessageEncodeDecode {
 		m1.contentType(Content.EMPTY);
 		m1.contentType(Content.EMPTY);
 		m1.contentType(Content.EMPTY);
-		
+
 		// compare .NET encoded and Java decoded objects
 		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
-		
+
 		boolean t1 = checkSameContentTypesMessage(m1, m2);
-				
+
 		return new byte[] { t1 ? (byte) 1 : (byte) 0 };
+	}
+
+	public static byte[] decodeMessageKey(String argument) throws Exception {
+
+		// create same message object as in .NET
+		Message m1 = createMessageKey();
+        
+		// compare .NET encoded and Java decoded objects
+		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
+
+		boolean t1 = checkSameContentTypesMessage(m1, m2);
+		boolean t2 = checkIsSameList(m1.keyList(), m2.keyList());
+
+		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
+	}
+
+	private static Message createMessageKey() throws Exception {
+		Message m = Utils2.createDummyMessage();
+		m.key(sample160_1);
+		m.key(sample160_2);
+		m.key(sample160_3);
+		m.key(sample160_4);
+		m.key(sample160_5);
+		m.key(sample160_1);
+		m.key(sample160_2);
+		m.key(sample160_3);
+		return m;
 	}
 
 	/**
@@ -536,7 +553,7 @@ public class MessageEncodeDecode {
 
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
 		buf.writeBytes(bytes);
-		
+
 		AtomicReference<Message> m2 = new AtomicReference<Message>();
 		decoder.decode(TestMessage.mockChannelHandlerContext(buf, m2), buf, message.recipient()
 				.createSocketTCP(), message.sender().createSocketTCP());
@@ -565,44 +582,40 @@ public class MessageEncodeDecode {
 		buffer.get(bytes);
 		return bytes;
 	}
-	
+
 	/**
 	 * Checks if two message's content types are the same.
+	 * 
 	 * @param m1 The first message.
 	 * @param m2 The second message.
 	 * @return
 	 */
-	private static boolean checkSameContentTypesMessage (Message m1, Message m2) {
-        for (int i = 0; i < m1.contentTypes().length; i++)
-        {
-            Content type1 = m1.contentTypes()[i];
-            Content type2 = m2.contentTypes()[i];
+	private static boolean checkSameContentTypesMessage(Message m1, Message m2) {
+		for (int i = 0; i < m1.contentTypes().length; i++) {
+			Content type1 = m1.contentTypes()[i];
+			Content type2 = m2.contentTypes()[i];
 
-            if (type1 != type2)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-	
+			if (type1 != type2) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	private static <T> boolean checkIsSameList(List<T> list1, List<T> list2) {
-        if (list1 == null ^ list2 == null) // XOR
-        {
-            return false;
-        }
-        if (list1 != null && (list1.size() != list2.size()))
-        {
-            return false;
-        }
+		if (list1 == null ^ list2 == null) // XOR
+		{
+			return false;
+		}
+		if (list1 != null && (list1.size() != list2.size())) {
+			return false;
+		}
 
-        for (int i = 0; i < list1.size(); i++)
-        {
-            if (!list1.get(i).equals(list2.get(i)))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
+		for (int i = 0; i < list1.size(); i++) {
+			if (!list1.get(i).equals(list2.get(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
 }

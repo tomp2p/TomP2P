@@ -73,48 +73,10 @@ public class MessageEncodeDecode {
 
 		return encodeMessage(createMessageKey());
 	}
-	
+
 	public static byte[] encodeMessageMapKey640Data() throws Exception {
 
-		// create sample data maps
-
-		Map<Number640, Data> sampleMap1 = new HashMap<Number640, Data>();
-		sampleMap1.put(sample640_1, sampleData1);
-		sampleMap1.put(sample640_2, sampleData1);
-		sampleMap1.put(sample640_3, sampleData1);
-
-		Map<Number640, Data> sampleMap2 = new HashMap<Number640, Data>();
-		sampleMap2.put(sample640_1, sampleData2);
-		sampleMap2.put(sample640_2, sampleData2);
-		sampleMap2.put(sample640_3, sampleData2);
-
-		Map<Number640, Data> sampleMap3 = new HashMap<Number640, Data>();
-		sampleMap3.put(sample640_1, sampleData3);
-		sampleMap3.put(sample640_2, sampleData3);
-		sampleMap3.put(sample640_3, sampleData3);
-
-		Map<Number640, Data> sampleMap4 = new HashMap<Number640, Data>();
-		sampleMap4.put(sample640_1, sampleData1);
-		sampleMap4.put(sample640_2, sampleData2);
-		sampleMap4.put(sample640_3, sampleData3);
-
-		Map<Number640, Data> sampleMap5 = new HashMap<Number640, Data>();
-		sampleMap5.put(sample640_3, sampleData1);
-		sampleMap5.put(sample640_2, sampleData2);
-		sampleMap5.put(sample640_1, sampleData3);
-
-		// prepare message
-		Message m = Utils2.createDummyMessage();
-		m.setDataMap(new DataMap(sampleMap1));
-		m.setDataMap(new DataMap(sampleMap2));
-		m.setDataMap(new DataMap(sampleMap3));
-		m.setDataMap(new DataMap(sampleMap4));
-		m.setDataMap(new DataMap(sampleMap5));
-		m.setDataMap(new DataMap(sampleMap1));
-		m.setDataMap(new DataMap(sampleMap2));
-		m.setDataMap(new DataMap(sampleMap3));
-
-		return encodeMessage(m);
+		return encodeMessage(createMessageMapKey640Data());
 	}
 
 	public static byte[] encodeMessageMapKey640Keys() throws Exception {
@@ -500,12 +462,26 @@ public class MessageEncodeDecode {
 
 		// create same message object as in .NET
 		Message m1 = createMessageKey();
-        
+
 		// compare .NET encoded and Java decoded objects
 		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
 
 		boolean t1 = checkSameContentTypesMessage(m1, m2);
 		boolean t2 = checkIsSameList(m1.keyList(), m2.keyList());
+
+		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
+	}
+
+	public static byte[] decodeMessageMapKey640Data(String argument) throws Exception {
+
+		// create same message object as in .NET
+		Message m1 = createMessageMapKey640Data();
+
+		// compare .NET encoded and Java decoded objects
+		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
+
+		boolean t1 = checkSameContentTypesMessage(m1, m2);
+		boolean t2 = checkIsSameList(m1.dataMapList(), m2.dataMapList());
 
 		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
 	}
@@ -520,6 +496,45 @@ public class MessageEncodeDecode {
 		m.key(sample160_1);
 		m.key(sample160_2);
 		m.key(sample160_3);
+		return m;
+	}
+
+	private static Message createMessageMapKey640Data() throws Exception {
+		// create sample data maps
+		Map<Number640, Data> sampleMap1 = new HashMap<Number640, Data>();
+		sampleMap1.put(sample640_1, sampleData1);
+		sampleMap1.put(sample640_2, sampleData1);
+		sampleMap1.put(sample640_3, sampleData1);
+
+		Map<Number640, Data> sampleMap2 = new HashMap<Number640, Data>();
+		sampleMap2.put(sample640_1, sampleData2);
+		sampleMap2.put(sample640_2, sampleData2);
+		sampleMap2.put(sample640_3, sampleData2);
+
+		Map<Number640, Data> sampleMap3 = new HashMap<Number640, Data>();
+		sampleMap3.put(sample640_1, sampleData3);
+		sampleMap3.put(sample640_2, sampleData3);
+		sampleMap3.put(sample640_3, sampleData3);
+
+		Map<Number640, Data> sampleMap4 = new HashMap<Number640, Data>();
+		sampleMap4.put(sample640_1, sampleData1);
+		sampleMap4.put(sample640_2, sampleData2);
+		sampleMap4.put(sample640_3, sampleData3);
+
+		Map<Number640, Data> sampleMap5 = new HashMap<Number640, Data>();
+		sampleMap5.put(sample640_3, sampleData1);
+		sampleMap5.put(sample640_2, sampleData2);
+		sampleMap5.put(sample640_1, sampleData3);
+
+		Message m = Utils2.createDummyMessage();
+		m.setDataMap(new DataMap(sampleMap1));
+		m.setDataMap(new DataMap(sampleMap2));
+		m.setDataMap(new DataMap(sampleMap3));
+		m.setDataMap(new DataMap(sampleMap4));
+		m.setDataMap(new DataMap(sampleMap5));
+		m.setDataMap(new DataMap(sampleMap1));
+		m.setDataMap(new DataMap(sampleMap2));
+		m.setDataMap(new DataMap(sampleMap3));
 		return m;
 	}
 

@@ -87,7 +87,7 @@ public class DotNetEncodeDecode {
 
 	public static byte[] testDecodeInt(String argument) throws IOException {
 
-		byte[] fileContent = InteropUtil.readFromFile(argument, 13 * 4);
+		byte[] fileContent = InteropUtil.readFromFile(argument);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 
 		int val1 = buf.readInt();
@@ -124,7 +124,7 @@ public class DotNetEncodeDecode {
 
 	public static byte[] testDecodeLong(String argument) throws Exception {
 
-		byte[] fileContent = InteropUtil.readFromFile(argument, 13 * 8);
+		byte[] fileContent = InteropUtil.readFromFile(argument);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 
 		long val1 = buf.readLong();
@@ -161,7 +161,7 @@ public class DotNetEncodeDecode {
 
 	public static byte[] testDecodeByte(String argument) throws Exception {
 
-		byte[] fileContent = InteropUtil.readFromFile(argument, 256);
+		byte[] fileContent = InteropUtil.readFromFile(argument);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 
 		boolean result = true;
@@ -176,7 +176,7 @@ public class DotNetEncodeDecode {
 
 	public static byte[] testDecodeBytes(String argument) throws Exception {
 
-		byte[] fileContent = InteropUtil.readFromFile(argument, 256);
+		byte[] fileContent = InteropUtil.readFromFile(argument);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 
 		byte[] byteArray = new byte[256];

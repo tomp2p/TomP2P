@@ -90,6 +90,9 @@ public class Inbox {
 				case "TestMessageDecodeSetPeerSocket":
 					result = MessageEncodeDecode.encodeMessageSetPeerSocket();
 					break;
+				case "TestMessageEncodeEmpty":
+					result = MessageEncodeDecode.decodeMessageEmpty(argument);
+					break;
 				
 				default:
 					System.out.println(String.format("Invalid argument: %s.", argument));

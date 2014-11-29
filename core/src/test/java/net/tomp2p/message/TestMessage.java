@@ -535,7 +535,7 @@ public class TestMessage {
 	 * @return The mocked ChannelHandlerContext
 	 */
 	@SuppressWarnings("unchecked")
-	private static ChannelHandlerContext mockChannelHandlerContext(final AlternativeCompositeByteBuf buf,
+	public static ChannelHandlerContext mockChannelHandlerContext(final AlternativeCompositeByteBuf buf,
 			final AtomicReference<Message> m2) {
 		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
 		ByteBufAllocator alloc = mock(ByteBufAllocator.class);

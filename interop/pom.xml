@@ -29,7 +29,7 @@
 			<artifactId>tomp2p-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport</artifactId>
@@ -38,7 +38,13 @@
 			<groupId>io.netty</groupId>
 			<artifactId>netty-buffer</artifactId>
 		</dependency>
-		
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>1.3.2</version>
+		</dependency>
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -59,16 +65,16 @@
 					<target>1.7</target>
 				</configuration>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<configuration>
-				  <archive>
-					<manifest>
-						<mainClass>net.tomp2p.Inbox</mainClass>
-					</manifest>
-				  </archive>
+					<archive>
+						<manifest>
+							<mainClass>net.tomp2p.Inbox</mainClass>
+						</manifest>
+					</archive>
 				</configuration>
 			</plugin>
 		</plugins>

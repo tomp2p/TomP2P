@@ -138,7 +138,7 @@ public class ChannelCreator {
 				return null;
 			}
 			if (!semaphoreUPD.tryAcquire()) {
-				LOG.error("Tried to acquire more resources (UDP) than announced!");
+				LOG.error("Tried to acquire more resources (UDP) than announced! Announced {}", maxPermitsUDP);
 				throw new RuntimeException("Tried to acquire more resources (UDP) than announced!");
 			}
 			final Bootstrap b = new Bootstrap();

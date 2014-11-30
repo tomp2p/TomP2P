@@ -77,7 +77,7 @@ public class TrackerRPC extends DispatchHandler {
 		}
 		final FutureResponse futureResponse = new FutureResponse(message);
 
-		addTrackerDataListener(futureResponse, new Number320(builder.locationKey(), builder.domainKey()));
+		addTrackerDataListener(futureResponse, new Number320(builder.locationKey(), builder.domainKey()), message);
 		RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(),
 		        connectionBean(), builder);
 
@@ -90,7 +90,8 @@ public class TrackerRPC extends DispatchHandler {
 		trackerData = UtilsTracker.limit(trackerData, TrackerRPC.MAX_MSG_SIZE_UDP);
 		message.trackerData(trackerData);
 
-		if (builder.isForceTCP()) {
+		LOG.debug("tracker PUT {}", message);
+		if (builder.isForceTCP() || builder.attachement()!=null) {
 			return requestHandler.sendTCP(channelCreator);
 		} else {
 			return requestHandler.sendUDP(channelCreator);
@@ -102,6 +103,7 @@ public class TrackerRPC extends DispatchHandler {
 
 		Utils.nullCheck(remotePeer, builder.locationKey(), builder.domainKey());
 		final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_GET.getNr(), Type.REQUEST_1);
+		
 		if (builder.isSign()) {
 			message.publicKeyAndSign(builder.keyPair());
 		}
@@ -113,11 +115,12 @@ public class TrackerRPC extends DispatchHandler {
 		}
 
 		FutureResponse futureResponse = new FutureResponse(message);
-		addTrackerDataListener(futureResponse, new Number320(builder.locationKey(), builder.domainKey()));
+		addTrackerDataListener(futureResponse, new Number320(builder.locationKey(), builder.domainKey()), message);
 
 		RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(),
 		        connectionBean(), builder);
 
+		LOG.debug("tracker GET {}", message);
 		if ((builder.isExpectAttachement() || builder.isForceTCP())) {
 			return requestHandler.sendTCP(channelCreator);
 		} else {
@@ -125,7 +128,7 @@ public class TrackerRPC extends DispatchHandler {
 		}
 	}
 
-	private void addTrackerDataListener(FutureResponse futureResponse, final Number320 key) {
+	private void addTrackerDataListener(FutureResponse futureResponse, final Number320 key, final Message message) {
 		futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 			@Override
 			public void operationComplete(FutureResponse future) throws Exception {
@@ -147,7 +150,7 @@ public class TrackerRPC extends DispatchHandler {
 						trackerStorage.put(key, trackerData.getKey(), null, trackerData.getValue());
 					}
 				} else {
-					LOG.warn("add tracker failed: {}", future.failedReason());
+					LOG.warn("add tracker failed: msg = {}, {}", message, future.failedReason());
 				}
 			}
 		});
@@ -157,7 +160,7 @@ public class TrackerRPC extends DispatchHandler {
 	@Override
 	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
 	        throws Exception {
-		LOG.debug("handleResponse on {}", message.recipient());
+		LOG.debug("handleResponse on {}", message);
 		if (!((message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_3) && message.key(0) != null && message
 		        .key(1) != null)) {
 			throw new IllegalArgumentException("Message content is wrong");

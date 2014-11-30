@@ -18,8 +18,12 @@
   <!--  <logger name="net" level="TRACE"/> -->
   
   <!-- <logger name="net.tomp2p.tracker.TrackerRPC" level="TRACE"/> -->
+  <!-- <logger name="net.tomp2p.tracker.TrackerStorage" level="TRACE"/> -->
+  <!-- <logger name="net.tomp2p.message.Encoder" level="TRACE"/> -->
+  <!-- <logger name="net.tomp2p.message.Decoder" level="TRACE"/> -->
   <!-- <logger name="net.tomp2p.p2p.MaintenanceTask" level="TRACE"/> -->
-  <logger name="net.tomp2p.connection.Reservation" level="TRACE"/>
+  <!-- <logger name="net.tomp2p.connection.Reservation" level="TRACE"/> -->
+  
   
   <!-- Disable Netty Warning that I'm aware of -->
   <logger name="io.netty.util.concurrent.SingleThreadEventExecutor" level="OFF"/>

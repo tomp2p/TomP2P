@@ -63,11 +63,17 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
             return FUTURE_TRACKER_SHUTDOWN;
         }
 
+        if(!expectAttachement) {
+            forceUDP(true);
+        }
+        
         preBuild("get-tracker-builder");
 
         if (knownPeers == null) {
             knownPeers = new SimpleBloomFilter<Number160>(1024, 1024);
         }
+        
+        
         
         return peer.distributedTracker().get(this);
     }

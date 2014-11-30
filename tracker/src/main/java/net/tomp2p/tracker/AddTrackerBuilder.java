@@ -121,11 +121,16 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         if (peer.peer().isShutdown()) {
             return FUTURE_TRACKER_SHUTDOWN;
         }
+        if(attachement == null) {
+            forceUDP(true);
+        }
         preBuild("add-tracker-build");
 
         if (bloomFilter == null) {
             bloomFilter = new SimpleBloomFilter<Number160>(1024, 1024);
         }
+        
+        
         // add myself to my local tracker, since we use a mesh we are part of
         // the tracker mesh as well.
         peer.trackerStorage().put(new Number320(locationKey, domainKey), peer.peerAddress(), keyPair() == null? null: keyPair().getPublic(),

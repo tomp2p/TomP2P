@@ -128,8 +128,11 @@ public class Inbox {
 				case "TestMessageEncodeBloomFilter":
 					result = MessageEncodeDecode.decodeMessageBloomFilter(argument);
 					break;
-				case "TestMessageMapKey640Byte":
+				case "TestMessageEncodeMapKey640Byte":
 					result = MessageEncodeDecode.decodeMessageMapKey640Byte(argument);
+					break;
+				case "TestMessageEncodeSetPeerSocket":
+					result = MessageEncodeDecode.decodeMessageSetPeerSocket(argument);
 					break;
 					
 				default:

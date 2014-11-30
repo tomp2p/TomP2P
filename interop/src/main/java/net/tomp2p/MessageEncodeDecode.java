@@ -150,17 +150,6 @@ public class MessageEncodeDecode {
 		// create same message object as in .NET
 		Message m1 = Utils2.createDummyMessage();
 
-		// set empty contents because Java default would be null
-		// .NET, however, has default value EMPTY
-		m1.contentType(Content.EMPTY);
-		m1.contentType(Content.EMPTY);
-		m1.contentType(Content.EMPTY);
-		m1.contentType(Content.EMPTY);
-		m1.contentType(Content.EMPTY);
-		m1.contentType(Content.EMPTY);
-		m1.contentType(Content.EMPTY);
-		m1.contentType(Content.EMPTY);
-
 		// compare .NET encoded and Java decoded objects
 		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
 
@@ -786,6 +775,13 @@ public class MessageEncodeDecode {
 			Content type2 = m2.contentTypes()[i];
 
 			if (type1 != type2) {
+				
+				// the two default enums should be equal, too
+				// Java's default: null
+				// .NET's default: EMPTY
+				if ((type1 == null && type2 == Content.EMPTY) || (type2 == null && type1 == Content.EMPTY)) {
+					return true;
+				}
 				return false;
 			}
 		}

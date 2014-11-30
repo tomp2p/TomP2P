@@ -98,6 +98,9 @@ public class Inbox {
 				case "TestMessageEncodeMapKey640Data":
 					result = MessageEncodeDecode.decodeMessageMapKey640Data(argument);
 					break;
+				case "TestMessageEncodeMapKey640Keys":
+					result = MessageEncodeDecode.decodeMessageMapKey640Keys(argument);
+					break;
 				
 				default:
 					System.err.println(String.format("Invalid argument: %s.", argument));

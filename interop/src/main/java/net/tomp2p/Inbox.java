@@ -125,6 +125,9 @@ public class Inbox {
 				case "TestMessageEncodeSetTrackerData":
 					result = MessageEncodeDecode.decodeMessageSetTrackerData(argument);
 					break;
+				case "TestMessageEncodeBloomFilter":
+					result = MessageEncodeDecode.decodeMessageBloomFilter(argument);
+					break;
 					
 				default:
 					System.err.println(String.format("Invalid argument: %s.", argument));

@@ -304,6 +304,19 @@ public class MessageEncodeDecode {
 		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
 	}
 
+	public static byte[] decodeMessageBloomFilter(String argument) throws Exception {
+		// create same message object as in .NET
+		Message m1 = createMessageBloomFilter();
+
+		// compare .NET encoded and Java decoded objects
+		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
+
+		boolean t1 = checkSameContentTypesMessage(m1, m2);
+		boolean t2 = checkIsSameList(m1.bloomFilterList(), m2.bloomFilterList());
+
+		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
+	}
+
 	private static Message createMessageKey() throws Exception {
 		Message m = Utils2.createDummyMessage();
 		m.key(sample160_1);

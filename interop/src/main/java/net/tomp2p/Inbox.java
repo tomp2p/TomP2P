@@ -116,7 +116,13 @@ public class Inbox {
 				case "TestMessageEncodeInteger":
 					result = MessageEncodeDecode.decodeMessageInteger(argument);
 					break;
-				
+				case "TestMessageEncodePublicKeySignature":
+					result = MessageEncodeDecode.decodeMessagePublicKeySignature(argument);
+					break;
+				case "TestMessageEncodePublicKey":
+					result = MessageEncodeDecode.decodeMessagePublicKey(argument);
+					break;
+					
 				default:
 					System.err.println(String.format("Invalid argument: %s.", argument));
 					System.exit(-1);

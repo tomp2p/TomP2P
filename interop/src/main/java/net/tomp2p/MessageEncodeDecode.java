@@ -277,6 +277,20 @@ public class MessageEncodeDecode {
 		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
 	}
 
+	public static byte[] decodeMessagePublicKeySignature(String argument) throws Exception {
+		// TODO implement
+		Message m = Utils2.createDummyMessage();
+
+		return encodeMessage(m);
+	}
+
+	public static byte[] decodeMessagePublicKey(String argument) throws Exception {
+		// TODO implement
+		Message m = Utils2.createDummyMessage();
+
+		return encodeMessage(m);
+	}
+	
 	private static Message createMessageKey() throws Exception {
 		Message m = Utils2.createDummyMessage();
 		m.key(sample160_1);

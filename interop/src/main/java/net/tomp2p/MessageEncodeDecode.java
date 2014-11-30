@@ -317,6 +317,19 @@ public class MessageEncodeDecode {
 		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
 	}
 
+	public static byte[] decodeMessageMapKey640Byte(String argument) throws Exception {
+		// create same message object as in .NET
+		Message m1 = createMessageMapKey640Byte();
+
+		// compare .NET encoded and Java decoded objects
+		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
+
+		boolean t1 = checkSameContentTypesMessage(m1, m2);
+		boolean t2 = checkIsSameList(m1.keyMapByteList(), m2.keyMapByteList());
+
+		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
+	}
+
 	private static Message createMessageKey() throws Exception {
 		Message m = Utils2.createDummyMessage();
 		m.key(sample160_1);

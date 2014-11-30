@@ -102,7 +102,7 @@ public class MessageEncodeDecode {
 
 	public static byte[] encodeMessageInt() throws Exception {
 
-		return encodeMessage(createMessageInt());
+		return encodeMessage(createMessageInteger());
 	}
 
 	public static byte[] encodeMessageLong() throws Exception {
@@ -260,6 +260,19 @@ public class MessageEncodeDecode {
 
 		boolean t1 = checkSameContentTypesMessage(m1, m2);
 		boolean t2 = checkIsSameList(m1.longList(), m2.longList());
+
+		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
+	}
+
+	public static byte[] decodeMessageInteger(String argument) throws Exception {
+		// create same message object as in .NET
+		Message m1 = createMessageInteger();
+
+		// compare .NET encoded and Java decoded objects
+		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
+
+		boolean t1 = checkSameContentTypesMessage(m1, m2);
+		boolean t2 = checkIsSameList(m1.intList(), m2.intList());
 
 		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
 	}
@@ -453,7 +466,7 @@ public class MessageEncodeDecode {
 		return m;
 	}
 
-	private static Message createMessageInt() throws Exception {
+	private static Message createMessageInteger() throws Exception {
 		Message m = Utils2.createDummyMessage();
 		m.intValue(Integer.MIN_VALUE);
 		m.intValue(-256);

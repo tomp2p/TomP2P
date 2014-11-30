@@ -113,6 +113,9 @@ public class Inbox {
 				case "TestMessageEncodeLong":
 					result = MessageEncodeDecode.decodeMessageLong(argument);
 					break;
+				case "TestMessageEncodeInteger":
+					result = MessageEncodeDecode.decodeMessageInteger(argument);
+					break;
 				
 				default:
 					System.err.println(String.format("Invalid argument: %s.", argument));

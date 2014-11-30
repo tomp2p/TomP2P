@@ -290,7 +290,20 @@ public class MessageEncodeDecode {
 
 		return encodeMessage(m);
 	}
-	
+
+	public static byte[] decodeMessageSetTrackerData(String argument) throws Exception {
+		// create same message object as in .NET
+		Message m1 = createMessageSetTrackerData();
+
+		// compare .NET encoded and Java decoded objects
+		Message m2 = decodeMessage(InteropUtil.readFromFile(argument));
+
+		boolean t1 = checkSameContentTypesMessage(m1, m2);
+		boolean t2 = checkIsSameList(m1.trackerDataList(), m2.trackerDataList());
+
+		return new byte[] { t1 && t2 ? (byte) 1 : (byte) 0 };
+	}
+
 	private static Message createMessageKey() throws Exception {
 		Message m = Utils2.createDummyMessage();
 		m.key(sample160_1);

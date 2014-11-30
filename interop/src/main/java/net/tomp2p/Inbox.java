@@ -122,6 +122,9 @@ public class Inbox {
 				case "TestMessageEncodePublicKey":
 					result = MessageEncodeDecode.decodeMessagePublicKey(argument);
 					break;
+				case "TestMessageEncodeSetTrackerData":
+					result = MessageEncodeDecode.decodeMessageSetTrackerData(argument);
+					break;
 					
 				default:
 					System.err.println(String.format("Invalid argument: %s.", argument));

@@ -675,6 +675,7 @@ public class Sender {
 										PeerAddress recipient = sendMessage.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
 										sendMessage.recipient(recipient);
 										sendMessage.sender(sender);
+										sendMessage.restoreContentReferences();
 										afterConnect(futureResponse, sendMessage, channelFuture, false);
 									} else {
 										handleFail("could not create a channel!");

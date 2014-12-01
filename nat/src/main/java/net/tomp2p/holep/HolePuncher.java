@@ -65,7 +65,7 @@ public class HolePuncher implements IPunchHole {
 			}
 		};
 		
-		Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = sender.configureHandlers(holePunchHandler, futureResponse, IDLE_UDP_SECONDS, false);
+		Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = sender.configureHandlers(peer.connectionBean().dispatcher(), futureResponse, IDLE_UDP_SECONDS, false);
 		
 		ChannelFuture channelFuture = channelCreator.createUDP(false, handlers, futureResponse, localAddress);
 		

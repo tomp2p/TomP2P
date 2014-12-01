@@ -245,7 +245,7 @@ public class Sender {
 		rconMessage.version(message.version());
 
 		// store the message id in the payload to get the cached message later
-		rconMessage.intValue(message.messageId());
+//		rconMessage.intValue(message.messageId());
 
 		// the message must have set the keepAlive Flag true. If not, the relay
 		// peer will close the PeerConnection to the unreachable peer.

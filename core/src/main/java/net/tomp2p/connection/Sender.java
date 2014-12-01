@@ -16,6 +16,7 @@
 
 package net.tomp2p.connection;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -54,8 +55,10 @@ import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.message.MessageContentIndex;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
@@ -670,13 +673,20 @@ public class Sender {
 										
 										ChannelCreator cc = future.channelCreator();
 										ChannelFuture channelFuture = cc.createUDP(broadcast, handlers, futureResponse, predefinedSocket);
-										Message sendMessage = message;
+										//Message sendMessage = message;
+										Message sendMessage = new Message();
 										PeerAddress sender = sendMessage.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
 										PeerAddress recipient = sendMessage.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
 										sendMessage.recipient(recipient);
 										sendMessage.sender(sender);
-										sendMessage.restoreContentReferences();
-										afterConnect(futureResponse, sendMessage, channelFuture, false);
+										sendMessage.version(message.version());
+										sendMessage.command(message.command());
+										sendMessage.type(message.type());
+										sendMessage.udp(message.isUdp());
+										for (Buffer buf : message.bufferList()) {
+											sendMessage.buffer(new Buffer(buf.buffer().duplicate()));
+										}
+										afterConnect(futureResponse, message, channelFuture, false);
 									} else {
 										handleFail("could not create a channel!");
 									}

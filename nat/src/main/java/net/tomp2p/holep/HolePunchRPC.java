@@ -94,11 +94,9 @@ public class HolePunchRPC extends DispatchHandler {
 				public void operationComplete(FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
 						Message dummyMessage = thisInstance.createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_3);
-						HolePuncher holePuncher = new HolePuncher(dummyMessage, future.channelCreator(), peer, future.channelCreator().randomPort(), currentPort);
+						HolePuncher holePuncher = new HolePuncher(dummyMessage, future.channelCreator(), peer, future.channelCreator().randomPort(), currentPort, recipient);
 						holePuncher.createAndSendUDP();
-//						new Thread(new HolePunchScheduler(30, holePuncher)).start();
 						
-						peer.peerBean().peerMap().peerFound(recipient, recipient, null);
 						portMappings.add(new Pair<Integer, Integer>(holePuncher.remotePort(), holePuncher.localPort()));
 					} else {
 						handleFail(message, responder, "could not create channel!");

@@ -204,7 +204,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 						} else {
 							final FutureResponse futureResponse = request.sendTCP(future.channelCreator());
 						}
-						request.sendTCP(future.channelCreator());
+//						request.sendTCP(future.channelCreator());
 					} else {
 						request.futureResponse().failed("could not create channel", future);
 					}

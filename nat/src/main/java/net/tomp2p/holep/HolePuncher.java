@@ -18,29 +18,30 @@ import net.tomp2p.connection.Sender;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
 
 // TODO jwa implement Hole Puncher
 public class HolePuncher implements IPunchHole {
 	
+	private static final int IDLE_UDP_SECONDS = 30;
+	private static final int DEFAULT_TRIALS = 10;
 	private final Message message;
 	private final ChannelCreator channelCreator;
 	private final Peer peer;
+	private final PeerAddress recipient;
 	private int localPort = 0;
 	private int remotePort = 0;
 
-	public HolePuncher(final Message message, final ChannelCreator channelCreator, Peer peer, int localPort, int remotePort) {
+	public HolePuncher(final Message message, final ChannelCreator channelCreator, Peer peer, int localPort, int remotePort, PeerAddress recipient) {
 		this.message = message;
 		this.channelCreator = channelCreator;
 		this.peer = peer;
 		this.localPort = localPort;
 		this.remotePort = remotePort;
+		this.recipient = recipient;
 	}
 	
-	public static Ports punchHoleUDP() {
-		
-		return null;
-	}
 	
 	public ChannelFuture createAndSendUDP() {
 
@@ -50,9 +51,6 @@ public class HolePuncher implements IPunchHole {
 		// we must predefine a socket in order to make sure that the outgoing port is known to us
 		final InetAddress localInetAddress = peer.peerBean().serverPeerAddress().createSocketUDP().getAddress();
 		InetSocketAddress localAddress = new InetSocketAddress(localInetAddress, localPort);
-		
-//		final InetAddress remoteInetAddress = message.recipient().inetAddress();
-//		InetSocketAddress remoteAddress = new InetSocketAddress(remoteInetAddress, incomingPort);
 		
 		// we must create a special handler to handle the connection
 		SimpleChannelInboundHandler<Message> holePunchHandler = new SimpleChannelInboundHandler<Message>() {
@@ -67,10 +65,9 @@ public class HolePuncher implements IPunchHole {
 			}
 		};
 		
-		Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = sender.configureHandlers(holePunchHandler, futureResponse, 30, false);
+		Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = sender.configureHandlers(holePunchHandler, futureResponse, IDLE_UDP_SECONDS, false);
 		
 		ChannelFuture channelFuture = channelCreator.createUDP(false, handlers, futureResponse, localAddress);
-//		channelFuture = channelFuture.channel().connect(remoteAddress, localAddress);
 		
 		System.err.println("##### HolePuncher #####");
 		System.err.println("localAddress = " + localAddress.toString());
@@ -78,6 +75,11 @@ public class HolePuncher implements IPunchHole {
 		System.err.println("##### HolePuncher #####");
 		
 		sender.afterConnect(futureResponse, message, channelFuture, false);
+		
+//		Thread holePuncher = new Thread(new HolePunchScheduler(DEFAULT_TRIALS, this));
+//		holePuncher.run();
+		
+		peer.peerBean().peerMap().peerFound(recipient, recipient, null);
 		
 		return channelFuture;
 	}

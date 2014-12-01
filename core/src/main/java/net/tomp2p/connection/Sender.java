@@ -675,8 +675,8 @@ public class Sender {
 										ChannelFuture channelFuture = cc.createUDP(broadcast, handlers, futureResponse, predefinedSocket);
 										//Message sendMessage = message;
 										Message sendMessage = new Message();
-										PeerAddress sender = sendMessage.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
-										PeerAddress recipient = sendMessage.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
+										PeerAddress sender = message.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
+										PeerAddress recipient = message.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
 										sendMessage.recipient(recipient);
 										sendMessage.sender(sender);
 										sendMessage.version(message.version());

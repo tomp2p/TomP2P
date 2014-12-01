@@ -686,7 +686,7 @@ public class Sender {
 										for (Buffer buf : message.bufferList()) {
 											sendMessage.buffer(new Buffer(buf.buffer().duplicate()));
 										}
-										afterConnect(futureResponse, message, channelFuture, false);
+										afterConnect(futureResponse, sendMessage, channelFuture, false);
 									} else {
 										handleFail("could not create a channel!");
 									}

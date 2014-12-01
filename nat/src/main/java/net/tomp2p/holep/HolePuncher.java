@@ -25,7 +25,6 @@ import net.tomp2p.utils.Pair;
 public class HolePuncher implements IPunchHole {
 	
 	private static final int IDLE_UDP_SECONDS = 30;
-	private static final int DEFAULT_TRIALS = 10;
 	private final Message message;
 	private final ChannelCreator channelCreator;
 	private final Peer peer;
@@ -75,9 +74,6 @@ public class HolePuncher implements IPunchHole {
 		System.err.println("##### HolePuncher #####");
 		
 		sender.afterConnect(futureResponse, message, channelFuture, false);
-		
-//		Thread holePuncher = new Thread(new HolePunchScheduler(DEFAULT_TRIALS, this));
-//		holePuncher.run();
 		
 		peer.peerBean().peerMap().peerFound(recipient, recipient, null);
 		

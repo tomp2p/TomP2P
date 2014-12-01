@@ -284,7 +284,7 @@ public class Sender {
 
 		// we need to make a copy of the original Message
 		Message socketInfoMessage = new Message();
-		socketInfoMessage.messageId(message.messageId());
+		//socketInfoMessage.messageId(message.messageId());
 		socketInfoMessage.sender(message.sender());
 		socketInfoMessage.version(message.version());
 		socketInfoMessage.udp(true);

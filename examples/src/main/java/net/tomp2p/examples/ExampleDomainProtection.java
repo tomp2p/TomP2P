@@ -8,8 +8,8 @@ import java.util.Random;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.StorageLayer.ProtectionEnable;
 import net.tomp2p.dht.StorageLayer.ProtectionMode;
 import net.tomp2p.p2p.PeerBuilder;

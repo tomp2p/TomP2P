@@ -51,5 +51,5 @@ public interface PeerStatusListener {
      * @param peerConnection 
      * @return False if nothing happened, true if there was a change
      */
-    boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, PeerConnection peerConnection);
+    boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, PeerConnection peerConnection, RTT roundTripTime);
 }

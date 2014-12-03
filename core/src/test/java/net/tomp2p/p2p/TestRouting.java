@@ -20,6 +20,7 @@ import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -36,26 +37,26 @@ public class TestRouting {
     @Test
     public void testMerge() throws UnknownHostException {
         // setup
-        SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createComparator(new Number160(88)));
-        SortedSet<PeerAddress> neighbors = new TreeSet<PeerAddress>(
-                PeerMap.createComparator(new Number160(88)));
-        SortedSet<PeerAddress> already = new TreeSet<PeerAddress>(PeerMap.createComparator(new Number160(88)));
-        queue.add(Utils2.createAddress(12));
-        queue.add(Utils2.createAddress(14));
-        queue.add(Utils2.createAddress(16));
-        neighbors.add(Utils2.createAddress(88));
-        neighbors.add(Utils2.createAddress(12));
-        neighbors.add(Utils2.createAddress(16));
+        UpdatableTreeSet<PeerStatistic> queue = new UpdatableTreeSet<PeerStatistic>(PeerMap.createXORStatisticComparator(new Number160(88)));
+        SortedSet<PeerStatistic> neighbors = new TreeSet<PeerStatistic>(
+                PeerMap.createXORStatisticComparator(new Number160(88)));
+        SortedSet<PeerAddress> already = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(new Number160(88)));
+        queue.add(Utils2.createStatistic(12));
+        queue.add(Utils2.createStatistic(14));
+        queue.add(Utils2.createStatistic(16));
+        neighbors.add(Utils2.createStatistic(88));
+        neighbors.add(Utils2.createStatistic(12));
+        neighbors.add(Utils2.createStatistic(16));
         // do testing and verification
         already.add(Utils2.createAddress(16));
-        boolean testb = RoutingMechanism.merge(queue, neighbors, already);
+        boolean testb = RoutingMechanism.merge(queue,neighbors,already);
         Assert.assertEquals(true, testb);
         // next one
-        neighbors.add(Utils2.createAddress(89));
+        neighbors.add(Utils2.createStatistic(89));
         testb = RoutingMechanism.merge(queue, neighbors, already);
         Assert.assertEquals(false, testb);
         // next one
-        neighbors.add(Utils2.createAddress(88));
+        neighbors.add(Utils2.createStatistic(88));
         testb = RoutingMechanism.merge(queue, neighbors, already);
         Assert.assertEquals(false, testb);
     }
@@ -63,16 +64,16 @@ public class TestRouting {
     @Test
     public void testEvaluate() throws UnknownHostException {
         // setup
-        SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createComparator(new Number160(88)));
-        SortedSet<PeerAddress> neighbors = new TreeSet<PeerAddress>(
-                PeerMap.createComparator(new Number160(88)));
-        SortedSet<PeerAddress> already = new TreeSet<PeerAddress>(PeerMap.createComparator(new Number160(88)));
-        queue.add(Utils2.createAddress(12));
-        queue.add(Utils2.createAddress(14));
-        queue.add(Utils2.createAddress(16));
-        neighbors.add(Utils2.createAddress(89));
-        neighbors.add(Utils2.createAddress(12));
-        neighbors.add(Utils2.createAddress(16));
+        UpdatableTreeSet<PeerStatistic> queue = new UpdatableTreeSet<PeerStatistic>(PeerMap.createXORStatisticComparator(new Number160(88)));
+        SortedSet<PeerStatistic> neighbors = new TreeSet<PeerStatistic>(
+                PeerMap.createXORStatisticComparator(new Number160(88)));
+        SortedSet<PeerAddress> already = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(new Number160(88)));
+        queue.add(Utils2.createStatistic(12));
+        queue.add(Utils2.createStatistic(14));
+        queue.add(Utils2.createStatistic(16));
+        neighbors.add(Utils2.createStatistic(89));
+        neighbors.add(Utils2.createStatistic(12));
+        neighbors.add(Utils2.createStatistic(16));
         already.add(Utils2.createAddress(16));
         RoutingMechanism routingMechanism = new RoutingMechanism(null, null, null);
         // do testing and verification
@@ -83,21 +84,21 @@ public class TestRouting {
         testb = routingMechanism.evaluateInformation(neighbors, queue, already, 2);
         Assert.assertEquals(1, routingMechanism.nrNoNewInfo());
         Assert.assertEquals(false, testb);
-        neighbors.add(Utils2.createAddress(11));
+        neighbors.add(Utils2.createStatistic(11));
         testb = routingMechanism.evaluateInformation(neighbors, queue, already, 2);
         Assert.assertEquals(2, routingMechanism.nrNoNewInfo());
         Assert.assertEquals(true, testb);
-        neighbors.add(Utils2.createAddress(88));
+        neighbors.add(Utils2.createStatistic(88));
         testb = routingMechanism.evaluateInformation(neighbors, queue, already, 2);
         Assert.assertEquals(0, routingMechanism.nrNoNewInfo());
         Assert.assertEquals(false, testb);
         //
         testb = routingMechanism.evaluateInformation(neighbors, queue, already, 2);
         Assert.assertEquals(1, routingMechanism.nrNoNewInfo());
-        neighbors.add(Utils2.createAddress(89));
+        neighbors.add(Utils2.createStatistic(89));
         testb = routingMechanism.evaluateInformation(neighbors, queue, already, 2);
         Assert.assertEquals(2, routingMechanism.nrNoNewInfo());
-        neighbors.add(Utils2.createAddress(88));
+        neighbors.add(Utils2.createStatistic(88));
         testb = routingMechanism.evaluateInformation(neighbors, queue, already, 2);
         Assert.assertEquals(3, routingMechanism.nrNoNewInfo());
         Assert.assertEquals(true, testb);
@@ -458,13 +459,13 @@ public class TestRouting {
      * @param peers
      *            The peers that will be added
      */
-    private void addToPeerMap(Peer peer, PeerAddress... peers) {
+    public static void addToPeerMap(Peer peer, PeerAddress... peers) {
         for (int i = 0; i < peers.length; i++) {
-            peer.peerBean().peerMap().peerFound(peers[i], null, null);
+            peer.peerBean().peerMap().peerFound(peers[i], null, null, null);
         }
     }
 
-    private Peer[] createSpecialPeers(int nr) throws Exception {
+    public static Peer[] createSpecialPeers(int nr) throws Exception {
         StringBuilder sb = new StringBuilder("0x");
         Peer[] peers = new Peer[nr];
         for (int i = 0; i < nr; i++) {
@@ -485,10 +486,10 @@ public class TestRouting {
             master = peers[0];
             Utils2.perfectRouting(peers);
             // do testing
-            Collection<PeerAddress> pas = peers[30].peerBean().peerMap()
+            Collection<PeerStatistic> pas = peers[30].peerBean().peerMap()
                     .closePeers(peers[30].peerID(), 20);
-            Iterator<PeerAddress> i = pas.iterator();
-            PeerAddress p1 = i.next();
+            Iterator<PeerStatistic> i = pas.iterator();
+            PeerAddress p1 = i.next().peerAddress();
             Assert.assertEquals(peers[262].peerAddress(), p1);
         } finally {
             master.shutdown().await();
@@ -705,7 +706,7 @@ public class TestRouting {
                 Peer[] peers = Utils2.createNodes(200, rnd, 4001);
                 master = peers[0];
                 Utils2.perfectRouting(peers);
-                Comparator<PeerAddress> cmp = PeerMap.createComparator(find);
+                Comparator<PeerAddress> cmp = PeerMap.createXORAddressComparator(find);
                 SortedSet<PeerAddress> ss = new TreeSet<PeerAddress>(cmp);
                 for (int i = 0; i < peers.length; i++) {
                     ss.add(peers[i].peerAddress());
@@ -757,4 +758,31 @@ public class TestRouting {
             }
         }
     }
+
+    private void printPeerMaps(Peer... peers) {
+        for (Peer peer : peers) {
+            System.out.println(peer.peerAddress().peerId().toString(true) + ":");
+            System.out.println("\tVerified:");
+            for (int bucket=0; bucket<160; bucket++) {
+                if (!peer.peerBean().peerMap().peerMapVerified().get(bucket).isEmpty()) {
+                    System.out.print("\t\tBucket " + bucket + ":");
+                    for (PeerStatistic ps : peer.peerBean().peerMap().peerMapVerified().get(bucket).values()) {
+                        System.out.print(" " + ps.peerAddress().peerId().toString(true));
+                    }
+                    System.out.print("\n");
+                }
+            }
+            System.out.println("\tOverflow:");
+            for (int bucket=0; bucket<160; bucket++) {
+                if (!peer.peerBean().peerMap().peerMapOverflow().get(bucket).isEmpty()) {
+                    System.out.print("\t\tBucket " + bucket + ":");
+                    for (PeerStatistic ps : peer.peerBean().peerMap().peerMapOverflow().get(bucket).values()) {
+                        System.out.print(" " + ps.peerAddress().peerId().toString(true));
+                    }
+                    System.out.print("\n");
+                }
+            }
+        }
+    }
+
 }

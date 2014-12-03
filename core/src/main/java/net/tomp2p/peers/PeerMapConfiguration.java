@@ -19,17 +19,19 @@ package net.tomp2p.peers;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import net.tomp2p.p2p.DefaultPeerStatisticComparator;
+import net.tomp2p.p2p.PeerStatisticComparator;
+
 /**
  * The class that holds configuration settings for the {@link PeerMap}.
  * 
  * @author Thomas Bocek
- * 
  */
 public class PeerMapConfiguration {
 
     private final Number160 self;
-    private int bagSizeVerified;
-    private int bagSizeOverflow;
+    private int[] bagSizesVerified = new int[Number160.BITS];
+    private int[] bagSizesOverflow = new int[Number160.BITS];
     private int offlineTimeout;
     private int shutdownTimeout;
     private int exceptionTimeout;
@@ -38,6 +40,7 @@ public class PeerMapConfiguration {
     private Collection<PeerFilter> peerFilters = new ArrayList<PeerFilter>(2);
     private Maintenance maintenance;
     private boolean peerVerification;
+    private PeerStatisticComparator peerStatisticComparator;
 
     /**
      * Constructor with reasonable defaults.
@@ -47,14 +50,15 @@ public class PeerMapConfiguration {
      */
     public PeerMapConfiguration(final Number160 self) {
         this.self = self;
-        bagSizeVerified = 10;
-        bagSizeOverflow = 10;
+        setDoublingVerifiedBagSizes();
+        setDoublingOverflowBagSizes();
         offlineTimeout = 60;
         shutdownTimeout = 20;
         exceptionTimeout = 120;
         offlineCount = 3;
         maintenance = new DefaultMaintenance(4, new int[] { 2, 4, 8, 16, 32, 64 });
         peerVerification = true;
+        setPeerStatisticComparator(new DefaultPeerStatisticComparator());
     }
 
     /**
@@ -65,38 +69,118 @@ public class PeerMapConfiguration {
     }
 
     /**
-     * @return Each distance bit has its own bag this is the size of the verified peers are know to be online
+     * @param bag The bit distance with 0 being the closest, 159 being the most distant
+     * @return The size of the bag of the given bit distance.
      */
-    public int bagSizeVerified() {
-        return bagSizeVerified;
+    public int getVerifiedBagSize(final int bag) {
+        return bagSizesVerified[bag];
     }
 
     /**
-     * @param bagSizeVerified
-     *            Each distance bit has its own bag this is the size of the verified peers are know to be online
-     * @return this class
+     * @return The array of sizes for the verified peer bags
      */
-    public PeerMapConfiguration bagSizeVerified(final int bagSizeVerified) {
-        this.bagSizeVerified = bagSizeVerified;
+    public int[] getVerifiedBagSizes() {
+        return bagSizesVerified;
+    }
+
+    /**
+     * Sets the bag size for the verified peers to a fixed number
+     *
+     * @param fixedVerifiedBagSize The size for each bag to be set
+     * @return This PeerMapConfiguration object
+     */
+    public PeerMapConfiguration setFixedVerifiedBagSizes(final int fixedVerifiedBagSize) {
+        for (int i=0; i<this.bagSizesVerified.length; i++)
+        {
+            this.bagSizesVerified[i] = fixedVerifiedBagSize;
+        }
         return this;
     }
 
     /**
-     * @return the Each distance bit has its own bag this is the size of the non-verified peers that may have been
-     *         reported by other peers
+     * Sets the bag sizes for the verified peers to (8, 8, 8, ... 8, 16, 32, 64, 128)
+     * @return This PeerMapConfiguration object
      */
-    public int bagSizeOverflow() {
-        return bagSizeOverflow;
+    public PeerMapConfiguration setDoublingVerifiedBagSizes() {
+        for (int i = 0; i < Number160.BITS; i++) {
+            if (i < Number160.BITS - 4) {
+                bagSizesVerified[i] = 8;
+            }else {
+                bagSizesVerified[i] = 128 / (int)Math.pow(2,Number160.BITS - i - 1);
+            }
+        }
+        return this;
     }
 
     /**
-     * @param bagSizeOverflow
-     *            Each distance bit has its own bag this is the size of the non-verified peers that may have been
-     *            reported by other peers
-     * @return this class
+     * Allows to define custom bag sizes for the verified peers
+     * @param bagSizesVerified Array of length Number160.BITS, specifying the size
+     *                         for each bag. bagSizesVerified[0] is the closest bag,
+     *                         bagSizesVerified[159] is the most distant bag.
+     * @return This PeerMapConfiguration object
      */
-    public PeerMapConfiguration bagSizeOverflow(final int bagSizeOverflow) {
-        this.bagSizeOverflow = bagSizeOverflow;
+    public PeerMapConfiguration setBagSizesVerified(final int[] bagSizesVerified) {
+        if (bagSizesVerified.length != Number160.BITS)
+            throw new IllegalArgumentException("The array of bag sizes must have length of " + Number160.BITS);
+        this.bagSizesVerified = bagSizesVerified;
+        return this;
+    }
+
+    /**
+     * @param bag The bit distance with 0 being the closest, 159 being the most distant
+     * @return The size of the bag of the given bit distance.
+     */
+    public int getOverflowBagSize(final int bag) {
+        return bagSizesOverflow[bag];
+    }
+
+    /**
+     * @return The array of sizes for the overflow peer bags
+     */
+    public int[] getOverflowBagSizes() {
+        return bagSizesOverflow;
+    }
+
+    /**
+     * Sets the bag size for the overflow peers to a fixed number
+     *
+     * @param fixedOverflowBagSize The size for each bag to be set
+     * @return This PeerMapConfiguration object
+     */
+    public PeerMapConfiguration setFixedOverflowBagSizes(final int fixedOverflowBagSize) {
+        for (int i=0; i<this.bagSizesOverflow.length; i++)
+        {
+            this.bagSizesOverflow[i] = fixedOverflowBagSize;
+        }
+        return this;
+    }
+
+    /**
+     * Sets the bag sizes for the overflow peers to (8, 8, 8, ... 8, 16, 32, 64, 128)
+     * @return This PeerMapConfiguration object
+     */
+    public PeerMapConfiguration setDoublingOverflowBagSizes() {
+        for (int i = 0; i < Number160.BITS; i++) {
+            if (i < Number160.BITS - 4) {
+                bagSizesOverflow[i] = 8;
+            }else {
+                bagSizesOverflow[i] = 128 / (int)Math.pow(2,Number160.BITS - i - 1);
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Allows to define custom bag sizes for the overflow peers
+     * @param bagSizesOverflow Array of length Number160.BITS, specifying the size
+     *                         for each bag. bagSizesOverflow[0] is the closest bag,
+     *                         bagSizesOverflow[159] is the most distant bag.
+     * @return This PeerMapConfiguration object
+     */
+    public PeerMapConfiguration setBagSizesOverflow(final int[] bagSizesOverflow) {
+        if (bagSizesOverflow.length != Number160.BITS)
+            throw new IllegalArgumentException("The array of bag sizes must have length of " + Number160.BITS);
+        this.bagSizesOverflow = bagSizesOverflow;
         return this;
     }
 
@@ -223,7 +307,7 @@ public class PeerMapConfiguration {
     public boolean isPeerVerification() {
     	return peerVerification;
     }
-    
+
     public PeerMapConfiguration peerNoVerification() {
     	peerVerification = false;
     	return this;
@@ -232,5 +316,14 @@ public class PeerMapConfiguration {
     public PeerMapConfiguration peerVerification(boolean reerVerification) {
     	this.peerVerification = reerVerification;
     	return this;
+    }
+
+    public PeerStatisticComparator getPeerStatisticComparator() {
+        return peerStatisticComparator;
+    }
+
+    public PeerMapConfiguration setPeerStatisticComparator(PeerStatisticComparator peerStatisticComparator) {
+        this.peerStatisticComparator = peerStatisticComparator;
+        return this;
     }
 }

@@ -61,7 +61,7 @@ public class RelayUtils {
 		PeerMapConfiguration peerMapConfiguration = new PeerMapConfiguration(sender.peerId());
 		PeerMap peerMap = new PeerMap(peerMapConfiguration);
 		for (PeerAddress peerAddress : map) {
-			peerMap.peerFound(peerAddress, null, null);
+			peerMap.peerFound(peerAddress, null, null, null);
 		}
 		return peerMap.peerMapVerified();
 	}

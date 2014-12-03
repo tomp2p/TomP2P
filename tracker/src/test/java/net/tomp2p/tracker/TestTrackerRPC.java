@@ -43,7 +43,7 @@ public class TestTrackerRPC {
                     addTrackerBuilder, cc);
             fr.awaitUninterruptibly();
             //either you sleep for 1 sec and let the maintenance do its work, or do it manually
-            recv1.peer().peerBean().notifyPeerFound(sender.peerAddress(), null, null);
+            recv1.peer().peerBean().notifyPeerFound(sender.peerAddress(), null, null, null);
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
             bloomFilter = new SimpleBloomFilter<Number160>(100, 10);
@@ -102,7 +102,7 @@ public class TestTrackerRPC {
                     addTrackerBuilder, cc);
             fr.awaitUninterruptibly();
             //either you sleep for 1 sec and let the maintenance do its work, or do it manually
-            recv1.peer().peerBean().notifyPeerFound(sender.peerAddress(), null, null);
+            recv1.peer().peerBean().notifyPeerFound(sender.peerAddress(), null, null, null);
             Assert.assertEquals(true, fr.isSuccess());
 
             GetTrackerBuilder getTrackerBuilder = new GetTrackerBuilder(sender, loc);
@@ -153,7 +153,7 @@ public class TestTrackerRPC {
                     addTrackerBuilder, cc);
             fr.awaitUninterruptibly();
             //either you sleep for 1 sec and let the maintenance do its work, or do it manually
-            recv1.peer().peerBean().notifyPeerFound(sender.peerAddress(), null, null);
+            recv1.peer().peerBean().notifyPeerFound(sender.peerAddress(), null, null, null);
             Assert.assertEquals(true, fr.isSuccess());
 
             GetTrackerBuilder getTrackerBuilder = new GetTrackerBuilder(sender, loc);
@@ -209,7 +209,7 @@ public class TestTrackerRPC {
                     addTrackerBuilder, cc);
             fr.awaitUninterruptibly();
             //either you sleep for 1 sec and let the maintenance do its work, or do it manually
-            recv1.peer().peerBean().notifyPeerFound(sender.peerAddress(), null, null);
+            recv1.peer().peerBean().notifyPeerFound(sender.peerAddress(), null, null, null);
             Assert.assertEquals(true, fr.isSuccess());
             bloomFilter.add(sender.peerAddress().peerId());
 

@@ -3,9 +3,6 @@ package net.tomp2p.holep;
 import java.util.ArrayList;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.HolePunchInitiator;
 import net.tomp2p.connection.PeerConnection;
@@ -21,6 +18,9 @@ import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Jonas Wagner

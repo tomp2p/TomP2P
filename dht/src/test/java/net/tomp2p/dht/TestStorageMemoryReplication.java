@@ -1,6 +1,5 @@
 package net.tomp2p.dht;
 
-import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.peers.Number160;
 
 import org.junit.Assert;

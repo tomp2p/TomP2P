@@ -1,13 +1,14 @@
 package net.tomp2p.holep;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.message.Message;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.ChannelHandler.Sharable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Sharable
 public class DuplicatesHandler extends SimpleChannelInboundHandler<Message>{

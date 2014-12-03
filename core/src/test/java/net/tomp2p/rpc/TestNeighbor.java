@@ -45,7 +45,7 @@ public class TestNeighbor {
             sender = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start();
             PeerAddress[] pa = Utils2.createDummyAddress(300, PORT_TCP, PORT_UDP);
             for (int i = 0; i < pa.length; i++) {
-                sender.peerBean().peerMap().peerFound(pa[i], null, null);
+                sender.peerBean().peerMap().peerFound(pa[i], null, null, null);
             }
             new NeighborRPC(sender.peerBean(), sender.connectionBean());
             recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start();
@@ -87,7 +87,7 @@ public class TestNeighbor {
             sender = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start();
             PeerAddress[] pa = Utils2.createDummyAddress(300, PORT_TCP, PORT_UDP);
             for (int i = 0; i < pa.length; i++) {
-                sender.peerBean().peerMap().peerFound(pa[i], null, null);
+                sender.peerBean().peerMap().peerFound(pa[i], null, null, null);
             }
             new NeighborRPC(sender.peerBean(), sender.connectionBean());
             recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start();

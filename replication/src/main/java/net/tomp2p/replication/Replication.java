@@ -510,9 +510,9 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
      * @return The peer that is responsible for the location key, including myself.
      */
     private PeerAddress closest(final Number160 locationKey) {
-        SortedSet<PeerAddress> tmp = peerMap.closePeers(locationKey, 1);
-        tmp.add(selfAddress);
-        return tmp.iterator().next();
+        SortedSet<PeerStatistic> tmp = peerMap.closePeers(locationKey, 1);
+        tmp.add(new PeerStatistic(selfAddress));
+        return tmp.iterator().next().peerAddress();
     }
 
     /**
@@ -529,8 +529,9 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
      */
     private boolean isInReplicationRange(final Number160 locationKey, final PeerAddress peerAddress,
             final int replicationFactor) {
-        SortedSet<PeerAddress> tmp = peerMap.closePeers(locationKey, replicationFactor);
-        tmp.add(selfAddress);
-        return tmp.headSet(peerAddress).size() < replicationFactor * 2;
+        SortedSet<PeerStatistic> tmp = peerMap.closePeers(locationKey, replicationFactor);
+        PeerStatistic selfStatistic = new PeerStatistic(selfAddress);
+        tmp.add(selfStatistic);
+        return tmp.headSet(selfStatistic).size() < replicationFactor * 2;
     }	
 }

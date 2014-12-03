@@ -41,6 +41,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerStatistic;
 
 public class Utils2 {
     /**
@@ -105,6 +106,10 @@ public class Utils2 {
         return n1;
     }
 
+    public static PeerStatistic createStatistic(int id) throws UnknownHostException {
+        return new PeerStatistic(createAddress(new Number160(id), "127.0.0.1", 8005, 8006, false, false));
+    }
+
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
         return createNodes(nrOfPeers, rnd, port, null);
     }
@@ -133,7 +138,7 @@ public class Utils2 {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
-        Bindings bindings = new Bindings().addInterface("lo");
+        Bindings bindings = new Bindings();
         Peer[] peers = new Peer[nrOfPeers];
         if (automaticFuture != null) {
         	Number160 peerId = new Number160(rnd);
@@ -205,7 +210,7 @@ public class Utils2 {
     public static void perfectRouting(Peer... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null, null);
         }
         System.err.println("perfect routing done.");
     }
@@ -213,7 +218,7 @@ public class Utils2 {
     public static void perfectRoutingIndirect(Peer... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress(), null);
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress(), null, null);
         }
         System.err.println("perfect routing done.");
     }
@@ -274,8 +279,8 @@ public class Utils2 {
 
     public static void routing(Number160 key, Peer[] peers, int start) {
         System.out.println("routing: searching for key " + key);
-        NavigableSet<PeerAddress> pa1 = new TreeSet<PeerAddress>(PeerMap.createComparator(key));
-        NavigableSet<PeerAddress> queried = new TreeSet<PeerAddress>(PeerMap.createComparator(key));
+        NavigableSet<PeerAddress> pa1 = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(key));
+        NavigableSet<PeerAddress> queried = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(key));
         Number160 result = Number160.ZERO;
         Number160 resultPeer = new Number160("0xd75d1a3d57841fbc9e2a3d175d6a35dc2e15b9f");
         int round = 0;

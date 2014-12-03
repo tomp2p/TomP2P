@@ -26,6 +26,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.RTT;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.storage.DigestStorage;
 import net.tomp2p.storage.DigestTracker;
@@ -137,10 +138,10 @@ public class PeerBean {
         return peerStatusListeners;
     }
     
-    public PeerBean notifyPeerFound(PeerAddress sender, PeerAddress reporter, PeerConnection peerConnection) {
+    public PeerBean notifyPeerFound(PeerAddress sender, PeerAddress reporter, PeerConnection peerConnection, RTT roundTripTime) {
     	synchronized (peerStatusListeners) {
     		for (PeerStatusListener peerStatusListener : peerStatusListeners) {
-    			peerStatusListener.peerFound(sender, reporter, peerConnection);
+    			peerStatusListener.peerFound(sender, reporter, peerConnection, roundTripTime);
     		}
     	}
     	return this;

@@ -15,17 +15,18 @@
  */
 package net.tomp2p.connection;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message;
-import net.tomp2p.message.MessageID;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.rpc.RPC;
+ import io.netty.channel.ChannelHandlerContext;
+ import io.netty.channel.SimpleChannelInboundHandler;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+ import net.tomp2p.futures.FutureResponse;
+ import net.tomp2p.message.Message;
+ import net.tomp2p.message.MessageID;
+ import net.tomp2p.peers.PeerAddress;
+ import net.tomp2p.peers.PeerStatusListener;
+ import net.tomp2p.rpc.RPC;
+
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
 
 /**
  * Is able to send UDP messages (as a request) and processes incoming replies. It is important that this class handles
@@ -282,11 +283,14 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         	responseMessage.sender(realAddress);
         }
 
+        // Stop time measurement of RTT
+        futureResponse.stopRTTMeasurement();
+
         // We got a good answer, let's mark the sender as alive
         //if its an announce, the peer status will be handled in the RPC
 		if (responseMessage.command() != RPC.Commands.LOCAL_ANNOUNCE.getNr() 
 				&& (responseMessage.isOk() || responseMessage.isNotOk())) {
-			peerBean.notifyPeerFound(responseMessage.sender(), null, null);
+			peerBean.notifyPeerFound(responseMessage.sender(), null, null, futureResponse.getRoundTripTime());
 		}
         
         // call this for streaming support

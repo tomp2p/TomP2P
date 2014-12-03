@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.p2p.Peer;

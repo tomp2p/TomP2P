@@ -38,6 +38,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.utils.Pair;
@@ -97,7 +98,7 @@ public class DistributedRouting {
         // first we find close peers to us
         routingBuilder.bootstrap(true);
 
-        final FutureRouting futureRouting0 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
+        final FutureRouting futureRouting0 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST_1, cc);
         // to not become a Fachidiot (expert idiot), we need to know other peers
         // as well. This is important if this peer is passive and only replies on requests from other peers
         futureRouting0.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -106,7 +107,7 @@ public class DistributedRouting {
                 // setting this to null causes to search for a random number
             	if(future.isSuccess()) {
             		routingBuilder.locationKey(null);
-            		final FutureRouting futureRouting1 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
+            		final FutureRouting futureRouting1 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST_1, cc);
             		futureRouting1.addListener(new BaseFutureAdapter<FutureRouting>() {
             			@Override
             			public void operationComplete(FutureRouting future) throws Exception {
@@ -123,7 +124,7 @@ public class DistributedRouting {
     }
     
     public FutureRouting quit(final RoutingBuilder routingBuilder, final ChannelCreator cc) {
-    	Collection<PeerAddress> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
+    	Collection<PeerStatistic> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
                 routingBuilder.parallel() * 2);
         return routing(startPeers, routingBuilder, Type.REQUEST_4, cc);
     }
@@ -142,58 +143,53 @@ public class DistributedRouting {
      */
     public FutureRouting route(final RoutingBuilder routingBuilder, final Type type, final ChannelCreator cc) {
         // for bad distribution, use large NO_NEW_INFORMATION
-        Collection<PeerAddress> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
+        Collection<PeerStatistic> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
                 routingBuilder.parallel() * 2);
         return routing(startPeers, routingBuilder, type, cc);
     }
 
     /**
      * Looks for a route to the given locationKey.
-     * 
-     * @param peerAddresses
-     *            nodes which should be asked first for a route
-     * @param locationKey
-     *            the node a route should be found to
-     * @param domainKey
-     *            the domain of the network the current node and locationKey is in
-     * @param contentKeys
-     *            nodes which we got from another node
-     * @param maxDirectHits
-     *            number of direct hits to stop at
-     * @param maxNoNewInfo
-     *            number of nodes asked without new information to stop at
-     * @param maxFailures
-     *            number of failures to stop at
-     * @param parallel
-     *            number of routing requests performed concurrently
+     *
+     * @param peerAddresses Nodes which should be asked first for a route
+     * @param routingBuilder
+     * @param type
+     * @param cc
      * @return a FutureRouting object, is set to complete if the route has been found
      */
-    private FutureRouting routing(final Collection<PeerAddress> peerAddresses,
+    private FutureRouting routing(final Collection<PeerStatistic> peerAddresses,
             final RoutingBuilder routingBuilder, final Type type, final ChannelCreator cc) {
         if (peerAddresses == null) {
             throw new IllegalArgumentException("you need to specify some nodes");
         }
         boolean randomSearch = routingBuilder.locationKey() == null;
         //
-        final Comparator<PeerAddress> comparator;
+        final Comparator<PeerStatistic> statisticComparator;
+        final Comparator<PeerAddress> addressComparator;
         if (randomSearch) {
-            comparator = peerBean.peerMap().createComparator();
+            statisticComparator = peerMap().createStatisticComparator(peerMap().self());
+            addressComparator = PeerMap.createXORAddressComparator(peerMap().self());
         } else {
-            comparator = PeerMap.createComparator(routingBuilder.locationKey());
+            statisticComparator = peerMap().createStatisticComparator(routingBuilder.locationKey());
+            addressComparator = PeerMap.createXORAddressComparator(routingBuilder.locationKey());
         }
-        final NavigableSet<PeerAddress> queueToAsk = new TreeSet<PeerAddress>(comparator);
+        final UpdatableTreeSet<PeerStatistic> queueToAsk = new UpdatableTreeSet<PeerStatistic>(statisticComparator);
         // we can reuse the comparator
-        final SortedSet<PeerAddress> alreadyAsked = new TreeSet<PeerAddress>(comparator);
+        final SortedSet<PeerAddress> alreadyAsked = new TreeSet<PeerAddress>(addressComparator);
         // as presented by Kazuyuki Shudo at AIMS 2009, its better to ask random
         // peers with the data than ask peers that ar ordered by distance ->
         // this balances load.
-        final SortedMap<PeerAddress, DigestInfo> directHits = new TreeMap<PeerAddress, DigestInfo>(peerBean
-                .peerMap().createComparator());
-        final NavigableSet<PeerAddress> potentialHits = new TreeSet<PeerAddress>(comparator);
+        final SortedMap<PeerAddress, DigestInfo> directHits = new TreeMap<PeerAddress, DigestInfo>(addressComparator);
+        final NavigableSet<PeerAddress> potentialHits = new TreeSet<PeerAddress>(addressComparator);
+
         // fill initially
         queueToAsk.addAll(peerAddresses);
+
+        //PeerStatistic serverPeer = new PeerStatistic(peerBean.serverPeerAddress());
+
         alreadyAsked.add(peerBean.serverPeerAddress());
         potentialHits.add(peerBean.serverPeerAddress());
+
         // domainkey can be null if we bootstrap
         if (type == Type.REQUEST_2 && routingBuilder.domainKey() != null && !randomSearch && peerBean.digestStorage() !=null) {
             final Number640 from;
@@ -241,7 +237,7 @@ public class DistributedRouting {
             // know if we are routing, bootstrapping and bootstrapping to
             // ourselfs, to return the correct status for the future
             boolean isRoutingOnlyToSelf = (peerAddresses.size() == 1 && peerAddresses.iterator().next()
-                    .equals(peerBean.serverPeerAddress()));
+                    .peerAddress().equals(peerBean.serverPeerAddress()));
 
             RoutingMechanism routingMechanism = routingBuilder.createRoutingMechanism(futureRouting);
 
@@ -259,41 +255,12 @@ public class DistributedRouting {
     /**
      * Looks for a route to the given locationKey, performing recursively. Since this method is not called concurrently,
      * but sequentially, no synchronization is necessary.
-     * 
-     * @param futureResponses
-     *            expected responses
-     * @param futureRouting
-     *            the current routing future used
-     * @param queueToAsk
-     *            all nodes which should be asked for routing information
-     * @param alreadyAsked
-     *            nodes which already have been asked
-     * @param directHits
-     *            stores direct hits received
-     * @param nrNoNewInfo
-     *            number of nodes contacted without any new information
-     * @param nrFailures
-     *            number of nodes without a response
-     * @param nrSucess
-     *            number of peers that responded
-     * @param maxDirectHits
-     *            number of direct hits to stop at
-     * @param maxNoNewInfo
-     *            number of nodes asked without new information to stop at
-     * @param maxFailures
-     *            number of failures to stop at
-     * @param maxSuccess
-     *            number of successful requests. To avoid looping if every peer gives a new piece of information.
-     * @param parallel
-     *            number of routing requests performed concurrently
-     * @param locationKey
-     *            the node a route should be found to
-     * @param domainKey
-     *            the domain of the network the current node and locationKey is in
-     * @param contentKeys
-     *            nodes which we got from another node
+     *
+     * @param routingBuilder
+     * @param routingMechanism
+     * @param type
+     * @param channelCreator
      */
-
     private void routingRec(final RoutingBuilder routingBuilder, final RoutingMechanism routingMechanism,
             final Type type, final ChannelCreator channelCreator) {
 
@@ -352,6 +319,7 @@ public class DistributedRouting {
                     PeerAddress remotePeer = lastResponse.sender();
                     routingMechanism.addPotentialHits(remotePeer);
                     Collection<PeerAddress> newNeighbors = lastResponse.neighborsSet(0).neighbors();
+                    Collection<PeerStatistic> newNeighborStatistics = peerMap().getPeerStatistics(newNeighbors);
 
                     Integer resultSize = lastResponse.intAt(0);
                     Number160 keyDigest = lastResponse.key(0);
@@ -360,7 +328,7 @@ public class DistributedRouting {
                             : resultSize);
                     LOG.debug("Peer ({}) {} reported {} in message {}", (digestBean.size() > 0 ? "direct" : "none"),
                             remotePeer, newNeighbors, lastResponse);
-                    finished = routingMechanism.evaluateSuccess(remotePeer, digestBean, newNeighbors, last, routingBuilder.locationKey());
+                    finished = routingMechanism.evaluateSuccess(remotePeer, digestBean, newNeighborStatistics, last, routingBuilder.locationKey());
                     LOG.debug("Routing finished {} / {}", finished,
                             routingMechanism.isStopCreatingNewFutures());
                 } else {
@@ -388,8 +356,6 @@ public class DistributedRouting {
     public PeerMap peerMap() {
         return peerBean.peerMap();
     }
-
-	
 
     /**
      * Cancel the future that causes the underlying futures to cancel as well.

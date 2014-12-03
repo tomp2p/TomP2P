@@ -153,6 +153,9 @@ public class Sender {
 		
 		removePeerIfFailed(futureResponse, message);
 
+        // RTT calculation
+        futureResponse.startRTTMeasurement(false);
+
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null && peerConnection.channelFuture().channel().isActive()) {
 			channelFuture = sendTCPPeerConnection(peerConnection, handler, channelCreator, futureResponse);
@@ -577,6 +580,9 @@ public class Sender {
 				LOG.debug("No hole punching possible, because There is no PeerNAT.");
 			}
 		}
+
+        // RTT calculation
+        futureResponse.startRTTMeasurement(true);
 
 		try {
 			final ChannelFuture channelFuture;

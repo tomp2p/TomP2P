@@ -18,7 +18,7 @@ public class UtilsReplication {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
-        Bindings bindings = new Bindings().addInterface("lo");
+        Bindings bindings = new Bindings();
         PeerDHT[] peers  = new PeerDHT[nrOfPeers];
         final Peer master;
         if (automaticFuture != null) {
@@ -73,7 +73,7 @@ public class UtilsReplication {
 	public static void perfectRouting(PeerDHT... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peer().peerBean().peerMap().peerFound(peers[j].peer().peerAddress(), null, null);
+                peers[i].peer().peerBean().peerMap().peerFound(peers[j].peer().peerAddress(), null, null, null);
         }
         System.err.println("perfect routing done.");
     }

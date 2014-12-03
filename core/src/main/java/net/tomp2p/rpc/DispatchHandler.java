@@ -158,7 +158,7 @@ public abstract class DispatchHandler {
         // if we can contact the peer with its address. The peer may be
         // behind a NAT
     	if(requestMessage.command() != RPC.Commands.LOCAL_ANNOUNCE.getNr()) {
-    		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection);
+    		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection, null);
     	}
         
         try {

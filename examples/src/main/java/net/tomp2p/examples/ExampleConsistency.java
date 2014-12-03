@@ -25,8 +25,8 @@ import java.util.TreeSet;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.Statistics;
@@ -97,7 +97,7 @@ public final class ExampleConsistency {
             ClassNotFoundException {
         System.out.println("key is " + key1);
         // find close peers
-        NavigableSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createComparator(key1));
+        NavigableSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(key1));
         for (PeerDHT peer : peers) {
             set.add(peer.peerAddress());
         }

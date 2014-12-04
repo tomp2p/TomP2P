@@ -58,7 +58,7 @@
 		<repository>
 			<id>ssh.tomp2p</id>
 			<!-- The URL is CMS specific -->
-			<url>scp://tomp2p.net/home/draft/maven</url>
+			<url>scpexe://tomp2p.net/home/draft/maven</url>
 		</repository>
 	</distributionManagement>
 
@@ -102,7 +102,7 @@
 	    <extensions>
 			<extension>
 				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-ssh</artifactId>
+				<artifactId>wagon-ssh-external</artifactId>
 				<version>2.6</version>
 			</extension>
 		</extensions>

@@ -23,6 +23,8 @@ import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.tracker.PeerBuilderTracker;
+import net.tomp2p.tracker.PeerTracker;
 
 /**
  * This simple example creates 10 nodes, bootstraps to the first and put and get data from those 10 nodes.
@@ -85,5 +87,13 @@ public class ExampleUtils {
             }
         }
         return peers;
+    }
+    
+    public static PeerTracker[] createAndAttachPeersTracker( PeerDHT[] peers ) throws IOException {
+    	PeerTracker[] peers2 = new PeerTracker[peers.length];
+        for ( int i = 0; i < peers.length; i++ ) {
+            peers2[i] = new PeerBuilderTracker(peers[i].peer()).verifyPeersOnTracker(false).start();
+        }
+        return peers2;
     }
 }

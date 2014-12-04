@@ -22,13 +22,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
+import net.tomp2p.tracker.FutureTracker;
 import net.tomp2p.tracker.PeerBuilderTracker;
 import net.tomp2p.tracker.PeerTracker;
 import net.tomp2p.utils.Utils;
@@ -81,7 +81,7 @@ public final class ExampleTracker {
     private static MyPeer[] wrap(final Peer[] peers) {
         MyPeer[] retVal = new MyPeer[peers.length];
         for (int i = 0; i < peers.length; i++) {
-            retVal[i] = new MyPeer(new PeerBuilderTracker(peers[i]).start());
+            retVal[i] = new MyPeer(new PeerBuilderTracker(peers[i]).verifyPeersOnTracker(false).start());
         }
         return retVal;
     }
@@ -171,6 +171,7 @@ public final class ExampleTracker {
             FutureTracker futureTracker = peer.getTracker(key).start();
             // now we know which peer has this data, and we also know what other things this peer has
             futureTracker.awaitUninterruptibly();
+            System.err.println(futureTracker.failedReason());
             Collection<TrackerData> trackerDatas = futureTracker.trackers();
             for (TrackerData trackerData : trackerDatas) {
             	

@@ -35,7 +35,6 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
-import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.DistributedRouting;
@@ -110,7 +109,7 @@ public class DistributedTracker {
 							}
 						});
 					}
-					Utils.addReleaseListener(futureChannelCreator2.channelCreator(), futureTracker);
+					UtilsTracker.addReleaseListener(futureChannelCreator2.channelCreator(), futureTracker);
 				} else {
 					futureTracker.failed(futureChannelCreator2);
 				}
@@ -133,7 +132,7 @@ public class DistributedTracker {
 
 	public FutureTracker add(final AddTrackerBuilder builder) {
 
-		final FutureTracker futureTracker = new FutureTracker();
+		final FutureTracker futureTracker = new FutureTracker(new VotingSchemeTracker(), builder.knownPeers());
 		builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(final FutureChannelCreator futureChannelCreator2) throws Exception {
@@ -164,7 +163,7 @@ public class DistributedTracker {
 							}
 						}
 					});
-					Utils.addReleaseListener(futureChannelCreator2.channelCreator(), futureTracker);
+					UtilsTracker.addReleaseListener(futureChannelCreator2.channelCreator(), futureTracker);
 				} else {
 					futureTracker.failed(futureChannelCreator2);
 				}
@@ -237,7 +236,7 @@ public class DistributedTracker {
 			LOG.debug("we finished1, we asked {}, but we could ask {} more nodes {}", alreadyAsked.size(),
 			        queueToAsk.size(), alreadyAsked);
 			queueToAsk.addAll(secondaryQueue);
-			futureTracker.trackers(queueToAsk, successAsked, peerOnTracker);
+			futureTracker.trackers(queueToAsk, successAsked, peerOnTracker, null);
 			if (cancelOnFinish) {
 				cancel(futureResponses);
 			}
@@ -294,8 +293,9 @@ public class DistributedTracker {
 					LOG.debug("we finished2, we asked {}, but we could ask {} more nodes ({} / {})",
 					        alreadyAsked.size(), queueToAsk.size(), successfulRequests, atLeastSuccessfullRequests);
 
-					futureTracker.trackers(potentialTrackers, successAsked, peerOnTracker);
+					futureTracker.trackers(potentialTrackers, successAsked, peerOnTracker, future.futuresCompleted());
 					if (cancelOnFinish) {
+					    	System.err.println("cancel");
 						cancel(futureResponses);
 					}
 				} else {

@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -42,5 +45,45 @@ public class UtilsTracker {
 			}
 		}
 		return trackerData;
+	}
+	
+	/**
+     * Adds a listener to the response future and releases all aquired channels in channel creator.
+     * 
+     * @param channelCreator
+     *            The channel creator that will be shutdown and all connections will be closed
+     * @param baseFutures
+     *            The futures to listen to. If all the futures finished, then the channel creator is shutdown. If null
+     *            provided, the channel creator is shutdown immediately.
+     */
+	public static void addReleaseListener(final ChannelCreator channelCreator,
+			final FutureTracker futureTracker) {
+		if (futureTracker == null) {
+			channelCreator.shutdown();
+			return;
+		}
+
+		futureTracker.addListener(new BaseFutureAdapter<FutureTracker>() {
+			@Override
+			public void operationComplete(final FutureTracker future)
+					throws Exception {
+				final FutureDone<Void> futuresCompleted = futureTracker
+						.futuresCompleted();
+				if (futuresCompleted != null) {
+					futureTracker.futuresCompleted().addListener(
+							new BaseFutureAdapter<FutureDone<Void>>() {
+								@Override
+								public void operationComplete(
+										final FutureDone<Void> future)
+										throws Exception {
+									channelCreator.shutdown();
+								}
+							});
+				} else {
+					channelCreator.shutdown();
+				}
+			}
+		});
+
 	}
 }

@@ -1,9 +1,10 @@
-package net.tomp2p.p2p;
+package net.tomp2p.dht;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.Utils2;
+import net.tomp2p.dht.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.dht.StorageLayer.PutStatus;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 
@@ -64,13 +65,14 @@ public class FuturePut extends FutureDHT<FuturePut> {
      * was successful. This means that we need to further check if the other peers have denied the storage (e.g., due to
      * no storage space, no security permissions). Further evaluation can be retrieved with {@link #avgStoredKeys()}
      * or if the evaluation should be done by the user, use {@link #rawKeys()}.
+     * @param futuresCompleted 
      * 
      * @param rawKeys
      *            The keys that have been stored with information on which peer it has been stored
      * @param rawKeys480
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
-    public void storedKeys(final Map<PeerAddress, Map<Number640, Byte>> rawResult) {
+    public void storedKeys(final Map<PeerAddress, Map<Number640, Byte>> rawResult, FutureDone<Void> futuresCompleted) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -78,6 +80,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
             this.rawResult = rawResult;
             final int size = rawResult == null ? 0 : rawResult.size();
             this.minReached = size >= min;
+            this.futuresCompleted = futuresCompleted;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;
             this.reason = minReached ? "Minimum number of results reached" : "Expected " + min
                     + " result, but got " + size;

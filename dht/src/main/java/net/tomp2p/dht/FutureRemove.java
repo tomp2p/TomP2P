@@ -21,8 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.dht.StorageLayer.PutStatus;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
-import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
@@ -75,6 +75,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * was successful. This means that we need to further check if the other peers have denied the storage (e.g., due to
      * no storage space, no security permissions). Further evaluation can be retrieved with {@link #avgStoredKeys()}
      * or if the evaluation should be done by the user, use {@link #rawKeys()}.
+     * @param futuresCompleted 
      * 
      * @param domainKey
      *            The domain key
@@ -85,12 +86,13 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * @param rawKeys480
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
-    public void storedKeys(final Map<PeerAddress, Map<Number640, Byte>> rawKeys640) {
+    public void storedKeys(final Map<PeerAddress, Map<Number640, Byte>> rawKeys640, FutureDone<Void> futuresCompleted) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
             }
             this.rawKeys640 = rawKeys640;
+            this.futuresCompleted = futuresCompleted;
             final int size = rawKeys640 == null ? 0 : rawKeys640.size();
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
             this.reason = size > 0 ? "Minimum number of results reached" : "Expected > 0 result, but got " + size;
@@ -119,13 +121,15 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * 
      * @param rawData
      *            The keys and data that have been received with information from which peer it has been received.
+     * @param futuresCompleted 
      */
-    public void receivedData(final Map<PeerAddress, Map<Number640, Data>> rawData) {
+    public void receivedData(final Map<PeerAddress, Map<Number640, Data>> rawData, FutureDone<Void> futuresCompleted) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
             }
             this.rawData = rawData;
+            this.futuresCompleted = futuresCompleted;
             final int size = rawData.size();
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
             this.reason = size > 0 ? "Minimum number of results reached" : "Expected >0 result, but got " + size;

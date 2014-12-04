@@ -18,7 +18,6 @@ package net.tomp2p.tracker;
 
 import java.util.Set;
 
-import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.EvaluatingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SimpleBloomFilter;
@@ -71,6 +70,10 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
 
         if (knownPeers == null) {
             knownPeers = new SimpleBloomFilter<Number160>(1024, 1024);
+        }
+        
+        if (evaluatingScheme == null) {
+        	evaluatingScheme = new VotingSchemeTracker();
         }
         
         

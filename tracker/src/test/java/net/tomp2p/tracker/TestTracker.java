@@ -5,11 +5,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
-import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.VotingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;

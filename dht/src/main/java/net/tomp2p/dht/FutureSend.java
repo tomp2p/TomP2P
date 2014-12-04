@@ -19,8 +19,8 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.Map;
 
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
-import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -71,13 +71,15 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * 
      * @param rawChannels
      *            The raw data that have been sent directly with information on which peer it has been sent
+     * @param futuresCompleted 
      */
-    public void directData1(final Map<PeerAddress, ByteBuf> rawChannels) {
+    public void directData1(final Map<PeerAddress, ByteBuf> rawChannels, FutureDone<Void> futuresCompleted) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
             }
             this.rawChannels = rawChannels;
+            this.futuresCompleted = futuresCompleted;
             final int size = rawChannels.size();
             this.minReached = size >= min;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;
@@ -92,13 +94,15 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * 
      * @param rawObjects
      *            The objects that have been sent directly with information on which peer it has been sent
+     * @param futuresCompleted 
      */
-    public void directData2(final Map<PeerAddress, Object> rawObjects) {
+    public void directData2(final Map<PeerAddress, Object> rawObjects, FutureDone<Void> futuresCompleted) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
             }
             this.rawObjects = rawObjects;
+            this.futuresCompleted = futuresCompleted;
             final int size = rawObjects.size();
             this.minReached = size >= min;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;

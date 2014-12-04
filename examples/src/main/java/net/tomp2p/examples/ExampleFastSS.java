@@ -24,34 +24,36 @@ import java.util.Set;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FutureTracker;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
+import net.tomp2p.tracker.FutureTracker;
+import net.tomp2p.tracker.PeerTracker;
 
 public class ExampleFastSS {
     public static void main(String[] args) throws Exception {
-        PeerDHT[] peers = null;
+        PeerDHT[] peers1 = null;
+        PeerTracker[] peers2 = null;
         try {
-            peers = ExampleUtils.createAndAttachPeersDHT(100, 4001);
-            ExampleUtils.bootstrap(peers);
-            exampleFastSS(peers);
+            peers1 = ExampleUtils.createAndAttachPeersDHT(100, 4001);
+            peers2 = ExampleUtils.createAndAttachPeersTracker(peers1);
+            ExampleUtils.bootstrap(peers1);
+            exampleFastSS(peers1, peers2);
         } finally {
             // 0 is the master
-            peers[0].shutdown();
+            peers1[0].shutdown();
         }
     }
 
-    private static void exampleFastSS(PeerDHT[] peers) throws IOException, ClassNotFoundException {
+    private static void exampleFastSS(PeerDHT[] peers1, PeerTracker[] peers2) throws IOException, ClassNotFoundException {
         final String title = "another great song";
         // key of the file
         final Number160 key = Number160.createHash(title);
         // peer 15 has this song
-        peers[15].addTracker(key).start().awaitUninterruptibly();
+        peers2[15].addTracker(key).start().awaitUninterruptibly();
         // when a peer asks us, we reply with the song
-        peers[15].peer().objectDataReply(new ObjectDataReply() {
+        peers1[15].peer().objectDataReply(new ObjectDataReply() {
             @Override
             public Object reply(PeerAddress sender, Object request) throws Exception {
                 if (request instanceof Number160 && ((Number160) request).equals(key)) {
@@ -65,23 +67,23 @@ public class ExampleFastSS {
         for (String word : title.split(" ")) {
             for (String deletion : deletion(word)) {
                 Object[] tmp = new Object[] { key, word, deletion };
-                peers[15].put(Number160.createHash(deletion)).data(new Data(tmp)).start().awaitUninterruptibly();
+                peers1[15].put(Number160.createHash(deletion)).data(new Data(tmp)).start().awaitUninterruptibly();
             }
         }
         System.out.println("we have indexed [" + title + "]");
         // done, now search for greet
         for (String deletion : deletion("greet")) {
-            FutureGet futureGet = peers[20].get(Number160.createHash(deletion)).start().awaitUninterruptibly();
+            FutureGet futureGet = peers1[20].get(Number160.createHash(deletion)).start().awaitUninterruptibly();
             if (futureGet.isSuccess()) {
                 // if we found a match
                 Object[] tmp = (Object[]) futureGet.data().object();
                 Number160 key1 = (Number160) tmp[0];
                 // get the peers that have this file
-                FutureTracker futureTracker = peers[20].getTracker(key1).start();
+                FutureTracker futureTracker = peers2[20].getTracker(key1).start();
                 futureTracker.awaitUninterruptibly();
-                PeerAddress peerAddress = futureTracker.trackers().iterator().next().map().keySet().iterator().next();
+                PeerAddress peerAddress = futureTracker.trackers().iterator().next().peerAddresses().keySet().iterator().next();
                 // download
-                FutureDirect futureDirect = peers[20].peer().sendDirect(peerAddress).object(key1).start();
+                FutureDirect futureDirect = peers1[20].peer().sendDirect(peerAddress).object(key1).start();
                 futureDirect.awaitUninterruptibly();
                 System.out.println("we searched for \"greet\", and found [" + tmp[2] + "], ed(" + tmp[1] + ",greet)="
                         + ld((String) tmp[1], "greet") + ". After downloading we get [" + futureDirect.object() + "]");

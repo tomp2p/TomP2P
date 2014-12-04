@@ -131,10 +131,10 @@ public class HolePTestApp {
 
 		// store own PeerAddress on Server
 		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(new Integer(0)).start();
-		fd.addListener(new BaseFutureAdapter<FutureResponse>() {
+		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
 
 			@Override
-			public void operationComplete(FutureResponse future) throws Exception {
+			public void operationComplete(FutureDirect future) throws Exception {
 				if (future.isSuccess()) {
 					System.err.println("OWN PEERADDRESS STORED ON SERVER!");
 				} else {

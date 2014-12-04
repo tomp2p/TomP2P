@@ -22,6 +22,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 
 import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -146,7 +147,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
         LOG.debug("received request {} from channel {}", message, ctx.channel());
-        if (message.sender().inetAddress().equals(Inet4Address.getByName("192.168.2.114"))) {
+        InetAddress sender = message.sender().inetAddress();
+        Inet4Address sender2 = (Inet4Address) sender;
+        if (sender2.equals(Inet4Address.getByName("192.168.2.135"))) {
         	System.err.println("this is our message!");
         }
         

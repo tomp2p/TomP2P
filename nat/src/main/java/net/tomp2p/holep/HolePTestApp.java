@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.util.Scanner;
 
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureShutdown;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
@@ -129,11 +131,19 @@ public class HolePTestApp {
 
 		// store own PeerAddress on Server
 		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(new Integer(0)).start();
-		if (fd.isSuccess()) {
-			System.err.println("OWN PEERADDRESS STORED ON SERVER!");
-		} else {
-			System.err.println("COULD NOT STORE OWN PEERADDRESS ON SERVER!");
-		}
+		fd.addListener(new BaseFutureAdapter<FutureResponse>() {
+
+			@Override
+			public void operationComplete(FutureResponse future) throws Exception {
+				if (future.isSuccess()) {
+					System.err.println("OWN PEERADDRESS STORED ON SERVER!");
+				} else {
+					System.err.println("COULD NOT STORE OWN PEERADDRESS ON SERVER!");
+				}
+			}
+		});
+		
+		setObjectDataReply();
 	}
 
 	public void setObjectDataReply() {
@@ -161,7 +171,6 @@ public class HolePTestApp {
 	}
 
 	public void getOtherPeerAddress() throws ClassNotFoundException, IOException {
-		setObjectDataReply();
 		FutureDirect fDirect = peer.sendDirect(masterPeerAddress).object(new Integer(1)).start();
 		fDirect.awaitUninterruptibly();
 
@@ -174,8 +183,6 @@ public class HolePTestApp {
 	}
 
 	public void sendHolePMessage(int port) throws IOException {
-		setObjectDataReply();
-		
 		if (port == -1) {
 			port = 8080;
 		}

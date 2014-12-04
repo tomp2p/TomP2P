@@ -3,8 +3,6 @@ package net.tomp2p.dht;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.Utils2;
-import net.tomp2p.dht.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -22,20 +20,20 @@ public class TestEvaluation {
         byte[] me13 = new byte[] { 3, 3 };
         byte[] me14 = new byte[] { 4, 4 };
         Map<PeerAddress, Map<Number640, Data>> rawData = new HashMap<PeerAddress, Map<Number640, Data>>();
-        PeerAddress pa1 = Utils2.createAddress(19);
+        PeerAddress pa1 = UtilsDHT2.createAddress(19);
         Map<Number640, Data> test1 = new HashMap<Number640, Data>();
         test1.put(new Number640(new Number160(12),new Number160(12),new Number160(12),new Number160(0)), new Data(me12));
         test1.put(new Number640(new Number160(13),new Number160(13),new Number160(13),new Number160(0)), new Data(me13));
         test1.put(new Number640(new Number160(14),new Number160(14),new Number160(14),new Number160(0)), new Data(me14));
         rawData.put(pa1, test1);
         //
-        PeerAddress pa2 = Utils2.createAddress(20);
+        PeerAddress pa2 = UtilsDHT2.createAddress(20);
         Map<Number640, Data> test2 = new HashMap<Number640, Data>();
         test2.put(new Number640(new Number160(12),new Number160(12),new Number160(12),new Number160(0)), new Data(me12));
         test2.put(new Number640(new Number160(13),new Number160(13),new Number160(13),new Number160(0)), new Data(me13));
         rawData.put(pa2, test2);
         //
-        PeerAddress pa3 = Utils2.createAddress(21);
+        PeerAddress pa3 = UtilsDHT2.createAddress(21);
         Map<Number640, Data> test3 = new HashMap<Number640, Data>();
         test3.put(new Number640(new Number160(11),new Number160(11),new Number160(11),new Number160(0)), new Data(me11));
         test3.put(new Number640(new Number160(13),new Number160(13),new Number160(13),new Number160(0)), new Data(me13));
@@ -56,20 +54,20 @@ public class TestEvaluation {
         byte[] me13 = new byte[] { 3, 3 };
         byte[] me14 = new byte[] { 4, 4 };
         Map<PeerAddress, Map<Number640, Data>> rawData = new HashMap<PeerAddress, Map<Number640, Data>>();
-        PeerAddress pa1 = Utils2.createAddress(19);
+        PeerAddress pa1 = UtilsDHT2.createAddress(19);
         Map<Number640, Data> test1 = new HashMap<Number640, Data>();
         test1.put(new Number640(new Number160(12),new Number160(12),new Number160(12),new Number160(0)), new Data(me12));
         test1.put(new Number640(new Number160(13),new Number160(13),new Number160(13),new Number160(0)), new Data(me13));
         test1.put(new Number640(new Number160(14),new Number160(14),new Number160(14),new Number160(0)), new Data(me14));
         rawData.put(pa1, test1);
         //
-        PeerAddress pa2 = Utils2.createAddress(20);
+        PeerAddress pa2 = UtilsDHT2.createAddress(20);
         Map<Number640, Data> test2 = new HashMap<Number640, Data>();
         test2.put(new Number640(new Number160(12),new Number160(12),new Number160(12),new Number160(0)), new Data(me11));
         test2.put(new Number640(new Number160(13),new Number160(13),new Number160(13),new Number160(0)), new Data(me13));
         rawData.put(pa2, test2);
         //
-        PeerAddress pa3 = Utils2.createAddress(21);
+        PeerAddress pa3 = UtilsDHT2.createAddress(21);
         Map<Number640, Data> test3 = new HashMap<Number640, Data>();
         test3.put(new Number640(new Number160(11),new Number160(11),new Number160(11),new Number160(0)), new Data(me11));
         test3.put(new Number640(new Number160(13),new Number160(13),new Number160(13),new Number160(0)), new Data(me13));

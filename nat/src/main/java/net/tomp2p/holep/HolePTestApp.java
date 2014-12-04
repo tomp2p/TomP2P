@@ -143,10 +143,34 @@ public class HolePTestApp {
 			}
 		});
 		
-		setObjectDataReply();
+		setObjectDataReply2();
 	}
 
-	public void setObjectDataReply() {
+	private void setObjectDataReply2() {
+		peer.objectDataReply(new ObjectDataReply() {
+
+			@Override
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				System.out.println();
+				System.out.println();
+				System.out.println();
+				System.out.println();
+				System.out.println();
+				System.out.println("SUCCESS HIT");
+				System.out.println("Sender: " + sender.toString());
+				System.out.println("NATPEER: " + ((String) request));
+				System.out.println();
+				System.out.println();
+				System.out.println();
+				System.out.println();
+				System.out.println();
+				natPeerAddress = (PeerAddress) request;
+				return "Hello Successful TomP2P holepunching request";
+			}
+		});
+	}
+
+	private void setObjectDataReply() {
 		peer.objectDataReply(new ObjectDataReply() {
 
 			@Override
@@ -171,6 +195,7 @@ public class HolePTestApp {
 	}
 
 	public void getOtherPeerAddress() throws ClassNotFoundException, IOException {
+		setObjectDataReply();
 		FutureDirect fDirect = peer.sendDirect(masterPeerAddress).object(new Integer(1)).start();
 		fDirect.awaitUninterruptibly();
 
@@ -180,9 +205,12 @@ public class HolePTestApp {
 		} else {
 			System.err.println("FAILFAILFAIL!");
 		}
+		setObjectDataReply2();
 	}
 
 	public void sendHolePMessage(int port) throws IOException {
+		setObjectDataReply();
+		
 		if (port == -1) {
 			port = 8080;
 		}

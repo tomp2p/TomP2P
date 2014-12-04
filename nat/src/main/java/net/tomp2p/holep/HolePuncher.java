@@ -52,17 +52,17 @@ public class HolePuncher implements IPunchHole {
 		InetSocketAddress localAddress = new InetSocketAddress(localInetAddress, localPort);
 		
 		// we must create a special handler to handle the connection
-		SimpleChannelInboundHandler<Message> holePunchHandler = new SimpleChannelInboundHandler<Message>() {
-			
-			@Override
-			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-				if (msg.isOk()) {
-					System.err.println("SUCCESS!!!!!");
-				} else {
-					System.err.println("FAIL IN INBOUNDHANDLER OF HOLEPUNCHER!");
-				}
-			}
-		};
+//		SimpleChannelInboundHandler<Message> holePunchHandler = new SimpleChannelInboundHandler<Message>() {
+//			
+//			@Override
+//			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+//				if (msg.isOk()) {
+//					System.err.println("SUCCESS!!!!!");
+//				} else {
+//					System.err.println("FAIL IN INBOUNDHANDLER OF HOLEPUNCHER!");
+//				}
+//			}
+//		};
 		
 		Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = sender.configureHandlers(peer.connectionBean().dispatcher(), futureResponse, IDLE_UDP_SECONDS, false);
 		

@@ -16,7 +16,6 @@
 
 package net.tomp2p.connection;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,15 +24,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ConnectException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,19 +39,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
-import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.message.MessageContentIndex;
-import net.tomp2p.message.NeighborSet;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
@@ -674,22 +662,27 @@ public class Sender {
 										ChannelCreator cc = future.channelCreator();
 										ChannelFuture channelFuture = cc.createUDP(broadcast, handlers, futureResponse, predefinedSocket);
 										//Message sendMessage = message;
-										Message sendMessage = new Message();
-										PeerAddress sender = message.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
-										PeerAddress recipient = message.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
-										sendMessage.recipient(recipient);
-										sendMessage.sender(sender);
-										sendMessage.version(message.version());
-										sendMessage.command(message.command());
-										sendMessage.type(message.type());
-										sendMessage.udp(message.isUdp());
-										for (Buffer buf : message.bufferList()) {
-											sendMessage.buffer(new Buffer(buf.buffer().duplicate()));
-										}
+										final Message sendMessage = createSendMessage(message, localPort, remotePort);
 										afterConnect(futureResponse, sendMessage, channelFuture, false);
 									} else {
 										handleFail("could not create a channel!");
 									}
+								}
+
+								private Message createSendMessage(final Message message, final int localPort, final int remotePort) {
+									Message sendMessage = new Message();
+									PeerAddress sender = message.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
+									PeerAddress recipient = message.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
+									sendMessage.recipient(recipient);
+									sendMessage.sender(sender);
+									sendMessage.version(message.version());
+									sendMessage.command(message.command());
+									sendMessage.type(message.type());
+									sendMessage.udp(true);
+									for (Buffer buf : message.bufferList()) {
+										sendMessage.buffer(new Buffer(buf.buffer().duplicate()));
+									}
+									return sendMessage;
 								}
 								
 							});
@@ -716,39 +709,6 @@ public class Sender {
 			isBroadcast = false;
 		}
 		sendUDP(holePunchHandler, futureResponse, socketInfoMessage, channelCreator, idleUDPSeconds, isBroadcast);
-	}
-
-	private List<ChannelCreator> prepareHolePunch(final FutureResponse futureResponse, Message message) throws IOException {
-		// TODO jwa store message to chachedRequests
-		cachedRequests.put(message.messageId(), futureResponse);
-
-		int numberOfChannelCreators = 3;
-		final List<ChannelCreator> channelCreators = new ArrayList<ChannelCreator>(3);
-
-		for (int j = 0; j < numberOfChannelCreators; j++) {
-			// create new random socket and make a channelFuture
-			FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
-			// fcc.awaitUninterruptibly();
-			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-
-				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception {
-					if (future.isSuccess()) {
-						ChannelCreator cc = future.channelCreator();
-						channelCreators.add(cc);
-					} else {
-						LOG.error("No hole punch possible with ChannelCreator = " + future.channelCreator().toString());
-					}
-				}
-
-			});
-
-			// TODO jwa care about this ugly construct!
-			while (!fcc.isCompleted()) {
-				// wait
-			}
-		}
-		return channelCreators;
 	}
 
 	/**

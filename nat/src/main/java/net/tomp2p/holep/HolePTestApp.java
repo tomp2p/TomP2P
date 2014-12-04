@@ -155,48 +155,12 @@ public class HolePTestApp {
 				System.out.println();
 				System.out.println();
 				natPeerAddress = (PeerAddress) request;
-				return null;
+				return "Hello Successful TomP2P holepunching request";
 			}
 		});
 	}
 
-//	public void runTextInterface() throws Exception {
-//		System.out.println("Welcome to the textinterface of HolePTestApp!");
-//		Scanner scan = new Scanner(System.in);
-//		boolean exit = false;
-//
-//		while (!exit) {
-//			System.out.println("Choose a valid order. \n" + "		0 = Exit process \n" + "		1 = getNatPeerAddress() CURRENTLY NOT WORKING! \n"
-//					+ "		2 = putNATPeerAddress() CURRENTLY NOT WORKING! \n" + "		3 = sendDirectMessage() \n"
-//					+ "		4 = sendDirectNATMessage() \n" + "		5 = getOtherPeerAddress()");
-//			System.out.println();
-//			int command = scan.nextInt();
-//			System.out.println("You've entered the number " + command + ".");
-//			switch (command) {
-//			case 0: // end process
-//				scan.close();
-//				exit = true;
-//				break;
-//			case 3: // send Message to peer not behind a NAT
-//				sendDirectMessage();
-//				break;
-//			case 4: // send Message to peer behind a NAT
-//				sendDirectNATMessage();
-//				break;
-//			case 5: // send Relay message to get to the PeerAddress of one
-//					// another
-//				sendRelayNATMessage();
-//			default: // start process again
-//				break;
-//			}
-//		}
-		// if 0 is chosen, the peer should shutdown and the program should end
-//		FutureShutdown fs = (FutureShutdown) peer.shutdown();
-//		fs.awaitUninterruptibly();
-//		System.exit(0);
-//	}
-
-	public void sendRelayNATMessage() throws ClassNotFoundException, IOException {
+	public void getOtherPeerAddress() throws ClassNotFoundException, IOException {
 		setObjectDataReply();
 		FutureDirect fDirect = peer.sendDirect(masterPeerAddress).object(new Integer(1)).start();
 		fDirect.awaitUninterruptibly();
@@ -208,11 +172,8 @@ public class HolePTestApp {
 			System.err.println("FAILFAILFAIL!");
 		}
 	}
-	public void sendDirectNatMessage() throws IOException {
-		sendDirectNATMessage(-1);
-	}
 
-	public void sendDirectNATMessage(int port) throws IOException {
+	public void sendHolePMessage(int port) throws IOException {
 		setObjectDataReply();
 		
 		if (port == -1) {

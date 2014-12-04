@@ -19,7 +19,7 @@ public class HolePTestController {
 			public void actionPerformed(ActionEvent e) {
 				System.err.println("Button \"getNatPeerAddress pressed!\"");
 				try {
-					app.sendRelayNATMessage();
+					app.getOtherPeerAddress();
 				} catch (ClassNotFoundException e1) {
 					e1.printStackTrace();
 				} catch (IOException e1) {
@@ -41,7 +41,7 @@ public class HolePTestController {
 					} else {
 						port = Integer.valueOf(portNr);
 					}
-					app.sendDirectNATMessage(port);
+					app.sendHolePMessage(port);
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}

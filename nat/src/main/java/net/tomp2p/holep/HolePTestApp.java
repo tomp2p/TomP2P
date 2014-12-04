@@ -164,7 +164,7 @@ public class HolePTestApp {
 				System.out.println();
 				System.out.println();
 				System.out.println();
-				natPeerAddress = (PeerAddress) request;
+				natPeerAddress = sender;
 				return "Hello Successful TomP2P holepunching request";
 			}
 		});

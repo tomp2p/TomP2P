@@ -21,6 +21,7 @@ import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 
+import java.net.Inet4Address;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -145,6 +146,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
         LOG.debug("received request {} from channel {}", message, ctx.channel());
+        if (message.sender().inetAddress().equals(Inet4Address.getByName("192.168.2.114"))) {
+        	System.err.println("this is our message!");
+        }
+        
         if (message.version() != p2pID) {
             LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
                     message.version(), message);

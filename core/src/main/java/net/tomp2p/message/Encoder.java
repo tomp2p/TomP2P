@@ -246,7 +246,6 @@ public class Encoder {
 			int ttl = (int) ((data.expirationMillis() - System.currentTimeMillis()) / 1000);
 			data.ttlSeconds(ttl < 0 ? 0 : ttl);
 		}
-		final int startWriter = buf.writerIndex();
 	    data.encodeHeader(buf, signatureFactory);
 	    data.encodeBuffer(buf);
 	    data.encodeDone(buf, signatureFactory, message.privateKey());

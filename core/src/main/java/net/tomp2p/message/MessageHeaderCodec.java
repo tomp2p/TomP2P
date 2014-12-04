@@ -23,6 +23,7 @@ import net.tomp2p.message.Message.Content;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -59,7 +60,7 @@ public final class MessageHeaderCodec {
      *            The message with the header that will be encoded
      * @return The buffer passed as an argument
      */
-    public static void encodeHeader(final ByteBuf buffer, final Message message) {
+    public static void encodeHeader(final AlternativeCompositeByteBuf buffer, final Message message) {
         
     	final int versionAndType = message.version() << 4 | (message.type().ordinal() & Utils.MASK_0F);
         buffer.writeInt(versionAndType); // 4

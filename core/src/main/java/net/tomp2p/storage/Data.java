@@ -363,7 +363,7 @@ public class Data {
 	 * @param buf
 	 * @param signatureFactory
 	 */
-	public void encodeHeader(final ByteBuf buf, SignatureFactory signatureFactory) {
+	public void encodeHeader(final AlternativeCompositeByteBuf buf, SignatureFactory signatureFactory) {
 		int header = type.ordinal();
 		if (prepareFlag) {
 			header |= 0x02;
@@ -430,11 +430,11 @@ public class Data {
 		return buffer.alreadyTransferred() == length();
 	}
 	
-	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public void encodeDone(final AlternativeCompositeByteBuf buf, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
 		encodeDone(buf, signatureFactory, null);
 	}
 
-	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory, PrivateKey messagePrivateKey) throws InvalidKeyException, SignatureException, IOException {
+	public void encodeDone(final AlternativeCompositeByteBuf buf, SignatureFactory signatureFactory, PrivateKey messagePrivateKey) throws InvalidKeyException, SignatureException, IOException {
 		if (signed) {
 			if(signature == null && privateKey != null) {
 				signature = signatureFactory.sign(privateKey, buffer.toByteBuf());

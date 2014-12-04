@@ -2031,7 +2031,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	        } while (bytesToSlice > 0);
 
 	        // Slice all components because only readable bytes are interesting.
-	        for (int i = 0; i < slice.size(); i ++) {
+	        for (int i = 0; i < slice.size(); i++) {
 	            slice.set(i, slice.get(i).slice());
 	        }
 

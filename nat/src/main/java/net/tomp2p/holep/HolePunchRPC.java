@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +72,7 @@ public class HolePunchRPC extends DispatchHandler {
 		// this list holds all the port mappings for the hole punch procedure
 		final List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
 		final PeerAddress originalSender = (PeerAddress) message.neighborsSetList().get(0).neighbors().toArray()[0];
-		final CountDownLatch cLatch = new CountDownLatch(remotePorts.size());
+		final AtomicInteger countDown = new AtomicInteger(remotePorts.size());
 
 		for (int i = 0; i < remotePorts.size(); i++) {
 			final int currentPort = remotePorts.get(i);
@@ -94,29 +95,36 @@ public class HolePunchRPC extends DispatchHandler {
 					} else {
 						handleFail(message, responder, "could not create channel!");
 					}
-					System.err.println("CountdownLatch = " + (cLatch.getCount() - 1));
-					cLatch.countDown();
+					countDown.decrementAndGet();
+					if (countDown.get() == 0) {
+						createResponseAndReply(message, responder, portMappings, originalSender);
+					}
+				}
+
+				/**
+				 * This method simply mapps all the portmappings into the
+				 * intList of the response {@link Message} and then sends it
+				 * back to the sender.
+				 * 
+				 * @param message
+				 * @param responder
+				 * @param portMappings
+				 * @param originalSender
+				 */
+				public void createResponseAndReply(final Message message, final Responder responder,
+						final List<Pair<Integer, Integer>> portMappings, final PeerAddress originalSender) {
+					Message replyMessage = createMessage(originalSender, Commands.HOLEP.getNr(), Message.Type.OK);
+					replyMessage.messageId(message.messageId());
+					for (Pair<Integer, Integer> pair : portMappings) {
+						if (!(pair == null || pair.isEmpty() || pair.element0() == null || pair.element1() == null)) {
+							replyMessage.intValue(pair.element0());
+							replyMessage.intValue(pair.element1());
+						}
+					}
+					responder.response(replyMessage);
 				}
 			});
 		}
-
-		try {
-			cLatch.await(5, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		Message replyMessage = createMessage(originalSender, Commands.HOLEP.getNr(), Message.Type.OK);
-		replyMessage.messageId(message.messageId());
-		for (Pair<Integer, Integer> pair : portMappings) {
-			if (!(pair == null || pair.isEmpty() || pair.element0() == null || pair.element1() == null)) {
-				System.err.println("remotePort: " + pair.element0().toString());
-				replyMessage.intValue(pair.element0());
-				System.err.println("localPort: " + pair.element1().toString());
-				replyMessage.intValue(pair.element1());
-			}
-		}
-		responder.response(replyMessage);
 	}
 
 	/**

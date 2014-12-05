@@ -901,7 +901,6 @@ public class TestRelay {
  			}
          }
     }
-	
 
 	@Test
 	public void testRelaySlowPeer() throws Exception {

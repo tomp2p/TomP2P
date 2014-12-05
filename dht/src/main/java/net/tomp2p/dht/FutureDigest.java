@@ -17,8 +17,8 @@ package net.tomp2p.dht;
 
 import java.util.Map;
 
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
-import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 
@@ -69,13 +69,15 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
      * 
      * @param rawDigest
      *            The hashes of the content stored with information from which peer it has been received.
+     * @param futuresCompleted 
      */
-    public void receivedDigest(final Map<PeerAddress, DigestResult> rawDigest) {
+    public void receivedDigest(final Map<PeerAddress, DigestResult> rawDigest, FutureDone<Void> futuresCompleted) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
             }
             this.rawDigest = rawDigest;
+            this.futuresCompleted = futuresCompleted;
             final int size = rawDigest.size();
             this.minReached = size >= min;
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;

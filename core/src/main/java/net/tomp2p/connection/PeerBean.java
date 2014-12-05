@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.tomp2p.p2p.MaintenanceTask;
+import net.tomp2p.peers.LocalMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -40,7 +41,9 @@ import org.slf4j.LoggerFactory;
  */
 public class PeerBean {
 
-    private KeyPair keyPair;
+	private static final Logger LOG = LoggerFactory.getLogger(PeerBean.class);
+    
+	private KeyPair keyPair;
     private PeerAddress serverPeerAddress;
     private PeerMap peerMap;
     private List<PeerStatusListener> peerStatusListeners = new ArrayList<PeerStatusListener>(1);
@@ -48,7 +51,7 @@ public class PeerBean {
     private MaintenanceTask maintenanceTask;
     private DigestStorage digestStorage;
     private DigestTracker digestTracker;
-	private static final Logger LOG = LoggerFactory.getLogger(PeerBean.class);
+    private LocalMap localMap;
     
 	/**
 	 * This map is used for all open peerConnections which are meant to stay
@@ -224,4 +227,13 @@ public class PeerBean {
 			return null;
 		}
 	}
+
+	public PeerBean localMap(LocalMap localMap) {
+	    this.localMap = localMap;
+	    return this;
+    }
+	
+	public LocalMap localMap() {
+	    return localMap;
+    }
 }

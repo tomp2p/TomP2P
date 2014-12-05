@@ -176,23 +176,40 @@ public class PeerBuilderTracker {
 			if (keys == null || keys.size() == 0) {
 				return null;
 			}
-			Number320 key = Utils.pollRandom(keys, rnd);
-			Collection<Pair<PeerStatistic, Data>> value = trackerStorage.peers(key).values(); 
+			Number320 key = Utils.peekRandom(keys, rnd);
+			
+			if (key == null) {
+				return null;
+			}
+			
+			Map<PeerAddress, Pair<PeerStatistic, Data>> map = trackerStorage.peers(key);
+			
+			if(map == null || map.size() == 0) {
+				return null;
+			}
+			
+			Collection<Pair<PeerStatistic, Data>> value = map.values();
 			
 			if (value.isEmpty()) {
 				return null;
 			}
 			TrackerData trackerData = new TrackerData(value);
 			
-			Collection<PeerAddress> peerStatatistics = trackerData.peerAddresses().keySet();
-			if (peerStatatistics == null || peerStatatistics.size() == 0) {
+			Map<PeerAddress, Data> peerStatatisticsMap = trackerData.peerAddresses();
+			
+			if(peerStatatisticsMap == null || peerStatatisticsMap.size() == 0) {
+				return null;
+			}
+			
+			Collection<PeerAddress> peerStatatistics = peerStatatisticsMap.keySet();
+			if (peerStatatistics.isEmpty()) {
 				return null;
 			}
 			peerStatatistics.remove(new PeerStatistic(self));
 			if (peerStatatistics.size() == 0) {
 				return null;
 			}
-			PeerAddress peerStatatistic = Utils.pollRandom(peerStatatistics, rnd);
+			PeerAddress peerStatatistic = Utils.peekRandom(peerStatatistics, rnd);
 			return new TrackerTriple().key(key).data(trackerData).remotePeer(peerStatatistic);
 		}
 

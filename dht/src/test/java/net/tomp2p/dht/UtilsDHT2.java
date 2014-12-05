@@ -133,7 +133,7 @@ public class UtilsDHT2 {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
-        Bindings bindings = new Bindings().addInterface("lo");
+        Bindings bindings = new Bindings();
         PeerDHT[] peers = new PeerDHT[nrOfPeers];
         final Peer master;
         if (automaticFuture != null) {

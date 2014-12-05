@@ -22,13 +22,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
+import net.tomp2p.tracker.FutureTracker;
+import net.tomp2p.tracker.PeerBuilderTracker;
+import net.tomp2p.tracker.PeerTracker;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -79,7 +81,7 @@ public final class ExampleTracker {
     private static MyPeer[] wrap(final Peer[] peers) {
         MyPeer[] retVal = new MyPeer[peers.length];
         for (int i = 0; i < peers.length; i++) {
-            retVal[i] = new MyPeer(peers[i]);
+            retVal[i] = new MyPeer(new PeerBuilderTracker(peers[i]).verifyPeersOnTracker(false).start());
         }
         return retVal;
     }
@@ -95,7 +97,7 @@ public final class ExampleTracker {
     private static void example(final MyPeer[] peers) throws IOException, ClassNotFoundException {
         // 3 peers have files
         System.out.println("Setup: we have " + peers.length
-                + " peers; peers[12] (Leo) knows Jan, peers[24] (Tim) knows Urs, peers[42] (Pat) knows Tom");
+                + " peers; peers[12] (Urs) knows Jan, peers[24] (Tom) knows Urs, peers[42] (Pat) knows Tom");
         
         final int peer12 = 12;
         final int peer24 = 24;
@@ -103,7 +105,7 @@ public final class ExampleTracker {
         
         peers[peer12].announce("Urs", "Jan");
         peers[peer24].announce("Tom", "Urs");
-        peers[peer42].announce("Urs", "Tom");
+        peers[peer42].announce("Pat", "Tom");
         // peer 12 now searches for Song B
         System.out.println("peers[24] (Tom) wants to know the friends of Urs");
         peers[peer24].list("Urs");
@@ -116,7 +118,7 @@ public final class ExampleTracker {
      * 
      */
     private static class MyPeer {
-        private final Peer peer;
+        private final PeerTracker peer;
 
         private final Map<Number160, String> friends = new HashMap<Number160, String>();
 
@@ -124,7 +126,7 @@ public final class ExampleTracker {
          * @param peer
          *            The peer that backs this class
          */
-        public MyPeer(final Peer peer) {
+        public MyPeer(final PeerTracker peer) {
             this.peer = peer;
             setReplyHandler(peer);
         }
@@ -151,7 +153,7 @@ public final class ExampleTracker {
         public void announce() throws IOException {
             for (Map.Entry<Number160, String> entry : friends.entrySet()) {
                 Collection<String> tmp = new ArrayList<String>(friends.values());
-                peer.addTracker(entry.getKey()).setAttachement(new Data(Utils.encodeJavaObject(tmp.toArray(new String[0]))))
+                peer.addTracker(entry.getKey()).attachement(new Data(Utils.encodeJavaObject(tmp.toArray(new String[0]))))
                         .start().awaitUninterruptibly();
             }
         }
@@ -169,6 +171,7 @@ public final class ExampleTracker {
             FutureTracker futureTracker = peer.getTracker(key).start();
             // now we know which peer has this data, and we also know what other things this peer has
             futureTracker.awaitUninterruptibly();
+            System.err.println(futureTracker.failedReason());
             Collection<TrackerData> trackerDatas = futureTracker.trackers();
             for (TrackerData trackerData : trackerDatas) {
             	
@@ -186,8 +189,8 @@ public final class ExampleTracker {
         /**  
          * @param peer Set reply handler for peer.
          */
-        private void setReplyHandler(final Peer peer) {
-            peer.objectDataReply(new ObjectDataReply() {
+        private void setReplyHandler(final PeerTracker peer) {
+            peer.peer().objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(final PeerAddress sender, final Object request) throws Exception {
                     if (request != null && request instanceof Number160) {

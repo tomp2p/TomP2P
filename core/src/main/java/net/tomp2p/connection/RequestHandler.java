@@ -20,6 +20,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
 
@@ -163,6 +164,18 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         connectionBean.sender().sendUDP(this, futureResponse, message, channelCreator, idleUDPSeconds, true);
         return futureResponse;
     }
+    
+    /**
+     * Broadcast a UDP message (layer 2) and do not expect a reply.
+     * 
+     * @param channelCreator
+     *            The channel creator will create a UDP connection
+     * @return The future that was added in the constructor
+     */
+    public K fireAndForgetBroadcastUDP(final ChannelCreator channelCreator) {
+        connectionBean.sender().sendUDP(null, futureResponse, message, channelCreator, 0, true);
+        return futureResponse;
+    }
 
     /**
      * Send a TCP message and expect a reply.
@@ -262,14 +275,18 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
         }
+        
+        //NAT reflection, reverse lookup
+        PeerAddress realAddress = peerBean.localMap().translateReverse(responseMessage.sender());
+        if(realAddress != null) {
+        	responseMessage.sender(realAddress);
+        }
 
         // We got a good answer, let's mark the sender as alive
-		if (responseMessage.isOk() || responseMessage.isNotOk()) {
-			synchronized (peerBean.peerStatusListeners()) {
-				for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-					peerStatusListener.peerFound(responseMessage.sender(), null, null);
-				}
-			}
+        //if its an announce, the peer status will be handled in the RPC
+		if (responseMessage.command() != RPC.Commands.LOCAL_ANNOUNCE.getNr() 
+				&& (responseMessage.isOk() || responseMessage.isNotOk())) {
+			peerBean.notifyPeerFound(responseMessage.sender(), null, null);
 		}
         
         // call this for streaming support

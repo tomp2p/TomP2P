@@ -5,14 +5,14 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
-import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.VotingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerMapConfiguration;
+import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -285,17 +285,17 @@ public class TestTracker {
         }
     }
 
-	/*@Test
+	@Test
     public void testTracker5() throws Exception {
         final Random rnd = new Random(42L);
-        Peer master = null;
+        PeerTracker master = null;
         try {
-            master = new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start();
-            Peer[] nodes = createNodes(master, 500, rnd);
+            master = new PeerBuilderTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start()).verifyPeersOnTracker(false).start();
+            PeerTracker[] nodes = createNodes(master, 500, rnd);
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0);
@@ -329,7 +329,7 @@ public class TestTracker {
                     .values().iterator().next().object());
         } finally {
             if (master != null) {
-                master.shutdown().await();
+                master.peer().shutdown().await();
             }
         }
     }
@@ -337,9 +337,9 @@ public class TestTracker {
     @Test
     public void testTracker6() throws Exception {
         final Random rnd = new Random(42L);
-        Peer master = null;
+        PeerTracker master = null;
         try {
-            master = new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start();
+            master = new PeerBuilderTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start()).verifyPeersOnTracker(false).start();
             Number160 key = new Number160(44);
             FutureTracker future = master.addTracker(key).domainKey(Number160.createHash("test")).start();
             future.awaitUninterruptibly();
@@ -352,7 +352,7 @@ public class TestTracker {
             Assert.assertEquals(future2.peersOnTracker().size(), 1);
         } finally {
             if (master != null) {
-                master.shutdown().await();
+                master.peer().shutdown().await();
             }
         }
     }
@@ -360,12 +360,16 @@ public class TestTracker {
     @Test
     public void testTrackerResponsibility() throws Exception {
         final Random rnd = new Random(42L);
-        Peer master = null;
+        PeerTracker master = null;
         try {
             Number160 trackerID = new Number160(rnd);
-            master = new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start();
+            Number160 self = new Number160(rnd);
+            PeerMapConfiguration pmc = new PeerMapConfiguration(self);
+            pmc.peerNoVerification();
+            PeerMap pm = new PeerMap(pmc);
+            master = new PeerBuilderTracker(new PeerBuilder(self).p2pId(1).ports(4001).peerMap(pm).start()).verifyPeersOnTracker(false).start();
 
-            Peer[] nodes = createNodes(master, 500, rnd);
+            PeerTracker[] nodes = createNodes(master, 500, rnd);
             FutureTracker futureTracker = nodes[0].addTracker(trackerID).start();
             futureTracker.awaitUninterruptibly();
 
@@ -373,46 +377,18 @@ public class TestTracker {
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++) {
                     if (i != j)
-                        nodes[i].peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                        nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
                 }
             }
             FutureTracker ft = nodes[30].getTracker(trackerID).start();
             ft.awaitUninterruptibly();
-            Assert.assertEquals(1, ft.trackers().size());
+            Assert.assertEquals(3, ft.trackers().size());
         } finally {
             if (master != null) {
-                master.shutdown().await();
+                master.peer().shutdown().await();
             }
         }
     }
-
-    @Test
-    public void testBadDistribution() throws Exception {
-        Peer[] peers = null;
-        try {
-            Random rnd = new Random(13414144);
-            peers = Utils2.createAndAttachNodes(100, 4001, rnd);
-            Utils2.bootstrap(peers);
-
-            // Random rnd = new Random(12112);
-            Number160 key = new Number160(rnd);
-            Thread.sleep(1000);
-            System.out.println("start tracker");
-            FutureTracker ft1 = peers[42].addTracker(key).start();
-            ft1.awaitUninterruptibly();
-            Thread.sleep(1000);
-            System.out.println("searching for key " + key);
-            FutureTracker ft = peers[55].getTracker(key).start();
-            SortedSet<PeerAddress> pa2 = new TreeSet<PeerAddress>(PeerMap.createComparator(key));
-            pa2.addAll(peers[55].peerBean().peerMap().all());
-            ft.awaitUninterruptibly();
-            Collection<TrackerData> trackerDatas = ft.trackers();
-            Assert.assertEquals(1, trackerDatas.size());
-        } finally {
-            // 0 is the master
-            peers[0].shutdown().await();
-        }
-    }*/
 
     private PeerTracker[] createNodes(PeerTracker master, int nr, Random rnd) throws Exception {
 

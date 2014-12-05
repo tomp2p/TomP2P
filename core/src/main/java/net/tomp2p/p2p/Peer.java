@@ -31,6 +31,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.p2p.builder.AnnounceBuilder;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
@@ -39,6 +40,7 @@ import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.AnnounceRPC;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.NeighborRPC;
@@ -87,6 +89,7 @@ public class Peer {
     private NeighborRPC neighborRPC;
     private DirectDataRPC directDataRPC;
     private BroadcastRPC broadcastRPC;
+    private AnnounceRPC announceRPC;
 
     private volatile boolean shutdown = false;
     
@@ -170,6 +173,18 @@ public class Peer {
     
     public Peer broadcastRPC(BroadcastRPC broadcastRPC) {
         this.broadcastRPC = broadcastRPC;
+        return this;
+    }
+    
+    public AnnounceRPC announceRPC() {
+        if (announceRPC == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+        }
+        return announceRPC;
+    }
+    
+    public Peer announceRPC(AnnounceRPC announceRPC) {
+        this.announceRPC = announceRPC;
         return this;
     }
 
@@ -352,5 +367,7 @@ public class Peer {
 		return this;
 	}
 
-	
+	public AnnounceBuilder localAnnounce() {
+	    return new AnnounceBuilder(this);
+    }	
 }

@@ -1,4 +1,4 @@
-package net.tomp2p.replication;
+package net.tomp2p.p2p;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -10,12 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.p2p.AutomaticFuture;
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.p2p.builder.Builder;
 
-public class DirectReplication implements Shutdown {
+public class JobScheduler implements Shutdown {
 
 	final private ScheduledExecutorService scheduledExecutorService;
 	final private Peer peer;
@@ -45,7 +42,7 @@ public class DirectReplication implements Shutdown {
 		@Override
 		public void run() {
 			boolean shutdownNow = false;
-			synchronized (DirectReplication.this) {
+			synchronized (JobScheduler.this) {
 				shutdownNow = shutdown;
             }
 			try {
@@ -79,15 +76,15 @@ public class DirectReplication implements Shutdown {
 		}
 	};
 
-	public DirectReplication(Peer peer) {
+	public JobScheduler(Peer peer) {
 		this(peer, 1, Executors.defaultThreadFactory());
 	}
 
-	public DirectReplication(Peer peer, int corePoolSize) {
+	public JobScheduler(Peer peer, int corePoolSize) {
 		this(peer, corePoolSize, Executors.defaultThreadFactory());
 	}
 
-	public DirectReplication(Peer peer, int corePoolSize, ThreadFactory threadFactory) {
+	public JobScheduler(Peer peer, int corePoolSize, ThreadFactory threadFactory) {
 		this.scheduledExecutorService = Executors.newScheduledThreadPool(corePoolSize, threadFactory);
 		this.peer = peer;
 		peer.addShutdownListener(this);
@@ -101,7 +98,12 @@ public class DirectReplication implements Shutdown {
 	        final AutomaticFuture automaticFuture) {
 		synchronized (this) {
 			if (shutdown) {
-				return null;
+				return new Shutdown() {
+					@Override
+					public BaseFuture shutdown() {
+						return new FutureDone<Void>().done();
+					}
+				};
 			}
 			final CountDownLatch latch = new CountDownLatch(1);
 			final DirectReplicationWorker worker = new DirectReplicationWorker(builder, automaticFuture, repetitions, latch);
@@ -119,6 +121,7 @@ public class DirectReplication implements Shutdown {
 		}
 	}
 
+	@Override
 	public FutureDone<Void> shutdown() {
 		synchronized (this) {
 			shutdown = true;

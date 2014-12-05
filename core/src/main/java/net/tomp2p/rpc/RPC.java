@@ -26,7 +26,8 @@ public class RPC {
 		GET_LATEST(),
 		RCON(),
 		GET_LATEST_WITH_DIGEST(),
-		GCM();
+		GCM(),
+		LOCAL_ANNOUNCE();
 	
 	public byte getNr() {
 		return (byte) ordinal();

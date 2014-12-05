@@ -471,6 +471,16 @@ public class Utils {
         collection.remove(retVal);
         return retVal;
     }
+    
+    public static <K> K peekRandom(Collection<K> collection, Random rnd) {
+        int size = collection.size();
+        if (size == 0) {
+            return null;
+        }
+        int index = rnd.nextInt(size);
+        List<K> values = new ArrayList<K>(collection);
+        return values.get(index);
+    }
 
     public static <K, V> Entry<K, V> pollRandomKey(Map<K, V> queueToAsk, Random rnd) {
         int size = queueToAsk.size();

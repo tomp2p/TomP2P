@@ -13,15 +13,17 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.futures;
+package net.tomp2p.tracker;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureImpl;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.EvaluatingSchemeTracker;
-import net.tomp2p.p2p.VotingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -38,41 +40,17 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     // a set of know peers that we don't want in the result set.
     final private Set<Number160> knownPeers;
 
-    // keeps track of futures that are based on this future
-    final private FutureCreate<BaseFuture> futureCreate;
-
     // results
     private Set<PeerAddress> potentialTrackers;
 
     private Set<PeerAddress> directTrackers;
 
     private Map<PeerAddress, TrackerData> peersOnTracker;
+    
+    private FutureDone<Void> futureDone;
 
     public FutureTracker() {
-        this(null);
-    }
-
-    /**
-     * Create a future object for storing
-     * 
-     * @param futureCreate
-     *            Keeps track of futures that are based on this future
-     */
-    public FutureTracker(FutureCreate<BaseFuture> futureCreate) {
-        this(new VotingSchemeTracker(), null, futureCreate);
-    }
-
-    /**
-     * Create a future object for retrieving.
-     * 
-     * @param evaluatingSchemeTracker
-     *            Since we receive results from multiple peers, we need to
-     *            summarize them
-     * @param knownPeers
-     *            A set of know peers that we don't want in the result set.
-     */
-    public FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker, Set<Number160> knownPeers) {
-        this(new VotingSchemeTracker(), knownPeers, null);
+        this(null, null);
     }
 
     /**
@@ -86,23 +64,10 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
      * @param futureCreate
      *            Keeps track of futures that are based on this future
      */
-    private FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker, Set<Number160> knownPeers,
-            FutureCreate<BaseFuture> futureCreate) {
+    public FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker, Set<Number160> knownPeers) {
         this.evaluatingSchemeTracker = evaluatingSchemeTracker;
         this.knownPeers = knownPeers;
-        this.futureCreate = futureCreate;
         self(this);
-    }
-
-    /**
-     * Called if a future is created based on this future.
-     * 
-     * @param future
-     *            The newly created future
-     */
-    public void repeated(BaseFuture future) {
-        if (futureCreate != null)
-            futureCreate.repeated(future);
     }
 
     /**
@@ -115,9 +80,10 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
      *            Those peers that are close and reported to have the key.
      * @param peersOnTracker
      *            The data from the trackers.
+     * @param futureDone 
      */
     public void trackers(Set<PeerAddress> potentialTrackers, Set<PeerAddress> directTrackers,
-            Map<PeerAddress, TrackerData> peersOnTracker) {
+            Map<PeerAddress, TrackerData> peersOnTracker, FutureDone<Void> futureDone) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -125,6 +91,7 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
             this.potentialTrackers = potentialTrackers;
             this.directTrackers = directTrackers;
             this.peersOnTracker = peersOnTracker;
+            this.futureDone = futureDone;
             this.type = ((potentialTrackers.size() == 0) && (directTrackers.size() == 0)) ? BaseFuture.FutureType.FAILED
                     : BaseFuture.FutureType.OK;
             if (this.type == BaseFuture.FutureType.FAILED) {
@@ -191,5 +158,11 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
         synchronized (lock) {
             return evaluatingSchemeTracker.evaluateSingle(peersOnTracker);
         }
+    }
+    
+    public FutureDone<Void> futuresCompleted() {
+    	synchronized (lock) {
+    		return futureDone;
+    	}
     }
 }

@@ -40,6 +40,8 @@ public class PeerStatistic implements Serializable {
     private final Number160 peerId;
 
     private PeerAddress peerAddress;
+    
+    private boolean local;
 
     /**
      * Constructor. Sets the peer address
@@ -142,5 +144,19 @@ public class PeerStatistic implements Serializable {
         }
         PeerStatistic p = (PeerStatistic) obj;
         return p.peerId.equals(peerId);
+    }
+
+	public PeerStatistic local() {
+	    setLocal(true);
+		return this;
+    }
+	
+	public boolean isLocal() {
+		return local;
+    }
+	
+	public PeerStatistic setLocal(boolean local) {
+		this.local = local;
+		return this;
     }
 }

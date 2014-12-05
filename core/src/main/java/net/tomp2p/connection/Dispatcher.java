@@ -281,9 +281,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 
 		// Search for handler, 0 is ping. If we send with peerid = ZERO, then we
 		// take the first one we found
-		if (recipient.peerId().isZero() && message.command() == RPC.Commands.PING.getNr()) {
+		if (recipient.peerId().isZero() && 
+				(message.command() == RPC.Commands.PING.getNr() || message.command() == RPC.Commands.LOCAL_ANNOUNCE.getNr())) {
 			Number160 peerId = peerBeanMaster.serverPeerAddress().peerId();
-			return searchHandler(peerId, peerId, RPC.Commands.PING.getNr());
+			return searchHandler(peerId, peerId, message.command());
 			// else we search for the handler that we are responsible for
 		} else {
 			DispatchHandler handler = searchHandler(recipient.peerId(), recipient.peerId(), message.command());

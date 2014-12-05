@@ -17,6 +17,7 @@
 package net.tomp2p.dht;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;
 
@@ -47,7 +48,7 @@ public interface OperationMapper<K extends FutureDHT<?>> {
      * @param future
      *            The overall future, typically FutureDHT or similar
      */
-    void response(K future);
+    void response(K future, FutureDone<Void> futuresCompleted);
 
     /**
      * Whenever a single future is finished, then this method is called.

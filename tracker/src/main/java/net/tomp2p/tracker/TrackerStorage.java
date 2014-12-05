@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.SortedSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.message.TrackerData;
@@ -27,6 +30,8 @@ import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Pair;
 
 public class TrackerStorage implements Maintainable, PeerMapChangeListener, PeerStatusListener, DigestTracker {
+    
+    	private static final Logger LOG = LoggerFactory.getLogger(TrackerStorage.class);
 	// Core
 	public static final int TRACKER_CACHE_SIZE = 1000;
 	final private Map<Number320, Map<PeerAddress, Pair<PeerStatistic, Data>>> dataMapUnverified;
@@ -147,6 +152,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 					//limit the pushing peer to those that are responsible
 					if(isInReplicationRange(entry.getKey().locationKey(), self, replicationFactor)) {
 						TrackerData trackerData = new TrackerData(entry.getValue().values());
+						LOG.debug("other peer is closer, send data {} to peer {}", trackerData, remotePeer);
 						peerExchange.peerExchange(remotePeer, entry.getKey(), trackerData);
 					}
 				}
@@ -166,6 +172,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 					NavigableSet<PeerAddress> closePeers = peerMap.closePeers(entry.getKey().locationKey(), replicationFactor);
 					PeerAddress newResponsible = closePeers.headSet(remotePeer).last();
 					TrackerData trackerData = new TrackerData(entry.getValue().values());
+					LOG.debug("other peer left, make sure we have enough copies {}, send to peer {}", trackerData, remotePeer);
 					peerExchange.peerExchange(newResponsible, entry.getKey(), trackerData);
 				}
 			}

@@ -50,9 +50,11 @@ import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.builder.PingBuilder;
+import net.tomp2p.peers.LocalMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
@@ -77,6 +79,7 @@ public class Sender {
 	private final Dispatcher dispatcher;
 	private final SendBehavior sendBehavior;
 	private final Random random;
+	private final PeerBean peerBean;
 
 	// this map caches all messages which are meant to be sent by a reverse connection setup
 	private final ConcurrentHashMap<Integer, FutureResponse> cachedRequests = new ConcurrentHashMap<Integer, FutureResponse>();
@@ -94,12 +97,13 @@ public class Sender {
 	 * @param concurrentHashMap 
 	 */
 	public Sender(final Number160 peerId, final List<PeerStatusListener> peerStatusListeners,
-	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior) {
+	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior, PeerBean peerBean) {
 		this.peerStatusListeners = peerStatusListeners;
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.dispatcher = dispatcher;
 		this.sendBehavior = sendBehavior;
 		this.random = new Random(peerId.hashCode());
+		this.peerBean = peerBean;
 	}
 
 	public ChannelClientConfiguration channelClientConfiguration() {
@@ -138,6 +142,15 @@ public class Sender {
 		if (futureResponse.isCompleted()) {
 			return;
 		}
+		// NAT reflection - rewrite recipient if we found a local address for the recipient
+		LocalMap localMap = peerBean.localMap();
+		if(localMap != null) {
+			PeerStatistic peerStatistic = localMap.translate(message.recipient());
+			if(peerStatistic != null) {
+				message.recipient(peerStatistic.peerAddress());
+			}
+		}
+		
 		removePeerIfFailed(futureResponse, message);
 
 		final ChannelFuture channelFuture;
@@ -518,6 +531,16 @@ public class Sender {
 		if (futureResponse.isCompleted()) {
 			return;
 		}
+		
+		// NAT reflection - rewrite recipient if we found a local address for the recipient
+		LocalMap localMap = peerBean.localMap();
+		if(localMap != null) {
+			PeerStatistic peerStatistic = localMap.translate(message.recipient());
+			if(peerStatistic != null) {
+				message.recipient(peerStatistic.peerAddress());
+			}
+		}
+		
 		removePeerIfFailed(futureResponse, message);
 
 		boolean isFireAndForget = handler == null;

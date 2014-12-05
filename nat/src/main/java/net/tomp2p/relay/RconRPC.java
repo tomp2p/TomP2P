@@ -67,7 +67,7 @@ public class RconRPC extends DispatchHandler {
 	@Override
 	public void handleResponse(final Message message, final PeerConnection peerConnection, final boolean sign,
 			final Responder responder) throws Exception {
-		LOG.warn("received RconRPC message {}", message);
+		LOG.debug("received RconRPC message {}", message);
 		if (message.type() == Message.Type.REQUEST_1 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the relay peer
 			LOG.debug("handle RconForward for message: " + message);

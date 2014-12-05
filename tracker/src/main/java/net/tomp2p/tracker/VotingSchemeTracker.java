@@ -13,12 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.p2p;
+package net.tomp2p.tracker;
 
 import java.util.Collection;
 import java.util.Map;
 
 import net.tomp2p.message.TrackerData;
+import net.tomp2p.p2p.EvaluatingSchemeTracker;
 import net.tomp2p.peers.PeerAddress;
 
 public class VotingSchemeTracker implements EvaluatingSchemeTracker {

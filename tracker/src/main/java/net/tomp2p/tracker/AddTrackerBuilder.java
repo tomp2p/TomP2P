@@ -16,12 +16,9 @@
 
 package net.tomp2p.tracker;
 
-import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureCreator;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
@@ -32,8 +29,6 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
     private Data attachement;
 
     private SimpleBloomFilter<Number160> bloomFilter;
-
-    private FutureCreate<BaseFuture> futureCreate;
 
     private FutureCreator<FutureTracker> defaultDirectReplication;
 
@@ -63,15 +58,6 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
 
     public AddTrackerBuilder setBloomFilter(SimpleBloomFilter<Number160> bloomFilter) {
         this.bloomFilter = bloomFilter;
-        return this;
-    }
-
-    public FutureCreate<BaseFuture> getFutureCreate() {
-        return futureCreate;
-    }
-
-    public AddTrackerBuilder setFutureCreate(FutureCreate<BaseFuture> futureCreate) {
-        this.futureCreate = futureCreate;
         return this;
     }
 
@@ -121,11 +107,16 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         if (peer.peer().isShutdown()) {
             return FUTURE_TRACKER_SHUTDOWN;
         }
+        if(attachement == null) {
+            forceUDP(true);
+        }
         preBuild("add-tracker-build");
 
         if (bloomFilter == null) {
             bloomFilter = new SimpleBloomFilter<Number160>(1024, 1024);
         }
+        
+        
         // add myself to my local tracker, since we use a mesh we are part of
         // the tracker mesh as well.
         peer.trackerStorage().put(new Number320(locationKey, domainKey), peer.peerAddress(), keyPair() == null? null: keyPair().getPublic(),

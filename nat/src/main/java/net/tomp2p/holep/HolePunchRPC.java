@@ -63,15 +63,7 @@ public class HolePunchRPC extends DispatchHandler {
 	}
 
 	private void handleHolePunchReply(Message message, PeerConnection peerConnection, Responder responder) {
-		System.err.println("#############################################");
-		System.out.println();
-		System.out.println();
-		System.out.println();
-		System.err.println("HUGE SUCCESS!!!!");
-		System.out.println();
-		System.out.println();
-		System.out.println();
-		System.err.println("#############################################");
+		responder.response(createResponseMessage(message, Type.OK));
 	}
 
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
@@ -86,7 +78,7 @@ public class HolePunchRPC extends DispatchHandler {
 			final PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false)
 					.changePorts(currentPort, currentPort);
 			final HolePunchRPC thisInstance = this;
-			
+
 			final FutureChannelCreator fcc = peer.connectionBean().reservation().create(3, 0);
 			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 
@@ -94,43 +86,54 @@ public class HolePunchRPC extends DispatchHandler {
 				public void operationComplete(FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
 						Message dummyMessage = thisInstance.createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_3);
-						HolePuncher holePuncher = new HolePuncher(dummyMessage, future.channelCreator(), peer, future.channelCreator().randomPort(), currentPort, recipient);
+						HolePuncher holePuncher = new HolePuncher(dummyMessage, future.channelCreator(), peer, future.channelCreator()
+								.randomPort(), currentPort, recipient);
 						holePuncher.createAndSendUDP();
-						
+
 						portMappings.add(new Pair<Integer, Integer>(holePuncher.remotePort(), holePuncher.localPort()));
 					} else {
 						handleFail(message, responder, "could not create channel!");
 					}
-					System.err.println("CountdownLatch = " + (cLatch.getCount()-1));
+					System.err.println("CountdownLatch = " + (cLatch.getCount() - 1));
 					cLatch.countDown();
 				}
 			});
 		}
-		
+
 		try {
 			cLatch.await(5, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		
+
 		Message replyMessage = createMessage(originalSender, Commands.HOLEP.getNr(), Message.Type.OK);
 		replyMessage.messageId(message.messageId());
 		for (Pair<Integer, Integer> pair : portMappings) {
 			if (!(pair == null || pair.isEmpty() || pair.element0() == null || pair.element1() == null)) {
-			System.err.println("remotePort: " + pair.element0().toString());
-			replyMessage.intValue(pair.element0());
-			System.err.println("localPort: " + pair.element1().toString());
-			replyMessage.intValue(pair.element1());
+				System.err.println("remotePort: " + pair.element0().toString());
+				replyMessage.intValue(pair.element0());
+				System.err.println("localPort: " + pair.element1().toString());
+				replyMessage.intValue(pair.element1());
 			}
 		}
 		responder.response(replyMessage);
 	}
 
+	/**
+	 * This method first forwards a initHolePunch request to start the hole
+	 * punching procedure on the target peer. Then it waits for the response
+	 * from the target peer and forwards this response back to the initiating
+	 * peer.
+	 * 
+	 * @param message
+	 * @param peerConnection
+	 * @param responder
+	 */
 	private void forwardPorts(final Message message, PeerConnection peerConnection, final Responder responder) {
 		final BaseRelayForwarderRPC forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardPortsMessage(message, forwarder.unreachablePeerAddress());
-			
+
 			FutureDone<Message> response = forwarder.forwardToUnreachable(forwardMessage);
 			response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 				@Override
@@ -141,7 +144,7 @@ public class HolePunchRPC extends DispatchHandler {
 							answerMessage.intValue(i);
 						}
 						answerMessage.command(Commands.HOLEP.getNr());
-						
+
 						LOG.debug("Returing from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);
 					} else {
@@ -193,8 +196,8 @@ public class HolePunchRPC extends DispatchHandler {
 	}
 
 	/**
-	 * This method is called if something went wrong while the reverse
-	 * connection setup. It responds then with a {@link Type}.EXCEPTION message.
+	 * This method is called if something went wrong while the hole punching
+	 * procedure. It responds then with a {@link Type}.EXCEPTION message.
 	 * 
 	 * @param message
 	 * @param responder

@@ -147,12 +147,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
         LOG.debug("received request {} from channel {}", message, ctx.channel());
-        InetAddress sender = message.sender().inetAddress();
-        Inet4Address sender2 = (Inet4Address) sender;
-        if (sender2.equals(Inet4Address.getByName("192.168.2.135"))) {
-        	System.err.println("this is our message!");
-        }
-        
         if (message.version() != p2pID) {
             LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
                     message.version(), message);

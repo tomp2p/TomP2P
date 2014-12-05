@@ -158,7 +158,7 @@ public class HolePTestApp {
 				System.out.println();
 				System.out.println("SUCCESS HIT");
 				System.out.println("Sender: " + sender.toString());
-				System.out.println("NATPEER: " + ((String) request));
+				System.err.println("NATPEER: " + ((String) request));
 				System.out.println();
 				System.out.println();
 				System.out.println();
@@ -175,21 +175,10 @@ public class HolePTestApp {
 
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println("SUCCESS HIT");
 				System.out.println("Sender: " + sender.toString());
 				System.out.println("NATPEER: " + (PeerAddress) request);
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println();
 				natPeerAddress = (PeerAddress) request;
-				return "Hello Successful TomP2P holepunching request";
+				return null;
 			}
 		});
 	}

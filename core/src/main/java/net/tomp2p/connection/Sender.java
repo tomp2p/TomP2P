@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -83,10 +84,6 @@ public class Sender {
 
 	// this map caches all messages which are meant to be sent by a reverse
 	private final ConcurrentHashMap<Integer, FutureResponse> cachedRequests = new ConcurrentHashMap<Integer, FutureResponse>();
-
-	// this map caches all messages which are meant to be sent by a reverse
-	// connection setup
-	private final ConcurrentHashMap<Integer, Message> cachedMessages = new ConcurrentHashMap<Integer, Message>();
 
 	private PingBuilderFactory pingBuilderFactory;
 
@@ -236,7 +233,7 @@ public class Sender {
 		rconMessage.version(message.version());
 
 		// store the message id in the payload to get the cached message later
-//		rconMessage.intValue(message.messageId());
+		// rconMessage.intValue(message.messageId());
 
 		// the message must have set the keepAlive Flag true. If not, the relay
 		// peer will close the PeerConnection to the unreachable peer.
@@ -247,6 +244,16 @@ public class Sender {
 		return rconMessage;
 	}
 
+	/**
+	 * This method was extracted from createRconMessage(...), in order to avoid
+	 * duplicate code in createHolePMessage(...).
+	 * 
+	 * @param originalMessage
+	 * @param socketAddress
+	 * @param newMessage
+	 * @param RPCCommand
+	 * @param messageType
+	 */
 	private static void readyToSend(final Message originalMessage, PeerSocketAddress socketAddress, Message newMessage, byte RPCCommand,
 			Type messageType) {
 		PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
@@ -257,6 +264,13 @@ public class Sender {
 		newMessage.type(messageType);
 	}
 
+	/**
+	 * This method ensures that if a peer sends a message via reverse connection
+	 * or hole punching, a random relay is chosen as the relay/rendez-vous peer
+	 * 
+	 * @param message
+	 * @return socketAddress
+	 */
 	private static PeerSocketAddress extractRandomRelay(final Message message) {
 		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
 		PeerSocketAddress socketAddress = null;
@@ -270,24 +284,37 @@ public class Sender {
 		return socketAddress;
 	}
 
-	private static Message createSocketInfoMessage(final Message message, final ChannelCreator channelCreator) {
+	/**
+	 * This method creates the initial {@link Message} with {@link Commands}
+	 * .HOLEP and {@link Type}.REQUEST_1. This {@link Message} will be forwarded
+	 * to the rendez-vous server (a relay of the remote peer) and initiate the
+	 * hole punching procedure on the other peer.
+	 * 
+	 * @param message
+	 * @param channelCreator
+	 * @return holePMessage
+	 */
+	private static Message createHolePMessage(final Message message, final ChannelCreator channelCreator) {
 		PeerSocketAddress socketAddress = extractRandomRelay(message);
 
 		// we need to make a copy of the original Message
-		Message socketInfoMessage = new Message();
-		//socketInfoMessage.messageId(message.messageId());
-		socketInfoMessage.sender(message.sender());
-		socketInfoMessage.version(message.version());
-		socketInfoMessage.udp(true);
+		Message holePMessage = new Message();
+
+		// socketInfoMessage.messageId(message.messageId());
+		holePMessage.sender(message.sender());
+		holePMessage.version(message.version());
+		holePMessage.udp(true);
 
 		// making the message ready to send
-		readyToSend(message, socketAddress, socketInfoMessage, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
+		readyToSend(message, socketAddress, holePMessage, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
 
-		for (int i=0; i<3; i++) {
-			socketInfoMessage.intValue(channelCreator.randomPort());
+		// TODO jwa --> create something like a configClass or file where the
+		// number of holes in the firewall can be specified.
+		for (int i = 0; i < 3; i++) {
+			holePMessage.intValue(channelCreator.randomPort());
 		}
 
-		return socketInfoMessage;
+		return holePMessage;
 	}
 
 	/**
@@ -522,7 +549,6 @@ public class Sender {
 	public void sendUDP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator, final int idleUDPSeconds, final boolean broadcast) {
 
-//		List<ChannelCreator> channelCreators = null;
 		// no need to continue if we already finished
 		if (futureResponse.isCompleted()) {
 			return;
@@ -538,25 +564,18 @@ public class Sender {
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPSeconds,
 				isFireAndForget);
 
-		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
-//			try {
-//				channelCreators = prepareHolePunch(futureResponse, message);
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
-//
-//			// extract the socketAddresses of the channelCreators
-//			final List<SocketAddress> socketAddresses = new ArrayList<SocketAddress>();
-//			for (ChannelCreator cc : channelCreators) {
-//				socketAddresses.add(cc.randomHole(message));
-//			}
+		// TODO jwa change check below
+		if (!(message.command() == RPC.Commands.PING.getNr() || message.command() == RPC.Commands.NEIGHBOR.getNr())
+				&& message.recipient().isRelayed() && message.sender().isRelayed()) {
+		}
 
-			// initiate the rendezvous process
-			initHolePunch(createSocketInfoMessage(message, channelCreator), channelCreator, idleUDPSeconds, futureResponse, broadcast,
+		// TODO jwa change if check with check above
+		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
+
+			// initiate the holepunching process
+			handleHolePunch(createHolePMessage(message, channelCreator), channelCreator, idleUDPSeconds, futureResponse, broadcast,
 					message, handler);
 			return;
-		} else {
-//			channelCreators = null;
 		}
 
 		try {
@@ -588,6 +607,16 @@ public class Sender {
 		}
 	}
 
+	/**
+	 * This method was extracted in order to avoid duplicate code in the
+	 * {@link HolePuncher} and in the initHolePunch(...) method.
+	 * 
+	 * @param handler
+	 * @param futureResponse
+	 * @param idleUDPSeconds
+	 * @param isFireAndForget
+	 * @return handlers
+	 */
 	public Map<String, Pair<EventExecutorGroup, ChannelHandler>> configureHandlers(final SimpleChannelInboundHandler<Message> handler,
 			final FutureResponse futureResponse, final int idleUDPSeconds, boolean isFireAndForget) {
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
@@ -614,100 +643,161 @@ public class Sender {
 		return handlers;
 	}
 
-	private void initHolePunch(final Message socketInfoMessage, final ChannelCreator channelCreator, final int idleUDPSeconds,
-			final FutureResponse futureResponse, final boolean broadcast, final Message message,
+	/**
+	 * This method is responsible for the hole punching procedure on the local
+	 * peer. First of all, it will initiate the hole punching procedure on the
+	 * other peer via a previously chosen rendez-vous server (a relay of the
+	 * other peer). Then the other peer will punch holes in his firewall and
+	 * returns back a request in which he indicates which holes are open. Once
+	 * the other peer replied, this peer starts the hole punching procedure
+	 * himself and tries to send a message to the holes the other peer punched.
+	 * 
+	 * @param socketInfoMessage
+	 * @param channelCreator
+	 * @param idleUDPSeconds
+	 * @param futureResponse
+	 * @param broadcast
+	 * @param originalMessage
+	 * @param handler
+	 */
+	private void handleHolePunch(final Message socketInfoMessage, final ChannelCreator channelCreator, final int idleUDPSeconds,
+			final FutureResponse futureResponse, final boolean broadcast, final Message originalMessage,
 			final SimpleChannelInboundHandler<Message> handler) {
+
+		final Boolean isBroadcast = false;
+		if (broadcast == true) {
+			LOG.warn("A Broadcast while hole punching makes no sense! The variable \"broadcast\" will be set to false!");
+		}
 
 		// wait for response (whether the reverse connection setup was
 		// successful)
 		final FutureResponse holePunchResponse = new FutureResponse(socketInfoMessage);
 
-		// TODO jwa
 		SimpleChannelInboundHandler<Message> holePunchHandler = new SimpleChannelInboundHandler<Message>() {
 
 			@Override
 			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
 				if (msg.command() == Commands.HOLEP.getNr() && msg.type() == Type.OK) {
+					// the list with the ports should never be null or Empty
+					if (!(msg.intList() == null || msg.intList().isEmpty())) {
+						final int rawNumberOfHoles = msg.intList().size();
+						// the number of the pairs of port must be even!
+						if ((rawNumberOfHoles % 2) == 0) {
 
-					if (msg.intList() == null || msg.intList().isEmpty()) {
-						handleFail("IntList in replyMessage was null or Empty! No ports available!!!!");
-					} else {
-						
-						for (int i=0; i<msg.intList().size(); i++) {
-							final int localPort = msg.intAt(i);
-							i++;
-							final int remotePort = msg.intAt(i);
-							
-							FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
-							fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+							// in order to ensure that the message reached the
+							// other client we need to have some mechanic to
+							// show that
+							final CountDownLatch cLatch = new CountDownLatch(rawNumberOfHoles / 2);
 
-								@Override
-								public void operationComplete(FutureChannelCreator future) throws Exception {
-									if (future.isSuccess()) {
-										InetSocketAddress predefinedSocket = new InetSocketAddress(message.sender().inetAddress(), localPort);
-										
-										SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
+							// the structure of the intList is like this:
+							// {localPort1, remotePort1, localPort2,
+							// remotePort2,
+							// etc...}
+							for (int i = 0; i < rawNumberOfHoles; i++) {
+								final int localPort = msg.intAt(i);
+								i++;
+								final int remotePort = msg.intAt(i);
 
-											@Override
-											protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-												if (Message.Type.OK == msg.type() && Commands.DIRECT_DATA.getNr() == msg.command()) {
-													System.err.println("IT FINALLY WORKED!!!");
-												} else {
-													System.err.println("IT DIDN'T WORK YET!!!");
+								FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
+								fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+
+									@Override
+									public void operationComplete(FutureChannelCreator future) throws Exception {
+										if (future.isSuccess()) {
+											InetSocketAddress predefinedSocket = new InetSocketAddress(originalMessage.sender()
+													.inetAddress(), localPort);
+
+											SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
+
+												@Override
+												protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+													int numberOfHoles = rawNumberOfHoles / 2;
+													if (Message.Type.OK == msg.type() && originalMessage.command() == msg.command()) {
+														cLatch.countDown();
+														LOG.warn((numberOfHoles - cLatch.getCount()) + "/" + numberOfHoles
+																+ " message(s) successfully reached the target peer with peerId {}", msg
+																.sender().peerId());
+													} else {
+														LOG.info("This message didn't reach its target!");
+														if (cLatch.getCount() == numberOfHoles) {
+															LOG.error(
+																	"It seems that no message we sent could be processed by the target peer with peerId {}",
+																	msg.sender().peerId());
+														}
+													}
 												}
-											}};
-										final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(inboundHandler, futureResponse, idleUDPSeconds,
-												false);
-										
-										ChannelCreator cc = future.channelCreator();
-										ChannelFuture channelFuture = cc.createUDP(broadcast, handlers, futureResponse, predefinedSocket);
-										//Message sendMessage = message;
-										final Message sendMessage = createSendMessage(message, localPort, remotePort);
-										afterConnect(futureResponse, sendMessage, channelFuture, false);
-									} else {
-										handleFail("could not create a channel!");
-									}
-								}
+											};
+											final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(
+													inboundHandler, futureResponse, idleUDPSeconds, false);
 
-								private Message createSendMessage(final Message message, final int localPort, final int remotePort) {
-									Message sendMessage = new Message();
-									PeerAddress sender = message.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
-									PeerAddress recipient = message.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false).changeFirewalledUDP(false).changeRelayed(false);
-									sendMessage.recipient(recipient);
-									sendMessage.sender(sender);
-									sendMessage.version(message.version());
-									sendMessage.command(message.command());
-									sendMessage.type(message.type());
-									sendMessage.udp(true);
-									for (Buffer buf : message.bufferList()) {
-										sendMessage.buffer(new Buffer(buf.buffer().duplicate()));
+											final ChannelCreator cc = future.channelCreator();
+											final ChannelFuture channelFuture = cc.createUDP(isBroadcast, handlers, futureResponse,
+													predefinedSocket);
+											// Message sendMessage = message;
+											final Message sendMessage = createSendMessage(originalMessage, localPort, remotePort);
+											afterConnect(futureResponse, sendMessage, channelFuture, false);
+										} else {
+											handleFail("could not create a channel!");
+										}
 									}
-									return sendMessage;
-								}
-								
-							});
+
+									/**
+									 * This method duplicated the original
+									 * {@link Message} multiple times. This is
+									 * needed, because the {@link Buffer} can
+									 * only be read once.
+									 * 
+									 * @param message
+									 * @param localPort
+									 * @param remotePort
+									 * @return
+									 */
+									private Message createSendMessage(final Message message, final int localPort, final int remotePort) {
+										Message sendMessage = new Message();
+										PeerAddress sender = message.sender().changePorts(-1, localPort).changeFirewalledTCP(false)
+												.changeFirewalledUDP(false).changeRelayed(false);
+										PeerAddress recipient = message.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false)
+												.changeFirewalledUDP(false).changeRelayed(false);
+										sendMessage.recipient(recipient);
+										sendMessage.sender(sender);
+										sendMessage.version(message.version());
+										sendMessage.command(message.command());
+										sendMessage.type(message.type());
+										sendMessage.udp(true);
+										for (Buffer buf : message.bufferList()) {
+											sendMessage.buffer(new Buffer(buf.buffer().duplicate()));
+										}
+										return sendMessage;
+									}
+
+								});
+							}
+							LOG.debug("Successfully sent " + rawNumberOfHoles/2 + " messages via hole punching to peer {}", originalMessage.recipient()
+									.peerId());
+						} else {
+							handleFail("The number of ports in IntList was odd! This should never happen");
 						}
-						
-						LOG.debug("Successfully set up the connection via hole punching to peer {}", message.recipient().peerId());
-						// holePunchResponse.response(msg);
+					} else {
+						handleFail("IntList in replyMessage was null or Empty! No ports available!!!!");
 					}
 				} else {
 					handleFail("Could not acquire a connection via hole punching, got: " + msg);
 				}
 			}
 
+			/**
+			 * This is a generic method for handling all the errors which appear
+			 * while the hole punching procedure.
+			 * 
+			 * @param failMessage
+			 */
 			private void handleFail(final String failMessage) {
-				LOG.debug("Could not acquire a connection via hole punching to peer {}", message.recipient().peerId());
+				LOG.debug("Could not acquire a connection via hole punching to peer {}", originalMessage.recipient().peerId());
 				holePunchResponse.failed(failMessage);
 				futureResponse.failed(holePunchResponse.failedReason());
 			}
 		};
 
-		Boolean isBroadcast = broadcast;
-		if (isBroadcast == true) {
-			LOG.warn("A Broadcast while hole punching makes no sense! isBroadcast will be set to false!");
-			isBroadcast = false;
-		}
 		sendUDP(holePunchHandler, futureResponse, socketInfoMessage, channelCreator, idleUDPSeconds, isBroadcast);
 	}
 
@@ -888,40 +978,6 @@ public class Sender {
 
 	public List<PeerStatusListener> peerStatusListeners() {
 		return peerStatusListeners;
-	}
-
-	/**
-	 * This method is used to fire dummy UDP Messages in order to punch a hole
-	 * into the firewall.
-	 * 
-	 * @param futureResponse
-	 * @param message
-	 * @param channelCreator
-	 * @param socket
-	 * @return hostSocket
-	 */
-	public void punchHole(final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
-			final InetSocketAddress socket) {
-
-		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
-		final int nrTCPHandlers = 3; // 2 / 0.75
-
-		handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
-		handlers.put(
-				"decoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(channelClientConfiguration.signatureFactory())));
-		handlers.put(
-				"encoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
-
-		try {
-			final ChannelFuture channelFuture;
-			channelFuture = channelCreator.createUDP(false, handlers, futureResponse, socket);
-			afterConnect(futureResponse, message, channelFuture, true);
-		} catch (UnsupportedOperationException e) {
-			LOG.warn(e.getMessage());
-			futureResponse.failed(e);
-		}
 	}
 
 	public void peer(Peer peer) {

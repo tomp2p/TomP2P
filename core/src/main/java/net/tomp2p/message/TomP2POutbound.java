@@ -7,6 +7,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import net.tomp2p.connection.SignatureFactory;
@@ -59,8 +60,8 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 if (ctx.channel() instanceof DatagramChannel) {
                 	
                 	final InetSocketAddress recipientUnreflected;
-                	final InetSocketAddress recipient;
-                	final InetSocketAddress sender;
+                	InetSocketAddress recipient;
+                	InetSocketAddress sender;
                     if (message.senderSocket() == null) {
                     	//in case of a request
                     	if(message.recipientRelay()!=null) {
@@ -76,6 +77,11 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                     	recipient = message.senderSocket();
                     	sender = message.recipientSocket();
                     }
+                    
+                    // FIXME quickfix for Android (by Nico)
+                    recipient = new InetSocketAddress(InetAddress.getByAddress(recipient.getAddress().getAddress()), recipient.getPort());
+                    sender =  new InetSocketAddress(InetAddress.getByAddress(sender.getAddress().getAddress()), sender.getPort());
+                    
                     DatagramPacket d = new DatagramPacket(buf, recipient, sender);
                     LOG.debug("Send UPD message {}, datagram: {}", message, d);
                     ctx.writeAndFlush(d, promise);

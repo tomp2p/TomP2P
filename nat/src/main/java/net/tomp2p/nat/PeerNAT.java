@@ -66,6 +66,11 @@ public class PeerNAT {
 	public boolean isManualPorts() {
 		return manualPorts;
 	}
+	
+	public FutureNAT startSetupPortforwarding(final FutureDiscover futureDiscover) {
+		DiscoverBuilder builder = new DiscoverBuilder(peer);
+		return startSetupPortforwarding(futureDiscover, builder);
+	}
 
 	/**
 	 * Setup UPNP or NATPMP port forwarding.
@@ -79,7 +84,7 @@ public class PeerNAT {
 	 *         if UPNP or NATPMP could be setup and then you are reachable
 	 *         (success), or if it failed.
 	 */
-	public FutureNAT startSetupPortforwarding(final FutureDiscover futureDiscover) {
+	public FutureNAT startSetupPortforwarding(final FutureDiscover futureDiscover, final DiscoverBuilder builder) {
 		final FutureNAT futureNAT = new FutureNAT();
 		futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>() {
 
@@ -105,8 +110,7 @@ public class PeerNAT {
 						peer.peerBean().serverPeerAddress(serverAddress);
 						
 						// test with discover again
-						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter());
-						builder.start().addListener(new BaseFutureAdapter<FutureDiscover>() {
+						builder.peerAddress(futureNAT.reporter()).start().addListener(new BaseFutureAdapter<FutureDiscover>() {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
 								if (future.isSuccess()) {

@@ -4,6 +4,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.holep.HolePunchInitiatorImpl;
 import net.tomp2p.holep.HolePunchRPC;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
@@ -133,6 +134,8 @@ public class PeerBuilderNAT {
 				return new FutureDone<Void>().done();
 			}
 		});
+		
+		peer.peerBean().holePunchInitiator(new HolePunchInitiatorImpl(peer));
 
 		return new PeerNAT(peer, natUtils, relayRPC, manualPorts, connectionConfiguration);
 	}

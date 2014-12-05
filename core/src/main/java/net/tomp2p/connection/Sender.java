@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -225,7 +226,7 @@ public class Sender {
 	 */
 	private static Message createRconMessage(final Message message) {
 		// get Relay InetAddress from unreachable peer
-		PeerSocketAddress socketAddress = extractRandomRelay(message);
+		PeerSocketAddress socketAddress = Utils.extractRandomRelay(message);
 
 		// we need to make a copy of the original message
 		Message rconMessage = new Message();
@@ -265,26 +266,6 @@ public class Sender {
 	}
 
 	/**
-	 * This method ensures that if a peer sends a message via reverse connection
-	 * or hole punching, a random relay is chosen as the relay/rendez-vous peer
-	 * 
-	 * @param message
-	 * @return socketAddress
-	 */
-	private static PeerSocketAddress extractRandomRelay(final Message message) {
-		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
-		PeerSocketAddress socketAddress = null;
-		if (relayInetAdresses.length > 0) {
-			// we should be fair and choose one of the relays randomly
-			socketAddress = (PeerSocketAddress) relayInetAdresses[Utils.randomPositiveInt(relayInetAdresses.length)];
-		} else {
-			throw new IllegalArgumentException(
-					"There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");
-		}
-		return socketAddress;
-	}
-
-	/**
 	 * This method creates the initial {@link Message} with {@link Commands}
 	 * .HOLEP and {@link Type}.REQUEST_1. This {@link Message} will be forwarded
 	 * to the rendez-vous server (a relay of the remote peer) and initiate the
@@ -295,7 +276,7 @@ public class Sender {
 	 * @return holePMessage
 	 */
 	private static Message createHolePMessage(final Message message, final ChannelCreator channelCreator) {
-		PeerSocketAddress socketAddress = extractRandomRelay(message);
+		PeerSocketAddress socketAddress = Utils.extractRandomRelay(message);
 
 		// we need to make a copy of the original Message
 		Message holePMessage = new Message();
@@ -573,9 +554,27 @@ public class Sender {
 		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
 
 			// initiate the holepunching process
-			handleHolePunch(createHolePMessage(message, channelCreator), channelCreator, idleUDPSeconds, futureResponse, broadcast,
-					message, handler);
-			return;
+//			handleHolePunch(createHolePMessage(message, channelCreator), channelCreator, idleUDPSeconds, futureResponse, broadcast,
+//					message, handler);
+			if (peer.peerBean().holePunchInitiator() != null) {
+				FutureDone<FutureResponse> fDone = peer.peerBean().holePunchInitiator().handleHolePunch(channelCreator, idleUDPSeconds, futureResponse, broadcast, message, handler);
+				fDone.addListener(new BaseFutureListener<FutureDone<FutureResponse>>() {
+
+					@Override
+					public void operationComplete(FutureDone<FutureResponse> future) throws Exception {
+						System.err.println("IT WORKED FDONE");
+					}
+
+					@Override
+					public void exceptionCaught(Throwable t) throws Exception {
+						System.err.println("IT THREW AN ERROR FDONE!");
+					}
+				});
+				
+				return;
+			} else {
+				LOG.debug("No hole punching possible because there is no PeerNAT"); 
+			}
 		}
 
 		try {
@@ -609,7 +608,7 @@ public class Sender {
 
 	/**
 	 * This method was extracted in order to avoid duplicate code in the
-	 * {@link HolePuncher} and in the initHolePunch(...) method.
+	 * {@link HolePunchInitiator} and in the initHolePunch(...) method.
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -742,7 +741,7 @@ public class Sender {
 									}
 
 									/**
-									 * This method duplicated the original
+									 * This method duplicates the original
 									 * {@link Message} multiple times. This is
 									 * needed, because the {@link Buffer} can
 									 * only be read once.

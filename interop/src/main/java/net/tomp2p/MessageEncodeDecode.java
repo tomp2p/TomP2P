@@ -344,7 +344,7 @@ public class MessageEncodeDecode {
 		return m;
 	}
 
-	private static Message createMessageMapKey640Data() throws Exception {
+	public static Message createMessageMapKey640Data() throws Exception {
 		// create sample data maps
 		Map<Number640, Data> sampleMap1 = new HashMap<Number640, Data>();
 		sampleMap1.put(sample640_1, sampleData1);
@@ -765,7 +765,7 @@ public class MessageEncodeDecode {
 		return true;
 	}
 
-	private static <T> boolean checkIsSameList(List<T> list1, List<T> list2) {
+	public static <T> boolean checkIsSameList(List<T> list1, List<T> list2) {
 		if (list1 == null ^ list2 == null) // XOR
 		{
 			return false;

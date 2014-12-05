@@ -50,51 +50,6 @@ public class Inbox {
 					break;
 					
 				// Message object encoding / decoding
-				case "TestMessageDecodeEmpty":
-					result = MessageEncodeDecode.encodeMessageEmpty();
-					break;
-				case "TestMessageDecodeKey":
-					result = MessageEncodeDecode.encodeMessageKey();
-					break;
-				case "TestMessageDecodeMapKey640Data":
-					result = MessageEncodeDecode.encodeMessageMapKey640Data();
-					break;
-				case "TestMessageDecodeMapKey640Keys":
-					result = MessageEncodeDecode.encodeMessageMapKey640Keys();
-					break;
-				case "TestMessageDecodeSetKey640":
-					result = MessageEncodeDecode.encodeMessageSetKey640();
-					break;
-				case "TestMessageDecodeSetNeighbors":
-					result = MessageEncodeDecode.encodeMessageSetNeighbors();
-					break;
-				case "TestMessageDecodeByteBuffer":
-					result = MessageEncodeDecode.encodeMessageByteBuffer();
-					break;
-				case "TestMessageDecodeInteger":
-					result = MessageEncodeDecode.encodeMessageInt();
-					break;
-				case "TestMessageDecodeLong":
-					result = MessageEncodeDecode.encodeMessageLong();
-					break;
-				case "TestMessageDecodePublicKeySignature":
-					result = MessageEncodeDecode.encodeMessagePublicKeySignature();
-					break;
-				case "TestMessageDecodePublicKey":
-					result = MessageEncodeDecode.encodeMessagePublicKey();
-					break;
-				case "TestMessageDecodeSetTrackerData":
-					result = MessageEncodeDecode.encodeMessageSetTrackerData();
-					break;
-				case "TestMessageDecodeBloomFilter":
-					result = MessageEncodeDecode.encodeMessageBloomFilter();
-					break;
-				case "TestMessageDecodeMapKey640Byte":
-					result = MessageEncodeDecode.encodeMessageMapKey640Byte();
-					break;
-				case "TestMessageDecodeSetPeerSocket":
-					result = MessageEncodeDecode.encodeMessageSetPeerSocket();
-					break;
 				case "TestMessageEncodeEmpty":
 					result = MessageEncodeDecode.decodeMessageEmpty(argument);
 					break;
@@ -139,6 +94,51 @@ public class Inbox {
 					break;
 				case "TestMessageEncodeSetPeerSocket":
 					result = MessageEncodeDecode.decodeMessageSetPeerSocket(argument);
+					break;
+				case "TestMessageDecodeEmpty":
+					result = MessageEncodeDecode.encodeMessageEmpty();
+					break;
+				case "TestMessageDecodeKey":
+					result = MessageEncodeDecode.encodeMessageKey();
+					break;
+				case "TestMessageDecodeMapKey640Data":
+					result = MessageEncodeDecode.encodeMessageMapKey640Data();
+					break;
+				case "TestMessageDecodeMapKey640Keys":
+					result = MessageEncodeDecode.encodeMessageMapKey640Keys();
+					break;
+				case "TestMessageDecodeSetKey640":
+					result = MessageEncodeDecode.encodeMessageSetKey640();
+					break;
+				case "TestMessageDecodeSetNeighbors":
+					result = MessageEncodeDecode.encodeMessageSetNeighbors();
+					break;
+				case "TestMessageDecodeByteBuffer":
+					result = MessageEncodeDecode.encodeMessageByteBuffer();
+					break;
+				case "TestMessageDecodeInteger":
+					result = MessageEncodeDecode.encodeMessageInt();
+					break;
+				case "TestMessageDecodeLong":
+					result = MessageEncodeDecode.encodeMessageLong();
+					break;
+				case "TestMessageDecodePublicKeySignature":
+					result = MessageEncodeDecode.encodeMessagePublicKeySignature();
+					break;
+				case "TestMessageDecodePublicKey":
+					result = MessageEncodeDecode.encodeMessagePublicKey();
+					break;
+				case "TestMessageDecodeSetTrackerData":
+					result = MessageEncodeDecode.encodeMessageSetTrackerData();
+					break;
+				case "TestMessageDecodeBloomFilter":
+					result = MessageEncodeDecode.encodeMessageBloomFilter();
+					break;
+				case "TestMessageDecodeMapKey640Byte":
+					result = MessageEncodeDecode.encodeMessageMapKey640Byte();
+					break;
+				case "TestMessageDecodeSetPeerSocket":
+					result = MessageEncodeDecode.encodeMessageSetPeerSocket();
 					break;
 					
 				default:

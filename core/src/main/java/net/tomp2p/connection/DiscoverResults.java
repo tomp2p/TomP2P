@@ -68,12 +68,25 @@ public class DiscoverResults {
     }
 
 	public InetAddress foundAddress() {
-	    //first check for IPv4
-		for(InetAddress inetAddress:newAddresses) {
-			if(inetAddress instanceof Inet4Address) {
-				return inetAddress;
+		InetAddress localhost = null;
+
+		// first check for IPv4
+		for (InetAddress inetAddress : newAddresses) {
+			if (inetAddress instanceof Inet4Address) {
+				if(inetAddress.isLoopbackAddress()) {
+					// don't prefer loopback addresses over other ones
+					localhost = inetAddress;
+				} else {
+					return inetAddress;
+				}
 			}
 		}
+		
+		// TODO prefer local IPv4 over other addresses?
+		if(localhost != null) {
+			return localhost;
+		}
+		
 		if (!newAddresses.isEmpty()) {
 			return newAddresses.iterator().next();
 		}

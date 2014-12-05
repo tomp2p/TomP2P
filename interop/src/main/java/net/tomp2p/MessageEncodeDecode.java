@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -714,7 +713,7 @@ public class MessageEncodeDecode {
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
 		encoder.write(buf, message, null);
 
-		return extractBytes(buf);
+		return InteropUtil.extractBytes(buf);
 	}
 
 	/**
@@ -738,28 +737,6 @@ public class MessageEncodeDecode {
 				.createSocketTCP(), message.sender().createSocketTCP());
 
 		return decoder.message();
-	}
-
-	/**
-	 * Gets the byte array from the provided {@link AlternativeCompositeByteBuf}.
-	 * 
-	 * @param buf
-	 * @return
-	 */
-	private static byte[] extractBytes(AlternativeCompositeByteBuf buf) {
-		/*
-		 * ByteBuffer buf2 = ByteBuffer.allocate(buf.nioBuffer().remaining());
-		 * byte[] bytes = new byte[buf.nioBuffer().remaining()];
-		 * buf2.get(bytes);
-		 * return bytes;
-		 */
-
-		ByteBuffer buffer = buf.nioBuffer();
-		buffer.position(0);
-
-		byte[] bytes = new byte[buffer.remaining()];
-		buffer.get(bytes);
-		return bytes;
 	}
 
 	/**

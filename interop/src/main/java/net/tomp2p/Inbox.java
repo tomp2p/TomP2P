@@ -18,29 +18,35 @@ public class Inbox {
 			switch (argument) {
 
 				// primitive type encoding / decoding
-				case "TestEncodeInt":
-					result = DotNetEncodeDecode.testDecodeInt(argument);
-					break;
-				case "TestEncodeLong":
-					result = DotNetEncodeDecode.testDecodeLong(argument);
-					break;
 				case "TestEncodeByte":
 					result = DotNetEncodeDecode.testDecodeByte(argument);
 					break;
 				case "TestEncodeBytes":
 					result = DotNetEncodeDecode.testDecodeBytes(argument);
 					break;
-				case "TestDecodeInt":
-					result = DotNetEncodeDecode.encodeInt();
+				case "TestEncodeShort":
+					result = DotNetEncodeDecode.testDecodeShort(argument);
 					break;
-				case "TestDecodeLong":
-					result = DotNetEncodeDecode.encodeLong();
+				case "TestEncodeInt":
+					result = DotNetEncodeDecode.testDecodeInt(argument);
+					break;
+				case "TestEncodeLong":
+					result = DotNetEncodeDecode.testDecodeLong(argument);
 					break;
 				case "TestDecodeByte":
 					result = DotNetEncodeDecode.encodeByte();
 					break;
 				case "TestDecodeBytes":
 					result = DotNetEncodeDecode.encodeBytes();
+					break;
+				case "TestDecodeShort":
+					result = DotNetEncodeDecode.encodeShort();
+					break;
+				case "TestDecodeInt":
+					result = DotNetEncodeDecode.encodeInt();
+					break;
+				case "TestDecodeLong":
+					result = DotNetEncodeDecode.encodeLong();
 					break;
 					
 				// Message object encoding / decoding

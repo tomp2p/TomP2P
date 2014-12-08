@@ -122,10 +122,17 @@ public class DataMap {
     }
     
     @Override
-    public int hashCode() {
-        final Map<Number640, Data> dataMap = convert(this);
-        return dataMap.hashCode();
-    }
+	public int hashCode() {
+		int hashCode = 31;
+		final Map<Number640, Data> dataMap = convert(this);
+		for (Map.Entry<Number640, Data> entry : dataMap.entrySet()) {
+			hashCode ^= entry.getKey().hashCode();
+			if (entry.getValue() != null) {
+				hashCode ^= entry.getValue().hashCode();
+			}
+		}
+		return hashCode;
+	}
 
     @Override
     public boolean equals(final Object obj) {

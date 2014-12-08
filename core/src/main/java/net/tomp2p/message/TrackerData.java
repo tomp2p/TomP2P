@@ -16,7 +16,6 @@
 package net.tomp2p.message;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -26,6 +25,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Utils;
 
 public class TrackerData {
 
@@ -40,6 +40,9 @@ public class TrackerData {
     }
 
     public TrackerData(Map<PeerAddress, Data> peerAddresses, boolean couldProvideMoreData) {
+    	if(peerAddresses == null) {
+    		throw new IllegalArgumentException("Peer addresses must be set");
+    	}
         this.peerAddresses = peerAddresses;
         this.couldProvideMoreData = couldProvideMoreData;
     }
@@ -53,18 +56,13 @@ public class TrackerData {
     }
 
 	public Map<PeerAddress, Data> peerAddresses() {
-    	if(peerAddresses == null) {
-    		return Collections.<PeerAddress, Data>emptyMap();
-    	}
         return peerAddresses;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("tdata:");
-        if(peerAddresses != null) {
-        	sb.append("p:").append(peerAddresses);
-        }
+        sb.append("p:").append(peerAddresses);
         return sb.toString();
     }
 
@@ -117,4 +115,30 @@ public class TrackerData {
 	public boolean isEmpty() {
 	    return peerAddresses.isEmpty();
     }
+	
+	@Override
+    public boolean equals(Object obj) {
+    	if (!(obj instanceof TrackerData)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        final TrackerData other = (TrackerData) obj;
+        
+        return Utils.isSameSets(other.peerAddresses.keySet(), peerAddresses.keySet())
+        		&& Utils.isSameSets(other.peerAddresses.values(), peerAddresses.values());
+    }
+    
+	@Override
+	public int hashCode() {
+		int hashCode = 31;
+		for (Map.Entry<PeerAddress, Data> entry : peerAddresses.entrySet()) {
+			hashCode ^= entry.getKey().hashCode();
+			if (entry.getValue() != null) {
+				hashCode ^= entry.getValue().hashCode();
+			}
+		}
+		return hashCode;
+	}
 }

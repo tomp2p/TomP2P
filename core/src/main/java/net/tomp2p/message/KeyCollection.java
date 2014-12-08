@@ -85,7 +85,7 @@ public class KeyCollection {
         if (k.keysConvert != null) {
             keys3 = new ArrayList<Number640>(k.keysConvert.size());
             for (Number160 n160 : k.keysConvert) {
-                keys3.add(new Number640(k.locationKey, k.domainKey, k.versionKey, n160));
+                keys3.add(new Number640(k.locationKey, k.domainKey, n160, k.versionKey));
             }
         } else {
             keys3 = k.keys;

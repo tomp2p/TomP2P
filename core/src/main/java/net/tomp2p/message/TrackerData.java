@@ -22,6 +22,7 @@ import java.util.Map;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
+import net.tomp2p.utils.Utils;
 
 public class TrackerData {
 
@@ -100,5 +101,24 @@ public class TrackerData {
             }
         }
         return null;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+    	if (!(obj instanceof TrackerData)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        final TrackerData other = (TrackerData) obj;
+        
+        return Utils.isSameSets(other.peerAddresses.keySet(), peerAddresses.keySet())
+        		&& Utils.isSameSets(other.peerAddresses.values(), peerAddresses.values());
+    }
+    
+    @Override
+    public int hashCode() {
+    	return peerAddresses.hashCode();
     }
 }

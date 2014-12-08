@@ -434,7 +434,7 @@ public class MessageEncodeDecode {
 		sampleCollection3.add(sample160_3);
 		sampleCollection3.add(sample160_4);
 		sampleCollection3.add(sample160_5);
-
+	
 		Message m = Utils2.createDummyMessage();
 		m.keyCollection(new KeyCollection(sample160_1, sample160_1, sample160_1, sampleCollection1));
 		m.keyCollection(new KeyCollection(sample160_2, sample160_2, sample160_2, sampleCollection2));
@@ -546,7 +546,7 @@ public class MessageEncodeDecode {
 		return m;
 	}
 
-	private static Message createMessageSetTrackerData() throws Exception {
+	public static Message createMessageSetTrackerData() throws Exception {
 		// create sample tracker data
 		PeerAddress sampleAddress1 = new PeerAddress(sample160_1, InetAddress.getByName("192.168.1.1"));
 		PeerAddress sampleAddress2 = new PeerAddress(sample160_2, InetAddress.getByName("255.255.255.255"));

@@ -32,7 +32,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +55,7 @@ import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.InteropRandom;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -74,7 +74,7 @@ public class Sender {
 	private final List<PeerStatusListener> peerStatusListeners;
 	private final ChannelClientConfiguration channelClientConfiguration;
 	private final Dispatcher dispatcher;
-	private final Random random;
+	private final InteropRandom random;
 
 	// this map caches all messages which are meant to be sent by a reverse
 	// connection setup
@@ -96,7 +96,7 @@ public class Sender {
 		this.peerStatusListeners = peerStatusListeners;
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.dispatcher = dispatcher;
-		this.random = new Random(peerId.hashCode());
+		this.random = new InteropRandom(peerId.hashCode());
 	}
 
 	public ChannelClientConfiguration channelClientConfiguration() {

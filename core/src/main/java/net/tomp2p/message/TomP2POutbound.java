@@ -75,11 +75,11 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                     	sender = message.recipientSocket();
                     }
                     DatagramPacket d = new DatagramPacket(buf, recipient, sender);
-                    LOG.debug("Send UPD message {}, datagram: {}", message, d);
+                    LOG.debug("Send UDP message {}, datagram: {}.", message, d);
                     ctx.writeAndFlush(d, promise);
                     
                 } else {
-                    LOG.debug("Send TCP message {} to {}", message, message.senderSocket());
+                    LOG.debug("Send TCP message {} to {}.", message, message.senderSocket());
                     ctx.writeAndFlush(buf, promise);
                 }
                 if (done) {
@@ -106,10 +106,10 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
         if (encoder.message() == null) {
-            LOG.error("exception in encoding, starting", cause);
+            LOG.error("Exception in encoding, starting", cause);
             cause.printStackTrace();
         } else if (encoder.message() != null && !encoder.message().isDone()) {
-            LOG.error("exception in encoding, started", cause);
+            LOG.error("Exception in encoding, started", cause);
             cause.printStackTrace();
         }
     }

@@ -113,20 +113,20 @@ public class Sender {
 	}
 
 	/**
-	 * Send a message via TCP.
+	 * Sends a message via TCP.
 	 * 
 	 * @param handler
-	 *            The handler to deal with a reply message
+	 *            The handler to deal with a reply message.
 	 * @param futureResponse
-	 *            The future to set the response
+	 *            The future to set the response.
 	 * @param message
 	 *            The message to send
 	 * @param channelCreator
-	 *            The channel creator for the UPD channel
+	 *            The channel creator for the UDP channel.
 	 * @param idleTCPSeconds
-	 *            The idle time of a message until we fail
+	 *            The idle time until message fail.
 	 * @param connectTimeoutMillis
-	 *            The idle we set for the connection setup
+	 *            The idle time for the connection setup.
 	 */
 	public void sendTCP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
 	        final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds,

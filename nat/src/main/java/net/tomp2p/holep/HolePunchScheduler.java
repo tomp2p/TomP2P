@@ -36,7 +36,11 @@ public class HolePunchScheduler implements Runnable {
 					if (map.getValue().intValue() == 0) {
 						holePunchers.remove(map.getKey());
 					} else {
-						map.getKey().tryConnect();
+						try {
+							map.getKey().tryConnect();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 						holePunchers.put(map.getKey(), map.getValue() - 1);
 					}
 				}

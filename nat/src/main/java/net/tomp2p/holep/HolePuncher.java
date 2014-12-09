@@ -74,7 +74,7 @@ public class HolePuncher implements IPunchHole {
 					peer.connectionBean()
 							.sender()
 							.sendUDP(createHolePHandler(futures, originalFutureResponse), originalFutureResponse,
-									createHolePMessage1(futures), originalChannelCreator, idleUDPSeconds, BROADCAST_VALUE);
+									createHolePunchInitMessage(futures), originalChannelCreator, idleUDPSeconds, BROADCAST_VALUE);
 				} else {
 					fDone.failed("No ChannelFuture could be created!");
 				}
@@ -252,7 +252,7 @@ public class HolePuncher implements IPunchHole {
 	 * @param channelCreator
 	 * @return holePMessage
 	 */
-	private Message createHolePMessage1(List<ChannelFuture> channelFutures) {
+	private Message createHolePunchInitMessage(List<ChannelFuture> channelFutures) {
 		PeerSocketAddress socketAddress = Utils.extractRandomRelay(originalMessage);
 
 		// we need to make a copy of the original Message
@@ -315,7 +315,12 @@ public class HolePuncher implements IPunchHole {
 		}
 	}
 
-	public void tryConnect() {
+	@Override
+	public void tryConnect() throws Exception {
+		if (channelFutures.size() != portMappings.size()) {
+			throw new Exception("the number of channels does not match the number of ports!");
+		}
+		
 		for (int i = 0; i < channelFutures.size(); i++) {
 			Message dummyMessage = createDummyMessage(i);
 			FutureResponse futureResponse = new FutureResponse(dummyMessage);
@@ -335,6 +340,7 @@ public class HolePuncher implements IPunchHole {
 		dummyMessage.command(Commands.HOLEP.getNr());
 		dummyMessage.type(Type.REQUEST_3);
 		dummyMessage.sender(sender);
+		dummyMessage.udp(true);
 		return dummyMessage;
 	}
 
@@ -344,6 +350,7 @@ public class HolePuncher implements IPunchHole {
 		replyMessage.recipient(originalMessage.sender());
 		replyMessage.command(Commands.HOLEP.getNr());
 		replyMessage.type(Message.Type.OK);
+		replyMessage.udp(true);
 		replyMessage.messageId(originalMessage.messageId());
 		for (Pair<Integer, Integer> pair : portMappings) {
 			if (!(pair == null || pair.isEmpty() || pair.element0() == null || pair.element1() == null)) {

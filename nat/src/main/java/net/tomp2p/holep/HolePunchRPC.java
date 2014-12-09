@@ -67,16 +67,13 @@ public class HolePunchRPC extends DispatchHandler {
 	}
 	
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
-		final List<Integer> remotePorts = message.intList();
-		// this list holds all the port mappings for the hole punch procedure
-		HolePuncher holePuncher = new HolePuncher(peer, remotePorts.size(), HolePunchInitiator.NUMBER_OF_HOLES, message);
+		HolePuncher holePuncher = new HolePuncher(peer, message.intList().size(), HolePunchInitiator.IDLE_UDP_SECONDS, message);
 		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
 			@Override
 			public void operationComplete(FutureDone<Message> future) throws Exception {
 				if (future.isSuccess()) {
-					// TODO jwa
 					responder.response(createResponseMessage(future.object(), Message.Type.OK));
 				} else {
 					handleFail(message, responder, "Fail while repliing to hole punch attempt");
@@ -86,65 +83,6 @@ public class HolePunchRPC extends DispatchHandler {
 		});
 	}
 
-	private void handleHolePunch2(final Message message, final PeerConnection peerConnection, final Responder responder) {
-		final List<Integer> remotePorts = message.intList();
-		// this list holds all the port mappings for the hole punch procedure
-		final List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
-		final PeerAddress originalSender = (PeerAddress) message.neighborsSetList().get(0).neighbors().toArray()[0];
-		final AtomicInteger countDown = new AtomicInteger(remotePorts.size());
-
-		for (int i = 0; i < remotePorts.size(); i++) {
-			final int currentPort = remotePorts.get(i);
-			final PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false)
-					.changePorts(currentPort, currentPort);
-			final HolePunchRPC thisInstance = this;
-
-			final FutureChannelCreator fcc = peer.connectionBean().reservation().create(3, 0);
-			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-
-				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception {
-					if (future.isSuccess()) {
-						Message dummyMessage = thisInstance.createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_3);
-						OldHolePuncher holePuncher = new OldHolePuncher(dummyMessage, future.channelCreator(), peer, future.channelCreator()
-								.randomPort(), currentPort, recipient);
-						holePuncher.createAndSendUDP();
-
-						portMappings.add(new Pair<Integer, Integer>(holePuncher.remotePort(), holePuncher.localPort()));
-					} else {
-						handleFail(message, responder, "could not create channel!");
-					}
-					countDown.decrementAndGet();
-					if (countDown.get() == 0) {
-						createResponseAndReply(message, responder, portMappings, originalSender);
-					}
-				}
-
-				/**
-				 * This method simply mapps all the portmappings into the
-				 * intList of the response {@link Message} and then sends it
-				 * back to the sender.
-				 * 
-				 * @param message
-				 * @param responder
-				 * @param portMappings
-				 * @param originalSender
-				 */
-				public void createResponseAndReply(final Message message, final Responder responder,
-						final List<Pair<Integer, Integer>> portMappings, final PeerAddress originalSender) {
-					Message replyMessage = createMessage(originalSender, Commands.HOLEP.getNr(), Message.Type.OK);
-					replyMessage.messageId(message.messageId());
-					for (Pair<Integer, Integer> pair : portMappings) {
-						if (!(pair == null || pair.isEmpty() || pair.element0() == null || pair.element1() == null)) {
-							replyMessage.intValue(pair.element0());
-							replyMessage.intValue(pair.element1());
-						}
-					}
-					responder.response(replyMessage);
-				}
-			});
-		}
-	}
 
 	/**
 	 * This method first forwards a initHolePunch request to start the hole

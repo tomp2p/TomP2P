@@ -1,7 +1,6 @@
 package net.tomp2p;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -95,7 +94,6 @@ public class MessageEncodeDecode {
 
 	public static byte[] encodeMessageByteBuffer() throws Exception {
 
-		// TODO figure out how messages work exactly
 		return encodeMessage(createMessageByteBuffer());
 	}
 
@@ -118,6 +116,7 @@ public class MessageEncodeDecode {
 	}
 
 	public static byte[] encodeMessagePublicKey() throws Exception {
+		
 		// TODO implement
 		Message m = Utils2.createDummyMessage();
 
@@ -482,42 +481,40 @@ public class MessageEncodeDecode {
 		return m;
 	}
 
-	private static Message createMessageByteBuffer() throws Exception {
-		// create sample buffers
-		ByteBuf sampleBuf1 = Unpooled.buffer();
-		sampleBuf1.writeBytes(sampleBytes1);
-		sampleBuf1.writeBytes(sampleBytes1);
-		sampleBuf1.writeBytes(sampleBytes1);
+	public static Message createMessageByteBuffer() throws Exception {
+		
+		// write some random bytes
+        AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
 
-		/*
-		 * ByteBuf sampleBuf2 = Unpooled.buffer();
-		 * sampleBuf2.writeBytes(sampleBytes2);
-		 * sampleBuf2.writeBytes(sampleBytes2);
-		 * sampleBuf2.writeBytes(sampleBytes2);
-		 * 
-		 * ByteBuf sampleBuf3 = Unpooled.buffer();
-		 * sampleBuf3.writeBytes(sampleBytes3);
-		 * sampleBuf3.writeBytes(sampleBytes3);
-		 * sampleBuf3.writeBytes(sampleBytes3);
-		 * 
-		 * ByteBuf sampleBuf4 = Unpooled.buffer();
-		 * sampleBuf4.writeBytes(sampleBytes1);
-		 * sampleBuf4.writeBytes(sampleBytes2);
-		 * sampleBuf4.writeBytes(sampleBytes3);
-		 */
+        for (int i = 0; i < 300; i++)
+        {
+            switch (i%3)
+            {
+                case 0:
+                    buf.writeBytes(sampleBytes1);
+                    break;
+                case 1:
+                    buf.writeBytes(sampleBytes2);
+                    break;
+                case 2:
+                    buf.writeBytes(sampleBytes3);
+                    break;
+            }
+        }
 
-		Message m = Utils2.createDummyMessage();
-		m.buffer(new Buffer(sampleBuf1));
-		/*
-		 * m.buffer(new Buffer(sampleBuf2));
-		 * m.buffer(new Buffer(sampleBuf3));
-		 * m.buffer(new Buffer(sampleBuf4));
-		 * m.buffer(new Buffer(sampleBuf1));
-		 * m.buffer(new Buffer(sampleBuf2));
-		 * m.buffer(new Buffer(sampleBuf3));
-		 * m.buffer(new Buffer(sampleBuf4));
-		 */
-		return m;
+        // decompose buffer and use the resulting 8 ByteBufs in the list
+        List<ByteBuf> decoms = buf.decompose(0, buf.readableBytes());
+
+        Message m = Utils2.createDummyMessage();
+        m.buffer(new Buffer(decoms.get(0)));
+        m.buffer(new Buffer(decoms.get(1)));
+        m.buffer(new Buffer(decoms.get(2)));
+        m.buffer(new Buffer(decoms.get(3)));
+        m.buffer(new Buffer(decoms.get(4)));
+        m.buffer(new Buffer(decoms.get(5)));
+        m.buffer(new Buffer(decoms.get(6)));
+        m.buffer(new Buffer(decoms.get(7)));
+        return m;
 	}
 
 	private static Message createMessageInteger() throws Exception {

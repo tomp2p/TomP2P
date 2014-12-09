@@ -19,7 +19,7 @@ public class HolePunchInitiatorImpl implements HolePunchInitiator {
 	@Override
 	public FutureDone<FutureResponse> handleHolePunch(ChannelCreator channelCreator, int idleUDPSeconds,
 			FutureResponse futureResponse, boolean broadcast, Message originalMessage, SimpleChannelInboundHandler<Message> handler) {
-		GenericHolePuncher holePuncher = new GenericHolePuncher(peer, HolePunchInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
+		HolePuncher holePuncher = new HolePuncher(peer, HolePunchInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
 		return holePuncher.initiateHolePunch(handler, channelCreator, futureResponse);
 	}
 	

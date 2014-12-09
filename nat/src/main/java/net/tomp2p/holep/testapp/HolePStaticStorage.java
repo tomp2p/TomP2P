@@ -1,4 +1,4 @@
-package net.tomp2p.holep;
+package net.tomp2p.holep.testapp;
 
 import java.util.HashMap;
 

@@ -3,8 +3,6 @@ package net.tomp2p.holep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -13,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.Dispatcher;
+import net.tomp2p.connection.HolePunchInitiator;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -66,8 +65,28 @@ public class HolePunchRPC extends DispatchHandler {
 	private void handleHolePunchReply(Message message, PeerConnection peerConnection, Responder responder) {
 		responder.response(createResponseMessage(message, Type.OK));
 	}
-
+	
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
+		final List<Integer> remotePorts = message.intList();
+		// this list holds all the port mappings for the hole punch procedure
+		HolePuncher holePuncher = new HolePuncher(peer, remotePorts.size(), HolePunchInitiator.NUMBER_OF_HOLES, message);
+		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
+		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+
+			@Override
+			public void operationComplete(FutureDone<Message> future) throws Exception {
+				if (future.isSuccess()) {
+					// TODO jwa
+					responder.response(createResponseMessage(future.object(), Message.Type.OK));
+				} else {
+					handleFail(message, responder, "Fail while repliing to hole punch attempt");
+				}
+				
+			}
+		});
+	}
+
+	private void handleHolePunch2(final Message message, final PeerConnection peerConnection, final Responder responder) {
 		final List<Integer> remotePorts = message.intList();
 		// this list holds all the port mappings for the hole punch procedure
 		final List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
@@ -87,7 +106,7 @@ public class HolePunchRPC extends DispatchHandler {
 				public void operationComplete(FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
 						Message dummyMessage = thisInstance.createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_3);
-						HolePuncher holePuncher = new HolePuncher(dummyMessage, future.channelCreator(), peer, future.channelCreator()
+						OldHolePuncher holePuncher = new OldHolePuncher(dummyMessage, future.channelCreator(), peer, future.channelCreator()
 								.randomPort(), currentPort, recipient);
 						holePuncher.createAndSendUDP();
 

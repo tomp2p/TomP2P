@@ -45,7 +45,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 } else {
                     buf = alloc.compBuffer(); 
                 }
-                //null, means create signature
+                //null means create signature
                 done = encoder.write(buf, message, null);
             } else {
                 ctx.write(msg, promise);
@@ -65,11 +65,10 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                     	if(message.recipientRelay()!=null) {
                     		//in case of sending to a relay (the relayed flag is already set)
                     		recipient = message.recipientRelay().createSocketUDP();
-                    		sender = message.sender().createSocketUDP();
                     	} else {
                     		recipient = message.recipient().createSocketUDP();
-                    		sender = message.sender().createSocketUDP();
                     	}
+                    	sender = message.sender().createSocketUDP();
                     } else {
                     	//in case of a reply
                     	recipient = message.senderSocket();

@@ -30,7 +30,7 @@ public class PeerException extends Exception {
      * USER_ABORT means that this peer aborts the communication. PEER_ERROR
      * means that the other peer did not react as expected (e.g., no reply).
      * PEER_ABORT means that the other peer found an error on our side (e.g., if
-     * this peer thinks the other peer is someone else)
+     * this peer thinks the other peer is someone else).
      * 
      * @author Thomas Bocek
      */
@@ -44,9 +44,9 @@ public class PeerException extends Exception {
      * Specified error with custom message.
      * 
      * @param abortCause
-     *            either USER_ABORT, PEER_ERROR, PEER_ABORT, or TIMEOUT.
+     *            Either USER_ABORT, PEER_ERROR, PEER_ABORT, or TIMEOUT.
      * @param message
-     *            Custom message
+     *            Custom message.
      */
     public PeerException(final AbortCause abortCause, final String message) {
         super(message);
@@ -64,7 +64,7 @@ public class PeerException extends Exception {
     }
 
 	/**
-     * @return The cause of the error.
+     * @return The cause of the exception.
      */
     public AbortCause abortCause() {
         return abortCause;

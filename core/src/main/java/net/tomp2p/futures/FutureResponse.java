@@ -23,7 +23,7 @@ import net.tomp2p.connection.ProgresHandler;
 import net.tomp2p.message.Message;
 
 /**
- * Each response has one request messages. The corresponding response message is set only if the request has been
+ * Each response has one request message. The corresponding response message is set only if the request has been
  * successful. This is indicated with isFailed.
  * 
  * @author Thomas Bocek

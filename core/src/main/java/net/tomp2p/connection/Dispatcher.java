@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Used to deliver incoming REQUEST messages to their specific handlers. You can register handlers using the
+ * Used to deliver incoming REQUEST messages to their specific handlers. Handlers can be registered using the
  * {@link registerIoHandler} function.
  * <p>
  * You probably want to add an instance of this class to the end of a pipeline to be able to receive messages. This

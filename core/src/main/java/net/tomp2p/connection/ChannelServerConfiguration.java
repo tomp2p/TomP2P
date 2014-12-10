@@ -23,7 +23,7 @@ package net.tomp2p.connection;
  * @author Thomas Bocek
  * 
  */
-public class ChannelServerConficuration implements ConnectionConfiguration {
+public class ChannelServerConfiguration implements ConnectionConfiguration {
 
     private boolean behindFirewall = false;
     private boolean disableBind = false;
@@ -62,7 +62,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      *            Set to true if this peer is behind a firewall and cannot be accessed directly
      * @return This class
      */
-    public ChannelServerConficuration behindFirewall(final boolean behindFirewall) {
+    public ChannelServerConfiguration behindFirewall(final boolean behindFirewall) {
         this.behindFirewall = behindFirewall;
         return this;
     }
@@ -72,7 +72,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      * 
      * @return This class
      */
-    public ChannelServerConficuration behindFirewall() {
+    public ChannelServerConfiguration behindFirewall() {
         this.behindFirewall = true;
         return this;
     }
@@ -89,7 +89,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      *            Set to true if the bind to ports should be omited
      * @return This class
      */
-    public ChannelServerConficuration disableBind(final boolean disableBind) {
+    public ChannelServerConfiguration disableBind(final boolean disableBind) {
         this.disableBind = disableBind;
         return this;
     }
@@ -99,7 +99,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      * 
      * @return This class
      */
-    public ChannelServerConficuration disableBind() {
+    public ChannelServerConfiguration disableBind() {
         this.disableBind = true;
         return this;
     }
@@ -116,7 +116,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      *            The time that a connection can be idle before its considered not active for short-lived connections
      * @return This class
      */
-    public ChannelServerConficuration idleTCPSeconds(final int idleTCPSeconds) {
+    public ChannelServerConfiguration idleTCPSeconds(final int idleTCPSeconds) {
         this.idleTCPSeconds = idleTCPSeconds;
         return this;
     }
@@ -133,7 +133,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      *            The time that a connection can be idle before its considered not active for short-lived connections
      * @return This class
      */
-    public ChannelServerConficuration idleUDPSeconds(final int idleUDPSeconds) {
+    public ChannelServerConfiguration idleUDPSeconds(final int idleUDPSeconds) {
         this.idleUDPSeconds = idleUDPSeconds;
         return this;
     }
@@ -150,7 +150,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      *            Set the filter for the pipeline, where the user can add / remove or change filters
      * @return This class
      */
-    public ChannelServerConficuration pipelineFilter(final PipelineFilter pipelineFilter) {
+    public ChannelServerConfiguration pipelineFilter(final PipelineFilter pipelineFilter) {
         this.pipelineFilter = pipelineFilter;
         return this;
     }
@@ -167,7 +167,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      *            Set the factory for the signature
      * @return This class
      */
-    public ChannelServerConficuration signatureFactory(final SignatureFactory signatureFactory) {
+    public ChannelServerConfiguration signatureFactory(final SignatureFactory signatureFactory) {
         this.signatureFactory = signatureFactory;
         return this;
     }
@@ -177,7 +177,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return connectionTimeoutTCPMillis;
     }
 
-    public ChannelServerConficuration connectionTimeoutTCPMillis(final int connectionTimeoutTCPMillis) {
+    public ChannelServerConfiguration connectionTimeoutTCPMillis(final int connectionTimeoutTCPMillis) {
         this.connectionTimeoutTCPMillis = connectionTimeoutTCPMillis;
         return this;
     }
@@ -187,12 +187,12 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return forceTCP;
     }
 
-    public ChannelServerConficuration forceTCP(boolean forceTCP) {
+    public ChannelServerConfiguration forceTCP(boolean forceTCP) {
         this.forceTCP = forceTCP;
         return this;
     }
 
-    public ChannelServerConficuration forceTCP() {
+    public ChannelServerConfiguration forceTCP() {
         this.forceTCP = true;
         return this;
     }
@@ -202,12 +202,12 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return forceUDP;
     }
     
-    public ChannelServerConficuration forceUDP(boolean forceUDP) {
+    public ChannelServerConfiguration forceUDP(boolean forceUDP) {
         this.forceUDP = forceUDP;
         return this;
     }
 
-    public ChannelServerConficuration forceUDP() {
+    public ChannelServerConfiguration forceUDP() {
         this.forceUDP = true;
         return this;
     }
@@ -216,7 +216,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return portsForwarding;
     }
 
-    public ChannelServerConficuration portsForwarding(Ports portsForwarding) {
+    public ChannelServerConfiguration portsForwarding(Ports portsForwarding) {
         this.portsForwarding = portsForwarding;
         return this;
     }
@@ -225,12 +225,12 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return ports;
     }
 
-    public ChannelServerConficuration ports(Ports ports) {
+    public ChannelServerConfiguration ports(Ports ports) {
         this.ports = ports;
         return this;
     }
 
-    public ChannelServerConficuration bindingsIncoming(Bindings bindingsIncoming) {
+    public ChannelServerConfiguration bindingsIncoming(Bindings bindingsIncoming) {
         this.bindingsIncoming = bindingsIncoming;
         return this;
     }
@@ -244,7 +244,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return maxTCPIncomingConnections;
     }
 
-    public ChannelServerConficuration maxTCPIncomingConnections(final int maxTCPIncomingConnections) {
+    public ChannelServerConfiguration maxTCPIncomingConnections(final int maxTCPIncomingConnections) {
         this.maxTCPIncomingConnections = maxTCPIncomingConnections;
         return this;
     }
@@ -253,7 +253,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return maxUDPIncomingConnections;
     }
 
-    public ChannelServerConficuration maxUDPIncomingConnections(final int maxUDPIncomingConnections) {
+    public ChannelServerConfiguration maxUDPIncomingConnections(final int maxUDPIncomingConnections) {
         this.maxUDPIncomingConnections = maxUDPIncomingConnections;
         return this;
     }
@@ -262,7 +262,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
 	    return heartBeatMillis;
     }
 	
-	public ChannelServerConficuration heartBeatMillis(int heartBeatMillis) {
+	public ChannelServerConfiguration heartBeatMillis(int heartBeatMillis) {
 	    this.heartBeatMillis = heartBeatMillis;
 	    return this;
     }

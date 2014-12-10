@@ -84,7 +84,7 @@ public class TestChannelCreator {
     @Before
     public void createSink() throws IOException {
         Bindings bindings = new Bindings().addAddress(Inet4Address.getByName("127.0.0.1"));
-        ChannelServerConficuration c = new ChannelServerConficuration();
+        ChannelServerConfiguration c = new ChannelServerConfiguration();
         c.bindingsIncoming(bindings);
         c.ports(new Ports(PORT, PORT));
         c.pipelineFilter(new MyPipeLine());
@@ -113,14 +113,14 @@ public class TestChannelCreator {
     @Test
     @Ignore
     public void sink() throws InterruptedException, IOException {
-        ChannelServerConficuration c = new ChannelServerConficuration();
+        ChannelServerConfiguration c = new ChannelServerConfiguration();
         final EventLoopGroup bossGroup = new NioEventLoopGroup(2,
     	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
     	final EventLoopGroup workerGroup = new NioEventLoopGroup(2,
     	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
         ChannelServer cs = new ChannelServer(bossGroup, workerGroup, c, null, null);
         final int port = 4000;
-        cs.startupTCP(new InetSocketAddress("127.0.0.1", port), new ChannelServerConficuration());
+        cs.startupTCP(new InetSocketAddress("127.0.0.1", port), new ChannelServerConfiguration());
         // wait forever.
         Thread.sleep(Integer.MAX_VALUE);
     }

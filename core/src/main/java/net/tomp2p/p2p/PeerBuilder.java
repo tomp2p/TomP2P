@@ -31,7 +31,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
-import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.PeerBean;
@@ -102,7 +102,7 @@ public class PeerBuilder {
 	private Bindings externalBindings = null;
 	private PeerMap peerMap = null;
 	private Peer masterPeer = null;
-	private ChannelServerConficuration channelServerConfiguration = null;
+	private ChannelServerConfiguration channelServerConfiguration = null;
 	private ChannelClientConfiguration channelClientConfiguration = null;
 	private Boolean behindFirewall = null;
 	private BroadcastHandler broadcastHandler;
@@ -281,8 +281,8 @@ public class PeerBuilder {
 		return peer;
 	}
 
-	public static ChannelServerConficuration createDefaultChannelServerConfiguration() {
-		ChannelServerConficuration channelServerConfiguration = new ChannelServerConficuration();
+	public static ChannelServerConfiguration createDefaultChannelServerConfiguration() {
+		ChannelServerConfiguration channelServerConfiguration = new ChannelServerConfiguration();
 		channelServerConfiguration.bindingsIncoming(new Bindings());
 		//these two values may be overwritten in the peer builder
 		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
@@ -416,11 +416,11 @@ public class PeerBuilder {
 		return this;
 	}
 
-	public ChannelServerConficuration channelServerConfiguration() {
+	public ChannelServerConfiguration channelServerConfiguration() {
 		return channelServerConfiguration;
 	}
 
-	public PeerBuilder channelServerConfiguration(ChannelServerConficuration channelServerConfiguration) {
+	public PeerBuilder channelServerConfiguration(ChannelServerConfiguration channelServerConfiguration) {
 		this.channelServerConfiguration = channelServerConfiguration;
 		return this;
 	}

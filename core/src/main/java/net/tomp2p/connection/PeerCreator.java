@@ -85,7 +85,7 @@ public class PeerCreator {
 	 *             If the startup of listening to connections failed
 	 */
 	public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
-	        final ChannelServerConficuration channelServerConficuration,
+	        final ChannelServerConfiguration channelServerConficuration,
 	        final ChannelClientConfiguration channelClientConfiguration,
 	        final ScheduledExecutorService timer) throws IOException {
 		//peer bean
@@ -220,7 +220,7 @@ public class PeerCreator {
 	/**
 	 * Creates the {@link PeerAddress} based on the network discovery that was
 	 * done in
-	 * {@link #ChannelServer(Bindings, int, int, ChannelServerConficuration)}.
+	 * {@link #ChannelServer(Bindings, int, int, ChannelServerConfiguration)}.
 	 * 
 	 * @param peerId
 	 *            The id of this peer
@@ -230,7 +230,7 @@ public class PeerCreator {
 	 */
 	private static PeerAddress findPeerAddress(final Number160 peerId,
 	        final ChannelClientConfiguration channelClientConfiguration,
-	        final ChannelServerConficuration channelServerConficuration) throws IOException {
+	        final ChannelServerConfiguration channelServerConficuration) throws IOException {
 		final String status = DiscoverNetworks.discoverInterfaces(channelClientConfiguration.bindingsOutgoing());
 		if (LOG.isInfoEnabled()) {
 			LOG.info("Status of external search: " + status);

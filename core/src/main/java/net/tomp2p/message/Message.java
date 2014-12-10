@@ -768,7 +768,24 @@ public class Message {
         }
         return keyCollectionList.get(index);
     }
-    
+
+    public void convertKeyCollections() {
+        if (keyCollectionList == null) {
+            return;
+        }
+        ArrayList<KeyCollection> newKeyCollectionList = new ArrayList<>(keyCollectionList.size());
+        for (KeyCollection keyCollection : keyCollectionList) {
+            newKeyCollectionList.add(convertKeyCollection(keyCollection));
+        }
+        keyCollectionList = newKeyCollectionList;
+    }
+
+    private KeyCollection convertKeyCollection(KeyCollection keyCollection) {
+        return keyCollection.isConvert()
+                ? new KeyCollection(KeyCollection.convert(keyCollection))
+                : keyCollection;
+    }
+
     public Message keyMap640Keys(final KeyMap640Keys keyMap) {
         if (!presetContentTypes) {
             contentType(Content.MAP_KEY640_KEYS);

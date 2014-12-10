@@ -80,7 +80,7 @@ public class KeyCollection {
         return this;
     }
 
-    private Collection<Number640> convert(final KeyCollection k) {
+    public static Collection<Number640> convert(final KeyCollection k) {
         final Collection<Number640> keys3;
         if (k.keysConvert != null) {
             keys3 = new ArrayList<Number640>(k.keysConvert.size());

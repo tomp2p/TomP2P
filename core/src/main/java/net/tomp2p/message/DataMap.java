@@ -49,7 +49,7 @@ public class DataMap {
     }
 
     public Map<Number640, Data> dataMap() {
-        return dataMap;
+        return convert(this);
     }
 
     public Map<Number160, Data> dataMapConvert() {
@@ -85,10 +85,6 @@ public class DataMap {
      */
     public boolean isConvert() {
         return dataMapConvert != null;
-    }
-
-    public Map<Number640, Data> convertToMap640() {
-        return convert(this);
     }
 
     public Map<Number640, Number160> convertToHash() {

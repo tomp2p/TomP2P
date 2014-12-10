@@ -32,7 +32,7 @@ public class KeyCollection {
     }
 
     public Collection<Number640> keys() {
-        return keys;
+        return convert(this);
     }
 
     public Collection<Number160> keysConvert() {

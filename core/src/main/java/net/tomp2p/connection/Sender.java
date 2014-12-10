@@ -387,6 +387,8 @@ public class Sender {
 	 * @param message the request
 	 */
 	public void sendSelf(final FutureResponse futureResponse, final Message message) {
+		message.convertKeyCollections();
+
 		LOG.debug("Handle message that is intended for the sender itself {}", message);
 		final DispatchHandler handler = dispatcher.associatedHandler(message);
 		handler.forwardMessage(message, null, new Responder() {

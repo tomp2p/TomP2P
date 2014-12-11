@@ -307,7 +307,8 @@ public class PeerBuilder {
 			peerInit.init(peer);
 		}
 		
-		peer.connectionBean().sender().peer(peer);
+		//TODO jwa remove this
+//		peer.connectionBean().sender().peer(peer);
 		
 		return peer;
 	}

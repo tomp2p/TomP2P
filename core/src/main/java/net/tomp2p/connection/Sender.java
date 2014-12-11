@@ -265,38 +265,6 @@ public class Sender {
 		newMessage.type(messageType);
 	}
 
-	/**
-	 * This method creates the initial {@link Message} with {@link Commands}
-	 * .HOLEP and {@link Type}.REQUEST_1. This {@link Message} will be forwarded
-	 * to the rendez-vous server (a relay of the remote peer) and initiate the
-	 * hole punching procedure on the other peer.
-	 * 
-	 * @param message
-	 * @param channelCreator
-	 * @return holePMessage
-	 */
-	private static Message createHolePMessage(final Message message, final ChannelCreator channelCreator) {
-		PeerSocketAddress socketAddress = Utils.extractRandomRelay(message);
-
-		// we need to make a copy of the original Message
-		Message holePMessage = new Message();
-
-		// socketInfoMessage.messageId(message.messageId());
-		holePMessage.sender(message.sender());
-		holePMessage.version(message.version());
-		holePMessage.udp(true);
-
-		// making the message ready to send
-		readyToSend(message, socketAddress, holePMessage, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
-
-		// TODO jwa --> create something like a configClass or file where the
-		// number of holes in the firewall can be specified.
-		for (int i = 0; i < 3; i++) {
-			holePMessage.intValue(channelCreator.randomPort());
-		}
-
-		return holePMessage;
-	}
 
 	/**
 	 * This method is extracted by @author jonaswagner to ensure that no
@@ -545,35 +513,35 @@ public class Sender {
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPSeconds,
 				isFireAndForget);
 
-		// TODO jwa change check below
 		if (!(message.command() == RPC.Commands.PING.getNr() || message.command() == RPC.Commands.NEIGHBOR.getNr())
 				&& message.recipient().isRelayed() && message.sender().isRelayed()) {
-		}
-
-		// TODO jwa change if check with check above
-		if (message.command() == RPC.Commands.DIRECT_DATA.getNr() && message.recipient().isRelayed() && message.sender().isRelayed()) {
 
 			// initiate the holepunching process
-//			handleHolePunch(createHolePMessage(message, channelCreator), channelCreator, idleUDPSeconds, futureResponse, broadcast,
-//					message, handler);
 			if (peer.peerBean().holePunchInitiator() != null) {
-				FutureDone<Message> fDone = peer.peerBean().holePunchInitiator().handleHolePunch(channelCreator, idleUDPSeconds, futureResponse, broadcast, message, handler);
+				FutureDone<Message> fDone = peer.peerBean().holePunchInitiator()
+						.handleHolePunch(channelCreator, idleUDPSeconds, futureResponse, message);
 				fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
 					@Override
 					public void operationComplete(FutureDone<Message> future) throws Exception {
-						System.err.println("IT WORKED FDONE");
+						if (future.isSuccess()) {
+							futureResponse.response(future.object());
+						} else {
+							LOG.error("Message could not be sent with hole punching!");
+							futureResponse.failed(future.failedReason());
+						}
 					}
 
 					@Override
 					public void exceptionCaught(Throwable t) throws Exception {
-						System.err.println("IT THREW AN ERROR FDONE!");
 					}
 				});
-				
+
+				// the sendMechanics are done in the HolePuncher class.
+				// Therefore we must execute this return statement.
 				return;
 			} else {
-				LOG.debug("No hole punching possible, because There is no PeerNAT."); 
+				LOG.debug("No hole punching possible, because There is no PeerNAT.");
 			}
 		}
 
@@ -821,7 +789,8 @@ public class Sender {
 		return peerStatusListeners;
 	}
 
-	public void peer(Peer peer) {
-		this.peer = peer;
-	}
+	//TODO jwa remove this
+//	public void peer(Peer peer) {
+//		this.peer = peer;
+//	}
 }

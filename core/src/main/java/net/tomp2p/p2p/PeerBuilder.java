@@ -43,9 +43,11 @@ import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.SendBehavior;
 import net.tomp2p.p2p.builder.PingBuilder;
+import net.tomp2p.peers.LocalMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
+import net.tomp2p.rpc.AnnounceRPC;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
@@ -130,6 +132,7 @@ public class PeerBuilder {
 	private boolean enableRouting = true;
 	private boolean enableMaintenance = true;
 	private boolean enableQuitRPC = true;
+	private boolean enableAnnounceRPC = true;
 
 
 	/**
@@ -236,6 +239,11 @@ public class PeerBuilder {
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
 
 		PeerBean peerBean = peerCreator.peerBean();
+		
+		LocalMap localMap = new LocalMap();
+		peerBean.localMap(localMap);
+		peerBean.addPeerStatusListener(localMap);
+		
 		peerBean.addPeerStatusListener(peerMap);
 		
 		ConnectionBean connectionBean = peerCreator.connectionBean();
@@ -279,6 +287,11 @@ public class PeerBuilder {
 			peer.broadcastRPC(broadcastRPC);
 		}
 		
+		if (isEnableAnnounceRPC()) {
+			AnnounceRPC announceRPC = new AnnounceRPC(peerBean, connectionBean);
+			peer.announceRPC(announceRPC);
+		}
+		
 		if (isEnableRouting() && isEnableNeighborRPC()) {
 			DistributedRouting routing = new DistributedRouting(peerBean, peer.neighborRPC());
 			peer.distributedRouting(routing);
@@ -291,6 +304,7 @@ public class PeerBuilder {
 		if (maintenanceTask != null) {
 			maintenanceTask.init(peer, connectionBean.timer());
 			maintenanceTask.addMaintainable(peerMap);
+			maintenanceTask.addMaintainable(localMap);
 		}
 		peerBean.maintenanceTask(maintenanceTask);
 
@@ -306,8 +320,6 @@ public class PeerBuilder {
 		for (PeerInit peerInit : toInitialize) {
 			peerInit.init(peer);
 		}
-		
-		peer.connectionBean().sender().peer(peer);
 		
 		return peer;
 	}
@@ -562,6 +574,15 @@ public class PeerBuilder {
 
 	public PeerBuilder enableQuitRPC(boolean enableQuitRPC) {
 		this.enableQuitRPC = enableQuitRPC;
+		return this;
+	}
+	
+	public boolean isEnableAnnounceRPC() {
+		return enableAnnounceRPC;
+	}
+
+	public PeerBuilder enableAnnounceRPC(boolean enableAnnounceRPC) {
+		this.enableAnnounceRPC = enableAnnounceRPC;
 		return this;
 	}
 	

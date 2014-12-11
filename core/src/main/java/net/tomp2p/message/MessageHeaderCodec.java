@@ -60,7 +60,6 @@ public final class MessageHeaderCodec {
      * @return The buffer passed as an argument
      */
     public static void encodeHeader(final ByteBuf buffer, final Message message) {
-        
     	final int versionAndType = message.version() << 4 | (message.type().ordinal() & Utils.MASK_0F);
         buffer.writeInt(versionAndType); // 4
         buffer.writeInt(message.messageId()); // 8

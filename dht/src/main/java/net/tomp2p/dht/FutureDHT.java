@@ -8,6 +8,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureImpl;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
@@ -23,6 +24,8 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
 
     // A reference to the routing process that run before the DHT operations
     private FutureRouting futureRouting;
+    
+    protected FutureDone<Void> futuresCompleted;
 
     public FutureDHT(DHTBuilder<?> builder) {
         this.builder = builder;
@@ -112,5 +115,11 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
         synchronized (lock) {
             this.futureRouting = futureRouting;
         }
+    }
+    
+    public FutureDone<Void> futuresCompleted() {
+    	synchronized (lock) {
+    		return futuresCompleted;
+    	}
     }
 }

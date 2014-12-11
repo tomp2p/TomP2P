@@ -13,7 +13,7 @@
 	<groupId>net.tomp2p</groupId>
 	<artifactId>tomp2p-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>5.0-Alpha27-SNAPSHOT</version>
+	<version>5.0-Beta2-SNAPSHOT</version>
 
 	<name>TomP2P</name>
 	<url>http://tomp2p.net</url>
@@ -58,7 +58,7 @@
 		<repository>
 			<id>ssh.tomp2p</id>
 			<!-- The URL is CMS specific -->
-			<url>scp://tomp2p.net/home/draft/maven</url>
+			<url>scpexe://tomp2p.net/home/draft/maven</url>
 		</repository>
 	</distributionManagement>
 
@@ -102,7 +102,7 @@
 	    <extensions>
 			<extension>
 				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-ssh</artifactId>
+				<artifactId>wagon-ssh-external</artifactId>
 				<version>2.6</version>
 			</extension>
 		</extensions>
@@ -150,6 +150,19 @@
                 			<!-- <additionalparam>-Xdoclint:none</additionalparam> -->
             			</configuration>
 					</execution>
+					<execution>
+            			<id>aggregate</id>
+            			<goals>
+              				<goal>aggregate</goal>
+            			</goals>
+            			<phase>site</phase>
+            			<configuration>
+            				<!-- if you compile with 1.7, but want that 1.8 should generate the jar use failOnError -->
+            				<failOnError>false</failOnError>
+            				<!-- if you compile with 1.8, but want that 1.7 should generate the jar use Xdoclint -->
+                			<!-- <additionalparam>-Xdoclint:none</additionalparam> -->
+            			</configuration>
+          			</execution>
 				</executions>
 			</plugin>
 			<plugin>
@@ -170,6 +183,17 @@
 					</instructions>
 				</configuration>
 			</plugin>
+			<plugin>
+      			<artifactId>maven-release-plugin</artifactId>
+      			<version>2.4.2</version>
+      			<dependencies>
+        			<dependency>
+          				<groupId>org.apache.maven.scm</groupId>
+          				<artifactId>maven-scm-provider-gitexe</artifactId>
+          				<version>1.9</version>
+        			</dependency>
+       			</dependencies>
+      		</plugin>
 		</plugins>
 		
 	</build>

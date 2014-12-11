@@ -206,7 +206,7 @@ public class HolePuncher implements IPunchHole {
 				@Override
 				public void operationComplete(FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
-						ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers, originalFutureResponse, null);
+						ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers, originalFutureResponse);
 						cF.addListener(new GenericFutureListener<ChannelFuture>() {
 							@Override
 							public void operationComplete(ChannelFuture future) throws Exception {

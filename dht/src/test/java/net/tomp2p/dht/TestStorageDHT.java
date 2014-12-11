@@ -389,7 +389,7 @@ public class TestStorageDHT {
             System.err.println(fr.failedReason());
             Message m = fr.responseMessage();
             Map<Number640, Data> stored = m.dataMap(0).dataMap();
-            compare(dataMap.convertToMap640(), stored);
+            compare(dataMap.dataMap(), stored);
             System.err.println("done!");
         } finally {
             if (cc != null) {
@@ -448,7 +448,7 @@ public class TestStorageDHT {
             Assert.assertEquals(true, fr.isSuccess());
             Message m = fr.responseMessage();
             Map<Number640, Data> stored = m.dataMap(0).dataMap();
-            compare(dataMap.convertToMap640(), stored);
+            compare(dataMap.dataMap(), stored);
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -517,7 +517,7 @@ public class TestStorageDHT {
             // check for returned results
             Map<Number640, Data> stored = m.dataMap(0).dataMap();
             DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
-            compare(dataMap.convertToMap640(), stored);
+            compare(dataMap.dataMap(), stored);
 
             // get
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
@@ -575,7 +575,7 @@ public class TestStorageDHT {
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             KeyMapByte keys = fr.responseMessage().keyMapByte(0);
-            Utils.isSameSets(keys.keysMap().keySet(), dataMap.convertToMap640().keySet());
+            Utils.isSameSets(keys.keysMap().keySet(), dataMap.dataMap().keySet());
 
         } finally {
             if (cc != null) {

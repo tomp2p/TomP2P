@@ -38,6 +38,9 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.RequestConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Reserves a block of connections.
  * 
@@ -45,6 +48,8 @@ import net.tomp2p.p2p.RoutingConfiguration;
  * 
  */
 public class Reservation {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(Reservation.class);
 
 	private final int maxPermitsUDP;
 	private final int maxPermitsTCP;
@@ -139,6 +144,7 @@ public class Reservation {
 			}
 		}
 
+		LOG.debug("Reservation UDP={}, TCP={}", nrConnectionsUDP, nrConnectionsTCP);
 		return create(nrConnectionsUDP, nrConnectionsTCP);
 	}
 

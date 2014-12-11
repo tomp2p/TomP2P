@@ -17,6 +17,7 @@ package net.tomp2p.futures;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
@@ -48,6 +49,10 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
     private int counter = 0;
 
     private int successCounter = 0;
+    
+    private final FutureDone<Void> futuresCompleted = new FutureDone<Void>();
+    
+    private final AtomicInteger futureCounter;
 
     /**
      * Facade if we expect everything to return successfully.
@@ -79,6 +84,7 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
         this.cancelFuturesOnFinish = cancelFuturesOnFinish;
         // the futures array may have null entries, so count first.
         nrFutures = forks.length();
+        futureCounter = new AtomicInteger(nrFutures);
         if (this.nrFutures <= 0) {
             failed("We have no futures: " + nrFutures);
         } else {
@@ -103,6 +109,9 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
                     @Override
                     public void operationComplete(final K future) throws Exception {
                         evaluate(future, index);
+                        if (futureCounter.decrementAndGet() == 0) {
+                        	futuresCompleted.done();
+                        }
                     }
                 });
             } else {
@@ -115,6 +124,11 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
                         notifyNow = finish(FutureType.FAILED);
                     }
                 }
+                
+                if (futureCounter.decrementAndGet() == 0) {
+                	futuresCompleted.done();
+                }
+                
                 if (notifyNow) {
                     notifyListeners();
                     cancelAll();
@@ -238,5 +252,11 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
         synchronized (lock) {
             return successCounter;
         }
+    }
+    
+    public FutureDone<Void> futuresCompleted() {
+    	synchronized (lock) {
+    		return futuresCompleted;
+    	}
     }
 }

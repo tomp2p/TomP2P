@@ -112,8 +112,6 @@ public class Bindings {
     public void clear() {
         interfaceHints.clear();
         addresses.clear();
-        
-        //TODO MK: I assume it should also clear protocolHint?
         protocolHint.clear();
     }
 

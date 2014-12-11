@@ -31,6 +31,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
@@ -38,7 +39,6 @@ import net.tomp2p.message.KeyMap640Keys;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.DistributedRouting;
 import net.tomp2p.p2p.RequestP2PConfiguration;
-import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.p2p.builder.BasicBuilder;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.p2p.builder.SearchableBuilder;
@@ -105,8 +105,8 @@ public class DistributedHashTable {
                                             }
 
                                             @Override
-                                            public void response(FuturePut futureDHT) {
-                                                futureDHT.storedKeys(rawData);
+                                            public void response(FuturePut futureDHT, FutureDone<Void> futuresCompleted) {
+                                                futureDHT.storedKeys(rawData, futuresCompleted);
                                             }
 
                                             @Override
@@ -175,11 +175,11 @@ public class DistributedHashTable {
                                             }
 
                                             @Override
-                                            public void response(FutureSend futureDHT) {
+                                            public void response(FutureSend futureDHT, FutureDone<Void> futuresCompleted) {
                                                 if (builder.isRaw())
-                                                    futureDHT.directData1(rawChannels);
+                                                    futureDHT.directData1(rawChannels, futuresCompleted);
                                                 else
-                                                    futureDHT.directData2(rawObjects);
+                                                    futureDHT.directData2(rawObjects, futuresCompleted);
                                             }
 
                                             @Override
@@ -266,8 +266,8 @@ public class DistributedHashTable {
                                             }
 
                                             @Override
-                                            public void response(final FuturePut futureDHT) {
-                                                futureDHT.storedKeys(rawData);
+                                            public void response(final FuturePut futureDHT, FutureDone<Void> futuresCompleted) {
+                                                futureDHT.storedKeys(rawData, futuresCompleted);
                                             }
 
                                             @Override
@@ -355,9 +355,9 @@ public class DistributedHashTable {
                                             }
 
                                             @Override
-                                            public void response(FutureGet futureDHT) {
+                                            public void response(FutureGet futureDHT, FutureDone<Void> futuresCompleted) {
 
-                                                futureDHT.receivedData(rawData, rawDigest);
+                                                futureDHT.receivedData(rawData, rawDigest, futuresCompleted);
 
                                             }
 
@@ -434,8 +434,8 @@ public class DistributedHashTable {
                                             }
 
                                             @Override
-                                            public void response(FutureDigest futureDHT) {
-                                                futureDHT.receivedDigest(rawDigest);
+                                            public void response(FutureDigest futureDHT, FutureDone<Void> futuresCompleted) {
+                                                futureDHT.receivedDigest(rawDigest, futuresCompleted);
                                             }
 
                                             @Override
@@ -525,11 +525,11 @@ public class DistributedHashTable {
                                             }
 
                                             @Override
-                                            public void response(FutureRemove futureDHT) {
+                                            public void response(FutureRemove futureDHT, FutureDone<Void> futuresCompleted) {
                                                 if (builder.isReturnResults()) {
-                                                    futureDHT.receivedData(rawDataResult);
+                                                    futureDHT.receivedData(rawDataResult, futuresCompleted);
                                                 } else {
-                                                    futureDHT.storedKeys(rawDataNoResult);
+                                                    futureDHT.storedKeys(rawDataNoResult, futuresCompleted);
                                                 }
                                             }
 
@@ -590,7 +590,7 @@ public class DistributedHashTable {
                 if (future.isSuccess()) {
                     parallelRequests(p2pConfiguration, directHit, potentialHit, futureDHT, cancleOnFinish,
                             future.channelCreator(), operation);
-                    Utils.addReleaseListener(future.channelCreator(), futureDHT);
+                    UtilsDHT.addReleaseListener(future.channelCreator(), futureDHT);
                 } else {
                     futureDHT.failed(future);
                 }
@@ -609,7 +609,7 @@ public class DistributedHashTable {
     	}
     	
         if (p2pConfiguration.minimumResults() == 0) {
-            operation.response(future);
+            operation.response(future, null);
             return;
         }
         FutureResponse[] futures = new FutureResponse[p2pConfiguration.parallel()];
@@ -644,7 +644,7 @@ public class DistributedHashTable {
             }
         }
         if (active == 0) {
-            operation.response(futureDHT);
+            operation.response(futureDHT, null);
             if (cancelOnFinish) {
                 cancel(futures);
             }
@@ -667,7 +667,7 @@ public class DistributedHashTable {
                     if (cancelOnFinish) {
                         cancel(futures);
                     }
-                    operation.response(futureDHT);
+                    operation.response(futureDHT, future.futuresCompleted());
                 } else {
                     loopRec(directHit, potentialHit, min - future.successCounter(), nrFailure, maxFailure, parallelDiff,
                             futures, futureDHT, cancelOnFinish, channelCreator, operation);

@@ -51,10 +51,13 @@ import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.builder.PingBuilder;
+import net.tomp2p.peers.LocalMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
@@ -77,7 +80,7 @@ public class Sender {
 	private final Dispatcher dispatcher;
 	private final SendBehavior sendBehavior;
 	private final Random random;
-	private Peer peer;
+	private final PeerBean peerBean;
 
 	// this map caches all messages which are meant to be sent by a reverse
 	private final ConcurrentHashMap<Integer, FutureResponse> cachedRequests = new ConcurrentHashMap<Integer, FutureResponse>();
@@ -95,12 +98,13 @@ public class Sender {
 	 * @param concurrentHashMap
 	 */
 	public Sender(final Number160 peerId, final List<PeerStatusListener> peerStatusListeners,
-			final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior) {
+	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior, PeerBean peerBean) {
 		this.peerStatusListeners = peerStatusListeners;
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.dispatcher = dispatcher;
 		this.sendBehavior = sendBehavior;
 		this.random = new Random(peerId.hashCode());
+		this.peerBean = peerBean;
 	}
 
 	public ChannelClientConfiguration channelClientConfiguration() {
@@ -139,6 +143,15 @@ public class Sender {
 		if (futureResponse.isCompleted()) {
 			return;
 		}
+		// NAT reflection - rewrite recipient if we found a local address for the recipient
+		LocalMap localMap = peerBean.localMap();
+		if(localMap != null) {
+			PeerStatistic peerStatistic = localMap.translate(message.recipient());
+			if(peerStatistic != null) {
+				message.recipient(peerStatistic.peerAddress());
+			}
+		}
+		
 		removePeerIfFailed(futureResponse, message);
 
 		final ChannelFuture channelFuture;
@@ -149,18 +162,21 @@ public class Sender {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
 
 			switch (sendBehavior.tcpSendBehavior(message)) {
-			case DIRECT:
-				connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
-				break;
-			case RCON:
-				handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler);
-				break;
-			case RELAY:
-				handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection,
-						timeoutHandler);
-				break;
-			default:
-				throw new IllegalArgumentException("Illegal sending behavior");
+				case DIRECT:
+					connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
+					break;
+				case RCON:
+					handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler);
+					break;
+				case RELAY:
+					handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection, 
+							timeoutHandler);
+					break;
+				case SELF:
+					sendSelf(futureResponse, message);
+					break;
+				default:
+					throw new IllegalArgumentException("Illegal sending behavior");
 			}
 		}
 	}
@@ -286,7 +302,10 @@ public class Sender {
 	/**
 	 * Both peers are relayed, thus sending directly or over reverse connection
 	 * is not possible. Send the message to one of the receiver's relays.
+<<<<<<< HEAD
 	 * 
+=======
+>>>>>>> refs/remotes/tomp-master/master
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -377,8 +396,38 @@ public class Sender {
 		return futureDone;
 	}
 
-	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator, PeerConnection peerConnection,
-			ChannelHandler handler, TimeoutFactory timeoutHandler, int connectTimeoutMillis, FutureResponse futureResponse) {
+	/**
+	 * In case a message is sent to the sender itself, this is the cutoff.
+	 * 
+	 * @param futureResponse the future to respond as soon as the proper handler returns it
+	 * @param message the request
+	 */
+	public void sendSelf(final FutureResponse futureResponse, final Message message) {
+		LOG.debug("Handle message that is intended for the sender itself {}", message);
+		final DispatchHandler handler = dispatcher.associatedHandler(message);
+		handler.forwardMessage(message, null, new Responder() {
+
+			@Override
+			public void response(Message responseMessage) {
+				futureResponse.response(responseMessage);
+			}
+
+			@Override
+			public void failed(Type type, String reason) {
+				futureResponse.failed("Failed with type " + type.name() + ". Reason: " + reason);
+			}
+
+			@Override
+			public void responseFireAndForget() {
+				futureResponse.emptyResponse();
+			}
+
+		});
+	}
+	
+	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator,
+	        PeerConnection peerConnection, ChannelHandler handler, TimeoutFactory timeoutHandler,
+	        int connectTimeoutMillis, FutureResponse futureResponse) {
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 
@@ -498,6 +547,16 @@ public class Sender {
 		if (futureResponse.isCompleted()) {
 			return;
 		}
+		
+		// NAT reflection - rewrite recipient if we found a local address for the recipient
+		LocalMap localMap = peerBean.localMap();
+		if(localMap != null) {
+			PeerStatistic peerStatistic = localMap.translate(message.recipient());
+			if(peerStatistic != null) {
+				message.recipient(peerStatistic.peerAddress());
+			}
+		}
+		
 		removePeerIfFailed(futureResponse, message);
 
 		if (message.sender().isRelayed()) {
@@ -513,8 +572,8 @@ public class Sender {
 				&& message.recipient().isRelayed() && message.sender().isRelayed()) {
 
 			// initiate the holepunching process
-			if (peer.peerBean().holePunchInitiator() != null) {
-				FutureDone<Message> fDone = peer.peerBean().holePunchInitiator()
+			if (peerBean.holePunchInitiator() != null) {
+				FutureDone<Message> fDone = peerBean.holePunchInitiator()
 						.handleHolePunch(channelCreator, idleUDPSeconds, futureResponse, message);
 				fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
@@ -544,23 +603,27 @@ public class Sender {
 		try {
 			final ChannelFuture channelFuture;
 			switch (sendBehavior.udpSendBehavior(message)) {
-			case DIRECT:
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null);
-				break;
-			case RELAY:
-				List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
-				LOG.debug("send neighbor request to random relay peer {}", psa);
-				if (psa.size() > 0) {
-					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-					message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
-					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, null);
-				} else {
-					futureResponse.failed("Peer is relayed, but no relay given");
-					return;
-				}
-				break;
-			default:
-				throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");
+				case DIRECT:
+					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+					break;
+				case RELAY:
+					List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
+					LOG.debug("send neighbor request to random relay peer {}", psa);
+					if (psa.size() > 0) {
+						PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
+						message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+						channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+					} else {
+						futureResponse.failed("Peer is relayed, but no relay given");
+						return;
+					}
+					break;
+				case SELF:
+					sendSelf(futureResponse, message);
+					channelFuture = null;
+					break;
+				default:
+					throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");
 			}
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		} catch (UnsupportedOperationException e) {
@@ -604,6 +667,8 @@ public class Sender {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
 		return handlers;
+
+		
 	}
 
 	/**
@@ -783,9 +848,5 @@ public class Sender {
 
 	public List<PeerStatusListener> peerStatusListeners() {
 		return peerStatusListeners;
-	}
-
-	public void peer(Peer peer) {
-		this.peer = peer;
 	}
 }

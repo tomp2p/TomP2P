@@ -52,10 +52,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Creates the channels. This class is created by {@link net.tomp2p.connection.Reservation.WaitReservationPermanent}
- * and should never be called directly. With this class one can create TCP or
- * UDP channels up to a certain extend. Thus it must be know beforehand how many
- * connections will be created.
+ * Creates the channels. This class is created by
+ * {@link net.tomp2p.connection.Reservation.WaitReservationPermanent} and should
+ * never be called directly. With this class one can create TCP or UDP channels
+ * up to a certain extend. Thus it must be know beforehand how many connections
+ * will be created.
  * 
  * @author Thomas Bocek
  */
@@ -84,18 +85,16 @@ public class ChannelCreator {
 	private final FutureDone<Void> futureChannelCreationDone;
 
 	private final ChannelClientConfiguration channelClientConfiguration;
-	
+
 	private EventExecutorGroup handlerExecutor;
 
 	private boolean shutdownUDP = false;
 	private boolean shutdownTCP = false;
-	
-	private SocketAddress socketAddress = null;
-	private static final Random channelRandom = new Random();
 
 	/**
 	 * Package private constructor, since this is created by
-	 * {@link net.tomp2p.connection.Reservation.WaitReservationPermanent} and should never be called directly.
+	 * {@link net.tomp2p.connection.Reservation.WaitReservationPermanent} and
+	 * should never be called directly.
 	 * 
 	 * @param workerGroup
 	 *            The worker group for netty that is shared between TCP and UDP.
@@ -110,9 +109,8 @@ public class ChannelCreator {
 	 * @param channelClientConfiguration
 	 *            The configuration that contains the pipeline filter
 	 */
-	ChannelCreator(final EventLoopGroup workerGroup, final FutureDone<Void> futureChannelCreationDone,
-	        final int maxPermitsUDP, final int maxPermitsTCP,
-	        final ChannelClientConfiguration channelClientConfiguration) {
+	ChannelCreator(final EventLoopGroup workerGroup, final FutureDone<Void> futureChannelCreationDone, final int maxPermitsUDP,
+			final int maxPermitsTCP, final ChannelClientConfiguration channelClientConfiguration) {
 		this.workerGroup = workerGroup;
 		this.futureChannelCreationDone = futureChannelCreationDone;
 		this.maxPermitsUDP = maxPermitsUDP;
@@ -122,27 +120,27 @@ public class ChannelCreator {
 		this.channelClientConfiguration = channelClientConfiguration;
 	}
 
-    /**
-     * Creates a "channel" to the given address. This won't send any message
-     * unlike TCP.
-     * 
-     * @param broadcast
-     *              Sets this channel to be able to broadcast
-     * @param channelHandlers
-     *              The handlers to set
-     * @param futureResponse
-     *              The futureResponse
-     * @return The channel future object or null if we are shut down
-     */
-	public ChannelFuture createUDP(final boolean broadcast,
-			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse, SocketAddress predefinedSocket) {
+	/**
+	 * Creates a "channel" to the given address. This won't send any message
+	 * unlike TCP.
+	 * 
+	 * @param broadcast
+	 *            Sets this channel to be able to broadcast
+	 * @param channelHandlers
+	 *            The handlers to set
+	 * @param futureResponse
+	 *            The futureResponse
+	 * @return The channel future object or null if we are shut down
+	 */
+	public ChannelFuture createUDP(final boolean broadcast, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers,
+			FutureResponse futureResponse) {
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
 				return null;
 			}
 			if (!semaphoreUPD.tryAcquire()) {
-				LOG.error("Tried to acquire more resources (UDP) than announced!");
+				LOG.error("Tried to acquire more resources (UDP) than announced! Announced {}", maxPermitsUDP);
 				throw new RuntimeException("Tried to acquire more resources (UDP) than announced!");
 			}
 			final Bootstrap b = new Bootstrap();
@@ -152,22 +150,18 @@ public class ChannelCreator {
 			if (broadcast) {
 				b.option(ChannelOption.SO_BROADCAST, true);
 			}
-			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(channelHandlers, false, true);
+			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(
+					channelHandlers, false, true);
 			addHandlers(b, channelHandlers2);
 			// Here we need to bind, as opposed to the TCP, were we connect if
 			// we do a connect, we cannot receive
 			// broadcast messages
 			final ChannelFuture channelFuture;
-			if (predefinedSocket != null) {
-				channelFuture = b.bind(predefinedSocket);
-			} else {
-				channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
-			}
-			socketAddress = channelFuture.channel().localAddress();
+			channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;
-        } finally {
+		} finally {
 			readUDP.unlock();
 		}
 	}
@@ -183,11 +177,11 @@ public class ChannelCreator {
 	 * @param channelHandlers
 	 *            The handlers to set
 	 * @param futureResponse
-	 * 			  the futureResponse
+	 *            the futureResponse
 	 * @return The channel future object or null if we are shut down.
 	 */
 	public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
-	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, final FutureResponse futureResponse) {
+			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, final FutureResponse futureResponse) {
 		readTCP.lock();
 		try {
 			if (shutdownTCP) {
@@ -204,7 +198,8 @@ public class ChannelCreator {
 			b.option(ChannelOption.TCP_NODELAY, true);
 			b.option(ChannelOption.SO_LINGER, 0);
 			b.option(ChannelOption.SO_REUSEADDR, true);
-			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(channelHandlers, true, true);
+			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(
+					channelHandlers, true, true);
 			addHandlers(b, channelHandlers2);
 
 			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(channelClientConfiguration.senderTCP(), 0));
@@ -226,23 +221,22 @@ public class ChannelCreator {
 	 * @param channelHandlers
 	 *            The handlers to be added.
 	 */
-	private void addHandlers(final Bootstrap bootstrap,
-	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
-        bootstrap.handler(new ChannelInitializer<Channel>() {
-            @Override
-            protected void initChannel(final Channel ch) throws Exception {
-                for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : channelHandlers.entrySet()) {
-                    if (entry.getKey().equals("handler")) {
-                        handlerExecutor = entry.getValue().element0();
-                    }
-                    if (entry.getValue().element0() != null) {
-                        ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
-                    } else {
-                        ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
-                    }
-                }
-            }
-        });
+	private void addHandlers(final Bootstrap bootstrap, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
+		bootstrap.handler(new ChannelInitializer<Channel>() {
+			@Override
+			protected void initChannel(final Channel ch) throws Exception {
+				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : channelHandlers.entrySet()) {
+					if (entry.getKey().equals("handler")) {
+						handlerExecutor = entry.getValue().element0();
+					}
+					if (entry.getValue().element0() != null) {
+						ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
+					} else {
+						ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
+					}
+				}
+			}
+		});
 	}
 
 	/**
@@ -253,13 +247,14 @@ public class ChannelCreator {
 	 * @param channelFuture
 	 *            The channel future
 	 * @param semaphore
-     *            The semaphore to decrease
-     * @param futureResponse
-     *            The future response
-     *            
+	 *            The semaphore to decrease
+	 * @param futureResponse
+	 *            The future response
+	 * 
 	 * @return The same future that was passed as an argument
 	 */
-	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore, final FutureResponse futureResponse) {
+	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore,
+			final FutureResponse futureResponse) {
 		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
@@ -272,10 +267,12 @@ public class ChannelCreator {
 					@Override
 					public void run() {
 						semaphore.release();
-						
+
 						Message request = futureResponse.request();
-						if(request.recipient().isSlow() && request.command() != Commands.PING.getNr() && request.command() != Commands.NEIGHBOR.getNr()) {
-							// If the request goes to a slow peer, the channel can be closed until the response arrives
+						if (futureResponse.responseMessage() == null && request.recipient().isSlow()
+								&& request.command() != Commands.PING.getNr() && request.command() != Commands.NEIGHBOR.getNr()) {
+							// If the request goes to a slow peer, the channel
+							// can be closed until the response arrives
 							LOG.debug("Ignoring channel close event because recipient is slow peer");
 						} else {
 							futureResponse.responseNow();
@@ -291,13 +288,14 @@ public class ChannelCreator {
 		});
 		return channelFuture;
 	}
-	
+
 	/**
 	 * Setup the close listener for a channel that was already created
-	 * @param channelFuture 
-     *               The channel future
+	 * 
+	 * @param channelFuture
+	 *            The channel future
 	 * @param futureResponse
-     *               The future response
+	 *            The future response
 	 * @return The same future that was passed as an argument
 	 */
 	public ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final FutureResponse futureResponse) {
@@ -309,7 +307,7 @@ public class ChannelCreator {
 		});
 		return channelFuture;
 	}
-	
+
 	public boolean isShutdown() {
 		return shutdownTCP || shutdownUDP;
 	}
@@ -340,13 +338,13 @@ public class ChannelCreator {
 		recipients.close().addListener(new GenericFutureListener<ChannelGroupFuture>() {
 			@Override
 			public void operationComplete(final ChannelGroupFuture future) throws Exception {
-				//we can block here as we block in GlobalEventExecutor.INSTANCE
+				// we can block here as we block in GlobalEventExecutor.INSTANCE
 				semaphoreUPD.acquireUninterruptibly(maxPermitsUDP);
 				semaphoreTCP.acquireUninterruptibly(maxPermitsTCP);
 				shutdownFuture().done();
 			}
 		});
-		
+
 		return shutdownFuture();
 	}
 
@@ -356,34 +354,23 @@ public class ChannelCreator {
 	public FutureDone<Void> shutdownFuture() {
 		return futureChannelCreationDone;
 	}
-	
+
 	public int availableUDPPermits() {
-	    return semaphoreUPD.availablePermits();
-    }
-	
-	public int availableTCPPermits() {
-	    return semaphoreTCP.availablePermits();
-    }
-	
-	@Override
-	public String toString() {
-	    StringBuilder sb = new StringBuilder("sem-udp:");
-	    sb.append(semaphoreUPD.availablePermits());
-	    sb.append(",sem-tcp:");
-	    sb.append(semaphoreTCP.availablePermits());
-	    sb.append(",addrUDP:");
-	    sb.append(semaphoreUPD);
-	    return sb.toString();
-	}
-	public SocketAddress currentSocketAddress() {
-			return socketAddress;
+		return semaphoreUPD.availablePermits();
 	}
 
-	public int randomPort() {
-		int channelPort = 0;
-		while (channelPort < 1024) {//2^10
-			channelPort = channelRandom.nextInt(65536); //2^16
-		}
-		return channelPort;
+	public int availableTCPPermits() {
+		return semaphoreTCP.availablePermits();
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder("sem-udp:");
+		sb.append(semaphoreUPD.availablePermits());
+		sb.append(",sem-tcp:");
+		sb.append(semaphoreTCP.availablePermits());
+		sb.append(",addrUDP:");
+		sb.append(semaphoreUPD);
+		return sb.toString();
 	}
 }

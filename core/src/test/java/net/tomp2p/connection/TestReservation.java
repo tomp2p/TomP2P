@@ -182,7 +182,7 @@ public class TestReservation {
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createUDP(false,
 							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>() {
-							        }, new FutureResponse(null), null);
+							        }, new FutureResponse(null));
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 								@Override
 								public void operationComplete(final ChannelFuture future) throws Exception {

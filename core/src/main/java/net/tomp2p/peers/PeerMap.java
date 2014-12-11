@@ -768,7 +768,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            True if this peer send and received a message from the remote peer
      * @return The old peer address if we have updated the peer, null otherwise
      */
-    private static PeerStatistic updateExistingVerifiedPeerAddress(
+    public static PeerStatistic updateExistingVerifiedPeerAddress(
             final Map<Number160, PeerStatistic> tmp, final PeerAddress peerAddress, final boolean firstHand) {
         synchronized (tmp) {
             PeerStatistic old = tmp.get(peerAddress.peerId());

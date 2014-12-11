@@ -191,6 +191,14 @@ public class HolePuncher implements IPunchHole {
 		return inboundHandler;
 	}
 
+	/**
+	 * This is a generic method which creates a number of {@link ChannelFuture}s
+	 * and calls the associated {@link FutureDone} as soon as they're done.
+	 * 
+	 * @param originalFutureResponse
+	 * @param handlersList
+	 * @return fDoneChannelFutures
+	 */
 	private final FutureDone<List<ChannelFuture>> createChannelFutures(final FutureResponse originalFutureResponse,
 			final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlersList) {
 
@@ -231,6 +239,13 @@ public class HolePuncher implements IPunchHole {
 		return fDoneChannelFutures;
 	}
 
+	/**
+	 * this method checks if the returned values from the replying nat peer are
+	 * valid.
+	 * 
+	 * @param msg
+	 * @return ok
+	 */
 	private boolean checkReplyValues(Message msg) {
 		boolean ok = false;
 		if (msg.command() == Commands.HOLEP.getNr() && msg.type() == Type.OK) {

@@ -50,11 +50,12 @@ public class HolePuncher implements IPunchHole {
 	// these fields are needed for the reply procedure
 	private FutureResponse frResponse;
 	private PeerAddress originalSender;
-	final List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
-	private Thread holePunchScheduler;
+	private List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
 
 	// these fields are needed for the initiation procedure
-	private FutureDone<FutureResponse> fDone;
+	private FutureDone<Message> fDone;
+	private SimpleChannelInboundHandler<Message> originalHandler;
+
 
 	public HolePuncher(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 		this.peer = peer;
@@ -65,10 +66,11 @@ public class HolePuncher implements IPunchHole {
 		LOG.trace("new HolePuncher created, originalMessage {}", originalMessage.toString());
 	}
 
-	public FutureDone<FutureResponse> initiateHolePunch(final SimpleChannelInboundHandler<Message> originalHandler,
+	public FutureDone<Message> initiateHolePunch(final SimpleChannelInboundHandler<Message> originalHandler,
 			final ChannelCreator originalChannelCreator, final FutureResponse originalFutureResponse) {
 		this.initiator = true;
-		this.fDone = new FutureDone<FutureResponse>();
+		this.originalHandler = originalHandler;
+		this.fDone = new FutureDone<Message>();
 
 		FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(originalFutureResponse,
 				prepareHandlers(originalFutureResponse));
@@ -135,7 +137,7 @@ public class HolePuncher implements IPunchHole {
 			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 			if (initiator) {
 				final SimpleChannelInboundHandler<Message> inboundHandler = createAfterHolePHandler();
-				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
+				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler/*originalHandler*/, originalFutureResponse, idleUDPSeconds, false);
 			} else {
 				handlers = peer.connectionBean().sender()
 						.configureHandlers(peer.connectionBean().dispatcher(), originalFutureResponse, idleUDPSeconds, false);
@@ -153,9 +155,11 @@ public class HolePuncher implements IPunchHole {
 			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
 				if (Message.Type.OK == msg.type() && originalMessage.command() == msg.command()) {
 					System.err.println("IT FINALLY WORKED!");
-					// fDone.done(msg);
+					 fDone.done(msg);
+				} else if (Message.Type.REQUEST_3 == msg.type() && Commands.HOLEP.getNr() == msg.command()) {
+					LOG.debug("Holes successfully punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = " + msg.sender().udpPort() + "}!");
 				} else {
-					System.err.println("IT DIDN'T WORK YET");
+					LOG.debug("Holes punche not punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = " + msg.sender().udpPort() + "} yet!");
 				}
 			}
 		};
@@ -288,10 +292,6 @@ public class HolePuncher implements IPunchHole {
 		return holePMessage;
 	}
 
-	private void handleFail(String failMessage) {
-		fDone.failed(failMessage);
-	}
-
 	public FutureDone<Message> replyHolePunch() {
 		this.originalSender = (PeerAddress) originalMessage.neighborsSetList().get(0).neighbors().toArray()[0];
 		final FutureDone<Message> replyMessageFuture = new FutureDone<Message>();
@@ -309,14 +309,13 @@ public class HolePuncher implements IPunchHole {
 					Message replyMessage = createReplyMessage();
 					// TODO jwa create some config class to specify the number
 					// of trials
-					holePunchScheduler = new Thread(new HolePunchScheduler(10, thisInstance));
-					holePunchScheduler.run();
+					Thread holePunchScheduler = new Thread(new HolePunchScheduler(10, thisInstance));
+					holePunchScheduler.start();
 					replyMessageFuture.done(replyMessage);
 				} else {
 					replyMessageFuture.failed("No ChannelFuture could be created!");
 				}
 			}
-
 		});
 		return replyMessageFuture;
 	}
@@ -340,6 +339,7 @@ public class HolePuncher implements IPunchHole {
 			System.err.println("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: "
 					+ dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
+			// this is a workaround to avoid adding a natpeer to the offline list of a peer!
 			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null);
 		}
 	}
@@ -373,5 +373,9 @@ public class HolePuncher implements IPunchHole {
 			}
 		}
 		return replyMessage;
+	}
+	
+	private void handleFail(String failMessage) {
+		fDone.failed(failMessage);
 	}
 }

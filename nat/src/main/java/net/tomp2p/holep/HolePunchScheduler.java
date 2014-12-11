@@ -1,12 +1,8 @@
 package net.tomp2p.holep;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class HolePunchScheduler implements Runnable {
 
 	private static final int ONE_SECOND_MILLIS = 1000;
-	private final Map<HolePuncher, Integer> holePunchers = new HashMap<HolePuncher, Integer>();
 	private int numberOfTrials;
 	private HolePuncher holePuncher;
 

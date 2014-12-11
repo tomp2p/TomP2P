@@ -33,13 +33,11 @@ public class HolePunchRPC extends DispatchHandler {
 	private static final Logger LOG = LoggerFactory.getLogger(HolePunchRPC.class);
 
 	private final Peer peer;
-	private final ConnectionConfiguration config;
 
 	public HolePunchRPC(Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.HOLEP.getNr());
 		this.peer = peer;
-		this.config = new DefaultConnectionConfiguration();
 	}
 
 	@Override

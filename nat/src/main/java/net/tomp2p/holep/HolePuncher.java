@@ -33,7 +33,7 @@ import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
-public class HolePuncher implements IPunchHole {
+public class HolePuncher {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePuncher.class);
 
@@ -367,24 +367,6 @@ public class HolePuncher implements IPunchHole {
 		}
 	}
 
-	@Override
-	public void tryConnect() throws Exception {
-		if (channelFutures.size() != portMappings.size()) {
-			throw new Exception("the number of channels does not match the number of ports!");
-		}
-
-		for (int i = 0; i < channelFutures.size(); i++) {
-			Message dummyMessage = createDummyMessage(i);
-			FutureResponse futureResponse = new FutureResponse(dummyMessage);
-			System.err.println("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: "
-					+ dummyMessage.sender().udpPort());
-			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
-			// this is a workaround to avoid adding a natpeer to the offline
-			// list of a peer!
-			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null);
-		}
-	}
-
 	public Message createDummyMessage(int i) {
 		Message dummyMessage = new Message();
 		final int remotePort = portMappings.get(i).element0();
@@ -418,5 +400,22 @@ public class HolePuncher implements IPunchHole {
 
 	private void handleFail(String failMessage) {
 		mainFutureDone.failed(failMessage);
+	}
+
+	public void tryConnect() throws Exception {
+		if (channelFutures.size() != portMappings.size()) {
+			throw new Exception("the number of channels does not match the number of ports!");
+		}
+
+		for (int i = 0; i < channelFutures.size(); i++) {
+			Message dummyMessage = createDummyMessage(i);
+			FutureResponse futureResponse = new FutureResponse(dummyMessage);
+			System.err.println("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: "
+					+ dummyMessage.sender().udpPort());
+			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
+			// this is a workaround to avoid adding a natpeer to the offline
+			// list of a peer!
+			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null);
+		}
 	}
 }

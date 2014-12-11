@@ -16,6 +16,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -162,6 +163,7 @@ public class Decoder {
 
 		if (donePayload) {
 			byte[] signatureReceived = message.receivedSignature().encode();
+			LOG.debug("Verifying received signature: {}", Arrays.toString(signatureReceived));
 			if (signature.verify(signatureReceived)) {
 				// set public key only if signature is correct
 				message.setVerified();

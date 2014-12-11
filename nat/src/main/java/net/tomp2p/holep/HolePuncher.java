@@ -34,7 +34,7 @@ import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 public class HolePuncher implements IPunchHole {
-	
+
 	private static final Logger LOG = LoggerFactory.getLogger(HolePuncher.class);
 
 	// these fields are needed from both procedures: initiation and reply
@@ -46,11 +46,12 @@ public class HolePuncher implements IPunchHole {
 	private boolean initiator = false;
 	private final Message originalMessage;
 	private List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>();
-	
+
 	// these fields are needed for the reply procedure
 	private FutureResponse frResponse;
 	private PeerAddress originalSender;
 	final List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
+	private Thread holePunchScheduler;
 
 	// these fields are needed for the initiation procedure
 	private FutureDone<FutureResponse> fDone;
@@ -60,7 +61,7 @@ public class HolePuncher implements IPunchHole {
 		this.numberOfHoles = numberOfHoles;
 		this.idleUDPSeconds = idleUDPSeconds;
 		this.originalMessage = originalMessage;
-		
+
 		LOG.trace("new HolePuncher created, originalMessage {}", originalMessage.toString());
 	}
 
@@ -98,14 +99,12 @@ public class HolePuncher implements IPunchHole {
 			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
 				if (checkReplyValues(msg)) {
 					for (int i = 0; i < msg.intList().size(); i++) {
-						final int localPort = msg.intList().get(i);
-						i++;
-						final int remotePort = msg.intList().get(i);
-						final ChannelFuture channelFuture = extractChannelFuture(futures, localPort);
+						ChannelFuture channelFuture = extractChannelFuture(futures, msg.intList().get(i));
 						if (channelFuture == null) {
-							// TODO jwa handleFail
+							handleFail("Something went wrong with the portmappings!");
 						}
-						Message sendMessage = createSendOriginalMessage(localPort, remotePort);
+						i++;
+						Message sendMessage = createSendOriginalMessage(msg.intList().get(i-1), msg.intList().get(i));
 						peer.connectionBean().sender().afterConnect(originalFutureResponse, sendMessage, channelFuture, false);
 						LOG.warn("originalMessage has been sent to the other peer! {}", sendMessage);
 					}
@@ -117,13 +116,13 @@ public class HolePuncher implements IPunchHole {
 		return holePHandler;
 	}
 
-	private ChannelFuture extractChannelFuture(final List<ChannelFuture> futures, int localPort) {
+	private ChannelFuture extractChannelFuture(List<ChannelFuture> futures, int localPort) {
 		for (ChannelFuture future : futures) {
 			if (future.channel().localAddress() != null) {
 				InetSocketAddress inetSocketAddress = (InetSocketAddress) future.channel().localAddress();
-				if (inetSocketAddress.getPort() == localPort)
-					;
-				return future;
+				if (inetSocketAddress.getPort() == localPort) {
+					return future;
+				}
 			}
 		}
 		return null;
@@ -185,7 +184,7 @@ public class HolePuncher implements IPunchHole {
 								if (future.isSuccess()) {
 									channelFutures.add(future);
 								} else {
-									// TODO jwa do FailMessage
+									handleFail("Error while creating the ChannelFutures!");
 								}
 								countDown.decrementAndGet();
 								if (countDown.get() == 0) {
@@ -195,7 +194,7 @@ public class HolePuncher implements IPunchHole {
 						});
 					} else {
 						countDown.decrementAndGet();
-						// TODO jwa do FailMessage
+						handleFail("Error while creating the ChannelFutures!");
 					}
 				}
 			});
@@ -308,8 +307,10 @@ public class HolePuncher implements IPunchHole {
 					channelFutures = future.object();
 					doPortMappings();
 					Message replyMessage = createReplyMessage();
-					//TODO jwa create some config class to specify the number of trials
-					HolePunchScheduler.instance().addHolePuncher(10, thisInstance);
+					// TODO jwa create some config class to specify the number
+					// of trials
+					holePunchScheduler = new Thread(new HolePunchScheduler(10, thisInstance));
+					holePunchScheduler.run();
 					replyMessageFuture.done(replyMessage);
 				} else {
 					replyMessageFuture.failed("No ChannelFuture could be created!");
@@ -319,7 +320,7 @@ public class HolePuncher implements IPunchHole {
 		});
 		return replyMessageFuture;
 	}
-	
+
 	private void doPortMappings() {
 		for (int i = 0; i < channelFutures.size(); i++) {
 			InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
@@ -332,11 +333,12 @@ public class HolePuncher implements IPunchHole {
 		if (channelFutures.size() != portMappings.size()) {
 			throw new Exception("the number of channels does not match the number of ports!");
 		}
-		
+
 		for (int i = 0; i < channelFutures.size(); i++) {
 			Message dummyMessage = createDummyMessage(i);
 			FutureResponse futureResponse = new FutureResponse(dummyMessage);
-			System.err.println("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
+			System.err.println("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: "
+					+ dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null);
 		}
@@ -346,8 +348,7 @@ public class HolePuncher implements IPunchHole {
 		Message dummyMessage = new Message();
 		final int remotePort = portMappings.get(i).element0();
 		final int localPort = portMappings.get(i).element1();
-		PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false)
-				.changePorts(-1, remotePort);
+		PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false).changePorts(-1, remotePort);
 		PeerAddress sender = peer.peerBean().serverPeerAddress().changePorts(-1, localPort);
 		dummyMessage.recipient(recipient);
 		dummyMessage.command(Commands.HOLEP.getNr());

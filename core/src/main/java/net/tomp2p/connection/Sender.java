@@ -35,19 +35,15 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.Cancel;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TomP2PCumulationTCP;
@@ -790,7 +786,7 @@ public class Sender {
 	}
 
 	//TODO jwa remove this
-//	public void peer(Peer peer) {
-//		this.peer = peer;
-//	}
+	public void peer(Peer peer) {
+		this.peer = peer;
+	}
 }

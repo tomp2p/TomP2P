@@ -785,7 +785,6 @@ public class Sender {
 		return peerStatusListeners;
 	}
 
-	//TODO jwa remove this
 	public void peer(Peer peer) {
 		this.peer = peer;
 	}

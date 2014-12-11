@@ -40,15 +40,20 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	private final int mapUpdateIntervalMS;
 	private final MessageBuffer<Message> buffer;
 	private final AtomicLong lastUpdate;
+	
+	// to callback the relay RPC when the device is offline
+	private final AndroidOfflineListener offlineListener;
 
 	// holds the current requests
 	private List<FutureGCM> pendingRequests;
 
+
 	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, MessageBufferConfiguration bufferConfig,
-			String registrationId, IGCMSender sender, int mapUpdateIntervalS) {
+			String registrationId, IGCMSender sender, int mapUpdateIntervalS, AndroidOfflineListener offlineListener) {
 		super(peer, unreachablePeer, RelayType.ANDROID);
 		this.registrationId = registrationId;
 		this.sender = sender;
+		this.offlineListener = offlineListener;
 
 		// stretch the update interval by factor 1.5 to be tolerant for slow messages
 		this.mapUpdateIntervalMS = (int) (mapUpdateIntervalS * 1000 * 1.5);
@@ -134,6 +139,10 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 			return true;
 		} else {
 			LOG.warn("Device {} did not send any messages for a long time", registrationId);
+			// unregister this RPC
+			peerBean().removePeerStatusListener(this);
+			connectionBean().dispatcher().removeIoHandler(relayPeerId(), unreachablePeerId());
+			offlineListener.onAndroidOffline();
 			return false;
 		}
 	}

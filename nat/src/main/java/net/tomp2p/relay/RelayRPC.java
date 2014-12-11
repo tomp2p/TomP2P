@@ -21,6 +21,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.android.AndroidForwarderRPC;
+import net.tomp2p.relay.android.AndroidOfflineListener;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
 import net.tomp2p.relay.android.gcm.GCMSenderRPC;
 import net.tomp2p.relay.android.gcm.IGCMSender;
@@ -228,7 +229,12 @@ public class RelayRPC extends DispatchHandler {
 
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
 		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection.remotePeer(), bufferConfig,
-				registrationId, sender, mapUpdateInterval);
+				registrationId, sender, mapUpdateInterval, new AndroidOfflineListener() {
+					@Override
+					public void onAndroidOffline() {
+						forwarders.remove(peerConnection.remotePeer());
+					}
+				});
 		registerRelayForwarder(forwarderRPC);
 
 		responder.response(createResponseMessage(message, Type.OK));

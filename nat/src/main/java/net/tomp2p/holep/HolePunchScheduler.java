@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class HolePunchScheduler implements Runnable {
 
-	private static boolean alive = true;
+	private static boolean alive = false;
 	private static final int ONE_SECOND_MILLIS = 1000;
 	private final Map<HolePuncher, Integer> holePunchers = new HashMap<HolePuncher, Integer>();
 	private static final HolePunchScheduler instance = new HolePunchScheduler();
@@ -24,7 +24,10 @@ public class HolePunchScheduler implements Runnable {
 			throw new IllegalArgumentException("HolePuncher can't be null!");
 		} else {
 			holePunchers.put(holePuncher, new Integer(numberOfTrials));
-			alive = true;
+			if (!alive) {
+				alive = true;
+				this.run();
+			}
 		}
 	}
 
@@ -54,7 +57,7 @@ public class HolePunchScheduler implements Runnable {
 			}
 		}
 	}
-	
+
 	public static void shutdownScheduler() {
 		alive = false;
 	}

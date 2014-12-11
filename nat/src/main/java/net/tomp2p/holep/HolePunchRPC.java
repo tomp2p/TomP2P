@@ -74,9 +74,9 @@ public class HolePunchRPC extends DispatchHandler {
 			@Override
 			public void operationComplete(FutureDone<Message> future) throws Exception {
 				if (future.isSuccess()) {
-					responder.response(createResponseMessage(future.object(), Message.Type.OK));
+					responder.response(future.object());
 				} else {
-					handleFail(message, responder, "Fail while repliing to hole punch attempt");
+					handleFail(message, responder, "Fail while replying to hole punch attempt");
 				}
 				
 			}

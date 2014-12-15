@@ -575,9 +575,9 @@ public class Sender {
 				case RELAY:
 					List<PeerSocketAddress> psa = new ArrayList<>(message.recipient().peerSocketAddresses());
 					LOG.debug("send neighbor request to random relay peer {}", psa);
-					if (psa.size() > 0) {
+					if (!psa.isEmpty()) {
 						PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-						message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+						message.recipientRelay(message.recipient().changePeerSocketAddress(ps)/*.changeRelayed(true)*/);
 						channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
 					} else {
 						futureResponse.failed("Peer is relayed, but no relay given");

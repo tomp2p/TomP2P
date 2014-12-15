@@ -573,24 +573,7 @@ public class Sender {
 
 			// initiate the holepunching process
 			if (peerBean.holePunchInitiator() != null) {
-				FutureDone<Message> fDone = peerBean.holePunchInitiator()
-						.handleHolePunch(channelCreator, idleUDPSeconds, futureResponse, message);
-				fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
-
-					@Override
-					public void operationComplete(FutureDone<Message> future) throws Exception {
-						if (future.isSuccess()) {
-							futureResponse.response(future.object());
-						} else {
-							LOG.error("Message could not be sent with hole punching!");
-							futureResponse.failed(future.failedReason());
-						}
-					}
-
-					@Override
-					public void exceptionCaught(Throwable t) throws Exception {
-					}
-				});
+				handleHolePunch(futureResponse, message, channelCreator, idleUDPSeconds);
 
 				// the sendMechanics are done in the HolePuncher class.
 				// Therefore we must execute this return statement.
@@ -631,6 +614,28 @@ public class Sender {
 			futureResponse.failed(e);
 
 		}
+	}
+
+	public void handleHolePunch(final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
+			final int idleUDPSeconds) {
+		FutureDone<Message> fDone = peerBean.holePunchInitiator()
+				.handleHolePunch(channelCreator, idleUDPSeconds, futureResponse, message);
+		fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+
+			@Override
+			public void operationComplete(FutureDone<Message> future) throws Exception {
+				if (future.isSuccess()) {
+					futureResponse.response(future.object());
+				} else {
+					LOG.error("Message could not be sent with hole punching!");
+					futureResponse.failed(future.failedReason());
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+			}
+		});
 	}
 
 	/**

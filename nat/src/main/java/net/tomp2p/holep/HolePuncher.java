@@ -142,13 +142,43 @@ public class HolePuncher {
 				final SimpleChannelInboundHandler<Message> inboundHandler = createAfterHolePHandler();
 				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
 			} else {
-				handlers = peer.connectionBean().sender()
-						.configureHandlers(peer.connectionBean().dispatcher(), originalFutureResponse, idleUDPSeconds, false);
+				final SimpleChannelInboundHandler<Message> inboundHandler = createAfterHolePReplyHandler();
+				// handlers = peer.connectionBean().sender()
+				// .configureHandlers(peer.connectionBean().dispatcher(),
+				// originalFutureResponse, idleUDPSeconds, false);
+				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
 			}
 			handlerList.add(handlers);
 		}
 
 		return handlerList;
+	}
+
+	private SimpleChannelInboundHandler<Message> createAfterHolePReplyHandler() {
+		SimpleChannelInboundHandler<Message> handler = new SimpleChannelInboundHandler<Message>() {
+
+			int messageId = 0;
+			boolean first = true;
+
+			@Override
+			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+				if (msg.type() != Type.EXCEPTION && msg.type() != Type.DENIED && msg.type() != Type.NOT_FOUND
+						&& msg.type() != Type.UNKNOWN_ID) {
+					if (first) {
+						messageId = msg.messageId();
+						first = false;
+						peer.connectionBean().dispatcher().channelRead(ctx, msg);
+					} else if (messageId != 0 && messageId != msg.messageId()) {
+						peer.connectionBean().dispatcher().channelRead(ctx, msg);
+					} else {
+						// ignore message
+					}
+				}
+			}
+		};
+
+		return handler;
+
 	}
 
 	/*

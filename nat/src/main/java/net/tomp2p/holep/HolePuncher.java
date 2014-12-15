@@ -165,10 +165,10 @@ public class HolePuncher {
 				if (msg.type() != Type.EXCEPTION && msg.type() != Type.DENIED && msg.type() != Type.NOT_FOUND
 						&& msg.type() != Type.UNKNOWN_ID) {
 					if (first) {
-						messageId = msg.messageId();
+						messageId = msg.intAt(0);
 						first = false;
 						peer.connectionBean().dispatcher().channelRead(ctx, msg);
-					} else if (messageId != 0 && messageId != msg.messageId()) {
+					} else if (messageId != 0 && messageId != msg.intAt(0)) {
 						peer.connectionBean().dispatcher().channelRead(ctx, msg);
 					} else {
 						// ignore message
@@ -341,6 +341,7 @@ public class HolePuncher {
 		sendMessage.command(originalMessage.command());
 		sendMessage.type(originalMessage.type());
 		sendMessage.udp(true);
+		sendMessage.intValue(originalMessage.messageId());
 		for (Buffer buf : originalMessage.bufferList()) {
 			sendMessage.buffer(new Buffer(buf.buffer().duplicate()));
 		}

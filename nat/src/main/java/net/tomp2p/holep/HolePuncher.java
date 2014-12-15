@@ -142,44 +142,15 @@ public class HolePuncher {
 				final SimpleChannelInboundHandler<Message> inboundHandler = createAfterHolePHandler();
 				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
 			} else {
-				final SimpleChannelInboundHandler<Message> inboundHandler = createAfterHolePReplyHandler();
-				// handlers = peer.connectionBean().sender()
-				// .configureHandlers(peer.connectionBean().dispatcher(),
-				// originalFutureResponse, idleUDPSeconds, false);
-				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
+				handlers = peer.connectionBean().sender()
+						.configureHandlers(peer.connectionBean().dispatcher(), originalFutureResponse, idleUDPSeconds, false);
 			}
 			handlerList.add(handlers);
 		}
 
 		return handlerList;
 	}
-
-	private SimpleChannelInboundHandler<Message> createAfterHolePReplyHandler() {
-		SimpleChannelInboundHandler<Message> handler = new SimpleChannelInboundHandler<Message>() {
-
-			int messageId = 0;
-			boolean first = true;
-
-			@Override
-			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-				if (msg.type() != Type.EXCEPTION && msg.type() != Type.DENIED && msg.type() != Type.NOT_FOUND
-						&& msg.type() != Type.UNKNOWN_ID) {
-					if (first) {
-						messageId = msg.intAt(0);
-						first = false;
-						peer.connectionBean().dispatcher().channelRead(ctx, msg);
-					} else if (messageId != 0 && messageId != msg.intAt(0)) {
-						peer.connectionBean().dispatcher().channelRead(ctx, msg);
-					} else {
-						// ignore message
-					}
-				}
-			}
-		};
-
-		return handler;
-
-	}
+	
 
 	/*
 	 * ================ methods on initiating nat peer ================
@@ -341,7 +312,6 @@ public class HolePuncher {
 		sendMessage.command(originalMessage.command());
 		sendMessage.type(originalMessage.type());
 		sendMessage.udp(true);
-		sendMessage.intValue(originalMessage.messageId());
 		for (Buffer buf : originalMessage.bufferList()) {
 			sendMessage.buffer(new Buffer(buf.buffer().duplicate()));
 		}

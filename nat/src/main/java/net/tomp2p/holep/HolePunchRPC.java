@@ -1,21 +1,16 @@
 package net.tomp2p.holep;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tomp2p.connection.ConnectionConfiguration;
-import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.HolePunchInitiator;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -26,8 +21,11 @@ import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
-import net.tomp2p.utils.Pair;
 
+/**
+ * @author Jonas Wagner
+ *
+ */
 public class HolePunchRPC extends DispatchHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePunchRPC.class);
@@ -63,7 +61,19 @@ public class HolePunchRPC extends DispatchHandler {
 	private void handleHolePunchReply(Message message, PeerConnection peerConnection, Responder responder) {
 		responder.response(createResponseMessage(message, Type.OK));
 	}
-	
+
+	/**
+	 * This method is called by handleResponse(...) and initiates the hole
+	 * punching procedure on the nat peer that needs to be contacted. It creates
+	 * a {@link HolePuncher} and waits then for the reply{@link Message} which
+	 * the peer that needs to be contacted sends back to the initiating peer.
+	 * The reply{@link Message} contains information about the holes which are
+	 * punched currently.
+	 * 
+	 * @param message
+	 * @param peerConnection
+	 * @param responder
+	 */
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
 		HolePuncher holePuncher = new HolePuncher(peer, message.intList().size(), HolePunchInitiator.IDLE_UDP_SECONDS, message);
 		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
@@ -74,13 +84,12 @@ public class HolePunchRPC extends DispatchHandler {
 				if (future.isSuccess()) {
 					responder.response(future.object());
 				} else {
-					handleFail(message, responder, "Fail while replying to hole punch attempt");
+					handleFail(message, responder, "Fail while initiating the hole punching");
 				}
-				
+
 			}
 		});
 	}
-
 
 	/**
 	 * This method first forwards a initHolePunch request to start the hole
@@ -120,6 +129,16 @@ public class HolePunchRPC extends DispatchHandler {
 		}
 	}
 
+	/**
+	 * This method simply forwards the initiating hole punch message from the
+	 * initiating nat peer to the nat peer that needs to be contacted.
+	 * Afterwards it waits for an answer and forwards this answer to the initiating
+	 * nat peer.
+	 * 
+	 * @param message
+	 * @param recipient
+	 * @return forwardMessage
+	 */
 	private Message createForwardPortsMessage(Message message, PeerAddress recipient) {
 		Message forwardMessage = createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_2);
 		forwardMessage.version(message.version());

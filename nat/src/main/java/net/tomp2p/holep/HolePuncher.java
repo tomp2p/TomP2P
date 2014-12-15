@@ -33,6 +33,13 @@ import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
+/**
+ * This is a generic class which is supposed to handle any hole punching
+ * procedure possible on a {@link Peer}.
+ * 
+ * @author Jonas Wagner
+ * 
+ */
 public class HolePuncher {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePuncher.class);
@@ -64,132 +71,9 @@ public class HolePuncher {
 		LOG.trace("new HolePuncher created, originalMessage {}", originalMessage.toString());
 	}
 
-	public FutureDone<Message> initiateHolePunch(final ChannelCreator originalChannelCreator, final FutureResponse originalFutureResponse) {
-		this.initiator = true;
-		this.mainFutureDone = new FutureDone<Message>();
-
-		FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(originalFutureResponse,
-				prepareHandlers(originalFutureResponse));
-		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
-
-			@Override
-			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
-				if (future.isSuccess()) {
-					List<ChannelFuture> futures = future.object();
-					peer.connectionBean()
-							.sender()
-							.sendUDP(createHolePHandler(futures, originalFutureResponse), originalFutureResponse,
-									createHolePunchInitMessage(futures), originalChannelCreator, idleUDPSeconds, BROADCAST_VALUE);
-					LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
-				} else {
-					mainFutureDone.failed("No ChannelFuture could be created!");
-				}
-			}
-		});
-		return mainFutureDone;
-	}
-
-	private SimpleChannelInboundHandler<Message> createHolePHandler(final List<ChannelFuture> futures,
-			final FutureResponse originalFutureResponse) {
-		SimpleChannelInboundHandler<Message> holePHandler = new SimpleChannelInboundHandler<Message>() {
-
-			@Override
-			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-				if (checkReplyValues(msg)) {
-					for (int i = 0; i < msg.intList().size(); i++) {
-						ChannelFuture channelFuture = extractChannelFuture(futures, msg.intList().get(i));
-						if (channelFuture == null) {
-							handleFail("Something went wrong with the portmappings!");
-						}
-						i++;
-						Message sendMessage = createSendOriginalMessage(msg.intList().get(i - 1), msg.intList().get(i));
-						peer.connectionBean().sender().afterConnect(originalFutureResponse, sendMessage, channelFuture, false);
-						LOG.warn("originalMessage has been sent to the other peer! {}", sendMessage);
-					}
-				}
-			}
-		};
-
-		LOG.debug("new HolePunchHandler created, waiting now for answer from rendez-vous peer.");
-		return holePHandler;
-	}
-
-	/**
-	 * This method looks up a {@Link ChannelFuture} from the
-	 * channelFutures {@link List}. If the {@Link ChannelFuture} can't be
-	 * found it returns null instead.
-	 * 
-	 * @param futures
-	 * @param localPort
-	 * @return
+	/*
+	 * ===================== shared methods =====================
 	 */
-	private ChannelFuture extractChannelFuture(List<ChannelFuture> futures, int localPort) {
-		for (ChannelFuture future : futures) {
-			if (future.channel().localAddress() != null) {
-				InetSocketAddress inetSocketAddress = (InetSocketAddress) future.channel().localAddress();
-				if (inetSocketAddress.getPort() == localPort) {
-					return future;
-				}
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * This method does two things. If the initiating peer calls it, he gets
-	 * back a {@link List} of new {@link SimpleInboundHandler} to deal with the
-	 * replies of the replying peer. If a replying peer is calling this method
-	 * it will return a {@link List} of default {@link SimpleInboundHandler}s
-	 * from the {@link Dispatcher}.
-	 * 
-	 * @param originalFutureResponse
-	 * @return handlerList
-	 */
-	private List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(final FutureResponse originalFutureResponse) {
-		List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
-				numberOfHoles);
-		for (int i = 0; i < numberOfHoles; i++) {
-			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
-			if (initiator) {
-				final SimpleChannelInboundHandler<Message> inboundHandler = createAfterHolePHandler();
-				handlers = peer.connectionBean().sender()
-						.configureHandlers(inboundHandler/* originalHandler */, originalFutureResponse, idleUDPSeconds, false);
-			} else {
-				handlers = peer.connectionBean().sender()
-						.configureHandlers(peer.connectionBean().dispatcher(), originalFutureResponse, idleUDPSeconds, false);
-			}
-			handlerList.add(handlers);
-		}
-
-		return handlerList;
-	}
-
-	/**
-	 * This method creates the inboundHandler for the replyMessage of the peer
-	 * that we want to send a message to.
-	 * 
-	 * @return inboundHandler
-	 */
-	private SimpleChannelInboundHandler<Message> createAfterHolePHandler() {
-		final SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
-
-			@Override
-			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-				if (Message.Type.OK == msg.type() && originalMessage.command() == msg.command()) {
-					LOG.debug("Successfully transmitted the original message to peer:[" + msg.sender().toString()
-							+ "]. Now here's the reply:[" + msg.toString() + "]");
-					mainFutureDone.done(msg);
-				} else if (Message.Type.REQUEST_3 == msg.type() && Commands.HOLEP.getNr() == msg.command()) {
-					LOG.debug("Holes successfully punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
-							+ msg.sender().udpPort() + "}!");
-				} else {
-					LOG.debug("Holes punche not punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
-							+ msg.sender().udpPort() + "} yet!");
-				}
-			}
-		};
-		return inboundHandler;
-	}
 
 	/**
 	 * This is a generic method which creates a number of {@link ChannelFuture}s
@@ -237,6 +121,144 @@ public class HolePuncher {
 			});
 		}
 		return fDoneChannelFutures;
+	}
+
+	/**
+	 * This method does two things. If the initiating peer calls it, he gets
+	 * back a {@link List} of new {@link SimpleInboundHandler} to deal with the
+	 * replies of the replying peer. If a replying peer is calling this method
+	 * it will return a {@link List} of default {@link SimpleInboundHandler}s
+	 * from the {@link Dispatcher}.
+	 * 
+	 * @param originalFutureResponse
+	 * @return handlerList
+	 */
+	private List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(final FutureResponse originalFutureResponse) {
+		List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
+				numberOfHoles);
+		for (int i = 0; i < numberOfHoles; i++) {
+			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
+			if (initiator) {
+				final SimpleChannelInboundHandler<Message> inboundHandler = createAfterHolePHandler();
+				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
+			} else {
+				handlers = peer.connectionBean().sender()
+						.configureHandlers(peer.connectionBean().dispatcher(), originalFutureResponse, idleUDPSeconds, false);
+			}
+			handlerList.add(handlers);
+		}
+
+		return handlerList;
+	}
+
+	/*
+	 * ================ methods on initiating nat peer ================
+	 */
+
+	public FutureDone<Message> initiateHolePunch(final ChannelCreator originalChannelCreator, final FutureResponse originalFutureResponse) {
+		this.initiator = true;
+		this.mainFutureDone = new FutureDone<Message>();
+
+		FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(originalFutureResponse,
+				prepareHandlers(originalFutureResponse));
+		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
+
+			@Override
+			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
+				if (future.isSuccess()) {
+					List<ChannelFuture> futures = future.object();
+					peer.connectionBean()
+							.sender()
+							.sendUDP(createHolePunchInboundHandler(futures, originalFutureResponse), originalFutureResponse,
+									createHolePunchInitMessage(futures), originalChannelCreator, idleUDPSeconds, BROADCAST_VALUE);
+					LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
+				} else {
+					mainFutureDone.failed("No ChannelFuture could be created!");
+				}
+			}
+		});
+		return mainFutureDone;
+	}
+
+	/**
+	 * This method creates a {@link SimpleChannelInboundHandler} which sends the
+	 * original{@link Message} to the nat peer that needs to be contacted.
+	 * 
+	 * @param futures
+	 * @param originalFutureResponse
+	 * @return holePhandler
+	 */
+	private SimpleChannelInboundHandler<Message> createHolePunchInboundHandler(final List<ChannelFuture> futures,
+			final FutureResponse originalFutureResponse) {
+		SimpleChannelInboundHandler<Message> holePunchInboundHandler = new SimpleChannelInboundHandler<Message>() {
+
+			@Override
+			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+				if (checkReplyValues(msg)) {
+					for (int i = 0; i < msg.intList().size(); i++) {
+						ChannelFuture channelFuture = extractChannelFuture(futures, msg.intList().get(i));
+						if (channelFuture == null) {
+							handleFail("Something went wrong with the portmappings!");
+						}
+						i++;
+						Message sendMessage = createSendOriginalMessage(msg.intList().get(i - 1), msg.intList().get(i));
+						peer.connectionBean().sender().afterConnect(originalFutureResponse, sendMessage, channelFuture, false);
+						LOG.warn("originalMessage has been sent to the other peer! {}", sendMessage);
+					}
+				}
+			}
+		};
+
+		LOG.debug("new HolePunchHandler created, waiting now for answer from rendez-vous peer.");
+		return holePunchInboundHandler;
+	}
+
+	/**
+	 * This method looks up a {@Link ChannelFuture} from the
+	 * channelFutures {@link List}. If the {@Link ChannelFuture} can't be
+	 * found it returns null instead.
+	 * 
+	 * @param futures
+	 * @param localPort
+	 * @return
+	 */
+	private ChannelFuture extractChannelFuture(List<ChannelFuture> futures, int localPort) {
+		for (ChannelFuture future : futures) {
+			if (future.channel().localAddress() != null) {
+				InetSocketAddress inetSocketAddress = (InetSocketAddress) future.channel().localAddress();
+				if (inetSocketAddress.getPort() == localPort) {
+					return future;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * This method creates the inboundHandler for the replyMessage of the peer
+	 * that we want to send a message to.
+	 * 
+	 * @return inboundHandler
+	 */
+	private SimpleChannelInboundHandler<Message> createAfterHolePHandler() {
+		final SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
+
+			@Override
+			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+				if (Message.Type.OK == msg.type() && originalMessage.command() == msg.command()) {
+					LOG.debug("Successfully transmitted the original message to peer:[" + msg.sender().toString()
+							+ "]. Now here's the reply:[" + msg.toString() + "]");
+					mainFutureDone.done(msg);
+				} else if (Message.Type.REQUEST_3 == msg.type() && Commands.HOLEP.getNr() == msg.command()) {
+					LOG.debug("Holes successfully punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
+							+ msg.sender().udpPort() + "}!");
+				} else {
+					LOG.debug("Holes punche not punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
+							+ msg.sender().udpPort() + "} yet!");
+				}
+			}
+		};
+		return inboundHandler;
 	}
 
 	/**
@@ -332,6 +354,10 @@ public class HolePuncher {
 		return holePMessage;
 	}
 
+	/*
+	 * ================ methods on target nat peer ================
+	 */
+
 	public FutureDone<Message> replyHolePunch() {
 		this.originalSender = (PeerAddress) originalMessage.neighborsSetList().get(0).neighbors().toArray()[0];
 		final FutureDone<Message> replyMessageFuture = new FutureDone<Message>();
@@ -367,7 +393,7 @@ public class HolePuncher {
 		}
 	}
 
-	public Message createDummyMessage(int i) {
+	private Message createDummyMessage(int i) {
 		Message dummyMessage = new Message();
 		final int remotePort = portMappings.get(i).element0();
 		final int localPort = portMappings.get(i).element1();
@@ -402,6 +428,14 @@ public class HolePuncher {
 		mainFutureDone.failed(failMessage);
 	}
 
+	/**
+	 * This methods is only called by a {@link HolePunchScheduler}. It simply
+	 * creates a dummyMessage and sends it from a given localPort (
+	 * {@link ChannelFuture}) to a given remotePort. This procedure then punches
+	 * the holes needed by the initiating {@link Peer}.
+	 * 
+	 * @throws Exception
+	 */
 	public void tryConnect() throws Exception {
 		if (channelFutures.size() != portMappings.size()) {
 			throw new Exception("the number of channels does not match the number of ports!");
@@ -413,7 +447,7 @@ public class HolePuncher {
 			System.err.println("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: "
 					+ dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
-			// this is a workaround to avoid adding a natpeer to the offline
+			// this is a workaround to avoid adding a nat peer to the offline
 			// list of a peer!
 			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null);
 		}

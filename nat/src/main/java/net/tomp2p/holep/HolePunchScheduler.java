@@ -1,5 +1,13 @@
 package net.tomp2p.holep;
 
+/**
+ * This class is used as a {@link Thread} specifically for the
+ * {@link HolePuncher}. It calls the tryConnect() method on the
+ * {@link HolePuncher} every second until it reached the given numberOfTrials.
+ * 
+ * @author Jonas Wagner
+ * 
+ */
 public class HolePunchScheduler implements Runnable {
 
 	private static final int ONE_SECOND_MILLIS = 1000;

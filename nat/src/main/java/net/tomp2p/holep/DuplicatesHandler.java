@@ -29,12 +29,12 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message>{
 				messageId = msg.intAt(0);
 				dispatcher.channelRead(ctx, msg);
 				LOG.debug("message with original messageId = " + messageId + " has been received!");
-			} else if (msg.intAt(0) != messageId) {
-				LOG.debug("message with messageId = " + msg.intAt(0) + " has been received! This wasn't planned!");
-				dispatcher.channelRead(ctx, msg);
 			} else {
 				LOG.trace("message with original messageId = " + messageId + " has been ignored!");
 			}
+		} else {
+			LOG.debug("Message received via hole punching will be forwarded to the Dispatcher!");
+			dispatcher.channelRead(ctx, msg);
 		}
 	}
 }

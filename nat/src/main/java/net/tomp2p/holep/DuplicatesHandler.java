@@ -28,11 +28,12 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message>{
 				first = false;
 				messageId = msg.intAt(0);
 				dispatcher.channelRead(ctx, msg);
+				LOG.debug("message with original messageId = " + messageId + " has been received!");
 			} else if (msg.intAt(0) != messageId) {
-				LOG.error("THIS PART SHOULD NEVER BE CALLED!!!!");
+				LOG.debug("message with messageId = " + msg.intAt(0) + " has been received! This wasn't planned!");
 				dispatcher.channelRead(ctx, msg);
 			} else {
-				// ignore the duplicate message
+				LOG.trace("message with original messageId = " + messageId + " has been ignored!");
 			}
 		}
 	}

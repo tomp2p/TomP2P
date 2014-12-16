@@ -82,6 +82,7 @@ public class DistributedRelay implements GCMMessageHandler {
 		
 		// buffering is currently only allowed at Android devices
 		if(relayConfig.type() == RelayType.ANDROID && relayConfig.bufferConfiguration() != null) {
+			// buffers GCM messages and the buffer request is not sent instantly
 			gcmBuffer = new MessageBuffer<String>(relayConfig.bufferConfiguration());
 			gcmBuffer.addListener(new MessageBufferListener<String>() {
 				
@@ -91,6 +92,12 @@ public class DistributedRelay implements GCMMessageHandler {
 					for (String peerId : relayIds) {
 						sendBufferRequest(peerId);
 					}
+				}
+
+				@Override
+				public void bufferFlushed(List<String> messages) {
+					// do the same as if the buffer was full (to not loose any messages)
+					bufferFull(messages);
 				}
 			});
 		}

@@ -43,6 +43,10 @@ public class BufferedMessageHandler {
 			List<Message> bufferedMessages = RelayUtils.decomposeCompositeBuffer(buffer.buffer(), bufferResponse.recipientSocket(),
 					bufferResponse.senderSocket(), peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 			LOG.debug("Received {} buffered messages", bufferedMessages.size());
+			
+			// release buffer before the messages have been processed
+			buffer.buffer().release();
+			
 			for (Message bufferedMessage : bufferedMessages) {
 					processMessage(bufferedMessage);
 			}

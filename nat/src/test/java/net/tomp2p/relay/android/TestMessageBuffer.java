@@ -109,6 +109,23 @@ public class TestMessageBuffer {
 	}
 
 	@Test
+	public void testBufferFlush() throws InvalidKeyException, SignatureException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+		CountingBufferListener listener = new CountingBufferListener();
+		MessageBuffer<Message> buffer = new MessageBuffer<Message>(3, Long.MAX_VALUE, Long.MAX_VALUE);
+		buffer.addListener(listener);
+
+		// add two messages
+		buffer.addMessage(UtilsNAT.createRandomMessage(), 10);
+		buffer.addMessage(UtilsNAT.createRandomMessage(), 10);
+
+		buffer.flushNow();
+		
+		// check whether the buffer has been pre-emptied
+		assertEquals(1, listener.getTriggerCount());
+		assertEquals(2, listener.getBuffer().size());
+	}
+	
+	@Test
 	public void testBufferOrder() throws InvalidKeyException, SignatureException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 		CountingBufferListener listener = new CountingBufferListener();
 		MessageBuffer<Message> buffer = new MessageBuffer<Message>(5, Long.MAX_VALUE, Long.MAX_VALUE);
@@ -178,6 +195,11 @@ public class TestMessageBuffer {
 
 		public List<Message> getBuffer() {
 			return buffer;
+		}
+
+		@Override
+		public void bufferFlushed(List<Message> messages) {
+			bufferFull(messages);
 		}
 	}
 }

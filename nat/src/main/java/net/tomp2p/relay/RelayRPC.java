@@ -339,11 +339,21 @@ public class RelayRPC extends DispatchHandler {
 			return;
 		}
 
-		if (message.neighborsSet(1) != null && forwarder instanceof AndroidForwarderRPC) {
-			((AndroidForwarderRPC) forwarder).changeGCMServers(message.neighborsSet(1).neighbors());
-		}
-
 		Message response = createResponseMessage(message, Type.OK);
+		if(forwarder instanceof AndroidForwarderRPC) {
+			AndroidForwarderRPC androidForwarder = ((AndroidForwarderRPC) forwarder);
+			if (message.neighborsSet(1) != null) {
+				// update the GCM servers
+				androidForwarder.changeGCMServers(message.neighborsSet(1).neighbors());
+			}
+			
+			// Use the situation to send the buffer to the mobile phone
+			Buffer bufferedMessages = androidForwarder.collectBufferedMessages();
+			if(bufferedMessages != null) {
+				response.buffer(bufferedMessages);
+			}
+		}
+		
 		responder.response(response);
 	}
 
@@ -363,8 +373,12 @@ public class RelayRPC extends DispatchHandler {
 
 			try {
 				Message response = createResponseMessage(message, Type.OK);
+				
 				// add all buffered messages
-				response.buffer(androidForwarder.collectBufferedMessages());
+				Buffer bufferedMessages = androidForwarder.collectBufferedMessages();
+				if(bufferedMessages != null) {
+					response.buffer(bufferedMessages);
+				}
 
 				LOG.debug("Responding all buffered messages to Android device {}", message.sender());
 				responder.response(response);

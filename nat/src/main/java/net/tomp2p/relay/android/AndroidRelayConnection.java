@@ -88,7 +88,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 					reachRelayFailCounter = 0;
 
 					LOG.debug("Successfully got the buffer from relay {}", relayAddress());
-					bufferedMessageHandler.handleBufferResponse(futureResponse.responseMessage(), futureDone);
+					onReceiveMessageBuffer(futureResponse.responseMessage(), futureDone);
 				} else {
 					LOG.error("Cannot get the buffer from relay {}. Reason: {}", relayAddress(),
 							futureResponse.failedReason());
@@ -99,6 +99,10 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 		});
 
 		return futureDone;
+	}
+	
+	public void onReceiveMessageBuffer(Message responseMessage, FutureDone<Void> futureDone) {
+		bufferedMessageHandler.handleBufferResponse(responseMessage, futureDone);
 	}
 
 	@Override

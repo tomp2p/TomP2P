@@ -100,27 +100,46 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		sender.send(futureGCM);
 	}
 
+	@Override
+	public void bufferFlushed(List<Message> messages) {
+		// only adds to the buffer list, but no GCM message will be sent
+		final FutureGCM futureGCM = new FutureGCM(messages, registrationId, relayPeerId());
+		synchronized (pendingRequests) {
+			pendingRequests.add(futureGCM);
+		}
+	}
+	
 	/**
 	 * Retrieves the messages that are ready to send. Ready to send means that they have been buffered and the
 	 * Android device has already been notified.
 	 * 
-	 * @return the buffer containing all buffered messages
+	 * @return the buffer containing all buffered messages or <code>null</code> in case no message has been buffered
 	 */
 	public Buffer collectBufferedMessages() {
 		// the mobile device seems to be alive
 		lastUpdate.set(System.currentTimeMillis());
 
+		// flush the current buffer to get all messages
+		buffer.flushNow();
+		
 		List<Message> messages = new ArrayList<Message>();
 		synchronized (pendingRequests) {
 			for (FutureGCM futureGCM : pendingRequests) {
 				messages.addAll(futureGCM.buffer());
 				futureGCM.done();
 			}
+			
 			pendingRequests.clear();
 		}
 
+		if(messages.isEmpty()) {
+			LOG.trace("Currently there are no buffered messages");
+			return null;
+		}
+		
 		ByteBuf byteBuffer = RelayUtils.composeMessageBuffer(messages, connectionBean().channelServer()
 				.channelServerConfiguration().signatureFactory());
+		LOG.debug("Buffer of {} messages collected", messages.size());
 		return new Buffer(byteBuffer);
 	}
 

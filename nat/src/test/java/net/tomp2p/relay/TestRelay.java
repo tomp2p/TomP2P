@@ -125,6 +125,11 @@ public class TestRelay {
 								}
 							}, "GCM-Mock").start();
 						}
+
+						@Override
+						public void bufferFlushed(List<Message> messages) {
+							// ignore
+						}
 					});
 					
 					System.err.println("Mocked Android forwarder at " + forwarderRPC.relayPeerId() + " to " + forwarderRPC.unreachablePeerId());

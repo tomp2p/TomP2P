@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimerTask;
 
-import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -17,6 +17,7 @@ import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
+import net.tomp2p.relay.android.AndroidRelayConnection;
 import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
@@ -108,8 +109,8 @@ public class PeerMapUpdateTask extends TimerTask {
 		}
 
 		final FutureResponse fr = connection.sendToRelay(message);
-		fr.addListener(new BaseFutureAdapter<BaseFuture>() {
-			public void operationComplete(BaseFuture future) throws Exception {
+		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
+			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isFailed()) {
 					LOG.warn("Failed to update routing table on relay peer {}. Reason: {}", connection.relayAddress(),
 							future.failedReason());
@@ -117,6 +118,12 @@ public class PeerMapUpdateTask extends TimerTask {
 				} else {
 					LOG.trace("Updated routing table on relay {}", connection.relayAddress());
 					connection.onMapUpdateSuccess();
+					
+					// process possible buffered messages (Android only)
+					if(connection instanceof AndroidRelayConnection) {
+						AndroidRelayConnection androidConnection = (AndroidRelayConnection) connection;
+						androidConnection.onReceiveMessageBuffer(future.responseMessage(), new FutureDone<Void>());
+					}
 				}
 			}
 		});

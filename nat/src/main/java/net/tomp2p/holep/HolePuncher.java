@@ -2,6 +2,7 @@ package net.tomp2p.holep;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -136,14 +137,24 @@ public class HolePuncher {
 	private List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(final FutureResponse originalFutureResponse) {
 		List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
 				numberOfHoles);
+
+		SimpleChannelInboundHandler<Message> boundHandler = new DuplicatesHandler(peer.connectionBean().dispatcher());
 		for (int i = 0; i < numberOfHoles; i++) {
 			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 			if (initiator) {
 				final SimpleChannelInboundHandler<Message> inboundHandler = createAfterHolePHandler();
 				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
 			} else {
-				handlers = peer.connectionBean().sender()
-						.configureHandlers(peer.connectionBean().dispatcher(), originalFutureResponse, idleUDPSeconds, false);
+				handlers = peer.connectionBean().sender().configureHandlers(/*
+																			 * peer.
+																			 * connectionBean
+																			 * (
+																			 * )
+																			 * .
+																			 * dispatcher
+																			 * (
+																			 * )
+																			 */boundHandler, originalFutureResponse, idleUDPSeconds, false);
 			}
 			handlerList.add(handlers);
 		}
@@ -151,6 +162,9 @@ public class HolePuncher {
 		return handlerList;
 	}
 	
+	private void handleFail(String failMessage) {
+		mainFutureDone.failed(failMessage);
+	}
 
 	/*
 	 * ================ methods on initiating nat peer ================
@@ -311,6 +325,7 @@ public class HolePuncher {
 		sendMessage.version(originalMessage.version());
 		sendMessage.command(originalMessage.command());
 		sendMessage.type(originalMessage.type());
+		sendMessage.intValue(originalMessage.messageId());
 		sendMessage.udp(true);
 		for (Buffer buf : originalMessage.bufferList()) {
 			sendMessage.buffer(new Buffer(buf.buffer().duplicate()));
@@ -423,10 +438,6 @@ public class HolePuncher {
 			}
 		}
 		return replyMessage;
-	}
-
-	private void handleFail(String failMessage) {
-		mainFutureDone.failed(failMessage);
 	}
 
 	/**

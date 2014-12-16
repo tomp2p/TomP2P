@@ -21,8 +21,6 @@ import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;

@@ -49,7 +49,6 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.LocalMap;
 import net.tomp2p.peers.Number160;
@@ -634,6 +633,7 @@ public class Sender {
 
 			@Override
 			public void exceptionCaught(Throwable t) throws Exception {
+				futureResponse.failed(t);
 			}
 		});
 	}

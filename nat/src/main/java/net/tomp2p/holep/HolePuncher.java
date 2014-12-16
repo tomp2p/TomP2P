@@ -137,26 +137,21 @@ public class HolePuncher {
 	private List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(final FutureResponse originalFutureResponse) {
 		List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
 				numberOfHoles);
-
-		SimpleChannelInboundHandler<Message> boundHandler = new DuplicatesHandler(peer.connectionBean().dispatcher());
-		for (int i = 0; i < numberOfHoles; i++) {
-			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
-			if (initiator) {
-				final SimpleChannelInboundHandler<Message> inboundHandler = createAfterHolePHandler();
+		SimpleChannelInboundHandler<Message> inboundHandler;
+		Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
+		
+		if (initiator) {
+			for (int i = 0; i < numberOfHoles; i++) {
+				inboundHandler = createAfterHolePHandler();
 				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
-			} else {
-				handlers = peer.connectionBean().sender().configureHandlers(/*
-																			 * peer.
-																			 * connectionBean
-																			 * (
-																			 * )
-																			 * .
-																			 * dispatcher
-																			 * (
-																			 * )
-																			 */boundHandler, originalFutureResponse, idleUDPSeconds, false);
+				handlerList.add(handlers);
 			}
-			handlerList.add(handlers);
+		} else {
+			inboundHandler = new DuplicatesHandler(peer.connectionBean().dispatcher());
+			for (int i = 0;i < numberOfHoles; i++) {
+				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
+				handlerList.add(handlers);
+			}
 		}
 
 		return handlerList;

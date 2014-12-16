@@ -12,6 +12,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 @Sharable
 public class DuplicatesHandler extends SimpleChannelInboundHandler<Message>{
 
+	private static final int POSITION_ZERO = 0;
 	private static final Logger LOG = LoggerFactory.getLogger(DuplicatesHandler.class);
 	private final Dispatcher dispatcher;
 	int messageId = 0;
@@ -26,7 +27,7 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message>{
 		if (msg.intList() != null && !msg.intList().isEmpty()) {
 			if (first) {
 				first = false;
-				messageId = msg.intAt(0);
+				messageId = msg.intAt(POSITION_ZERO);
 				dispatcher.channelRead(ctx, msg);
 				LOG.debug("message with original messageId = " + messageId + " has been received!");
 			} else {

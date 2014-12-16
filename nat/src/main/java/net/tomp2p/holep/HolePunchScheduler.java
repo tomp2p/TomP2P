@@ -10,14 +10,15 @@ package net.tomp2p.holep;
  */
 public class HolePunchScheduler implements Runnable {
 
+	private static final int FIVE_MINUTES = 300;
 	private static final int ONE_SECOND_MILLIS = 1000;
 	private int numberOfTrials;
 	private HolePuncher holePuncher;
 
 	public HolePunchScheduler(int numberOfTrials, HolePuncher holePuncher) {
 		// 300 -> 5min
-		if (numberOfTrials > 300) {
-			throw new IllegalArgumentException("numberOfTrials can't be higher than 300!");
+		if (numberOfTrials > FIVE_MINUTES) {
+			throw new IllegalArgumentException("numberOfTrials can't be higher than 300 (5min)!");
 		} else if (numberOfTrials < 1) {
 			throw new IllegalArgumentException("numberOfTrials must be at least 1!");
 		} else if (holePuncher == null) {

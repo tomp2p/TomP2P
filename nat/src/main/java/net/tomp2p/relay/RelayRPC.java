@@ -276,7 +276,7 @@ public class RelayRPC extends DispatchHandler {
 		}
 
 		Buffer requestBuffer = message.buffer(0);
-		Message realMessage = RelayUtils.decodeRelayedMessage(requestBuffer, message.recipientSocket(), sender,
+		Message realMessage = RelayUtils.decodeRelayedMessage(requestBuffer.buffer(), message.recipientSocket(), sender,
 				signatureFactory());
 		realMessage.restoreContentReferences();
 
@@ -411,7 +411,7 @@ public class RelayRPC extends DispatchHandler {
 
 		Message realMessage = null;
 		try {
-			realMessage = RelayUtils.decodeRelayedMessage(message.buffer(0), message.recipientSocket(),
+			realMessage = RelayUtils.decodeRelayedMessage(message.buffer(0).buffer(), message.recipientSocket(),
 					message.senderSocket(), signatureFactory());
 		} catch (Exception e) {
 			LOG.error("Cannot decode the late response", e);

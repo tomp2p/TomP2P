@@ -81,7 +81,7 @@ public class RelayUtils {
 	 * {@link MessageUtils#decodeMessage(Buffer, InetSocketAddress, InetSocketAddress, SignatureFactory)}, but
 	 * in addition checks that the relay peers of the decoded message are set correctly
 	 */
-	public static Message decodeRelayedMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender,
+	public static Message decodeRelayedMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender,
 			SignatureFactory signatureFactory) throws InvalidKeyException, NoSuchAlgorithmException,
 			InvalidKeySpecException, SignatureException, IOException {
 		Message decodedMessage = decodeMessage(buf, recipient, sender, signatureFactory);
@@ -136,7 +136,7 @@ public class RelayUtils {
 			ByteBuf message = messageBuffer.readBytes(size);
 			
 			try {
-				Message decodedMessage = decodeRelayedMessage(new Buffer(message), recipient, sender, signatureFactory);
+				Message decodedMessage = decodeRelayedMessage(message, recipient, sender, signatureFactory);
 				messages.add(decodedMessage);
 			} catch (Exception e) {
 				LOG.error("Cannot decode buffered message. Skip it.", e);
@@ -159,13 +159,13 @@ public class RelayUtils {
 	/**
 	 * Decodes a message which was encoded using {{@link #encodeMessage(Message, SignatureFactory)}}.
 	 */
-	public static Message decodeMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
+	public static Message decodeMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
 	        throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, IOException {
 		Decoder d = new Decoder(signatureFactory);
-		final int readerBefore = buf.buffer().readerIndex();
-		d.decodeHeader(buf.buffer(), recipient, sender);
-		final boolean donePayload = d.decodePayload(buf.buffer());
-		d.decodeSignature(buf.buffer(), readerBefore, donePayload);
+		final int readerBefore = buf.readerIndex();
+		d.decodeHeader(buf, recipient, sender);
+		final boolean donePayload = d.decodePayload(buf);
+		d.decodeSignature(buf, readerBefore, donePayload);
 		return d.message();
 	}
 	

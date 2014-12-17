@@ -50,12 +50,10 @@ public class BufferedMessageHandler {
 			for (Message bufferedMessage : bufferedMessages) {
 					processMessage(bufferedMessage);
 			}
-
-			futureDone.done();
 		} else {
-			LOG.warn("Buffer message does not contain any buffered message");
-			futureDone.failed("Cannot find any buffer in the message");
+			LOG.debug("Buffer message does not contain any buffered message");
 		}
+		futureDone.done();
 	}
 
 	/**

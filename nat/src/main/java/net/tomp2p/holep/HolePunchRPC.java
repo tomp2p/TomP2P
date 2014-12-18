@@ -50,16 +50,9 @@ public class HolePunchRPC extends DispatchHandler {
 		else if (message.type() == Message.Type.REQUEST_2) {
 			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
 			handleHolePunch(message, peerConnection, responder);
-		} else if (message.type() == Message.Type.REQUEST_3) {
-			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
-			handleHolePunchReply(message, peerConnection, responder);
 		} else {
 			throw new IllegalArgumentException("Message Content is wrong!");
 		}
-	}
-
-	private void handleHolePunchReply(Message message, PeerConnection peerConnection, Responder responder) {
-		responder.response(createResponseMessage(message, Type.OK));
 	}
 
 	/**

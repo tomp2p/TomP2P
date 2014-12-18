@@ -451,7 +451,7 @@ public class HolePuncher {
 		for (int i = 0; i < channelFutures.size(); i++) {
 			Message dummyMessage = createDummyMessage(i);
 			FutureResponse futureResponse = new FutureResponse(dummyMessage);
-			System.err.println("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: "
+			LOG.trace("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: "
 					+ dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 			// this is a workaround to avoid adding a nat peer to the offline

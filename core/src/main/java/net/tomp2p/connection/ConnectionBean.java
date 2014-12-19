@@ -15,7 +15,6 @@
  */
 package net.tomp2p.connection;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**

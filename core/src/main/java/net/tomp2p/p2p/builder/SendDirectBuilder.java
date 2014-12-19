@@ -200,11 +200,10 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 				public void operationComplete(final FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
 						if (isForceUDP()) {
-							final FutureResponse futureResponse = request.sendUDP(future.channelCreator());
+							request.sendUDP(future.channelCreator());
 						} else {
-							final FutureResponse futureResponse = request.sendTCP(future.channelCreator());
+							request.sendTCP(future.channelCreator());
 						}
-//						request.sendTCP(future.channelCreator());
 					} else {
 						request.futureResponse().failed("could not create channel", future);
 					}

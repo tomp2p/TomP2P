@@ -245,7 +245,7 @@ public class Sender {
 		rconMessage.version(message.version());
 
 		// store the message id in the payload to get the cached message later
-		// rconMessage.intValue(message.messageId());
+		rconMessage.intValue(message.messageId());
 
 		// the message must have set the keepAlive Flag true. If not, the relay
 		// peer will close the PeerConnection to the unreachable peer.
@@ -301,10 +301,6 @@ public class Sender {
 	/**
 	 * Both peers are relayed, thus sending directly or over reverse connection
 	 * is not possible. Send the message to one of the receiver's relays.
-<<<<<<< HEAD
-	 * 
-=======
->>>>>>> refs/remotes/tomp-master/master
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -672,8 +668,6 @@ public class Sender {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
 		return handlers;
-
-		
 	}
 
 	/**

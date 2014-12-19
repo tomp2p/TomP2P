@@ -91,4 +91,8 @@ public class LocalMap implements Maintainable, PeerStatusListener {
 	public int size() {
 		return localMap.size();
 	}
+	
+	public Collection<PeerStatistic> peers() {
+		return localMap.values();
+	}
 }

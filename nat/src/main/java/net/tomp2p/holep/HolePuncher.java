@@ -2,7 +2,6 @@ package net.tomp2p.holep;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -14,10 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.HolePunchInitiator;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -33,6 +30,9 @@ import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is a generic class which is supposed to handle any hole punching

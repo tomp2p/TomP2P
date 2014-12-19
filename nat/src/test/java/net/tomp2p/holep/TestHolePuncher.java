@@ -2,7 +2,6 @@ package net.tomp2p.holep;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;

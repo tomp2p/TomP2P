@@ -9,19 +9,21 @@ import net.tomp2p.p2p.Peer;
 
 /**
  * @author Jonas Wagner
- *
+ * 
+ *         This class is created if "new PeerNAT()" is called on a {@link Peer}.
+ *         This class makes sure that hole punching is possible.
  */
 public class HolePunchInitiatorImpl implements HolePunchInitiator {
-	
+
 	private Peer peer;
-	
+
 	public HolePunchInitiatorImpl(Peer peer) {
 		this.peer = peer;
 	}
 
 	@Override
-	public FutureDone<Message> handleHolePunch(ChannelCreator channelCreator, int idleUDPSeconds,
-			FutureResponse futureResponse, Message originalMessage) {
+	public FutureDone<Message> handleHolePunch(ChannelCreator channelCreator, int idleUDPSeconds, FutureResponse futureResponse,
+			Message originalMessage) {
 		HolePuncher holePuncher = new HolePuncher(peer, HolePunchInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
 		return holePuncher.initiateHolePunch(channelCreator, futureResponse);
 	}

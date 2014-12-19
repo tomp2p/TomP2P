@@ -105,7 +105,7 @@ public class TestHolePuncher {
 			}
 		});
 		fd.awaitUninterruptibly();
-		
+		System.out.println("DONE.");
 		shutdown();
 	}
 	

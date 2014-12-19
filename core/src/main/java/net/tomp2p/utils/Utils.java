@@ -60,11 +60,13 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.message.Message;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.storage.DataBuffer;
 
 /**
@@ -935,4 +937,26 @@ public class Utils {
 	    }
 	    return recipient;
     }
+
+	/**
+	 * This method ensures that if a peer sends a message via reverse connection
+	 * or hole punching, a random relay is chosen as the relay/rendez-vous peer
+	 * 
+	 * @param message
+	 * @return socketAddress
+	 */
+	public static PeerSocketAddress extractRandomRelay(final Message message) {
+		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
+		PeerSocketAddress socketAddress = null;
+		if (relayInetAdresses.length > 0) {
+			// we should be fair and choose one of the relays randomly
+			socketAddress = (PeerSocketAddress) relayInetAdresses[randomPositiveInt(relayInetAdresses.length)];
+		} else {
+			throw new IllegalArgumentException(
+					"There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");
+		}
+		return socketAddress;
+	}
+	
+	
 }

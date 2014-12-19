@@ -215,7 +215,7 @@ public class AutomaticReplicationTest {
     private NavigableSet<PeerAddress> findTheClosestPeer(PeerDHT[] peers, Number160 locationKey) {
     	
     	Comparator<PeerAddress> c = PeerMap.createComparator(locationKey);
-    	TreeSet<PeerAddress> ts = new TreeSet<>(c);
+    	TreeSet<PeerAddress> ts = new TreeSet<PeerAddress>(c);
     	for(PeerDHT peer:peers) {
     		ts.add(peer.peerAddress());
     	}

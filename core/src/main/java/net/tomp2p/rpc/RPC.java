@@ -25,10 +25,10 @@ public class RPC {
 		PUT_CONFIRM(),
 		GET_LATEST(),
 		RCON(),
+		HOLEP(),
 		GET_LATEST_WITH_DIGEST(),
 		GCM(),
 		LOCAL_ANNOUNCE();
-	
 	public byte getNr() {
 		return (byte) ordinal();
 	}

@@ -13,6 +13,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.holep.HolePunchRPC;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -56,6 +57,17 @@ public class RelayRPC extends DispatchHandler {
 	 * @author jonaswagner
 	 */
 	private final RconRPC rconRPC;
+	
+	/**
+	 * This variable is needed, because a relay overwrites every RPC of an
+	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. This
+	 * variable is forwarded to the {@link RelayForwarderRPC} in order to
+	 * guarantee the existence of a {@link HolePunchRPC}. Without this variable, no
+	 * hole punch connections would be possible.
+	 * 
+	 * @author jonaswagner
+	 */
+	private final HolePunchRPC holePunchRPC;
 
 	/**
 	 * In case this relay handles Android devices and is capable of sending GCM messages, this variable is
@@ -78,7 +90,7 @@ public class RelayRPC extends DispatchHandler {
 	 * @param gcmAuthToken the authentication key for Google cloud messaging
 	 * @return
 	 */
-	public RelayRPC(Peer peer, RconRPC rconRPC, IGCMSender gcmSenderRPC, MessageBufferConfiguration bufferConfig,
+	public RelayRPC(Peer peer, RconRPC rconRPC, HolePunchRPC holePunchRPC, IGCMSender gcmSenderRPC, MessageBufferConfiguration bufferConfig,
 			ConnectionConfiguration config) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peer = peer;
@@ -87,6 +99,7 @@ public class RelayRPC extends DispatchHandler {
 		this.config = config;
 		this.forwarders = new ConcurrentHashMap<Number160, BaseRelayForwarderRPC>();
 		this.rconRPC = rconRPC;
+		this.holePunchRPC = holePunchRPC;
 
 		// register this handler
 		register(RPC.Commands.RELAY.getNr());
@@ -247,6 +260,11 @@ public class RelayRPC extends DispatchHandler {
 				// we serve as a relay. Without this registration, no reverse
 				// connection setup is possible.
 				dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), rconRPC, command.getNr());
+			} else if (command == RPC.Commands.HOLEP) {
+				// We must register the holePunchRPC for every unreachable peer that
+				// we serve as a relay. Without this registration, no reverse
+				// connection setup is possible.
+				dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), holePunchRPC, command.getNr());
 			} else if (command == RPC.Commands.RELAY) {
 				// Register this class to handle all relay messages (currently used when a slow message
 				// arrives)

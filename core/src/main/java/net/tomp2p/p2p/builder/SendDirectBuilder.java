@@ -66,7 +66,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
 	private ProgressListener progressListener;
 
-
 	public SendDirectBuilder(Peer peer, PeerAddress recipientAddress) {
 		this.peer = peer;
 		this.recipientAddress = recipientAddress;
@@ -200,7 +199,11 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 				@Override
 				public void operationComplete(final FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
-						request.sendTCP(future.channelCreator());
+						if (isForceUDP()) {
+							request.sendUDP(future.channelCreator());
+						} else {
+							request.sendTCP(future.channelCreator());
+						}
 					} else {
 						request.futureResponse().failed("could not create channel", future);
 					}

@@ -320,6 +320,7 @@ public class PeerBuilder {
 		for (PeerInit peerInit : toInitialize) {
 			peerInit.init(peer);
 		}
+		
 		return peer;
 	}
 

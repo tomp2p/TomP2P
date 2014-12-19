@@ -582,6 +582,19 @@ public class Message {
     public boolean isStreaming() {
         return (options & 2) > 0;
     }
+    
+    public Message expectDuplicate(boolean expectDuplicate) {
+        if (expectDuplicate) {
+            options |= 4;
+        } else {
+            options &= ~4;
+        }
+        return this;
+    }
+
+    public boolean isExpectDuplicate() {
+        return (options & 4) > 0;
+    }
 
     // Header data ends here *********************************** static payload starts now
 

@@ -47,32 +47,32 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     private boolean reponseLater = false;
 
     /**
-     * Create the future and set the request message.
+     * Creates a future and sets the request message.
      * 
      * @param requestMessage
-     *            The request message that will be send over the wire.
+     *            The request message that will be sent.
      */
     public FutureResponse(final Message requestMessage) {
         this(requestMessage, new FutureSuccessEvaluatorCommunication());
     }
 
     /**
-     * Create the future and set the request message.
+     * Creates a future and sets the request message.
      * 
      * @param requestMessage
-     *            The request message that will be send over the wire.
+     *            The request message that will be sent.
      * @param futureSuccessEvaluator
-     *            Evaluates if the future was a success or failure
+     *            Evaluates if the future was a success or a failure.
      */
     public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator) {
         this(requestMessage, futureSuccessEvaluator, null);
     }
 
     /**
-     * Create the future and set the request message. This will set the progress listener for streaming support.
+     * Creates a future and sets the request message. This will set the progress listener for streaming support.
      * 
      * @param requestMessage
-     *            The request message that will be send over the wire.
+     *            The request message that will be sent.
      * @param progressListener
      *            The progress listener for streaming support
      */
@@ -81,12 +81,12 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     }
 
     /**
-     * Create the future and set the request message. This will set the progress listener for streaming support.
+     * Create a future and sets the request message. This will set the progress listener for streaming support.
      * 
      * @param requestMessage
-     *            The request message that will be send over the wire.
+     *            The request message that will be sent.
      * @param futureSuccessEvaluator
-     *            Evaluates if the future was a success or failure
+     *            Evaluates if the future was a success or a failure.
      * @param progressListener
      *            The progress listener for streaming support
      */

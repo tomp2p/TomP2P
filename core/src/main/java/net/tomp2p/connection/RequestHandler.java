@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Is able to send UDP messages (as a request) and processes incoming replies. It is important that this class handles
- * close() because if we shutdown the connections, the we need to notify the futures. In case of error set the peer to
+ * close() because if we shutdown the connections, then we need to notify the futures. In case of errors set the peer to
  * offline. A similar class is {@link RequestHandlerTCP}, which is used for TCP.
  * 
  * @author Thomas Bocek
@@ -39,10 +39,10 @@ import org.slf4j.LoggerFactory;
 public class RequestHandler<K extends FutureResponse> extends SimpleChannelInboundHandler<Message> {
     private static final Logger LOG = LoggerFactory.getLogger(RequestHandler.class);
 
-    // The future response which is currently be waited for
+    // The future response which is currently being waited for
     private final K futureResponse;
 
-    // The node this request handler is associated with
+    // The node with which this request handler is associated with
     private final PeerBean peerBean;
     private final ConnectionBean connectionBean;
 
@@ -56,7 +56,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     private final int connectionTimeoutTCPMillis; // = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
 
     /**
-     * Create a request handler that can send UDP messages.
+     * Creates a request handler that can send UDP messages.
      * 
      * @param futureResponse
      *            The future that will be called when we get an answer
@@ -65,13 +65,13 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      * @param connectionBean
      *            The connection bean
      * @param configuration
-     *            the client side connection configuration
+     *            the client-side connection configuration
      */
     public RequestHandler(final K futureResponse, final PeerBean peerBean,
             final ConnectionBean connectionBean, final ConnectionConfiguration configuration) {
+    	this.futureResponse = futureResponse;
         this.peerBean = peerBean;
         this.connectionBean = connectionBean;
-        this.futureResponse = futureResponse;
         this.message = futureResponse.request();
         this.sendMessageID = new MessageID(message);
         this.idleTCPSeconds = configuration.idleTCPSeconds();

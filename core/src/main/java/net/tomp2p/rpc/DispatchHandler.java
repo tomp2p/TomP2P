@@ -101,7 +101,7 @@ public abstract class DispatchHandler {
     }
 
     /**
-     * Create a request message and fills it with connection bean and peer bean parameters.
+     * Creates a request message and fills it with peer bean and connection bean parameters.
      * 
      * @param recipient
      *            The recipient of this message
@@ -109,7 +109,7 @@ public abstract class DispatchHandler {
      *            The commend type
      * @param type
      *            The request type
-     * @return The request message
+     * @return The created request message
      */
     public Message createMessage(final PeerAddress recipient, final byte name, final Type type) {
         return new Message().recipient(recipient).sender(peerBean().serverPeerAddress())

@@ -586,9 +586,9 @@ public class Sender {
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				futureResponse.removeCancel(connectCancel);
 				if (future.isSuccess()) {
-					futureResponse.progressHandler(new ProgresHandler() {
+					futureResponse.progressHandler(new ProgressHandler() {
 						@Override
-						public void progres() {
+						public void progress() {
 							final ChannelFuture writeFuture = future.channel().writeAndFlush(message);
 							afterSend(writeFuture, futureResponse, fireAndForget);
 						}

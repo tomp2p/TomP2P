@@ -19,7 +19,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.concurrent.CountDownLatch;
 
-import net.tomp2p.connection.ProgresHandler;
+import net.tomp2p.connection.ProgressHandler;
 import net.tomp2p.message.Message;
 
 /**
@@ -37,7 +37,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     // the reply to this request
     private Message responseMessage;
 
-    private ProgresHandler progressHandler;
+    private ProgressHandler progressHandler;
 
     private final ProgressListener progressListener;
 
@@ -225,7 +225,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      *            The progress handler that will be added by the TomP2P library.
      * @return This class
      */
-    public FutureResponse progressHandler(final ProgresHandler progressHandler) {
+    public FutureResponse progressHandler(final ProgressHandler progressHandler) {
         synchronized (lock) {
             this.progressHandler = progressHandler;
         }
@@ -243,7 +243,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     public FutureResponse progressFirst() throws InterruptedException {
         firstProgressHandler.await();
         synchronized (lock) {
-            progressHandler.progres();
+            progressHandler.progress();
         }
         secondProgressHandler.countDown();
         return this;
@@ -260,7 +260,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     public FutureResponse progress() throws InterruptedException {
         secondProgressHandler.await();
         synchronized (lock) {
-            progressHandler.progres();
+            progressHandler.progress();
         }
         return this;
     }

@@ -3,12 +3,12 @@ package net.tomp2p.connection;
 public interface ConnectionConfiguration {
 
     /**
-     * @return The time that a connection can be idle before it is considered not active for short-lived connections.
+     * @return The time that a TCP connection can be idle before it is considered not active for short-lived connections.
      */
     int idleTCPSeconds();
 
     /**
-     * @return The time that a connection can be idle before it is considered not active for short-lived connections.
+     * @return The time that a UDP connection can be idle before it is considered not active for short-lived connections.
      */
     int idleUDPSeconds();
 

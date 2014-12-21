@@ -98,7 +98,7 @@ public interface BaseFuture extends Cancel {
     BaseFuture failed(String reason);
 
     /**
-     * Sets the failed flat to true and the completed flag to true. This will notify listeners and set the reason based
+     * Sets the failed flag to true and the completed flag to true. This will notify listeners and set the reason based
      * on the origin BaseFuture.
      * 
      * @param origin
@@ -108,7 +108,7 @@ public interface BaseFuture extends Cancel {
     BaseFuture failed(BaseFuture origin);
 
     /**
-     * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
+     * Sets the failed flag to true and the completed flag to true. This will notify listeners and append the reason
      * based on the origin BaseFuture.
      * 
      * @param reason

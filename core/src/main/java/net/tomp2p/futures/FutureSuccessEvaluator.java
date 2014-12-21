@@ -20,7 +20,7 @@ import net.tomp2p.futures.BaseFuture.FutureType;
 import net.tomp2p.message.Message;
 
 /**
- * Evaluates if a future is a success. Depending if its a routing request or p2p requests, different success is
+ * Evaluates if a future is a success. Depending if it is a routing request or p2p requests, different success is
  * expected.
  * 
  * @author Thomas Bocek
@@ -34,7 +34,7 @@ public interface FutureSuccessEvaluator {
      *            The request message
      * @param responseMessage
      *            The response message
-     * @return The future type if teh request was successful
+     * @return The future type if the request was successful
      */
     FutureType evaluate(Message requestMessage, Message responseMessage);
 }

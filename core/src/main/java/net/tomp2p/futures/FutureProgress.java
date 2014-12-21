@@ -23,15 +23,15 @@ package net.tomp2p.futures;
  * 
  * @param <K>
  */
-public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
+public class FutureProgress<K> extends BaseFutureImpl<FutureProgress<K>> {
 
     private K object;
-    private FutureProgres<K> next;
+    private FutureProgress<K> next;
 
     /**
      * Creates a new future for the shutdown operation.
      */
-    public FutureProgres() {
+    public FutureProgress() {
         self(this);
     }
 
@@ -45,13 +45,13 @@ public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
      *            If the there will be no more data, set flag to true. Same as {@link #done(Object)}.
      * @return A new future object or null if this was the last data piece
      */
-    public FutureProgres<K> progres(final K object, final boolean last) {
+    public FutureProgress<K> progres(final K object, final boolean last) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return null;
             }
             if (!last) {
-                this.next = new FutureProgres<K>();
+                this.next = new FutureProgress<K>();
             }
             this.object = object;
             this.type = BaseFuture.FutureType.OK;
@@ -67,7 +67,7 @@ public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
      *            An object that can be attached.
      * @return This class
      */
-    public FutureProgres<K> done(final K object) {
+    public FutureProgress<K> done(final K object) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return this;
@@ -91,7 +91,7 @@ public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
     /**
      * @return The next future if {@link #setProgres(Object)} is calledU
      */
-    public FutureProgres<K> next() {
+    public FutureProgress<K> next() {
         synchronized (lock) {
             return next;
         }

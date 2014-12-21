@@ -34,7 +34,7 @@ import net.tomp2p.storage.DigestTracker;
 
 /**
  * A bean that holds non-sharable (unique for each peer) configuration settings for the peer. The sharable
- * configurations are stored in {@link ConnectionBean}.
+ * configurations are stored in a {@link ConnectionBean}.
  * 
  * @author Thomas Bocek
  */

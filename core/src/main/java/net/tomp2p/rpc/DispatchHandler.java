@@ -45,7 +45,7 @@ public abstract class DispatchHandler {
     private boolean sign = false;
 
     /**
-     * Creates a handler with a connection and peer bean.
+     * Creates a handler with a peer bean and a connection bean.
      * 
      * @param peerBean
      *            The peer bean
@@ -54,7 +54,7 @@ public abstract class DispatchHandler {
      * @param names
      *            The command names
      */
-    public DispatchHandler(final PeerBean peerBean, final ConnectionBean connectionBean) {
+    protected DispatchHandler(final PeerBean peerBean, final ConnectionBean connectionBean) {
         this.peerBean = peerBean;
         this.connectionBean = connectionBean;
     }

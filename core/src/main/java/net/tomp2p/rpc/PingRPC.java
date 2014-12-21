@@ -61,7 +61,7 @@ public class PingRPC extends DispatchHandler {
     private final boolean wait;
 
     /**
-     * Creates an new handshake RPC with listeners.
+     * Creates a new handshake RPC with listeners.
      * 
      * @param peerBean
      *            The peer bean

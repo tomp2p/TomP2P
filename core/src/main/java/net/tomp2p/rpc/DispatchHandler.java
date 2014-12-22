@@ -71,7 +71,7 @@ public abstract class DispatchHandler {
     /**
      * Registers all names on the dispatcher on behalf of the given peer
       * @param onBehalfOf
-     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
+     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of a relay node).
     * @param names
      */
     public void register(Number160 onBehalfOf, final int... names) {
@@ -80,7 +80,7 @@ public abstract class DispatchHandler {
 
     /**
      * @param sign
-     *            Set to true if message is signed
+     *            Set to true if the message is signed
      */
     public void sign(final boolean sign) {
         this.sign = sign;
@@ -117,13 +117,13 @@ public abstract class DispatchHandler {
     }
 
     /**
-     * Create a response message and fills it with connection bean and peer bean parameters.
+     * Creates a response message and fills it with peer bean and connection bean parameters.
      * 
      * @param requestMessage
      *            The request message
      * @param replyType
      *            The type of the reply
-     * @return The reply message
+     * @return The response message
      */
     public Message createResponseMessage(final Message requestMessage, final Type replyType) {
         return createResponseMessage(requestMessage, replyType, peerBean().serverPeerAddress());
@@ -151,7 +151,7 @@ public abstract class DispatchHandler {
      *            The request message
      * @param peerConnection The peer connection that can be used for communication
      * @param responder 
-     * @return The reply message
+     * @return The response message
      */
     public void forwardMessage(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
         // here we need a referral, since we got contacted and we don't know
@@ -177,17 +177,15 @@ public abstract class DispatchHandler {
     }
 
     /**
-     * If the message is OK, that has been previously checked by the user using checkMessage, a reply to the message is
+     * If the message is OK, that has been previously checked by the user using checkMessage, a response to the message is
      * generated here.
      * 
      * @param message
      *            Request message
      * @param peerConnection 
      * @param sign
-     *            Flag to indicate if message is signed
-     * @param responder2 
+     *            Flag indicating whether the message is signed
      * @param responder 
-     * @return The message from the handler
      * @throws Exception
      *             Any exception
      */

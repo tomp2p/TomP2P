@@ -48,7 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Creates the channels. This class is created by {@link ConnectionReservation}
+ * Creates the channels. This class is created by {@link Reservation}
  * and should never be called directly. With this class one can create TCP or
  * UDP channels up to a certain extent. Thus it must be know beforehand how much
  * connections will be created.

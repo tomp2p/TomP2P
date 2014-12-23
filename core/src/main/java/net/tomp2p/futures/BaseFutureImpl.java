@@ -283,24 +283,15 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
         }
         return self;
     }
-
+    
     @Override
     public K addListener(final BaseFutureListener<? extends BaseFuture> listener) {
-        return addListener(listener, true);
-    }
-
-    @Override
-    public K addListener(final BaseFutureListener<? extends BaseFuture> listener, final boolean last) {
         boolean notifyNow = false;
         synchronized (lock) {
             if (completed) {
                 notifyNow = true;
             } else {
-                if (last) {
-                    listeners.add(listener);
-                } else {
-                    listeners.add(0, listener);
-                }
+                listeners.add(listener);
             }
         }
         // called only once

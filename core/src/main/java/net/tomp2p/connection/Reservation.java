@@ -185,7 +185,7 @@ public class Reservation {
 					semaphoreUPD.release(permitsUDP);
 					semaphoreTCP.release(permitsTCP);
 				}
-			}, false); // false is important, to be always the first listener
+			});
 			executor.execute(new WaitReservation(futureChannelCreator, futureChannelCreationDone, permitsUDP,
 			        permitsTCP));
 			return futureChannelCreator;
@@ -221,7 +221,7 @@ public class Reservation {
 					// inconsitencies
 					semaphorePermanentTCP.release(permitsPermanentTCP);
 				}
-			}, false); // false is important, to be always the first listener
+			});
 			executor.execute(new WaitReservationPermanent(futureChannelCreator, futureChannelCreationDone,
 			        permitsPermanentTCP));
 			return futureChannelCreator;

@@ -312,15 +312,7 @@ public class Reservation {
 		channelCreator.shutdownFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
-				read.lock();
-				try {
-					if (shutdown) {
-						return;
-					}
-					channelCreators.remove(channelCreator);
-				} finally {
-					read.unlock();
-				}
+				channelCreators.remove(channelCreator);
 			}
 		});
 		channelCreators.add(channelCreator);

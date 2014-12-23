@@ -258,14 +258,20 @@ public class Reservation {
 				wr.futureChannelCreator().failed("shutting down");
 			}
 		}
+		
+		final Collection<ChannelCreator> copyChannelCreators;
+		synchronized (channelCreators) {
+			copyChannelCreators = new ArrayList<ChannelCreator>(channelCreators);
+		}
+		
 
 		// the channelCreator does not change anymore from here on
-		final int size = channelCreators.size();
+		final int size = copyChannelCreators.size();
 		if (size == 0) {
 			futureReservationDone.done();
 		} else {
 			final AtomicInteger completeCounter = new AtomicInteger(0);
-			for (final ChannelCreator channelCreator : channelCreators) {
+			for (final ChannelCreator channelCreator : copyChannelCreators) {
 				// this is very important that we set first the listener and
 				// then call shutdown. Otherwise, the order of
 				// the listener calls is not guaranteed and we may call this

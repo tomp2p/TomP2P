@@ -90,7 +90,6 @@ public class Reservation {
 	 *            permanent TCP connections
 	 */
 	public Reservation(final EventLoopGroup workerGroup, final ChannelClientConfiguration channelClientConfiguration) {
-
 		this.workerGroup = workerGroup;
 		this.maxPermitsUDP = channelClientConfiguration.maxPermitsUDP();
 		this.maxPermitsTCP = channelClientConfiguration.maxPermitsTCP();
@@ -239,8 +238,7 @@ public class Reservation {
 		write.lock();
 		try {
 			if (shutdown) {
-				shutdownFuture().failed("already shutting down");
-				return shutdownFuture();
+				return futureReservationDone.failed("already shutting down");
 			}
 			shutdown = true;
 		} finally {
@@ -283,7 +281,7 @@ public class Reservation {
 							semaphoreUPD.acquireUninterruptibly(maxPermitsUDP);
 							semaphoreTCP.acquireUninterruptibly(maxPermitsTCP);
 							semaphorePermanentTCP.acquireUninterruptibly(maxPermitsPermanentTCP);
-							shutdownFuture().done();
+							futureReservationDone.done();
 						}
 					}
 				});
@@ -291,13 +289,6 @@ public class Reservation {
 			}
 		}
 		// wait for completion
-		return shutdownFuture();
-	}
-
-	/**
-	 * @return The shutdown future that is used when calling {@link #shutdown()}
-	 */
-	public FutureDone<Void> shutdownFuture() {
 		return futureReservationDone;
 	}
 

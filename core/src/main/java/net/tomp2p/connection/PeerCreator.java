@@ -153,7 +153,7 @@ public class PeerCreator {
 			for (PeerCreator peerCreator : childConnections) {
 				peerCreator.shutdown();
 			}
-			return shutdownFuture().done();
+			return futureServerDone.done();
 		}
 		// shutdown the timer
 		connectionBean.timer().shutdown();
@@ -171,7 +171,7 @@ public class PeerCreator {
 			}
 		});
 		// this is blocking
-		return shutdownFuture();
+		return futureServerDone;
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -185,18 +185,11 @@ public class PeerCreator {
 					        @Override
 					        public void operationComplete(final Future future) throws Exception {
 						        LOG.debug("shutdown done in client / bossGroup...");
-						        shutdownFuture().done();
+						        futureServerDone.done();
 					        }
 				        });
 			}
 		});
-	}
-
-	/**
-	 * @return The shutdown future that is used when calling {@link #shutdown()}
-	 */
-	public FutureDone<Void> shutdownFuture() {
-		return futureServerDone;
 	}
 
 	/**

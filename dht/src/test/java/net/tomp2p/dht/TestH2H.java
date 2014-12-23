@@ -7,6 +7,9 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.p2p.PeerBuilder;
@@ -307,6 +310,45 @@ public class TestH2H {
 		p2.shutdown().awaitUninterruptibly();
 	}
 
+	@Test
+	public void getFromToTest1() throws IOException, ClassNotFoundException {
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).start()).start();
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).start()).start();
+
+		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
+
+		String locationKey = "location";
+		String contentKey = "content";
+
+		List<H2HTestData> content = new ArrayList<H2HTestData>();
+		int numberOfContent = 3;
+		for (int i = 0; i < numberOfContent; i++) {
+			H2HTestData data = new H2HTestData(UUID.randomUUID().toString());
+			data.generateVersionKey();
+			if (i > 0) {
+				data.setBasedOnKey(content.get(i - 1).getVersionKey());
+			}
+			content.add(data);
+
+			p2.put(Number160.createHash(locationKey)).data(Number160.createHash(contentKey), new Data(data))
+					.versionKey(data.getVersionKey()).start().awaitUninterruptibly().awaitListenersUninterruptibly();
+		}
+
+		FutureGet future = p1
+				.get(Number160.createHash(locationKey))
+				.from(new Number640(Number160.createHash(locationKey), Number160.ZERO, Number160.createHash(contentKey),
+						Number160.ZERO))
+				.to(new Number640(Number160.createHash(locationKey), Number160.ZERO, Number160.createHash(contentKey),
+						Number160.MAX_VALUE)).descending().returnNr(1).start();
+		future.awaitUninterruptibly();
+		future.awaitListenersUninterruptibly();
+
+		Assert.assertEquals(content.get(numberOfContent - 1).getTestString(),
+				((H2HTestData) future.data().object()).getTestString());
+
+		p1.shutdown().awaitUninterruptibly();
+		p2.shutdown().awaitUninterruptibly();
+	}
 }
 
 class H2HTestData extends NetworkContent {
@@ -353,5 +395,14 @@ abstract class NetworkContent implements Serializable {
 
 	public void setBasedOnKey(Number160 versionKey) {
 		this.basedOnKey = versionKey;
+	}
+	
+	public void generateVersionKey() {
+		// re-attach version keys
+		basedOnKey = versionKey;
+		// increase counter
+		long counter = basedOnKey.timestamp() + 1;
+		// create new version key based on increased counter and hash
+		versionKey = new Number160(counter, new Number160(this.hashCode()).number96());
 	}
 }

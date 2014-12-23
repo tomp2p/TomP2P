@@ -179,8 +179,7 @@ public class Reservation {
 			futureChannelCreationDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 				@Override
 				public void operationComplete(final FutureDone<Void> future) throws Exception {
-					// release the permits in all cases, otherwise we may see
-					// inconsitencies
+					// release the permits in all cases, otherwise we may see inconsistencies
 					semaphoreUPD.release(permitsUDP);
 					semaphoreTCP.release(permitsTCP);
 				}

@@ -28,9 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Is able to send UDP messages (as a request) and processes incoming replies. It is important that this class handles
+ * Is able to send TCP and UDP messages (as a request) and processes incoming responses. It is important that this class handles
  * close() because if we shutdown the connections, then we need to notify the futures. In case of errors set the peer to
- * offline. A similar class is {@link RequestHandlerTCP}, which is used for TCP.
+ * offline.
  * 
  * @author Thomas Bocek
  * @param <K>
@@ -56,7 +56,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     private final int connectionTimeoutTCPMillis; // = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
 
     /**
-     * Creates a request handler that can send UDP messages.
+     * Creates a request handler that can send TCP and UDP messages.
      * 
      * @param futureResponse
      *            The future that will be called when we get an answer

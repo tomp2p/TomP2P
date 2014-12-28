@@ -418,26 +418,24 @@ public class StorageLayer implements DigestStorage {
 	public void checkTimeout() {
 		long time = System.currentTimeMillis();
 		Collection<Number640> toRemove = backend.subMapTimeout(time);
-		if (toRemove.size() > 0) {
-			for (Number640 key : toRemove) {
-				KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-				try {
-					backend.remove(key, false);
-					backend.removeTimeout(key);
-				} finally {
-					lock.unlock();
+		for (Number640 key : toRemove) {
+			KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+			try {
+				backend.remove(key, false);
+				backend.removeTimeout(key);
+			} finally {
+				lock.unlock();
+			}
+			// remove responsibility if we don't have any data stored under
+			// locationkey
+			Number160 locationKey = key.locationKey();
+			KeyLock<Number160>.RefCounterLock lock1 = dataLock160.lock(locationKey);
+			try {
+				if (isEmpty(locationKey)) {
+					backend.removeResponsibility(locationKey);
 				}
-				// remove responsibility if we don't have any data stored under
-				// locationkey
-				Number160 locationKey = key.locationKey();
-				KeyLock<Number160>.RefCounterLock lock1 = dataLock160.lock(locationKey);
-				try {
-					if (isEmpty(locationKey)) {
-						backend.removeResponsibility(locationKey);
-					}
-				} finally {
-					lock1.unlock();
-				}
+			} finally {
+				lock1.unlock();
 			}
 		}
 	}

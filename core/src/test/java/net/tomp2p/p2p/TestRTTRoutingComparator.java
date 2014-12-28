@@ -1,12 +1,20 @@
 package net.tomp2p.p2p;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.NavigableSet;
 
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureRouting;
+import net.tomp2p.message.Message;
+import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.RTT;
 
@@ -92,5 +100,74 @@ public class TestRTTRoutingComparator {
         Assert.assertEquals(queueToAsk.pollFirst().peerAddress(), peer2); // Dist 48 30ms RTT
     }
 
+    @Test
+    public void testRouting() throws IOException, InterruptedException {
+        Peer startPeer = null;
+        ChannelCreator cc = null;
+        try {
+            // Create Peer from which we start a routing request with the RTT comparator
+            Number160 peerID = new Number160("0x1");
+            PeerMapConfiguration peerMapConfiguration = new PeerMapConfiguration(peerID);
+            peerMapConfiguration.setPeerStatisticComparator(new RTTPeerStatisticComparator());
+            PeerMap peerMap = new PeerMap(peerMapConfiguration);
+            startPeer = new PeerBuilder(peerID).peerMap(peerMap).ports(4001).start();
+
+            // Create routing location and two peers
+            Number160 location =         new Number160("0xff0000");
+            Peer peer1 = new PeerBuilder(new Number160("0xffffff")).masterPeer(startPeer).start();
+            Peer peer2 = new PeerBuilder(new Number160("0xfff000")).masterPeer(startPeer).start();
+
+            // Make sure that both peers have the same bucket distance
+            Assert.assertEquals(0, PeerMap.classCloser(location, peer2.peerAddress(), peer1.peerAddress()));
+
+            // ... but peer2 is closer in the full XOR distance
+            Assert.assertEquals(-1, PeerMap.isKadCloser(location, peer2.peerAddress(), peer1.peerAddress()));
+
+            // Add the two peers with a slow and fast response time to the peer's PeerMap
+            startPeer.peerBean().peerMap().peerFound(peer2.peerAddress(), null, null, new RTT(100, true));
+            startPeer.peerBean().peerMap().peerFound(peer1.peerAddress(), null, null, new RTT(70, true));
+
+            // The peer1 has better RTT and should be the first in the queue of close peers to the location
+            NavigableSet<PeerStatistic> closePeers = startPeer.peerBean().peerMap().closePeers(location, 2);
+            Assert.assertEquals(closePeers.pollFirst().peerAddress(), peer1.peerAddress());
+            Assert.assertEquals(closePeers.pollFirst().peerAddress(), peer2.peerAddress());
+
+            // The peer2 gets an updated RTT (new average: 60ms)
+            startPeer.peerBean().peerMap().peerFound(peer2.peerAddress(), null, null, new RTT(10, true));
+
+            // ... and should now be the first in the queue since 60 ms < 70 ms
+            closePeers = startPeer.peerBean().peerMap().closePeers(location, 2);
+            Assert.assertEquals(closePeers.pollFirst().peerAddress(), peer2.peerAddress());
+            Assert.assertEquals(closePeers.pollFirst().peerAddress(), peer1.peerAddress());
+
+            // Start an actual routing
+            FutureChannelCreator fcc = startPeer.connectionBean().reservation().create(1, 0);
+            fcc.awaitUninterruptibly();
+            cc = fcc.channelCreator();
+            RoutingBuilder routingBuilder = new RoutingBuilder();
+            routingBuilder.locationKey(location);
+            routingBuilder.maxDirectHits(0);
+            routingBuilder.setMaxNoNewInfo(0);
+            routingBuilder.maxFailures(0);
+            routingBuilder.maxSuccess(1); // Only allow 1 success
+            routingBuilder.parallel(1);   // ... and 1 request at a time
+            FutureRouting fr = startPeer.distributedRouting().route(routingBuilder, Message.Type.REQUEST_1, cc);
+            fr.awaitUninterruptibly();
+
+            // Best hit is the faster peer (peer2)
+            Assert.assertEquals(peer2.peerAddress(), fr.potentialHits().pollFirst() );
+
+            // The startPeer should only have contacted peer2 and not peer1 (because of maxSuccess=1, parallel=1)
+            Assert.assertTrue(peer2.peerBean().peerMap().containsOverflow(startPeer.peerAddress()));
+            Assert.assertFalse(peer1.peerBean().peerMap().containsOverflow(startPeer.peerAddress()));
+
+
+        } finally {
+            cc.shutdown().await();
+            startPeer.shutdown().awaitUninterruptibly();
+        }
+
+
+    }
 
 }

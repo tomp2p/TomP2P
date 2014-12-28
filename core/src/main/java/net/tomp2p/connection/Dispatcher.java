@@ -61,17 +61,18 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     private final PeerBean peerBeanMaster;
     private final int heartBeatMillis;
 
-    /** copy on write map. The key {@link Number320} can be devided into two parts: first {@link Number160} is the peerID that registers,
-     * the second {@link Number160} the peerID for which the ioHandler is registered. For example a relay peer can register a handler
-     * on behalf of another peer.
+    /** Copy on write map. The key {@link Number320} can be divided into two parts: 
+     * - first {@link Number160} is the peerID that registers
+     * - second {@link Number160} the peerID for which the ioHandler is registered
+     * For example, a relay peer can register a handler on behalf of another peer.
      */
     private volatile Map<Number320, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number320, Map<Integer, DispatchHandler>>();
 
     /**
-     * Constructor.
+     * Creates a dispatcher.
      * 
      * @param p2pID
-     *            the p2p ID the dispatcher is looking for in messages
+     *            The P2P ID the dispatcher is looking for incoming messages
      * @param peerBean
      *            .
      */
@@ -84,19 +85,19 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     /**
      * Registers a handler with this dispatcher. Future received messages adhering to the given parameters will be
      * forwarded to that handler. Note that the dispatcher only handles REQUEST messages. This method is thread-safe,
-     * and uses copy on write as its expected to run this only during initialization.
+     * and uses copy on write as it is expected to run this only during initialization.
      * 
      * @param peerId
      *            Specifies the receiver the dispatcher filters for. This allows to use one dispatcher for several
      *            interfaces or even nodes.
      * @param onBehalfOf
-     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
+     * 			  The ioHandler can be registered for the own use in behalf of another peer. (E.g., in case of a relay node.)
      * @param ioHandler
-     *            the handler which should process the given type of messages
+     *            The handler which should process the given type of messages
      * @param names
      *            The command of the {@link Message} the given handler processes. All messages having that command will
-     *            be forwarded to the given handler.<br />
-     *            <b>Note:</b> If you register multiple handlers with the same command, only the last registered handler
+     *            be forwarded to the given handler.<br/>
+     *            <b>Note:</b> If you reg ister multiple handlers with the same command, only the last registered handler
      *            will receive these messages!
      */
     public void registerIoHandler(final Number160 peerId, final Number160 onBehalfOf, final DispatchHandler ioHandler, final int... names) {
@@ -119,9 +120,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @param peerId
      *            The Id of the peer to remove the handlers .
      * @param onBehalfOf
-     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
+     * 			  The ioHandler can be registered for the own use in behalf of another peer (e.g. in case of relay node).
      */
-    public void removeIoHandler(final Number160 peerId, final Number160 onBehalfOf) {
+    public void removeIoHandlers(final Number160 peerId, final Number160 onBehalfOf) {
         Map<Number320, Map<Integer, DispatchHandler>> copy = new HashMap<Number320, Map<Integer, DispatchHandler>>(ioHandlers);
         copy.remove(new Number320(peerId, onBehalfOf));
         ioHandlers = Collections.unmodifiableMap(copy);
@@ -333,7 +334,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @return
      */
     public Map<Number320, DispatchHandler> searchHandler(final Integer command) {
+    	
     	Map<Number320, DispatchHandler> result = new HashMap<Number320, DispatchHandler>();
+    	
     	for(Map.Entry<Number320, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
     		for(Map.Entry<Integer, DispatchHandler> entry2:entry.getValue().entrySet()) {
     			DispatchHandler handlerh = entry.getValue().get(command);

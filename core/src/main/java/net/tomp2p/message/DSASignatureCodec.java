@@ -42,8 +42,9 @@ public class DSASignatureCodec implements SignatureCodec {
 		this.number2 = number2;
 	}
 
-	/* (non-Javadoc)
-	 * @see net.tomp2p.message.SignatureCodec#decode(byte[])
+	/**
+	 * @return ASN1 encoded signature
+	 * @throws IOException
 	 */
 	@Override
     public DSASignatureCodec decode(byte[] encodedData) throws IOException {

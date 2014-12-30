@@ -8,10 +8,6 @@ public interface SignatureCodec {
 
 	SignatureCodec decode(byte[] encodedData) throws IOException;
 
-	/**
-	 * @return ASN1 encoded signature
-	 * @throws IOException
-	 */
 	byte[] encode() throws IOException;
 
 	SignatureCodec write(ByteBuf buf);

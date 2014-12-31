@@ -78,9 +78,6 @@ public class TestH2H {
 			        .keyPair(keyPair).start();
 			futurePut1.awaitUninterruptibly();
 			Assert.assertTrue(futurePut1.isSuccess());
-
-		} catch (Throwable t) {
-			Assert.fail("no reason to fail");
 		} finally {
 			if (p1 != null) {
 				p1.shutdown().awaitUninterruptibly();

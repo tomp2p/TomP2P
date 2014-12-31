@@ -351,6 +351,24 @@ public class TestMessage {
 		Message m2 = encodeDecode(m1);
 		compareMessage(m1, m2);
 	}
+	
+	@Test
+	public void testBigDataSigned() throws Exception {
+		final int size = 50 * 1024 * 1024;
+		Random rnd = new Random(42);
+		Message m1 = Utils2.createDummyMessage();
+		
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair pair1 = gen.generateKeyPair();
+		m1.publicKeyAndSign(pair1);
+
+		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		Data data = new Data(new byte[size]);
+		dataMap.put(new Number640(rnd), data);
+		m1.setDataMap(new DataMap(dataMap));
+		Message m2 = encodeDecode(m1);
+		compareMessage(m1, m2);
+	}
 
 	@Test
 	public void testEncodeDecode480Map() throws Exception { // encode
@@ -544,7 +562,7 @@ public class TestMessage {
 				.sender().createSocketTCP());
 		return decoder.message();
 	}
-
+	
 	/**
 	 * Mock Nettys ChannelHandlerContext with the minimal functions.
 	 * 

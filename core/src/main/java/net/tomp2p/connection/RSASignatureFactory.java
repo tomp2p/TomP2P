@@ -101,8 +101,7 @@ public class RSASignatureFactory implements SignatureFactory {
 		
 		byte[] signatureData = signature.sign();
 
-		SignatureCodec decodedSignature = new RSASignatureCodec();
-		decodedSignature.decode(signatureData);
+		SignatureCodec decodedSignature = new RSASignatureCodec(signatureData);
 		return decodedSignature;
 	}
 
@@ -134,7 +133,7 @@ public class RSASignatureFactory implements SignatureFactory {
 	}
 
 	@Override
-    public SignatureCodec signatureCodec() {
-	    return new RSASignatureCodec();
+    public SignatureCodec signatureCodec(ByteBuf buf) throws IOException {
+	    return new RSASignatureCodec(buf);
     }
 }

@@ -586,14 +586,12 @@ public class Decoder {
 			}
 		}
 		if (message.isSign()) {
-			SignatureCodec signatureEncode = signatureFactory.signatureCodec();
-			size = signatureEncode.signatureSize();
-			if (buf.readableBytes() < size) {
+			try {
+				SignatureCodec signatureEncode = signatureFactory.signatureCodec(buf);
+				message.receivedSignature(signatureEncode);
+			} catch (IOException e) {
 				return false;
 			}
-			
-			signatureEncode.read(buf);
-			message.receivedSignature(signatureEncode);
 		}
 		return true;
 	}

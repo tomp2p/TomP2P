@@ -342,11 +342,11 @@ public class Data {
 	
 	public boolean decodeDone(final ByteBuf buf, SignatureFactory signatureFactory) {
 		if (signed) {
-			signature = signatureFactory.signatureCodec();
-			if(buf.readableBytes() < signature.signatureSize()) {
+			try {
+				signature = signatureFactory.signatureCodec(buf);
+			} catch (IOException e) {
 				return false;
 			}
-			signature.read(buf);
 		}
 		return true;
 	}
@@ -356,11 +356,12 @@ public class Data {
 			if(publicKey == PeerBuilder.EMPTY_PUBLIC_KEY) {
 				this.publicKey = publicKey;	
 			}
-			signature = signatureFactory.signatureCodec();
-			if(buf.readableBytes() < signature.signatureSize()) {
+			
+			try {
+				signature = signatureFactory.signatureCodec(buf);
+			} catch (IOException e) {
 				return false;
 			}
-			signature.read(buf);
 		}
 		return true;
 	}

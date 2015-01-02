@@ -303,7 +303,6 @@ public class Data {
 			//get public key
 			buf.skipBytes(indexPublicKeySize);
 			publicKey = signatureFactory.decodePublicKey(buf);
-			
 		} else {
 			publicKeySize = 0;
 			indexPublicKey = indexPublicKeySize;

@@ -34,7 +34,7 @@ public class RSASignatureCodec implements SignatureCodec {
 	}
 
 	@Override
-	public byte[] encode() throws IOException {
+	public byte[] encode() {
 		// no decoding necessary
 		return encodedData;
 	}

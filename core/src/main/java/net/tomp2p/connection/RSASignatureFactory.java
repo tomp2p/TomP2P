@@ -107,7 +107,7 @@ public class RSASignatureFactory implements SignatureFactory {
 
 	@Override
 	public boolean verify(PublicKey publicKey, ByteBuf buf, SignatureCodec signatureEncoded)
-			throws SignatureException, InvalidKeyException, IOException {
+			throws SignatureException, InvalidKeyException {
 		Signature signature = signatureInstance();
 		signature.initVerify(publicKey);
 		ByteBuffer[] byteBuffers = buf.nioBuffers();

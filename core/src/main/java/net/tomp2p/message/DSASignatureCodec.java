@@ -94,10 +94,9 @@ public class DSASignatureCodec implements SignatureCodec {
 
 	/**
 	 * @return ASN1 encoded signature
-	 * @throws IOException
 	 */
 	@Override
-    public byte[] encode() throws IOException {
+    public byte[] encode() {
 		byte me[] = new byte[2 + (2 * (20 + 2))];
 		me[0] = 0x30;
 		me[1] = 2 * (20 + 2);

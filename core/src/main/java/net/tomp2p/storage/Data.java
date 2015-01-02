@@ -366,11 +366,11 @@ public class Data {
 		return true;
 	}
 
-	public boolean verify(SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public boolean verify(SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException {
 		return verify(publicKey, signatureFactory);
 	}
 
-	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException {
 		return signatureFactory.verify(publicKey, buffer.toByteBuf(), signature);
 	}
 

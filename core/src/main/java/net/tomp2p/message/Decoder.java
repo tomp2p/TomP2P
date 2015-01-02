@@ -140,7 +140,7 @@ public class Decoder {
 		}
 	}
 	
-	public void decodeSignature(final ByteBuf buf, final int readerBefore, final boolean donePayload) throws InvalidKeyException, SignatureException, IOException {
+	public void decodeSignature(final ByteBuf buf, final int readerBefore, final boolean donePayload) throws InvalidKeyException, SignatureException {
 		final int readerAfter = buf.readerIndex();
 		final int len = readerAfter - readerBefore;
 		if(len > 0) {
@@ -149,7 +149,7 @@ public class Decoder {
 	}
 
 	private void verifySignature(final ByteBuf buf, final int readerBefore, final int len, final boolean donePayload)
-	        throws SignatureException, IOException, InvalidKeyException {
+	        throws SignatureException, InvalidKeyException {
 
 		if (!message.isSign()) {
 			return;

@@ -55,7 +55,7 @@ public interface SignatureFactory extends Serializable {
 	SignatureCodec sign(PrivateKey privateKey, ByteBuf buf) throws InvalidKeyException, SignatureException, IOException;
 
 	boolean verify(PublicKey publicKey, ByteBuf buf, SignatureCodec signatureEncoded) throws SignatureException,
-			InvalidKeyException, IOException;
+			InvalidKeyException;
 
 	Signature update(PublicKey publicKey, ByteBuffer[] byteBuffers) throws InvalidKeyException, SignatureException;
 

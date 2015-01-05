@@ -146,14 +146,26 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	public Enum<?> put(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-	        boolean domainProtection) {
+	        boolean domainProtection, boolean sendSelf) {
 		boolean retVal = false;
 		KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(key.locationAndDomainAndContentKey());
 		try {
 			if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
 				return PutStatus.FAILED_SECURITY;
 			}
-			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, newData.publicKey(),
+			
+			// We need this check in case we did not use the encoder/deconder,
+			// which is the case if we send the message to ourself. In that
+			// case, the public key of the data is never set to the message
+			// publick key, if the publick key of the data was null.
+			final PublicKey dataKey;
+			if(sendSelf && newData.publicKey() == null) {
+				dataKey = publicKey;
+			} else {
+				dataKey = newData.publicKey();
+			}
+			
+			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, dataKey,
 			        newData.isProtectedEntry())) {
 				return PutStatus.FAILED_SECURITY;
 			}

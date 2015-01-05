@@ -97,7 +97,7 @@ public class TestStorageDHT {
             SimpleBloomFilter<Number160> bf = new SimpleBloomFilter<Number160>(20, 10);
             for (int i = 0; i < 10; i++) {
                 Number640 key = new Number640(new Number160(0x1), Number160.ZERO, Number160.createHash(i), Number160.ZERO);
-                sender.storageLayer().put(key, new Data("test"), null, false, false);
+                sender.storageLayer().put(key, new Data("test"), null, false, false, false);
                 bf.add(Number160.createHash(i));
             }
 

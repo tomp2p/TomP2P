@@ -24,18 +24,18 @@ import java.util.Random;
  */
 public class Ports {
    
-    // The number of maximum ports, 2^16.
+    // The maximal port number, 2^16.
     public static final int MAX_PORT = 65535;
     //IANA recommends to use ports higher than 49152.
     public static final int MIN_DYN_PORT = 49152;
     // The default port of TomP2P.
     public static final int DEFAULT_PORT = 7700;
-    // IANA recommends to use ports higher than 49152
+    
     private static final int RANGE = MAX_PORT - MIN_DYN_PORT;
     private static final Random RND = new Random();
 
-    // provide this information if you know your mapping beforehand, i.e. manual
-    // port-forwarding
+    // provide this information if you know your mapping beforehand
+    // i.e., manual port-forwarding
     private final int tcpPort;
     private final int udpPort;
     private final boolean randomPorts;
@@ -48,20 +48,9 @@ public class Ports {
     }
 
     /**
-     * Creates a Binding class that binds to a specified protocol and provides
-     * information about manual port forwarding.
-     * 
-     * @param protocol
-     *            The protocol to bind to
-     * @param externalAddress
-     *            The external address, how other peers will see us. Use null if
-     *            you don't want to use external address
-     * @param externalTCPPort
-     *            The external port, how other peers will see us, if 0 is
-     *            provided, a random port will be used
-     * @param externalUDPPort
-     *            The external port, how other peers will see us, if 0 is
-     *            provided, a random port will be used
+     * Creates a Ports class that stores port information.
+     * @param tcpPort The external TCP port, how other peers will see us. If the provided port is < 0, a random port will be used.
+     * @param udpPort The external UDP port, how other peers will see us. If the provided port is < 0, a random port will be used.
      */
     public Ports(final int tcpPort, final int udpPort) {
     	this.randomPorts = tcpPort < 0 && udpPort < 0;
@@ -70,28 +59,25 @@ public class Ports {
     }
 
     /**
-     * @return Returns the external port, how other peers see us
+     * @return The external TCP port, how other peers see us.
      */
     public int tcpPort() {
         return tcpPort;
     }
 
     /**
-     * @return Returns the external port, how other peers see us
+     * @return The external UDP port, how other peers see us.
      */
     public int udpPort() {
         return udpPort;
     }
 
     /**
-     * @return True if the user specified both ports in advance. This tells us
+     * @return True, if the user specified both ports in advance. This tells us
      *         that the user knows about the ports and did a manual
      *         port-forwarding.
      */
     public boolean isManualPort() {
-        // set setExternalPortsManually to true if the user specified both ports
-        // in advance. This tells us that the user knows about the ports and did
-        // a manual port-forwarding.
         return !randomPorts;
     }
 }

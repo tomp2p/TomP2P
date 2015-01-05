@@ -71,6 +71,14 @@ public class HolePuncher {
 
 		LOG.trace("new HolePuncher created, originalMessage {}", originalMessage.toString());
 	}
+	
+	@SuppressWarnings("unused")
+	private HolePuncher() {
+		peer = null;
+		originalMessage = null;
+		numberOfHoles = -1;
+		idleUDPSeconds = -1;
+	};
 
 	/*
 	 * ===================== shared methods =====================

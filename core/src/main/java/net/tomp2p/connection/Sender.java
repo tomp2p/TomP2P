@@ -463,20 +463,20 @@ public class Sender {
 	}
 
 	/**
-	 * Send a message via UDP.
+	 * Sends a message via UDP.
 	 * 
 	 * @param handler
-	 *            The handler to deal with a reply message
+	 *            The handler to deal with a response message
 	 * @param futureResponse
 	 *            The future to set the response
 	 * @param message
 	 *            The message to send
 	 * @param channelCreator
-	 *            The channel creator for the UPD channel
+	 *            The channel creator for the UDP channel
 	 * @param idleUDPSeconds
-	 *            The idle time of a message until we fail
+	 *            The idle time of a message until fail
 	 * @param broadcast
-	 *            True to send via layer 2 broadcast
+	 *            True, if the message is to be sent via layer 2 broadcast
 	 */
 	// TODO: if message.getRecipient() is me, than call dispatcher directly
 	// without sending over Internet.
@@ -518,7 +518,7 @@ public class Sender {
 		if (message.recipient().isRelayed() && message.command() != RPC.Commands.NEIGHBOR.getNr()
 		        && message.command() != RPC.Commands.PING.getNr()) {
 			LOG.warn(
-			        "Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}",
+			        "Tried to send a UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}",
 			        message);
 			futureResponse
 			        .failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
@@ -527,7 +527,7 @@ public class Sender {
 			if (message.recipient().isRelayed()) {
 
 				List<PeerSocketAddress> psa = new ArrayList<>(message.recipient().peerSocketAddresses());
-				LOG.debug("send neighbor request to random relay peer {}", psa);
+				LOG.debug("Send neighbor request to random relay peer {}.", psa);
 				if (psa.size() > 0) {
 					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
 					message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
@@ -574,8 +574,9 @@ public class Sender {
 	 */
 	private void afterConnect(final FutureResponse futureResponse, final Message message,
 	        final ChannelFuture channelFuture, final boolean fireAndForget) {
+		// check if channel could be created due to resource constraints
 		if (channelFuture == null) {
-			futureResponse.failed("Could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel.");
+			futureResponse.failed("Could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel. (Due to resource contraints.)");
 			return;
 		}
 		LOG.debug("About to connect to {} with channel {}, ff={}.", message.recipient(), channelFuture.channel(), fireAndForget);
@@ -632,7 +633,7 @@ public class Sender {
 				if (!future.isSuccess()) {
 					futureResponse.failedLater(future.cause());
 					reportFailed(futureResponse, future.channel().close());
-					LOG.warn("Failed to write channel the request {} {}", futureResponse.request(), future.cause());
+					LOG.warn("Failed to write channel the request {} {}.", futureResponse.request(), future.cause());
 				}
 				if (fireAndForget) {
 					futureResponse.responseLater(null);

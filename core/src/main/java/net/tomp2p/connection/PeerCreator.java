@@ -66,7 +66,7 @@ public class PeerCreator {
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
 	/**
-	 * Creates a master peer and starts UPD and TCP channels.
+	 * Creates a master peer and starts UDP and TCP channels.
 	 * 
 	 * @param p2pId
 	 *            The id of the network

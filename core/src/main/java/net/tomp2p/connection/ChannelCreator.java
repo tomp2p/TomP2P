@@ -90,7 +90,7 @@ public class ChannelCreator {
 
 	/**
 	 * Package private constructor, since this is created by
-	 * {@link ConnectionReservation} and should never be called directly.
+	 * {@link Reservation} and should never be called directly.
 	 * 
 	 * @param workerGroup
 	 *            The worker group for netty that is shared between TCP and UDP.
@@ -121,9 +121,6 @@ public class ChannelCreator {
 	/**
 	 * Creates a "channel" to the given address. This won't send any message
 	 * unlike TCP.
-	 * 
-	 * @param recipient
-	 *            The recipient of the a message
 	 * 
 	 * @param broadcast
 	 *            Sets this channel to be able to broadcast
@@ -237,7 +234,7 @@ public class ChannelCreator {
 	}
 
 	/**
-	 * When a channel is closed, the semaphore is released an other channel can
+	 * When a channel is closed, the semaphore is released and an other channel can
 	 * be created. Also the lock for the channel creating is beining released.
 	 * This means that the channelcreator can be shutdown.
 	 * 

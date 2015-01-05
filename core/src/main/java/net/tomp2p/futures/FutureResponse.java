@@ -218,7 +218,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     }
 
     /**
-     * Set the user based progres handler, where the user can add more data and call {@link #progress()} when data has
+     * Set the user based progress handler, where the user can add more data and call {@link #progress()} when data has
      * been added.
      * 
      * @param progressHandler

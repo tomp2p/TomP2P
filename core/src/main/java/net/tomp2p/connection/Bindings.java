@@ -30,7 +30,7 @@ import java.util.List;
  * connections and 2.) how other peers see us. The default is to listen to all
  * interfaces and our outside address is set to the first interface it finds. If
  * more than one search hint is used, then the combination operation will be
- * "and"
+ * "and".
  * 
  * @author Thomas Bocek
  */

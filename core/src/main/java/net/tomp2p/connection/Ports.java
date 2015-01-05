@@ -18,7 +18,7 @@ package net.tomp2p.connection;
 import java.util.Random;
 
 /**
- * Store port information. 
+ * Stores port information. 
  * 
  * @author Thomas Bocek
  */

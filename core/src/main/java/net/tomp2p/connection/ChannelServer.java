@@ -83,11 +83,11 @@ public final class ChannelServer {
 	 * Sets parameters and starts network device discovery.
 	 * 
 	 * @param channelServerConfiguration
-	 *            The server configuration, that contains e.g. the handlers
+	 *            The server configuration that contains e.g. the handlers
 	 * @param dispatcher
 	 *            The shared dispatcher
 	 * @param peerStatusListeners
-	 *            The status listener for offline peers
+	 *            The status listeners for offline peers
 	 * @throws IOException
 	 *             If device discovery failed.
 	 */
@@ -127,30 +127,30 @@ public final class ChannelServer {
 			final boolean listenAll = interfaceBindings.isListenAll();
 			if (listenAll) {
 				if (LOG.isInfoEnabled()) {
-					LOG.info("Listening for broadcasts on port udp: "
-					        + channelServerConfiguration.ports().udpPort() + " and tcp:"
+					LOG.info("Listening for broadcasts on UDP port "
+					        + channelServerConfiguration.ports().udpPort() + " and TCP port "
 					        + channelServerConfiguration.ports().tcpPort());
 				}
 				if (!startupTCP(new InetSocketAddress(channelServerConfiguration.ports().tcpPort()),
 				        channelServerConfiguration)
 				        || !startupUDP(new InetSocketAddress(channelServerConfiguration.ports().udpPort()),
 				                channelServerConfiguration)) {
-					LOG.warn("cannot bind TCP or UDP");
+					LOG.warn("Cannot bind TCP or UDP.");
 					return false;
 				}
 
 			} else {
 				for (InetAddress addr : interfaceBindings.foundAddresses()) {
 					if (LOG.isInfoEnabled()) {
-						LOG.info("Listening on address: " + addr + " on port udp: "
-						        + channelServerConfiguration.ports().udpPort() + " and tcp:"
+						LOG.info("Listening on address " + addr + ", UDP port "
+						        + channelServerConfiguration.ports().udpPort() + ", TCP port"
 						        + channelServerConfiguration.ports().tcpPort());
 					}
 					if (!startupTCP(new InetSocketAddress(addr, channelServerConfiguration.ports().tcpPort()),
 					        channelServerConfiguration)
 					        || !startupUDP(new InetSocketAddress(addr, channelServerConfiguration.ports()
 					                .udpPort()), channelServerConfiguration)) {
-						LOG.warn("cannot bind TCP or UDP");
+						LOG.warn("Cannot bind TCP or UDP.");
 						return false;
 					}
 				}
@@ -160,15 +160,15 @@ public final class ChannelServer {
 	}
 
 	/**
-	 * Start to listen on a UPD port.
+	 * Starts to listen on a UDP port.
 	 * 
-	 * @param listenAddresses
+	 * @param listenAddress
 	 *            The address to listen to
 	 * @param config
 	 *            Can create handlers to be attached to this port
 	 * @return True if startup was successful
 	 */
-	boolean startupUDP(final InetSocketAddress listenAddresses, final ChannelServerConfiguration config) {
+	boolean startupUDP(final InetSocketAddress listenAddress, final ChannelServerConfiguration config) {
 		Bootstrap b = new Bootstrap();
 		b.group(workerGroup);
 		b.channel(NioDatagramChannel.class);
@@ -188,21 +188,21 @@ public final class ChannelServer {
 			}
 		});
 
-		ChannelFuture future = b.bind(listenAddresses);
+		ChannelFuture future = b.bind(listenAddress);
 		channelUDP = future.channel();
 		return handleFuture(future);
 	}
 
 	/**
-	 * Start to listen on a TCP port.
+	 * Starts to listen on a TCP port.
 	 * 
-	 * @param listenAddresses
+	 * @param listenAddress
 	 *            The address to listen to
 	 * @param config
 	 *            Can create handlers to be attached to this port
 	 * @return True if startup was successful
 	 */
-	boolean startupTCP(final InetSocketAddress listenAddresses, final ChannelServerConfiguration config) {
+	boolean startupTCP(final InetSocketAddress listenAddress, final ChannelServerConfiguration config) {
 		ServerBootstrap b = new ServerBootstrap();
 		b.group(bossGroup, workerGroup);
 		b.channel(NioServerSocketChannel.class);
@@ -221,7 +221,7 @@ public final class ChannelServer {
 				}
 			}
 		});
-		ChannelFuture future = b.bind(listenAddresses);
+		ChannelFuture future = b.bind(listenAddress);
 		channelTCP = future.channel();
 		return handleFuture(future);
 	}

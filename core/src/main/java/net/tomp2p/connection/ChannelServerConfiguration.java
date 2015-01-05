@@ -18,7 +18,7 @@ package net.tomp2p.connection;
 
 
 /**
- * The the configuration for the server.
+ * The configuration for the server.
  * 
  * @author Thomas Bocek
  * 
@@ -59,7 +59,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
 
     /**
      * @param behindFirewall
-     *            Set to true if this peer is behind a firewall and cannot be accessed directly
+     *            Set to true if this peer is behind a firewall and not directly accessable
      * @return This class
      */
     public ChannelServerConfiguration behindFirewall(final boolean behindFirewall) {
@@ -68,25 +68,25 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * Set peer to be behind a firewall and cannot be accessed directly.
+     * Sets peer to be behind a firewall and cannot be accessed directly.
      * 
      * @return This class
      */
     public ChannelServerConfiguration behindFirewall() {
-        this.behindFirewall = true;
-        return this;
+        return behindFirewall(true);
     }
 
     /**
-     * @return True if the bind to ports should be omited
+     * @return True if the bind to ports should be omitted
      */
     public boolean isDisableBind() {
         return disableBind;
     }
 
     /**
+     * Set to true if the bind to ports should be omitted
      * @param disableBind
-     *            Set to true if the bind to ports should be omited
+     *            
      * @return This class
      */
     public ChannelServerConfiguration disableBind(final boolean disableBind) {
@@ -95,17 +95,16 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * Set the bind to ports should be omited.
+     * Sets that the bind to ports should be omitted.
      * 
      * @return This class
      */
     public ChannelServerConfiguration disableBind() {
-        this.disableBind = true;
-        return this;
+        return disableBind(true);
     }
 
     /**
-     * @return The time that a connection can be idle before its considered not active for short-lived connections
+     * @return The time that a connection can be idle before it is considered not active for short-lived connections
      */
     public int idleTCPSeconds() {
         return idleTCPSeconds;
@@ -156,7 +155,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * @return Set the factory for the signature
+     * @return The factory for the signature
      */
     public SignatureFactory signatureFactory() {
         return signatureFactory;
@@ -193,8 +192,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     public ChannelServerConfiguration forceTCP() {
-        this.forceTCP = true;
-        return this;
+        return forceTCP(true);
     }
 
     @Override
@@ -208,8 +206,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     public ChannelServerConfiguration forceUDP() {
-        this.forceUDP = true;
-        return this;
+        return forceUDP(true);
     }
 
     public Ports portsForwarding() {

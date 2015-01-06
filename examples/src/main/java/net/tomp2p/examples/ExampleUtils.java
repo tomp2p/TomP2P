@@ -18,8 +18,8 @@ package net.tomp2p.examples;
 import java.io.IOException;
 import java.util.Random;
 
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -43,7 +43,7 @@ public class ExampleUtils {
     	//make perfect bootstrap, the regular can take a while
     	for(int i=0;i<peers.length;i++) {
     		for(int j=0;j<peers.length;j++) {
-    			peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
+    			peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null, null);
     		}
     	}
     }
@@ -52,7 +52,7 @@ public class ExampleUtils {
     	//make perfect bootstrap, the regular can take a while
     	for(int i=0;i<peers.length;i++) {
     		for(int j=0;j<peers.length;j++) {
-    			peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
+    			peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null, null);
     		}
     	}
     }

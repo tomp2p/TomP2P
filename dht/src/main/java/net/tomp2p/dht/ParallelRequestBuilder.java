@@ -58,10 +58,10 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
 
     public ParallelRequestBuilder<K> add(PeerAddress peerAddress) {
         if (directHits == null) {
-        	directHits = new TreeSet<PeerAddress>(peer.peer().peerBean().peerMap().createComparator());
+        	directHits = new TreeSet<PeerAddress>(peer.peer().peerBean().peerMap().createXORAddressComparator());
         }
         if (potentialHits == null) {
-        	potentialHits = new TreeSet<PeerAddress>(peer.peer().peerBean().peerMap().createComparator());
+        	potentialHits = new TreeSet<PeerAddress>(peer.peer().peerBean().peerMap().createXORAddressComparator());
         }
         potentialHits.add(peerAddress);
         return this;

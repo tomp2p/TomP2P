@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 
 import net.tomp2p.connection.ProgresHandler;
 import net.tomp2p.message.Message;
+import net.tomp2p.peers.RTT;
 
 /**
  * Each response has one request messages. The corresponding response message is set only if the request has been
@@ -45,6 +46,8 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     private final CountDownLatch secondProgressHandler = new CountDownLatch(1);
     
     private boolean reponseLater = false;
+
+    private final RTT roundTripTime = new RTT();
 
     /**
      * Create the future and set the request message.
@@ -279,11 +282,35 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
             }
         }
     }
+
+    /**
+     * Start measuring time until reply is recieved
+     *
+     * @return True if time has successfully been started
+     *         False if measurement already has been stopped
+     */
+    public boolean startRTTMeasurement(boolean isUDP) {
+        return getRoundTripTime().beginTimeMeasurement(isUDP);
+    }
+
+    /**
+     * Stops time measurement for the round trip time
+     *
+     * @return True if some valid time was recorded, False if time has not yet
+     *         been started or already been stopped
+     */
+    public boolean stopRTTMeasurement() {
+        return getRoundTripTime().stopTimeMeasurement();
+    }
     
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("future response state:");
         sb.append(",type:").append(type.name()).append(",msg:").append(requestMessage.command()).append(",reason:").append(reason);
         return sb.toString();
+    }
+
+    public RTT getRoundTripTime() {
+        return roundTripTime;
     }
 }

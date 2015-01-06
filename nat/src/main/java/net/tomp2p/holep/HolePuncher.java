@@ -456,7 +456,7 @@ public class HolePuncher {
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 			// this is a workaround to avoid adding a nat peer to the offline
 			// list of a peer!
-			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null);
+			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null, null);
 		}
 	}
 }

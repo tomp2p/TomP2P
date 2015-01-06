@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.cedarsoftware.util.DeepEquals;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.message.Message.Content;
@@ -65,8 +66,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import com.cedarsoftware.util.DeepEquals;
 
 /**
  * Tests encoding of an empty message. These tests should not be used for

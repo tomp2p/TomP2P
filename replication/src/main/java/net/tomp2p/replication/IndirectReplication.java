@@ -37,6 +37,7 @@ import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
 import net.tomp2p.synchronization.PeerSync;
 import net.tomp2p.utils.Utils;
@@ -342,13 +343,13 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
     protected List<PeerAddress> send(final Number160 locationKey, final Map<Number640, Data> dataMapConverted) {
         int replicationFactor = replication.replicationFactor() - 1;
         List<PeerAddress> closePeers = new ArrayList<PeerAddress>();
-        SortedSet<PeerAddress> sortedSet = peer.peerBean().peerMap()
+        SortedSet<PeerStatistic> sortedSet = peer.peerBean().peerMap()
                 .closePeers(locationKey, replicationFactor);
         int count = 0;
-        for (PeerAddress peerAddress : sortedSet) {
+        for (PeerStatistic peerStatistic : sortedSet) {
             count++;
-            closePeers.add(peerAddress);
-            replicationSender.sendDirect(peerAddress, locationKey, dataMapConverted);
+            closePeers.add(peerStatistic.peerAddress());
+            replicationSender.sendDirect(peerStatistic.peerAddress(), locationKey, dataMapConverted);
             if (count == replicationFactor) {
                 break;
             }

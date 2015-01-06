@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
@@ -21,6 +22,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.RTT;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.RPC;
@@ -71,7 +73,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	}
 
 	@Override
-	public final boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
+	public final boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection, RTT roundTripTime) {
 		if (referrer == null || remotePeer.equals(referrer)) {
 			// if firsthand (referrer is null), then full trust.
 			// if second hand and a stable peerconnection, we can trust as well
@@ -137,7 +139,6 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * and return a response as soon as possible.
 	 * 
 	 * @param message the message that is intended for the unreachable peer
-	 * @param sender the requester
 	 * @return the response to the requester
 	 */
 	public abstract FutureDone<Message> forwardToUnreachable(Message message);
@@ -147,7 +148,6 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * 
 	 * @param message
 	 * @param responder
-	 * @param sender
 	 */
 	private void handlePing(Message message, Responder responder) {
 		Message response = createResponseMessage(message, isAlive() ? Type.OK : Type.EXCEPTION, unreachablePeerAddress());
@@ -166,7 +166,6 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * 
 	 * @param message
 	 * @param responder
-	 * @param sender
 	 */
 	private void handleNeigbhor(final Message message, Responder responder) {
 		if (message.keyList().size() < 2) {
@@ -208,7 +207,12 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		if (peerMap == null) {
 			return null;
 		} else {
-			return PeerMap.closePeers(unreachablePeerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
+            SortedSet<PeerStatistic> closePeers =  PeerMap.closePeers(unreachablePeerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap, null);
+            SortedSet<PeerAddress> result = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(id));
+            for (PeerStatistic p : closePeers) {
+                result.add(p.peerAddress());
+            }
+            return result;
 		}
 	}
 

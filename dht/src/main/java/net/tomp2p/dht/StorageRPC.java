@@ -724,7 +724,7 @@ public class StorageRPC extends DispatchHandler {
         final int dataSize = toStore.size();
         final Map<Number640, Byte> result = new HashMap<Number640, Byte>(dataSize);
         for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
-            Enum<?> putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(), entry.getValue());
+            Enum<?> putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(), entry.getValue(), message.isSendSelf());
             result.put(entry.getKey(), (byte) putStatus.ordinal());
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
@@ -779,7 +779,7 @@ public class StorageRPC extends DispatchHandler {
         // peer.
 
         for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
-            Enum<?> status = doAdd(protectDomain, entry, publicKey, list, storageLayer, peerBean().serverPeerAddress());
+            Enum<?> status = doAdd(protectDomain, entry, publicKey, list, storageLayer, peerBean().serverPeerAddress(), message.isSendSelf());
             result.put(entry.getKey(), (byte) status.ordinal());
 
             // check the responsibility of the newly added data, do something
@@ -797,13 +797,13 @@ public class StorageRPC extends DispatchHandler {
     }
 
     private Enum<?> doPut(final boolean putIfAbsent, final boolean protectDomain, final PublicKey publicKey,
-            final Number640 key, final Data value) {
+            final Number640 key, final Data value, final boolean sendSelf) {
         LOG.debug("put data with key {} on {} with data {}", key, peerBean().serverPeerAddress(), value);
-        return storageLayer.put(key, value, publicKey, putIfAbsent, protectDomain);
+        return storageLayer.put(key, value, publicKey, putIfAbsent, protectDomain, sendSelf);
     }
 
     private static Enum<?> doAdd(final boolean protectDomain, final Map.Entry<Number640, Data> entry,
-            final PublicKey publicKey, final boolean list, final StorageLayer storageLayer, final PeerAddress serverPeerAddress) {
+            final PublicKey publicKey, final boolean list, final StorageLayer storageLayer, final PeerAddress serverPeerAddress, final boolean sendSelf) {
 
         LOG.debug("add list data with key {} on {}", entry.getKey(), serverPeerAddress);
         if (list) {
@@ -811,12 +811,12 @@ public class StorageRPC extends DispatchHandler {
             Enum<?> status;
             Number640 key = new Number640(entry.getKey().locationKey(), entry.getKey().domainKey(),
                     contentKey2, entry.getKey().versionKey());
-            while ((status = storageLayer.put(key, entry.getValue(), publicKey, true, protectDomain)) == PutStatus.FAILED_NOT_ABSENT) {
+            while ((status = storageLayer.put(key, entry.getValue(), publicKey, true, protectDomain, sendSelf)) == PutStatus.FAILED_NOT_ABSENT) {
                 contentKey2 = new Number160(RND);
             }
             return status;
         } else {
-            return storageLayer.put(entry.getKey(), entry.getValue(), publicKey, false, protectDomain);
+            return storageLayer.put(entry.getKey(), entry.getValue(), publicKey, false, protectDomain, sendSelf);
         }
     }
 

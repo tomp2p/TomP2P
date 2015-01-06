@@ -47,11 +47,11 @@ public class TestSecurity {
         	StorageLayer sl = new StorageLayer(new StorageMemory()) {
             	@Override
             	public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-            			boolean domainProtection) {
+            			boolean domainProtection, boolean selfSend) {
             		System.err.println("P is " + publicKey);
                     gotPK.set(publicKey != null);
                     System.err.println("PK is " + gotPK);
-            		return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+            		return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
             	}
             };
         	
@@ -96,10 +96,10 @@ public class TestSecurity {
             StorageLayer sl =new StorageLayer(new StorageMemory()) {
             	@Override
             	public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-            			boolean domainProtection) {
+            			boolean domainProtection, boolean selfSend) {
                     gotPK.set(publicKey != null);
                     System.err.println("PK is " + gotPK);
-                    return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+                    return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
                 }
             };
             
@@ -261,17 +261,17 @@ public class TestSecurity {
         	StorageLayer slm =new StorageLayer(new StorageMemory()) {
             	@Override
             	public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-            			boolean domainProtection) {
+            			boolean domainProtection, boolean selfSend) {
                     // System.out.println("store1");
-            		return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+            		return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
                 }
             };
             StorageLayer sls =new StorageLayer(new StorageMemory()) {
             	@Override
             	public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-            			boolean domainProtection) {
+            			boolean domainProtection, boolean selfSend) {
                     // System.out.println("store2");
-            		return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+            		return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
                 }
             };
         	

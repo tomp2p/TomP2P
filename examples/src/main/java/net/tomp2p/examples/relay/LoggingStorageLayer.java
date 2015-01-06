@@ -29,10 +29,10 @@ public class LoggingStorageLayer extends StorageLayer {
 	}
 
 	@Override
-	public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection) {
+	public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection, boolean selfSend) {
 		if (accept) {
 			LOG.debug("{}: Putting data {} to key {}", peerName, newData, key);
-			return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+			return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
 		} else {
 			LOG.debug("{}: Denying to put data {} to key {}", peerName, newData, key);
 			return PutStatus.FAILED;

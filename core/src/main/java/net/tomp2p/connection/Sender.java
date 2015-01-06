@@ -44,6 +44,7 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TomP2PCumulationTCP;
@@ -59,6 +60,7 @@ import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -399,6 +401,16 @@ public class Sender {
 	 */
 	public void sendSelf(final FutureResponse futureResponse, final Message message) {
 		LOG.debug("Handle message that is intended for the sender itself {}", message);
+		message.sendSelf();
+				
+		for(DataMap dataMap:message.dataMapList()) {
+			for(Data data:dataMap.dataMap().values()) {
+				if(data.isSigned() && data.signature() == null) {
+					data.protectEntry(message.privateKey());
+				}
+			}
+		}
+		
 		final DispatchHandler handler = dispatcher.associatedHandler(message);
 		handler.forwardMessage(message, null, new Responder() {
 

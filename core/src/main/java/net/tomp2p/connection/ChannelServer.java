@@ -124,8 +124,7 @@ public final class ChannelServer {
 	 */
 	public boolean startup() throws IOException {
 		if (!channelServerConfiguration.isDisableBind()) {
-			final boolean listenAll = interfaceBindings.isListenAll();
-			if (listenAll) {
+			if (interfaceBindings.isListenAll()) {
 				if (LOG.isInfoEnabled()) {
 					LOG.info("Listening for broadcasts on UDP port "
 					        + channelServerConfiguration.ports().udpPort() + " and TCP port "

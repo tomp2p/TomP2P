@@ -44,9 +44,7 @@ public class Bindings {
 
     // here are the found address stored. This is not set by the user
     private final List<InetAddress> foundBroadcastAddresses = new ArrayList<InetAddress>(1);
-    // here are the found address stored. This is not set by the user
     private final List<Inet4Address> foundAddresses4 = new ArrayList<Inet4Address>(1);
-    // here are the found address stored. This is not set by the user
     private final List<Inet6Address> foundAddresses6 = new ArrayList<Inet6Address>(1);
 
     /**
@@ -72,12 +70,7 @@ public class Bindings {
     }
     
     boolean containsAddress(final InetAddress address) {
-        boolean contains = foundAddresses4.contains(address);
-        if(contains) {
-            return true;
-        } else {
-            return foundAddresses6.contains(address);
-        }
+        return foundAddresses4.contains(address) || foundAddresses6.contains(address);
     }
 
     /**
@@ -89,18 +82,15 @@ public class Bindings {
      */
     public List<InetAddress> foundAddresses() {
         // first return ipv4, then ipv6
-        final List<InetAddress> listenAddresses2 = new ArrayList<InetAddress>(foundAddresses4.size() + foundAddresses6.size());
-        listenAddresses2.addAll(foundAddresses4);
-        listenAddresses2.addAll(foundAddresses6);
-        return listenAddresses2;
+        final List<InetAddress> listenAddresses = new ArrayList<InetAddress>(foundAddresses4.size() + foundAddresses6.size());
+        listenAddresses.addAll(foundAddresses4);
+        listenAddresses.addAll(foundAddresses6);
+        return listenAddresses;
     }
     
     public InetAddress foundAddress() {
     	List<InetAddress> addresses = foundAddresses();
-    	if(addresses.isEmpty()) {
-    		return null;
-    	}
-	    return addresses.get(0);
+    	return addresses.isEmpty() ? null : addresses.get(0);
     }
     
     /**
@@ -115,7 +105,7 @@ public class Bindings {
      * it will be ignored
      * 
      * @param address
-     *            The current class
+     *            
      * @return this instance
      */
     public Bindings addAddress(final InetAddress address) {
@@ -169,8 +159,7 @@ public class Bindings {
     }
 
     /**
-     * Clears all lists: listenInterfaceHints, listenAddresses,
-     * broadcastAddresses.
+     * Clears all lists.
      */
     public void clear() {
         interfaceHints.clear();
@@ -234,7 +223,7 @@ public class Bindings {
     }
 
     /**
-     * Adds the results from an other binding. This is useful because you can
+     * Adds the results from another binding. This is useful because you can
      * add within one Bindings hints only with "and", with add() you have the
      * option "or" as well. E.g., Bindings b1 = new Bindings(IPv4, eth0);
      * Bindings b2 = new Bindings(IPv6, eth1); b2.add(b1) -> this will bind to
@@ -242,7 +231,7 @@ public class Bindings {
      * 
      * @param other
      *            The other instance to get the results from
-     * @return The same instance
+     * @return This class
      */
     public Bindings add(final Bindings other) {
         this.foundAddresses4.addAll(other.foundAddresses4);

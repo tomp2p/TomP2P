@@ -352,8 +352,9 @@ public class Data {
 
 	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey, SignatureFactory signatureFactory) {
 		if (signed) {
-			if(publicKey == PeerBuilder.EMPTY_PUBLIC_KEY) {
-				this.publicKey = publicKey;	
+			if(publicKey != PeerBuilder.EMPTY_PUBLIC_KEY && publicKey!= null && 
+					(this.publicKey==null || this.publicKey == PeerBuilder.EMPTY_PUBLIC_KEY)) {
+				this.publicKey = publicKey;
 			}
 			
 			try {

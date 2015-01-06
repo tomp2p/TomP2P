@@ -198,6 +198,7 @@ public class Message {
     private transient boolean sign = false;
     private transient boolean content = false;
     private transient boolean verified = false;
+    private transient boolean sendSelf = false;
 
     /**
      * Creates message with a random ID.
@@ -1085,5 +1086,18 @@ public class Message {
      */
     public boolean isDone() {
         return done;
+    }
+    
+    public Message sendSelf(final boolean sendSelf) {
+        this.sendSelf = sendSelf;
+        return this;
+    }
+    
+    public Message sendSelf() {
+        return sendSelf(true);
+    }
+
+    public boolean isSendSelf() {
+        return sendSelf;
     }
 }

@@ -107,10 +107,10 @@ public final class ExampleDST {
         	StorageLayer sl = new StorageLayer(new StorageMemory()) {
         		@Override
         		public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-        		        boolean domainProtection) {
+        		        boolean domainProtection, boolean selfSend) {
         			Map<Number640, Data> map = get(key.minContentKey(), key.maxContentKey(), -1, false);
         			if (map.size() < max) {
-        				return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+        				return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
         			} else {
         				return PutStatus.FAILED;
         			}

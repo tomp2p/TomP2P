@@ -273,7 +273,7 @@ public class SyncRPC extends DispatchHandler {
                     // TODO: don't copy data, toBytes does a copy!
                     DataBuffer reconstructedValue = RSync.reconstruct(dataOld.toBytes(), instructions, blockSize);
                     //TODO: domain protection?, make the flags configurable
-                    Enum<?> status = storageLayer.put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
+                    Enum<?> status = storageLayer.put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                         if (replicationListener != null) {
@@ -287,7 +287,7 @@ public class SyncRPC extends DispatchHandler {
                 	LOG.debug("handle copy {}", entry.getKey());
                     //TODO: domain protection?, make the flags configurable
                     Enum<?> status = storageLayer.put(entry.getKey(), entry.getValue(),
-                            message.publicKey(0), false, false);
+                            message.publicKey(0), false, false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                         if (replicationListener != null) {

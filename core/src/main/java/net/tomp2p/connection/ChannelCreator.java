@@ -136,8 +136,9 @@ public class ChannelCreator {
 				return null;
 			}
 			if (!semaphoreUPD.tryAcquire()) {
-				LOG.error("Tried to acquire more resources (UDP) than announced!");
-				throw new RuntimeException("Tried to acquire more resources (UDP) than announced!");
+				final String errorMsg = "Tried to acquire more resources (UDP) than announced.";
+				LOG.error(errorMsg);
+				throw new RuntimeException(errorMsg);
 			}
 			final Bootstrap b = new Bootstrap();
 			b.group(workerGroup);
@@ -234,9 +235,9 @@ public class ChannelCreator {
 	}
 
 	/**
-	 * When a channel is closed, the semaphore is released and an other channel can
-	 * be created. Also the lock for the channel creating is beining released.
-	 * This means that the channelcreator can be shutdown.
+	 * When a channel is closed, the semaphore is released and another channel can
+	 * be created. Also, the lock for the channel creating is beining released.
+	 * This means that the ChannelCreator can be shut down.
 	 * 
 	 * @param channelFuture
 	 *            The channel future
@@ -251,7 +252,7 @@ public class ChannelCreator {
 				// it is important that the release of the semaphore and the set
 				// of the future happen sequentially. If this is run in this
 				// thread it will be a netty thread, and this is not what the
-				// user may have wanted. The future respones should be executed
+				// user may have wanted. The future responses should be executed
 				// in the thread of the handler.
 				Runnable runner = new Runnable() {
 					@Override

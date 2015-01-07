@@ -518,10 +518,10 @@ public class Sender {
 		if (message.recipient().isRelayed() && message.command() != RPC.Commands.NEIGHBOR.getNr()
 		        && message.command() != RPC.Commands.PING.getNr()) {
 			LOG.warn(
-			        "Tried to send a UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}",
+			        "Tried to send a UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}.",
 			        message);
 			futureResponse
-			        .failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
+			        .failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers.");
 		} else {
 			final ChannelFuture channelFuture;
 			if (message.recipient().isRelayed()) {

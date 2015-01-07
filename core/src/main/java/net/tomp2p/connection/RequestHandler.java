@@ -200,7 +200,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 					futureResponse.failedReason());
 		} else {
 			if (LOG.isDebugEnabled()) {
-				LOG.debug("exception caugth, but handled properly: " + cause.toString());
+				LOG.debug("exception caught, but handled properly: " + cause.toString());
 			}
 			if (cause instanceof PeerException) {
 				PeerException pe = (PeerException) cause;
@@ -212,7 +212,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 							peerStatusListener.peerFailed(futureResponse.request().recipient(), pe);
 						}
 					}
-					LOG.debug("removed from map, cause: {} msg: {}", pe.toString(), message);
+					LOG.debug("removed from map, cause: {}, msg: {}", pe.toString(), message);
 				} else {
 					LOG.warn("error in request", cause);
 				}
@@ -226,7 +226,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 			}
 		}
 
-		LOG.debug("report failure", cause);
+		LOG.debug("Report failure:", cause);
 		futureResponse.failedLater(cause);
 		ctx.close();
 	}
@@ -237,7 +237,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 		MessageID recvMessageID = new MessageID(responseMessage);
 		// Error handling
 		if (responseMessage.type() == Message.Type.UNKNOWN_ID) {
-			String msg = "Message was not delivered successfully, unknow id (peer may be offline or unknown RPC handler): "
+			String msg = "Message was not delivered successfully, unknow ID (peer may be offline or unknown RPC handler): "
 					+ this.message;
 			exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
 			return;
@@ -250,18 +250,20 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 			ctx.fireChannelRead(responseMessage);
 			return;
 		} else if (!sendMessageID.equals(recvMessageID)) {
-			String msg = "Message [" + responseMessage
+			String msg = "Response message [" + responseMessage
 					+ "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
 			exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
 			return;
-			// We need to exclude RCON Messages from the sanity check because we
-			// use this RequestHandler for sending a Type.REQUEST_1,
-			// RPC.Commands.RCON message on top of it. Therefore the response
-			// type will never be the same Type as the one the user initially
-			// used (e.g. DIRECT_DATA).
-		} else if (responseMessage.command() != RPC.Commands.RCON.getNr()
+
+		}
+		// We need to exclude RCON Messages from the sanity check because we
+		// use this RequestHandler for sending a Type.REQUEST_1,
+		// RPC.Commands.RCON message on top of it. Therefore the response
+		// type will never be the same Type as the one the user initially
+		// used (e.g. DIRECT_DATA).
+		else if (responseMessage.command() != RPC.Commands.RCON.getNr()
 				&& message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
-			String msg = "Message [" + responseMessage + "] sent has a different relay flag than we sent ["
+			String msg = "Response message [" + responseMessage + "] sent has a different relay flag than we sent with request message ["
 					+ this.message + "]. Recipient (" + message.recipient().isRelayed() + ") / Sender ("
 					+ responseMessage.sender().isRelayed() + ")";
 			exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
@@ -295,7 +297,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 			LOG.debug("good message, we can close {}, {}", responseMessage, ctx.channel());
 			// set the success now, but trigger the notify when we closed the channel.
 			futureResponse.responseLater(responseMessage);
-			// the channel creater adds a listener that sets futureResponse.setResponseNow, when the channel
+			// the channel creator adds a listener that sets futureResponse.setResponseNow, when the channel
 			// is closed
 			ctx.close();
 		} else {

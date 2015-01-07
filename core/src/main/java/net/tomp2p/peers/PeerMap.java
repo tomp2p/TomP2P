@@ -36,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This routing implementation uses is based on Kademlia. However, many changes have been applied to make it faster and
+ * This routing implementation is based on Kademlia. However, many changes have been applied to make it faster and
  * more flexible. This class is partially thread-safe.
  * 
  * @author Thomas Bocek

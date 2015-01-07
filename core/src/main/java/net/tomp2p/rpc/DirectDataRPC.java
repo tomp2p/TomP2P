@@ -128,7 +128,7 @@ public class DirectDataRPC extends DispatchHandler {
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
         if (sign) {
-            responseMessage.publicKeyAndSign(peerBean().getKeyPair());
+            responseMessage.publicKeyAndSign(peerBean().keyPair());
         }
         final RawDataReply rawDataReply2 = rawDataReply;
         final ObjectDataReply objectDataReply2 = objectDataReply;

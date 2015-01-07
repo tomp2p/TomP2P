@@ -208,7 +208,7 @@ public class PeerBuilder {
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
 
 		PeerBean peerBean = peerCreator.peerBean();
-		peerBean.addPeerStatusListeners(peerMap);
+		peerBean.addPeerStatusListener(peerMap);
 		
 		ConnectionBean connectionBean = peerCreator.connectionBean();
 

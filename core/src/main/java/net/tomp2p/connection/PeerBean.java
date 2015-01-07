@@ -40,7 +40,9 @@ import net.tomp2p.storage.DigestTracker;
  */
 public class PeerBean {
 
-    private KeyPair keyPair;
+	private static final Logger LOG = LoggerFactory.getLogger(PeerBean.class);
+
+	private KeyPair keyPair;
     private PeerAddress serverPeerAddress;
     private PeerMap peerMap;
     private List<PeerStatusListener> peerStatusListeners = new ArrayList<PeerStatusListener>(1);
@@ -48,27 +50,25 @@ public class PeerBean {
     private MaintenanceTask maintenanceTask;
     private DigestStorage digestStorage;
     private DigestTracker digestTracker;
-	private static final Logger LOG = LoggerFactory.getLogger(PeerBean.class);
     
 	/**
-	 * aThis map is used for all open peerConnections which are meant to stay
-	 * open. {@link Number160} = peerId. {@link Integer} = amount of seconds which this connection
-	 * should be kept alive.
+	 * This map is used for all open PeerConnections which are meant to stay
+	 * open. {@link Number160} = peer ID.
 	 */
 	private ConcurrentHashMap<Number160, PeerConnection> openPeerConnections = new ConcurrentHashMap<Number160, PeerConnection>();
 
     /**
-     * Creates a bean with a key pair.
+     * Creates a peer bean with a key pair.
      * 
      * @param keyPair
-     *            The key pair that holds private public key
+     *            The key pair that holds private and public key
      */
     public PeerBean(final KeyPair keyPair) {
         this.keyPair = keyPair;
     }
 
     /**
-     * @return The key pair that holds private public key
+     * @return The key pair that holds private and public key
      */
     public KeyPair keyPair() {
         return keyPair;
@@ -82,6 +82,7 @@ public class PeerBean {
     }
 
     /**
+     * Sets a new address for this peer.
      * @param serverPeerAddress
      *            The new address of this peer.
      * @return This class
@@ -92,15 +93,9 @@ public class PeerBean {
     }
 
     /**
-     * @return The public and private key
-     */
-    public KeyPair getKeyPair() {
-        return keyPair;
-    }
-
-    /**
+     * Sets a new key pair for this peer.
      * @param keyPair
-     *            The public and private key
+     *            The new private and public key for this peer.
      * @return This class
      */
     public PeerBean keyPair(final KeyPair keyPair) {
@@ -109,15 +104,16 @@ public class PeerBean {
     }
 
     /**
-     * @return The peermap that stores neighbors
+     * @return The map that stores neighbors
      */
     public PeerMap peerMap() {
         return peerMap;
     }
 
     /**
+     * Sets a new map storing neighbors for this peer.
      * @param peerMap
-     *            The peermap that stores neighbors
+     *            The new map that stores neighbors
      * @return This class
      */
     public PeerBean peerMap(final PeerMap peerMap) {
@@ -126,27 +122,31 @@ public class PeerBean {
     }
 
     /**
-     * @return The listeners that are interested in the peer status, e.g., peer is found to be online, or a peer is
-     *         offline or failed to respond in time.
+     * @return The listeners that are interested in the peer's status. E.g., peer is found to be online, offline or failed to respond in time.
      */
     public List<PeerStatusListener> peerStatusListeners() {
         return peerStatusListeners;
     }
 
     /**
+     * Adds a PeerStatusListener to this peer.
      * @param peerStatusListeners
-     *            The listeners that are interested in the peer status, e.g., peer is found to be online, or a peer is
-     *            offline or failed to respond in time
+     *            The new listener that is interested in the peer's status
      * @return This class
      */
-    public PeerBean addPeerStatusListeners(final PeerStatusListener peerStatusListener) {
+    public PeerBean addPeerStatusListener(final PeerStatusListener peerStatusListener) {
     	synchronized (peerStatusListeners) {
     		peerStatusListeners.add(peerStatusListener);    
         }
         return this;
     }
     
-    public PeerBean removePeerStatusListeners(final PeerStatusListener peerStatusListener) {
+    /**
+     * Removes a PeerStatusListener from this peer.
+     * @param peerStatusListener The listener that is no longer intereseted in the peer's status
+     * @return This class
+     */
+    public PeerBean removePeerStatusListener(final PeerStatusListener peerStatusListener) {
     	synchronized (peerStatusListeners) {
     		peerStatusListeners.remove(peerStatusListener);    
         }
@@ -191,7 +191,7 @@ public class PeerBean {
 
 	/**
 	 * Returns a {@link ConcurrentHashMap} with all currently open
-	 * PeerConnections.
+	 * PeerConnections. Number160 = peer ID.
 	 * 
 	 * @return openPeerConnections
 	 */
@@ -203,8 +203,8 @@ public class PeerBean {
 	 * Returns the {@link PeerConnection} for the given {@link Number160}
 	 * peerId.
 	 * 
-	 * @param {@link Number160} peerId
-	 * @return {@link PeerConnection} peerConnection
+	 * @param {@link Number160} peerId The ID of the peer
+	 * @return {@link PeerConnection} peerConnection The connection associated to the peer ID
 	 */
 	public PeerConnection peerConnection(final Number160 peerId) {
 		PeerConnection peerConnection = openPeerConnections.get(peerId);

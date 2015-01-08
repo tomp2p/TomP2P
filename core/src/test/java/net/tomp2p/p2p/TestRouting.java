@@ -172,21 +172,20 @@ public class TestRouting {
 
     @Test
     public void testRouting2() throws Exception {
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 2; i++) {
             LOG.error("round "+i);
-            //testRouting2(true, Type.REQUEST_1);
-            //testRouting2(false, Type.REQUEST_1);
-            //testRouting2(true, Type.REQUEST_2);
             testRouting2(false, Type.REQUEST_2);
         }
     }
 
-    /**
-     * In this test we have a peer that cannot be reached: Utils2.createAddress("0xffffff")
-     * @param tcp
-     * @param request
-     * @throws Exception
-     */
+	/**
+	 * In this test we have a peer that cannot be reached:
+	 * Utils2.createAddress("0xffffff"). So you will see time out excptions
+	 * 
+	 * @param tcp
+	 * @param request
+	 * @throws Exception
+	 */
     private void testRouting2(boolean tcp, Type request) throws Exception {
         Peer[] peers = null;
         ChannelCreator cc = null;

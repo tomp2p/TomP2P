@@ -157,24 +157,25 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             	PeerAddress sender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
             	message.sender(sender);
             }
-            LOG.debug("about to respond to {}", message);
+            LOG.debug("About to respond to request message {}.", message);
             PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
         } else {
-        	//do better error handling, if a handler is not present at all, print a warning
+        	// do better error handling
+        	// if a handler is not present at all, print a warning
         	if(ioHandlers.isEmpty()) {
-        		LOG.debug("No handler found for {}. Probably we have shutdown this peer.", message);
+        		LOG.debug("No handler found for request message {}. This peer has probably been shut down.", message);
         	} else {
         		final Collection<Integer> knownCommands = knownCommands();
         		if(!knownCommands.contains(Integer.valueOf(message.command()))) {
-            		StringBuilder sb = new StringBuilder("known cmds");
-            		for(Integer integer:knownCommands()) {
-            			sb.append(", ").append(Commands.find(integer.intValue()));
+            		StringBuilder sb = new StringBuilder();
+            		for(Integer cmd:knownCommands) {
+            			sb.append(Commands.find(cmd.intValue()) + "; ");
             		}
-            		LOG.warn("No handler found for {}. Did you register the RPC command {}? I have {}.", 
+            		LOG.warn("No handler found for request message {}. Is the RPC command {} registered? Found registered: {}.", 
             				message, Commands.find(message.command()), sb);
         		} else {
-            		LOG.debug("No handler found for {}. Probably we have partially shutdown this peer.", message);
+            		LOG.debug("No handler found for request message {}. This peer has probably been partially shut down.", message);
             	}
         	}
         	
@@ -184,11 +185,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     }
     
     private Collection<Integer> knownCommands() {
-    	Set<Integer> retVal = new HashSet<Integer>();
+    	Set<Integer> commandSet = new HashSet<Integer>();
     	for(final Map.Entry<Number320, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
-    		retVal.addAll(entry.getValue().keySet());
+    		commandSet.addAll(entry.getValue().keySet());
     	}
-    	return retVal;
+    	return commandSet;
     }
     
     public class DirectResponder implements Responder {

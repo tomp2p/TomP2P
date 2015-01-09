@@ -150,8 +150,7 @@ public abstract class DispatchHandler {
      * @param requestMessage
      *            The request message
      * @param peerConnection The peer connection that can be used for communication
-     * @param responder 
-     * @return The response message
+     * @param responder The responder used to respond the response message
      */
     public void forwardMessage(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
         // here we need a referral, since we got contacted and we don't know

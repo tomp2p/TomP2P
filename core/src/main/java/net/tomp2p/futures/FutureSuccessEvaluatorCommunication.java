@@ -20,8 +20,8 @@ import net.tomp2p.message.Message;
 
 /**
  * The communication future success evaluator returns OK if the communication was successful, otherwise it returns
- * FAILED. This evaluation does not care if e.g. an object was not found on an other peer. This is because the peer
- * successfully reported that the element is not present. If an other evaluation scheme is necessary, provide your own.
+ * FAILED. This evaluation does not care if e.g. an object was not found on another peer. This is because the peer
+ * successfully reported that the element is not present. If another evaluation scheme is necessary, provide your own.
  * 
  * @author Thomas Bocek
  */

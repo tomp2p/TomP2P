@@ -130,14 +130,14 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
-        LOG.debug("received request {} from channel {}", message, ctx.channel());
+        LOG.debug("Received request message {} from channel {}", message, ctx.channel());
         if (message.version() != p2pID) {
-            LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
+            LOG.error("Wrong version. We are looking for {}, but we got {}. Received: {}.", p2pID,
                     message.version(), message);
             ctx.close();
             synchronized (peerBeanMaster.peerStatusListeners()) {
             	for (PeerStatusListener peerStatusListener : peerBeanMaster.peerStatusListeners()) {
-                   peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "wrong P2P version"));
+                   peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "Wrong P2P version."));
             	}
             }
             return;
@@ -179,7 +179,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         	}
         	
             Message responseMessage = DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBeanMaster.serverPeerAddress());
-            response(ctx, responseMessage);
+            respond(ctx, responseMessage);
         }
     }
     
@@ -209,22 +209,22 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         		responseMessage.peerSocketAddresses(responseMessage.sender().peerSocketAddresses());
     		}
         	
-            Dispatcher.this.response(ctx, responseMessage);
+            Dispatcher.this.respond(ctx, responseMessage);
         }
         
         @Override
         public void failed(Message.Type type, String reason) {
             Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBeanMaster.serverPeerAddress());
-            Dispatcher.this.response(ctx, responseMessage);
+            Dispatcher.this.respond(ctx, responseMessage);
         }
         
         @Override
 		public void responseFireAndForget() {
-            LOG.debug("The reply handler was a fire-and-forget handler, "
-                    + "we don't send any message back! {}", requestMessage);    
+            LOG.debug("The reply handler was a fire-and-forget handler. No message is sent back for {}.", requestMessage);    
            if (!(ctx.channel() instanceof DatagramChannel)) {
-               LOG.warn("There is no TCP fire and forget, use UDP in that case {}", requestMessage);
-               throw new RuntimeException("There is no TCP fire and forget, use UDP in that case.");
+               String msg = "There is no TCP fire-and-forget. Use UDP in that case. ";
+        	   LOG.warn(msg + requestMessage);
+               throw new RuntimeException(msg);
            } else {
                TimeoutFactory.removeTimeout(ctx);
            }
@@ -232,7 +232,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     }
 
     /**
-     * Respond within a session. Keep the connection open if we are asked to do so. Connection is only kept alive for
+     * Responds within a session. Keep the connection open if we are asked to do so. Connection is only kept alive for
      * TCP data.
      * 
      * @param ctx
@@ -240,7 +240,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @param response
      *            The response to send
      */
-    private void response(final ChannelHandlerContext ctx, final Message response) {
+    private void respond(final ChannelHandlerContext ctx, final Message response) {
         if (ctx.channel() instanceof DatagramChannel) {
             // check if channel is still open. If its not, then do not send
             // anything because

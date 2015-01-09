@@ -111,7 +111,7 @@ public abstract class DispatchHandler {
      *            The request type
      * @return The created request message
      */
-    public Message createMessage(final PeerAddress recipient, final byte name, final Type type) {
+    public Message createRequestMessage(final PeerAddress recipient, final byte name, final Type type) {
         return new Message().recipient(recipient).sender(peerBean().serverPeerAddress())
                 .command(name).type(type).version(connectionBean().p2pId());
     }

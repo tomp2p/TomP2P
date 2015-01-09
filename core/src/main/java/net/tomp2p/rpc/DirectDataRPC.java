@@ -67,7 +67,7 @@ public class DirectDataRPC extends DispatchHandler {
 
     public RequestHandler<FutureResponse> sendInternal(final PeerAddress remotePeer,
             final SendDirectBuilderI sendDirectBuilder) {
-        final Message message = createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(),
+        final Message message = createRequestMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(),
                 sendDirectBuilder.isRaw() ? Type.REQUEST_1 : Type.REQUEST_2);
         final FutureResponse futureResponse = new FutureResponse(message,
                 sendDirectBuilder.progressListener());

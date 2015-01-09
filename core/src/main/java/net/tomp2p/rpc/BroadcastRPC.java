@@ -47,7 +47,7 @@ public class BroadcastRPC extends DispatchHandler {
 
     public FutureResponse send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
             final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
-        final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
+        final Message message = createRequestMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
         message.intValue(broadcastBuilder.hopCounter());
         message.key(broadcastBuilder.messageKey());
         if (broadcastBuilder.dataMap() != null) {

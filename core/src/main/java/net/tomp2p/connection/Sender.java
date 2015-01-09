@@ -533,7 +533,7 @@ public class Sender {
 					message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
 					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
 				} else {
-					futureResponse.failed("Peer is relayed, but no relay given");
+					futureResponse.failed("Peer is relayed, but no is relay given.");
 					return;
 				}
 			} else {
@@ -574,7 +574,7 @@ public class Sender {
 	 */
 	private void afterConnect(final FutureResponse futureResponse, final Message message,
 	        final ChannelFuture channelFuture, final boolean fireAndForget) {
-		// check if channel could be created due to resource constraints
+		// check if channel could be created (due to resource constraints)
 		if (channelFuture == null) {
 			futureResponse.failed("Could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel. (Due to resource contraints.)");
 			return;

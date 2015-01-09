@@ -102,7 +102,7 @@ public class NeighborRPC extends DispatchHandler {
      */
     public FutureResponse closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
             final Type type, final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
-        Message message = createMessage(remotePeer, RPC.Commands.NEIGHBOR.getNr(), type);
+        Message message = createRequestMessage(remotePeer, RPC.Commands.NEIGHBOR.getNr(), type);
         if (!message.isRequest()) {
             throw new IllegalArgumentException("The type must be a request");
         }

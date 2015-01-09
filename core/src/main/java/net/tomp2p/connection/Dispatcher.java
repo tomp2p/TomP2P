@@ -327,11 +327,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
     }
     
-    /**
-     * May take longer.. used for testing
-     * @param command
-     * @return
-     */
     public Map<Number320, DispatchHandler> searchHandler(final Integer command) {
     	
     	Map<Number320, DispatchHandler> result = new HashMap<Number320, DispatchHandler>();
@@ -346,17 +341,4 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     	}
     	return result;
     }
-
-    /**
-     * 
-     * @param peerId
-     * 			  The id of the peer the get the dispatcher map
-     * @param onBehalfOf
-     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
-     * @return the map containing all dispatchers for each {@link Commands} type
-     */
-	public Map<Integer, DispatchHandler> searchHandlerMap(Number160 peerId, Number160 onBehalfOf) {
-		Map<Integer, DispatchHandler> ioHandlerMap = ioHandlers.get(new Number320(peerId, onBehalfOf));
-		return ioHandlerMap;
-	}
 }

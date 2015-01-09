@@ -232,47 +232,44 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     }
 
     /**
-     * Responds within a session. Keep the connection open if we are asked to do so. Connection is only kept alive for
+     * Responds within a session. Keeps the connection open if told to do so. Connection is only kept alive for
      * TCP data.
      * 
      * @param ctx
      *            The channel context
      * @param response
-     *            The response to send
+     *            The response message to send
      */
     private void respond(final ChannelHandlerContext ctx, final Message response) {
         if (ctx.channel() instanceof DatagramChannel) {
-            // check if channel is still open. If its not, then do not send
-            // anything because
-            // this will cause an exception that will be logged.
+        	// Check, if channel is still open. If not, then do not send anything
+            // because this will cause an exception that will be logged.
             if (!ctx.channel().isOpen()) {
-                LOG.debug("channel UDP is not open, do not reply {}", response);
+                LOG.debug("Channel UDP is not open, do not reply {}.", response);
                 return;
             }
-            LOG.debug("reply UDP message {}", response);
+            LOG.debug("Response UDP message {}.", response);
         } else {
-            // check if channel is still open. If its not, then do not send
-            // anything because
-            // this will cause an exception that will be logged.
+        	// Check, if channel is still open. If not, then do not send anything
+            // because this will cause an exception that will be logged.
             if (!ctx.channel().isActive()) {
-                LOG.debug("channel TCP is not open, do not reply {}", response);
+                LOG.debug("Channel TCP is not open, do not reply {}.", response);
                 return;
             }
-            LOG.debug("reply TCP message {} to {}", response, ctx.channel().remoteAddress());
+            LOG.debug("Response TCP message {} to {}", response, ctx.channel().remoteAddress());
         }
         ctx.channel().writeAndFlush(response);
     }
 
 	/**
-	 * Checks if we have a handler for the given message.
+	 * Returns the registered handler for the provided message, if any.
 	 * 
 	 * @param message
-	 *            the message a handler should be found for
-	 * @return the handler for the given message, null if none has been
-	 *         registered for that message.
+	 *            The message a handler should be found for
+	 * @return The handler for the provided message or null, if none has been registered for that message.
 	 */
 	public DispatchHandler associatedHandler(final Message message) {
-		if (message == null || !(message.isRequest())) {
+		if (message == null || !message.isRequest()) {
 			return null;
 		}
 
@@ -283,23 +280,25 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 		if (recipient.peerId().isZero() && message.command() == RPC.Commands.PING.getNr()) {
 			Number160 peerId = peerBeanMaster.serverPeerAddress().peerId();
 			return searchHandler(peerId, peerId, RPC.Commands.PING.getNr());
-			// else we search for the handler that we are responsible for
 		} else {
+			// else we search for the handler that we are responsible for
 			DispatchHandler handler = searchHandler(recipient.peerId(), recipient.peerId(), message.command());
 			if (handler != null) {
 				return handler;
 			}
-
-			// if we could not find a handler that we are responsible for, we
-			// are most likely a relay. Since we have no id of the relay, we
-			// just take the first one.
-			Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
-			for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
-				if (entry.getKey().domainKey().equals(recipient.peerId())) {
-					return entry.getValue();
+			else
+			{
+				// If we could not find a handler that we are responsible for, we
+				// are most likely a relay. Since we have no ID of the relay, we
+				// just take the first one.
+				Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
+				for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
+					if (entry.getKey().domainKey().equals(recipient.peerId())) {
+						return entry.getValue();
+					}
 				}
+				return null;
 			}
-			return null;
 		}
 	}
 
@@ -307,22 +306,22 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * Looks for a registered handler according to the given parameters.
      * 
      * @param recipientID
-     *            The recipient of the message
+     *            The ID of the recipient of the message.
      * @param onBehalfOf
-     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
+     * 			  The ID of the onBehalfOf peer.
      * @param command
-     *            The type of the message to be filtered
-     * @return the handler for the given message or null if none has been found
+     *            The command of the message to be filtered for
+     * @return The handler for the provided parameters or null, if none has been found.
      */
     public DispatchHandler searchHandler(final Number160 recipientID, Number160 onBehalfOf, final int cmd) {
     	final Integer command = Integer.valueOf(cmd);
-        Map<Integer, DispatchHandler> types = ioHandlers.get(new Number320(recipientID, onBehalfOf));
+        Map<Integer, DispatchHandler> commands = ioHandlers.get(new Number320(recipientID, onBehalfOf));
         
-        if (types != null && types.containsKey(command)) {
-            return types.get(command);
+        if (commands != null && commands.containsKey(command)) {
+            return commands.get(command);
         } else {
             // not registered
-            LOG.debug("Handler not found for type {} we are looking for the server with ID {}", command,
+            LOG.debug("Handler not found for command {}. Looking for the server with ID {}.", command,
                     recipientID);
             return null;
         }

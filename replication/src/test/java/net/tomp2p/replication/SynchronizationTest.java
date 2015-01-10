@@ -12,8 +12,8 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;

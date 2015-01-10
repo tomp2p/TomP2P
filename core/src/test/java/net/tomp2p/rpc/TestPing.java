@@ -20,7 +20,7 @@ import org.junit.Test;
 public class TestPing {
     static Bindings bindings = new Bindings();
     static {
-        bindings.addInterface("lo");
+        //bindings.addInterface("lo");
     }
 
     @Test

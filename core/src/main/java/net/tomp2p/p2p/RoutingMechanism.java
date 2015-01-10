@@ -9,7 +9,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.futures.BaseFuture;
@@ -19,6 +18,7 @@ import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerFilter;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.utils.Utils;
 
@@ -42,7 +42,7 @@ public class RoutingMechanism {
     private final FutureRouting futureRoutingResponse;
     private final Collection<PeerFilter> peerFilters;
     
-    private NavigableSet<PeerAddress> queueToAsk;
+    private NavigableSet<PeerStatistic> queueToAsk;
     private SortedSet<PeerAddress> alreadyAsked;
     private SortedMap<PeerAddress, DigestInfo> directHits;
     private NavigableSet<PeerAddress> potentialHits;
@@ -54,7 +54,7 @@ public class RoutingMechanism {
     private int maxDirectHits;
     private int maxNoNewInfo;
     private int maxFailures;
-    private int maxSucess;
+    private int maxSuccess;
     private boolean stopCreatingNewFutures;
 
     /**
@@ -115,7 +115,7 @@ public class RoutingMechanism {
      *            The queue that contains the peers that will be queried in the future
      * @return This class
      */
-    public RoutingMechanism queueToAsk(final NavigableSet<PeerAddress> queueToAsk) {
+    public RoutingMechanism queueToAsk(final NavigableSet<PeerStatistic> queueToAsk) {
         this.queueToAsk = queueToAsk;
         return this;
     }
@@ -123,7 +123,7 @@ public class RoutingMechanism {
     /**
      * @return The queue that contains the peers that will be queried in the future
      */
-    public NavigableSet<PeerAddress> queueToAsk() {
+    public NavigableSet<PeerStatistic> queueToAsk() {
         synchronized (this) {
             return queueToAsk;
         }
@@ -210,22 +210,28 @@ public class RoutingMechanism {
     }
 
     public int maxSucess() {
-        return maxSucess;
+        return maxSuccess;
     }
 
     public void maxSucess(int maxSucess) {
-        this.maxSucess = maxSucess;
+        this.maxSuccess = maxSucess;
     }
 
     public PeerAddress pollFirstInQueueToAsk() {
         synchronized (this) {
-            return queueToAsk.pollFirst();
+            PeerStatistic first = queueToAsk.pollFirst();
+            if (first == null)
+                return null;
+            return first.peerAddress();
         }
     }
 
     public PeerAddress pollRandomInQueueToAsk(Random rnd) {
         synchronized (this) {
-            return Utils.pollRandom(queueToAsk(), rnd);
+            PeerStatistic first = Utils.pollRandom(queueToAsk(), rnd);
+            if (first == null)
+                return null;
+            return first.peerAddress();
         }
 
     }
@@ -276,7 +282,7 @@ public class RoutingMechanism {
     }
 
     public boolean evaluateSuccess(PeerAddress remotePeer, DigestInfo digestBean,
-            Collection<PeerAddress> newNeighbors, boolean last, Number160 locationkey) {
+            Collection<PeerStatistic> newNeighbors, boolean last, Number160 locationkey) {
         boolean finished;
         synchronized (this) {
         	filterPeers(newNeighbors, alreadyAsked, queueToAsk, locationkey);
@@ -304,16 +310,18 @@ public class RoutingMechanism {
         return finished;
     }
 
-	private void filterPeers(Collection<PeerAddress> newNeighbors, SortedSet<PeerAddress> alreadyAsked,
-	        NavigableSet<PeerAddress> queueToAsk, Number160 locationkey) {
+	private void filterPeers(Collection<PeerStatistic> newNeighbors, SortedSet<PeerAddress> alreadyAsked,
+	        NavigableSet<PeerStatistic> queueToAsk, Number160 locationkey) {
 		if (peerFilters == null || peerFilters.size() == 0) {
 			return;
 		}
 		Collection<PeerAddress> all = new ArrayList<PeerAddress>();
 		all.addAll(alreadyAsked);
-		all.addAll(queueToAsk);
-		for (Iterator<PeerAddress> iterator = newNeighbors.iterator(); iterator.hasNext();) {
-			PeerAddress newNeighbor = iterator.next();
+        for (PeerStatistic peerStatistic : queueToAsk) {
+            all.add(peerStatistic.peerAddress());
+        }
+		for (Iterator<PeerStatistic> iterator = newNeighbors.iterator(); iterator.hasNext();) {
+			PeerAddress newNeighbor = iterator.next().peerAddress();
 			for (PeerFilter peerFilter : peerFilters) {
 				if (peerFilter.reject(newNeighbor, all, locationkey)) {
 					iterator.remove();
@@ -357,14 +365,12 @@ public class RoutingMechanism {
      *            The peers that are in the queue to be asked
      * @param alreadyAsked
      *            The peers we have already asked
-     * @param noNewInfo
-     *            counter how many times we did not find any peer that is closer to the target
      * @param maxNoNewInfo
      *            The maximum number of replies from neighbors that do not give us closer peers
      * @return True if we should stop, false if we should continue with the routing
      */
-     boolean evaluateInformation(final Collection<PeerAddress> newNeighbors,
-            final SortedSet<PeerAddress> queueToAsk, final Set<PeerAddress> alreadyAsked,
+     boolean evaluateInformation(final Collection<PeerStatistic> newNeighbors,
+            final SortedSet<PeerStatistic> queueToAsk, final Set<PeerAddress> alreadyAsked,
             final int maxNoNewInfo) {
         boolean newInformation = merge(queueToAsk, newNeighbors, alreadyAsked);
         if (newInformation) {
@@ -388,14 +394,21 @@ public class RoutingMechanism {
      * @return True if we added peers that are closer to the target than we already knew. Please note, it will return
      *         false if we add new peers that are not closer to a target.
      */
-    static boolean merge(final SortedSet<PeerAddress> queueToAsk, final Collection<PeerAddress> newPeers,
+    static boolean merge(final SortedSet<PeerStatistic> queueToAsk, final Collection<PeerStatistic> newPeers,
             final Collection<PeerAddress> alreadyAsked) {
-        final SortedSet<PeerAddress> result = new TreeSet<PeerAddress>(queueToAsk.comparator());
-        Utils.difference(newPeers, result, alreadyAsked);
+
+        final SortedSet<PeerStatistic> result = new UpdatableTreeSet<>(queueToAsk.comparator());
+
+        // Remove peers we already asked
+        for (Iterator<PeerStatistic> iterator = newPeers.iterator(); iterator.hasNext(); ) {
+            PeerStatistic newPeer = iterator.next();
+            if (!alreadyAsked.contains(newPeer.peerAddress()))
+                result.add(newPeer);
+        }
         if (result.size() == 0) {
             return false;
         }
-        PeerAddress first = result.first();
+        PeerStatistic first = result.first();
         boolean newInfo = isNew(queueToAsk, first);
         queueToAsk.addAll(result);
         return newInfo;
@@ -410,11 +423,11 @@ public class RoutingMechanism {
      *            The element to check if it will be the highest in the sorted set
      * @return True, if item will be the highest element.
      */
-    private static boolean isNew(final SortedSet<PeerAddress> queueToAsk, final PeerAddress item) {
+    private static boolean isNew(final SortedSet<PeerStatistic> queueToAsk, final PeerStatistic item) {
         if (queueToAsk.contains(item)) {
             return false;
         }
-        SortedSet<PeerAddress> tmp = queueToAsk.headSet(item);
+        SortedSet<PeerStatistic> tmp = queueToAsk.headSet(item);
         return tmp.size() == 0;
     }
 

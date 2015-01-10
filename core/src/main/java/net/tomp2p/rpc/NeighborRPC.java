@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
+import java.util.NavigableSet;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -40,6 +42,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
 
 import org.slf4j.Logger;
@@ -130,25 +133,26 @@ public class NeighborRPC extends DispatchHandler {
         }
         return send(message, configuration, channelCreator);
     }
-    
+
     private FutureResponse send(final Message message, final ConnectionConfiguration configuration, final ChannelCreator channelCreator) {
-    	FutureResponse futureResponse = new FutureResponse(message);
-    	futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-			@Override
+        final FutureResponse futureResponse = new FutureResponse(message);
+        futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+            @Override
             public void operationComplete(FutureResponse future) throws Exception {
-	            if(future.isSuccess()) {
-	            	Message response = future.responseMessage();
-	            	if(response != null) {
-	            		NeighborSet ns = response.neighborsSet(0);
-	            		if(ns!=null) {
-	            			for(PeerAddress neighbors:ns.neighbors()) {
-	            				peerBean().notifyPeerFound(neighbors, response.sender(), null);
-	            			}
-	            		}
-	            	}
-	            }
+                if(future.isSuccess()) {
+                    Message response = future.responseMessage();
+                    if(response != null) {
+                        NeighborSet ns = response.neighborsSet(0);
+                        if(ns!=null) {
+                            for(PeerAddress neighbor:ns.neighbors()) {
+                                // Notify, that we found this peer. RTT is from the reporter and therefore only an estimate.
+                                peerBean().notifyPeerFound(neighbor, response.sender(), null, futureResponse.getRoundTripTime().setEstimated());
+                            }
+                        }
+                    }
+                }
             }
-		});
+        });
         RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
                 peerBean(), connectionBean(), configuration);
 
@@ -157,7 +161,7 @@ public class NeighborRPC extends DispatchHandler {
         } else {
             return request.sendTCP(channelCreator);
         }
-    	
+
     }
 
     @Override
@@ -173,7 +177,7 @@ public class NeighborRPC extends DispatchHandler {
         Number160 locationKey = message.key(0);
         Number160 domainKey = message.key(1);
         
-        Collection<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
+        List<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
         if(neighbors == null) {
             //return empty neighbor set
             Message response = createResponseMessage(message, Type.NOT_FOUND);
@@ -258,8 +262,15 @@ public class NeighborRPC extends DispatchHandler {
     /**
      * TODO: explain why protected method here.
      */
-    protected Collection<PeerAddress> getNeighbors(Number160 id, int atLeast) {
-        return peerBean().peerMap().closePeers(id, atLeast);
+    protected List<PeerAddress> getNeighbors(Number160 id, int atLeast) {
+        NavigableSet<PeerStatistic> closePeers = peerBean().peerMap().closePeers(id, atLeast);
+
+        ArrayList<PeerAddress> result = new ArrayList<PeerAddress>();
+        for (PeerStatistic ps : closePeers) {
+            result.add(ps.peerAddress());
+
+        }
+        return result;
     }
 
     /**

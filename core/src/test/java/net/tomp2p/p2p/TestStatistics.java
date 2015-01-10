@@ -40,7 +40,7 @@ public class TestStatistics {
 		for (int j = 1; j < 20; j++) {
 			int nr = 100000 * j;
 			PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-			conf.bagSizeVerified(20).bagSizeOverflow(20);
+			conf.setFixedVerifiedBagSizes(20).setFixedOverflowBagSizes(20);
 			conf.offlineCount(1000).offlineTimeout(60);
 			conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
 			PeerMap peerMap = new PeerMap(conf);
@@ -48,7 +48,7 @@ public class TestStatistics {
 			Statistics statistics = new Statistics(peerMap);
 			for (int i = 0; i < nr; i++) {
 				PeerAddress pa = Utils2.createAddress(new Number160(rnd));
-				peerMap.peerFound(pa, null, null);
+				peerMap.peerFound(pa, null, null, null);
 			}
 
 			double diff = nr / statistics.estimatedNumberOfNodes();

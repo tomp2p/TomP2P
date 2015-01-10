@@ -1,7 +1,6 @@
 package net.tomp2p.p2p;
 
 
-
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.peers.Number160;

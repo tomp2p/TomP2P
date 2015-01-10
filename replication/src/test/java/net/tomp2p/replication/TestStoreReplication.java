@@ -106,7 +106,7 @@ public class TestStoreReplication {
             // s1.put(location, Number160.ZERO, null, dataMap, false, false);
             final int slavePort = 7701;
             slave = new PeerBuilderDHT(new PeerBuilder(new Number160("0xfe")).ports(slavePort).start()).start();
-            master.peerBean().peerMap().peerFound(slave.peerAddress(), null, null);
+            master.peerBean().peerMap().peerFound(slave.peerAddress(), null, null, null);
             master.peerBean().peerMap().peerFailed(slave.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
@@ -186,8 +186,8 @@ public class TestStoreReplication {
             System.err.println("slave1 is " + slave1.peerAddress());
             System.err.println("slave2 is " + slave2.peerAddress());
             // master peer learns about the slave peers
-            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
-            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null);
+            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null, null);
+            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null, null);
 
             System.err.println("both peers online");
             PeerAddress slaveAddress1 = slave1.peerAddress();
@@ -1019,7 +1019,7 @@ public class TestStoreReplication {
 			
 			for (int i = 1; i < joins.length; i++) {
 				// insert a peer
-				master.peerBean().peerMap().peerFound(peers.get(i).peerAddress(), null, null);
+				master.peerBean().peerMap().peerFound(peers.get(i).peerAddress(), null, null, null);
 				// verify replication notifications
 				Assert.assertEquals(joins[i][0], replicateI.get());
 				replicateI.set(0);

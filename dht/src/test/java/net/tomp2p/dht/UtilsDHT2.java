@@ -31,8 +31,8 @@ import java.util.TreeSet;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
@@ -211,7 +211,7 @@ public class UtilsDHT2 {
     public static void perfectRouting(PeerDHT... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peer().peerBean().peerMap().peerFound(peers[j].peer().peerAddress(), null, null);
+                peers[i].peer().peerBean().peerMap().peerFound(peers[j].peer().peerAddress(), null, null, null);
         }
         System.err.println("perfect routing done.");
     }
@@ -219,7 +219,7 @@ public class UtilsDHT2 {
     public static void perfectRoutingIndirect(PeerDHT... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress(), null);
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress(), null, null);
         }
         System.err.println("perfect routing done.");
     }
@@ -280,8 +280,8 @@ public class UtilsDHT2 {
 
     public static void routing(Number160 key, Peer[] peers, int start) {
         System.out.println("routing: searching for key " + key);
-        NavigableSet<PeerAddress> pa1 = new TreeSet<PeerAddress>(PeerMap.createComparator(key));
-        NavigableSet<PeerAddress> queried = new TreeSet<PeerAddress>(PeerMap.createComparator(key));
+        NavigableSet<PeerAddress> pa1 = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(key));
+        NavigableSet<PeerAddress> queried = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(key));
         Number160 result = Number160.ZERO;
         Number160 resultPeer = new Number160("0xd75d1a3d57841fbc9e2a3d175d6a35dc2e15b9f");
         int round = 0;

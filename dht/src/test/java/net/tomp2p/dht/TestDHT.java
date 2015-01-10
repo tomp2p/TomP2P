@@ -171,8 +171,8 @@ public class TestDHT {
 			Assert.assertEquals(true, fp.isSuccess());
 			peers[30].peerBean().peerMap();
 			// search top 3
-			TreeMap<PeerAddress, Integer> tmp = new TreeMap<PeerAddress, Integer>(PeerMap.createComparator(peers[30]
-			        .peer().peerID()));
+			TreeMap<PeerAddress, Integer> tmp = new TreeMap<PeerAddress, Integer>(PeerMap.createXORAddressComparator(peers[30]
+                    .peer().peerID()));
 			int i = 0;
 			for (PeerDHT node : peers) {
 				tmp.put(node.peer().peerAddress(), i);
@@ -270,8 +270,8 @@ public class TestDHT {
 			Assert.assertEquals(true, fdht.isSuccess());
 			peers[30].peerBean().peerMap();
 			// search top 3
-			TreeMap<PeerAddress, Integer> tmp = new TreeMap<PeerAddress, Integer>(PeerMap.createComparator(peers[30]
-			        .peerID()));
+			TreeMap<PeerAddress, Integer> tmp = new TreeMap<PeerAddress, Integer>(PeerMap.createXORAddressComparator(peers[30]
+                    .peerID()));
 			int i = 0;
 			for (PeerDHT node : peers) {
 				tmp.put(node.peerAddress(), i);
@@ -1029,12 +1029,12 @@ public class TestDHT {
 			master2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start()).start();
 			master3 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4003).start()).start();
 			// perfect routing
-			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
-			master1.peerBean().peerMap().peerFound(master3.peerAddress(), null, null);
-			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null, null);
-			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null, null);
-			master3.peerBean().peerMap().peerFound(master1.peerAddress(), null, null);
-			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
+			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null, null, null);
+			master1.peerBean().peerMap().peerFound(master3.peerAddress(), null, null, null);
+			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null, null, null);
+			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null, null, null);
+			master3.peerBean().peerMap().peerFound(master1.peerAddress(), null, null, null);
+			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null, null, null);
 			Number160 id = master2.peerID();
 			Data data = new Data(new byte[44444]);
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
@@ -1062,10 +1062,10 @@ public class TestDHT {
 			master1.peerBean().peerMap().peerFailed(master2.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 			master3.peerBean().peerMap().peerFailed(master2.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 			master2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start()).start();
-			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
-			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
-			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null, null);
-			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null, null);
+			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null, null, null);
+			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null, null, null);
+			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null, null, null);
+			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null, null, null);
 
 			System.err.println("no more exceptions here!!");
 
@@ -1323,7 +1323,7 @@ public class TestDHT {
 		Peer p2 = null;
 		try {
 			// setup (step 1)
-			Bindings b = new Bindings().addInterface("lo");
+			Bindings b = new Bindings();
 			p1 = new PeerBuilder(new Number160(rnd)).ports(4001).bindings(b).start();
 			p2 = new PeerBuilder(new Number160(rnd)).ports(4002).bindings(b).start();
 			FutureBootstrap fb = p2.bootstrap().peerAddress(p1.peerAddress()).start();

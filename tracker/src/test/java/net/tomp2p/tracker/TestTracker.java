@@ -29,7 +29,7 @@ public class TestTracker {
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(0, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 1, 0);
@@ -59,7 +59,7 @@ public class TestTracker {
     }
 
     private static PeerTracker findClosest(PeerTracker[] nodes, Number160 trackerID) {
-    	TreeSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createComparator(trackerID));
+    	TreeSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(trackerID));
     	for(PeerTracker p:nodes) {
     		set.add(p.peerAddress());
     	}
@@ -83,7 +83,7 @@ public class TestTracker {
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0, 1000, 2);
@@ -123,7 +123,7 @@ public class TestTracker {
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0, 1000, 2);
@@ -161,7 +161,7 @@ public class TestTracker {
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0);
@@ -211,7 +211,7 @@ public class TestTracker {
                 // nodes[i].getPeerBean().getTrackerStorage()
                 // .setTrackerStoreSize(nodes[i].getPeerBean().getTrackerStorage().getTrackerSize());
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             // 3 is good!
@@ -295,7 +295,7 @@ public class TestTracker {
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0);
@@ -377,7 +377,7 @@ public class TestTracker {
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++) {
                     if (i != j)
-                        nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
+                        nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null, null);
                 }
             }
             FutureTracker ft = nodes[30].getTracker(trackerID).start();

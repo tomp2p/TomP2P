@@ -66,7 +66,7 @@ public class TestTrackerStorage {
 		Number320 n320 = new Number320(Number160.ZERO, Number160.ZERO);
 
 		trackerStorage.put(n320, selfAddress, null, new Data("test"));
-		trackerStorage.peerFound(selfAddress, null, null);
+		trackerStorage.peerFound(selfAddress, null, null, null);
 		
 		TrackerData td = trackerStorage.trackerData(n320);
 		Object o = td.peerAddresses().values().iterator().next().object();
@@ -87,7 +87,7 @@ public class TestTrackerStorage {
 		KeyPair pair1 = gen.generateKeyPair();
 		
 		trackerStorage.put(n320, selfAddress, pair1.getPublic(), new Data("test"));
-		trackerStorage.peerFound(selfAddress, null, null);
+		trackerStorage.peerFound(selfAddress, null, null, null);
 		trackerStorage.put(n320, selfAddress, pair1.getPublic(), new Data("test1"));
 		
 		TrackerData td = trackerStorage.trackerData(n320);
@@ -152,7 +152,7 @@ public class TestTrackerStorage {
 
 		trackerStorage.put(n320, selfAddress, null, new Data("test"));
 		PeerStatistic ps = trackerStorage.nextForMaintenance(null);
-		trackerStorage.peerFound(selfAddress, null, null);
+		trackerStorage.peerFound(selfAddress, null, null, null);
 		ps = trackerStorage.nextForMaintenance(null);
 		Assert.assertNull(ps);
 	}

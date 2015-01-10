@@ -109,9 +109,6 @@ public class DSASignatureCodec implements SignatureCodec {
 		return me;
 	}
 	
-	/* (non-Javadoc)
-	 * @see net.tomp2p.message.SignatureCodec#write(io.netty.buffer.ByteBuf)
-	 */
 	@Override
     public SignatureCodec write(ByteBuf buf) {
 		buf.writeBytes(number1.toByteArray());
@@ -150,5 +147,10 @@ public class DSASignatureCodec implements SignatureCodec {
 		}
 		DSASignatureCodec s = (DSASignatureCodec) obj;
 		return Utils.equals(number1, s.number1) && Utils.equals(number2, s.number2);
+	}
+
+	@Override
+	public int signatureSize() {
+		return 2 * Number160.BYTE_ARRAY_SIZE;
 	}
 }

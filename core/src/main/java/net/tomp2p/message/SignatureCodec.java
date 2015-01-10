@@ -16,4 +16,9 @@ public interface SignatureCodec {
 	 * @return this instance
 	 */
 	SignatureCodec write(ByteBuf buf);
+	
+	/**
+	 * @return the key size in bytes
+	 */
+	int signatureSize();
 }

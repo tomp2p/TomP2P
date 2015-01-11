@@ -97,14 +97,14 @@ public class Peer {
     private List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>(5)); 
 
     /**
-     * Create a peer. Please use {@link PeerBuilder} to create a class
+     * Creates a peer. Please use {@link PeerBuilder} to create a {@link Peer} instance.
      * 
      * @param p2pID
      *            The P2P ID
      * @param peerId
-     *            The Id of the peer
+     *            The ID of the peer
      * @param peerCreator
-     *            The peer creator that holds the peer bean and connection bean
+     *            The peer creator that holds the peer bean and the connection bean
      */
     Peer(final int p2pID, final Number160 peerId, final PeerCreator peerCreator) {
         this.p2pId = p2pID;
@@ -118,7 +118,7 @@ public class Peer {
 
     public PingRPC pingRPC() {
         if (pingRCP == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Ping RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return pingRCP;
     }
@@ -130,7 +130,7 @@ public class Peer {
     
     public QuitRPC quitRPC() {
     	if (quitRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Quit RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return quitRPC;    
     }
@@ -142,7 +142,7 @@ public class Peer {
 
     public NeighborRPC neighborRPC() {
         if (neighborRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Neighbor RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return neighborRPC;
     }
@@ -154,7 +154,7 @@ public class Peer {
 
     public DirectDataRPC directDataRPC() {
         if (directDataRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Direct Data RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return directDataRPC;
     }
@@ -166,7 +166,7 @@ public class Peer {
 
     public BroadcastRPC broadcastRPC() {
         if (broadcastRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Broadcast RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return broadcastRPC;
     }
@@ -178,7 +178,7 @@ public class Peer {
 
     public DistributedRouting distributedRouting() {
         if (distributedRouting == null) {
-            throw new RuntimeException("Not enabled, please enable this P2P function in PeerMaker");
+            throw new RuntimeException("DistributedRouting not enabled. Please enable this P2P function in the PeerBuilder.");
         }
         return distributedRouting;
     }

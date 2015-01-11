@@ -69,7 +69,7 @@ public abstract class DispatchHandler {
     }
     
     /**
-     * Registers all names on the dispatcher on behalf of the given peer
+     * Registers all names on the dispatcher on behalf of the provided peer
       * @param onBehalfOf
      * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of a relay node).
     * @param names
@@ -153,7 +153,7 @@ public abstract class DispatchHandler {
      * @param responder The responder used to respond the response message
      */
     public void forwardMessage(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
-        // here we need a referral, since we got contacted and we don't know
+        // here, we need a referral, since we got contacted and we don't know
         // if we can contact the peer with its address. The peer may be
         // behind a NAT
         synchronized (peerBean.peerStatusListeners()) {
@@ -170,7 +170,7 @@ public abstract class DispatchHandler {
 					peerStatusListener.peerFailed(requestMessage.sender(), new PeerException(e));
 				}
         	}
-        	LOG.error("Exception in custom handler", e);
+        	LOG.error("Exception in custom dispatch handler.", e);
             responder.failed(Type.EXCEPTION , e.toString());
         }
     }

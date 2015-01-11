@@ -290,9 +290,9 @@ public class PingRPC extends DispatchHandler {
 	 * 
 	 * @param self
 	 *            The peer that should be stored in the neighborset
-	 * @return The neighborset with exactly one peer
+	 * @return The neighbor set with exactly one peer
 	 */
-	private NeighborSet createNeighborSet(final PeerAddress self) {
+	private static NeighborSet createNeighborSet(final PeerAddress self) {
 		Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
 		tmp.add(self);
 		return new NeighborSet(-1, tmp);
@@ -301,15 +301,18 @@ public class PingRPC extends DispatchHandler {
 	@Override
 	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
 			Responder responder) throws Exception {
-		if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
-				|| message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4) && message
-				.command() == RPC.Commands.PING.getNr())) {
-			throw new IllegalArgumentException("Message content is wrong");
+		if (!((message.type() == Type.REQUEST_FF_1 
+				|| message.type() == Type.REQUEST_1
+				|| message.type() == Type.REQUEST_2 
+				|| message.type() == Type.REQUEST_3 
+				|| message.type() == Type.REQUEST_4) 
+				&& message.command() == RPC.Commands.PING.getNr())) {
+			throw new IllegalArgumentException("Request message type or command is wrong for this handler.");
 		}
 		final Message responseMessage;
 		// probe
 		if (message.type() == Type.REQUEST_3) {
-			LOG.debug("reply to probing, fire message to {}", message.sender());
+			LOG.debug("Respond to probing. Firing message to {}.", message.sender());
 
 			responseMessage = createResponseMessage(message, Type.OK);
 
@@ -351,16 +354,16 @@ public class PingRPC extends DispatchHandler {
 						});
 			}
 		} else if (message.type() == Type.REQUEST_2) { // discover
-			LOG.debug("reply to discover, found {}", message.sender());
+			LOG.debug("Respond to discovering. Found {}.", message.sender());
 			responseMessage = createResponseMessage(message, Type.OK);
 			responseMessage.neighborsSet(createNeighborSet(message.sender()));
 		} else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4) { // regular ping
-			LOG.debug("reply to regular ping {}", message.sender());
-			// test if this is a broadcast message to ourselves. If it is, do not
-			// reply.
+			LOG.debug("Respond to regular ping. {}.", message.sender());
+			// Test, of this is a broadcast message to ourselves.
+            // If it is, do not reply.
 			if (message.isUdp() && message.sender().peerId().equals(peerBean().serverPeerAddress().peerId())
 					&& message.recipient().peerId().equals(Number160.ZERO)) {
-				LOG.warn("don't reply, we are on the same peer, you should not make this call");
+				LOG.warn("Don't respond. We are on the same peer, you should make this call.");
 				responder.responseFireAndForget();
 			}
 			if (enable) {
@@ -369,7 +372,7 @@ public class PingRPC extends DispatchHandler {
 					Thread.sleep(WAIT_TIME);
 				}
 			} else {
-				LOG.debug("do not reply");
+				LOG.debug("Don't respond.");
 				// used for debugging
 				if (wait) {
 					Thread.sleep(WAIT_TIME);
@@ -383,12 +386,13 @@ public class PingRPC extends DispatchHandler {
 					}
 				}
 			}
-		} else { // fire and forget - if (message.getType() == Type.REQUEST_FF_1)
-			// we received a fire and forget ping. This means we are reachable
-			// from outside
-			// responseMessage = null;
+		} else {
+			// fire-and-forget if message.getType() == Type.REQUEST_FF_1
+            // we received a fire-and forget ping
+            // this means we are reachable from the outside
 			PeerAddress serverAddress = peerBean().serverPeerAddress();
 			if (message.isUdp()) {
+				// UDP
 				PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
 				peerBean().serverPeerAddress(newServerAddress);
 				synchronized (reachableListeners) {
@@ -398,6 +402,7 @@ public class PingRPC extends DispatchHandler {
 				}
 				responseMessage = message;
 			} else {
+				// TCP
 				PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
 				peerBean().serverPeerAddress(newServerAddress);
 				synchronized (reachableListeners) {

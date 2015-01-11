@@ -62,7 +62,6 @@ public class PeerCreator {
 
 	private final boolean master;
 
-
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
 	/**
@@ -78,39 +77,39 @@ public class PeerCreator {
 	 *            The server configuration to create the channel server that is
 	 *            used for listening for incoming connections
 	 * @param channelClientConfiguration
-	 *            The client side configuration
-	 * @param peerStatusListeners
-	 *            The status listener for offline peers
+	 *            The client-side configuration
+	 * @param timer
 	 * @throws IOException
 	 *             If the startup of listening to connections failed
 	 */
 	public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
-	        final ChannelServerConfiguration channelServerConficuration,
-	        final ChannelClientConfiguration channelClientConfiguration,
-	        final ScheduledExecutorService timer) throws IOException {
-		//peer bean
+			final ChannelServerConfiguration channelServerConficuration,
+			final ChannelClientConfiguration channelClientConfiguration, final ScheduledExecutorService timer)
+			throws IOException {
+		// peer bean
 		peerBean = new PeerBean(keyPair);
 		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConficuration);
 		peerBean.serverPeerAddress(self);
 		LOG.info("Visible address to other peers: {}", self);
-		
-		//start server
+
+		// start server
 		workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory(ConnectionBean.THREAD_NAME
-		        + "worker-client/server - "));
+				+ "worker-client/server - "));
 		bossGroup = new NioEventLoopGroup(2, new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
 		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConficuration.heartBeatMillis());
-		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup, channelServerConficuration,
-		        dispatcher, peerBean.peerStatusListeners());
-		if(!channelServer.startup()) {
+		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup,
+				channelServerConficuration, dispatcher, peerBean.peerStatusListeners());
+		if (!channelServer.startup()) {
 			shutdownNetty();
 			throw new IOException("Cannot bind to TCP or UDP port.");
 		}
-		
-		//connection bean
-		Sender sender = new Sender(peerId, peerBean.peerStatusListeners(), channelClientConfiguration, dispatcher);
+
+		// connection bean
+		Sender sender = new Sender(peerId, peerBean.peerStatusListeners(), channelClientConfiguration,
+				dispatcher);
 		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
 		connectionBean = new ConnectionBean(p2pId, dispatcher, sender, channelServer, reservation,
-		        channelClientConfiguration, timer);
+				channelClientConfiguration, timer);
 		this.master = true;
 	}
 
@@ -143,15 +142,16 @@ public class PeerCreator {
 	 */
 	public FutureDone<Void> shutdown() {
 		if (master) {
-			LOG.debug("shutdown in progress...");
+			LOG.debug("Shutdown is in progress...");
 		}
 		// de-register in dispatcher
-		connectionBean.dispatcher().removeIoHandlers(peerBean().serverPeerAddress().peerId(), peerBean().serverPeerAddress().peerId());
+		connectionBean.dispatcher().removeIoHandlers(peerBean().serverPeerAddress().peerId(),
+				peerBean().serverPeerAddress().peerId());
 		// shutdown running tasks for this peer
 		if (peerBean.maintenanceTask() != null) {
 			peerBean.maintenanceTask().shutdown();
 		}
-		
+
 		// shutdown all children
 		if (!master) {
 			for (PeerCreator peerCreator : childConnections) {
@@ -161,37 +161,37 @@ public class PeerCreator {
 		}
 		// shutdown the timer
 		connectionBean.timer().shutdown();
-		
-		LOG.debug("starting shutdown done in client...");
+
+		LOG.debug("Starting shutdown in client done...");
 		connectionBean.reservation().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
-				connectionBean.channelServer().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {		
-                    @Override
-					public void operationComplete(final FutureDone<Void> future) throws Exception {
-						shutdownNetty();
-					}
-				});
+				connectionBean.channelServer().shutdown()
+						.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+							@Override
+							public void operationComplete(final FutureDone<Void> future) throws Exception {
+								shutdownNetty();
+							}
+						});
 			}
 		});
 		// this is blocking
 		return shutdownFuture();
 	}
-	
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-    private void shutdownNetty() {
+	private void shutdownNetty() {
 		workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
 			@Override
 			public void operationComplete(final Future future) throws Exception {
 				LOG.debug("shutdown done in client / workerGroup...");
-				bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(
-				        new GenericFutureListener() {
-					        @Override
-					        public void operationComplete(final Future future) throws Exception {
-						        LOG.debug("shutdown done in client / bossGroup...");
-						        shutdownFuture().done();
-					        }
-				        });
+				bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
+					@Override
+					public void operationComplete(final Future future) throws Exception {
+						LOG.debug("shutdown done in client / bossGroup...");
+						shutdownFuture().done();
+					}
+				});
 			}
 		});
 	}
@@ -211,16 +211,14 @@ public class PeerCreator {
 	}
 
 	/**
-	 * @return The bean that holds information that may be shared amoung peers
+	 * @return The bean that holds information that may be shared among peers
 	 */
 	public ConnectionBean connectionBean() {
 		return connectionBean;
 	}
 
 	/**
-	 * Creates the {@link PeerAddress} based on the network discovery that was
-	 * done in
-	 * {@link #ChannelServer(Bindings, int, int, ChannelServerConfiguration)}.
+	 * Creates the {@link PeerAddress} based on the network discovery.
 	 * 
 	 * @param peerId
 	 *            The id of this peer
@@ -229,21 +227,22 @@ public class PeerCreator {
 	 *             If the address could not be determined
 	 */
 	private static PeerAddress findPeerAddress(final Number160 peerId,
-	        final ChannelClientConfiguration channelClientConfiguration,
-	        final ChannelServerConfiguration channelServerConficuration) throws IOException {
-		final String status = DiscoverNetworks.discoverInterfaces(channelClientConfiguration.bindingsOutgoing());
+			final ChannelClientConfiguration channelClientConfiguration,
+			final ChannelServerConfiguration channelServerConficuration) throws IOException {
+		final String status = DiscoverNetworks.discoverInterfaces(channelClientConfiguration
+				.bindingsOutgoing());
 		if (LOG.isInfoEnabled()) {
-			LOG.info("Status of external search: " + status);
+			LOG.info("Status of external address search: " + status);
 		}
 		InetAddress outsideAddress = channelClientConfiguration.bindingsOutgoing().foundAddress();
-		if(outsideAddress == null) {
-			throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
+		if (outsideAddress == null) {
+			throw new IOException("Not listening to anything. Maybe the binding information is wrong.");
 		}
-		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConficuration.
-				ports().tcpPort(), channelServerConficuration.ports().udpPort());
+		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress,
+				channelServerConficuration.ports().tcpPort(), channelServerConficuration.ports().udpPort());
 		final PeerAddress self = new PeerAddress(peerId, peerSocketAddress,
-		        channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(), false,
-		        PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
+				channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(),
+				false, PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
 		return self;
 	}
 }

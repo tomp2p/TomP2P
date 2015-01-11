@@ -75,10 +75,7 @@ import net.tomp2p.rpc.RawDataReply;
 public class Peer {
     // As soon as the user calls listen, this connection handler is set
     private final PeerCreator peerCreator;
-    // the id of this node
     private final Number160 peerId;
-    // the p2p network identifier, two different networks can have the same
-    // ports
     private final int p2pId;
 
     // Distributed
@@ -195,10 +192,18 @@ public class Peer {
         return peerCreator.connectionBean();
     }
 
+    /**
+     * The ID of this peer.
+     * @return
+     */
     public Number160 peerID() {
         return peerId;
     }
 
+    /**
+     * The P2P network identifier. Two different networks can use the same ports.
+     * @return
+     */
     public int p2pId() {
         return p2pId;
     }

@@ -26,7 +26,7 @@ import java.util.Enumeration;
 
 /**
  * A class to search for addresses to bind the sockets to. The user first
- * creates a {@link Bindings} class and provides all the necesary information,
+ * creates a {@link Bindings} class and provides all the necessary information,
  * then calls {@link #discoverInterfaces(Bindings)}. The results are stored in
  * {@link Bindings} as well.
  * 

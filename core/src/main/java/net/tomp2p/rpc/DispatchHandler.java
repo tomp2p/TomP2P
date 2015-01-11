@@ -153,9 +153,8 @@ public abstract class DispatchHandler {
      * @param responder The responder used to respond the response message
      */
     public void forwardMessage(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
-        // here, we need a referral, since we got contacted and we don't know
-        // if we can contact the peer with its address. The peer may be
-        // behind a NAT
+    	// Here, we need a referral since we got contacted and we don't know if
+        // we can contact the peer with its address. The peer may be behind a NAT.
         synchronized (peerBean.peerStatusListeners()) {
 			for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
 				peerStatusListener.peerFound(requestMessage.sender(), requestMessage.sender(), peerConnection);

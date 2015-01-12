@@ -201,11 +201,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
         
         @Override
-        public void response(Message responseMessage) {
-        	
-        	if(responseMessage == null || responseMessage.sender() == null) {
-        		System.err.println("why");
-        	}
+        public void response(Message responseMessage) {        	
         	if(responseMessage.sender().isRelayed()) {
         		responseMessage.peerSocketAddresses(responseMessage.sender().peerSocketAddresses());
     		}
@@ -214,7 +210,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
         
         @Override
-        public void failed(Message.Type type, String reason) {
+        public void failed(Message.Type type) {
             Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBeanMaster.serverPeerAddress());
             Dispatcher.this.respond(ctx, responseMessage);
         }

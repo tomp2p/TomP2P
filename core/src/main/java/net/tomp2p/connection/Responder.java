@@ -6,7 +6,7 @@ public interface Responder {
 
 	void response(Message responseMessage);
 
-	void failed(Message.Type type, String reason);
+	void failed(Message.Type type);
 
 	void responseFireAndForget();
 

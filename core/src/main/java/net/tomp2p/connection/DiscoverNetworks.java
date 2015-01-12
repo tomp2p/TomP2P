@@ -26,9 +26,9 @@ import java.util.Enumeration;
 
 /**
  * A class to search for addresses to bind the sockets to. The user first
- * creates a {@link Bindings} class and provides all the necessary information,
- * then calls {@link #discoverInterfaces(Bindings)}. The results are stored in
- * {@link Bindings} as well.
+ * creates a {@link Bindings} instance, provides all the necessary information
+ * and then calls {@link #discoverInterfaces(Bindings)}. The results are stored
+ * in the {@link Bindings} instance as well.
  * 
  * @author Thomas Bocek
  */
@@ -39,12 +39,12 @@ public final class DiscoverNetworks {
      */
     private DiscoverNetworks() { }
     /**
-     * Search for local interfaces. Hints how to search for those interfaces are
-     * provided by the user through the {@link Bindings} class. The results of
-     * that search (InetAddress) are stored in {@link Bindings} as well.
+     * Searches for local interfaces. Hints how to search for those interfaces are
+     * provided by the user through the {@link Bindings} instance. The results of
+     * that search (InetAddress) are stored in this {@link Bindings} instance as well.
      * 
      * @param bindings
-     *            The hints for the search and also the results are stored there
+     *            The hints for the search and where to store the results
      * @return The status of the search
      * @throws IOException
      *             If anything goes wrong, such as reflection.
@@ -56,13 +56,13 @@ public final class DiscoverNetworks {
             NetworkInterface networkInterface = e.nextElement();
             if (bindings.anyInterfaces()) {
                 sb.append(" ++").append(networkInterface.getName());
-                sb.append(discoverNetwork(networkInterface, bindings)).append(",");
+                sb.append(discoverNetwork(networkInterface, bindings)).append(", ");
             } else {
                 if (bindings.containsInterface(networkInterface.getName())) {
                     sb.append(" +").append(networkInterface.getName());
-                    sb.append(discoverNetwork(networkInterface, bindings)).append(",");
+                    sb.append(discoverNetwork(networkInterface, bindings)).append(", ");
                 } else {
-                    sb.append(" -").append(networkInterface.getName()).append(",");
+                    sb.append(" -").append(networkInterface.getName()).append(", ");
                 }
             }
         }
@@ -75,9 +75,9 @@ public final class DiscoverNetworks {
      * Discovers network interfaces and addresses.
      * 
      * @param networkInterface
-     *            The networkInterface to search for addresses to listen to
+     *            The network interface to search for addresses to listen to
      * @param bindings
-     *            The search hints and result storage.
+     *            The hints for the search and where to store the results
      * @return The status of the discovery
      */
     public static String discoverNetwork(final NetworkInterface networkInterface, final Bindings bindings) {

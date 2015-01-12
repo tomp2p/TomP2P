@@ -180,8 +180,9 @@ public class Peer {
         return distributedRouting;
     }
 
-    public void distributedRouting(DistributedRouting distributedRouting) {
+    public Peer distributedRouting(DistributedRouting distributedRouting) {
         this.distributedRouting = distributedRouting;
+        return this;
     }
 
     public PeerBean peerBean() {

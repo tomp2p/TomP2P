@@ -130,10 +130,8 @@ public final class ChannelServer {
 					        + channelServerConfiguration.ports().udpPort() + " and TCP port "
 					        + channelServerConfiguration.ports().tcpPort());
 				}
-				if (!startupTCP(new InetSocketAddress(channelServerConfiguration.ports().tcpPort()),
-				        channelServerConfiguration)
-				        || !startupUDP(new InetSocketAddress(channelServerConfiguration.ports().udpPort()),
-				                channelServerConfiguration)) {
+				if (!startupTCP(new InetSocketAddress(channelServerConfiguration.ports().tcpPort()))
+				        || !startupUDP(new InetSocketAddress(channelServerConfiguration.ports().udpPort()))) {
 					LOG.warn("Cannot bind TCP or UDP.");
 					return false;
 				}
@@ -145,10 +143,9 @@ public final class ChannelServer {
 						        + channelServerConfiguration.ports().udpPort() + ", TCP port"
 						        + channelServerConfiguration.ports().tcpPort());
 					}
-					if (!startupTCP(new InetSocketAddress(addr, channelServerConfiguration.ports().tcpPort()),
-					        channelServerConfiguration)
+					if (!startupTCP(new InetSocketAddress(addr, channelServerConfiguration.ports().tcpPort()))
 					        || !startupUDP(new InetSocketAddress(addr, channelServerConfiguration.ports()
-					                .udpPort()), channelServerConfiguration)) {
+					                .udpPort()))) {
 						LOG.warn("Cannot bind TCP or UDP.");
 						return false;
 					}
@@ -163,11 +160,9 @@ public final class ChannelServer {
 	 * 
 	 * @param listenAddress
 	 *            The address to listen to
-	 * @param config
-	 *            Can create handlers to be attached to this port
 	 * @return True if startup was successful
 	 */
-	boolean startupUDP(final InetSocketAddress listenAddress, final ChannelServerConfiguration config) {
+	boolean startupUDP(final InetSocketAddress listenAddress) {
 		Bootstrap b = new Bootstrap();
 		b.group(workerGroup);
 		b.channel(NioDatagramChannel.class);
@@ -197,11 +192,9 @@ public final class ChannelServer {
 	 * 
 	 * @param listenAddress
 	 *            The address to listen to
-	 * @param config
-	 *            Can create handlers to be attached to this port
 	 * @return True if startup was successful
 	 */
-	boolean startupTCP(final InetSocketAddress listenAddress, final ChannelServerConfiguration config) {
+	boolean startupTCP(final InetSocketAddress listenAddress) {
 		ServerBootstrap b = new ServerBootstrap();
 		b.group(bossGroup, workerGroup);
 		b.channel(NioServerSocketChannel.class);

@@ -273,14 +273,14 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 		// We got a good answer, let's mark the sender as alive
 		if (responseMessage.isOk() || responseMessage.isNotOk()) {
 			synchronized (peerBean.peerStatusListeners()) {
+				if (responseMessage.sender().isRelayed()
+						&& !responseMessage.peerSocketAddresses().isEmpty()) {
+					// use the response message as we have up-to-date data for the relays
+					final PeerAddress remotePeer = responseMessage.sender().changePeerSocketAddresses(
+							responseMessage.peerSocketAddresses());
+					responseMessage.sender(remotePeer);
+				}
 				for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-					if (responseMessage.sender().isRelayed()
-							&& !responseMessage.peerSocketAddresses().isEmpty()) {
-						// use the response message as we have up-to-date data for the relays
-						final PeerAddress remotePeer = responseMessage.sender().changePeerSocketAddresses(
-								responseMessage.peerSocketAddresses());
-						responseMessage.sender(remotePeer);
-					}
 					peerStatusListener.peerFound(responseMessage.sender(), null, null);
 				}
 			}

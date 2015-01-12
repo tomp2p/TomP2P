@@ -26,7 +26,7 @@ public class Ports {
    
     // The maximal port number, 2^16.
     public static final int MAX_PORT = 65535;
-    //IANA recommends to use ports higher than 49152.
+    //IANA recommends to use ports higher or equal 49152.
     public static final int MIN_DYN_PORT = 49152;
     // The default port of TomP2P.
     public static final int DEFAULT_PORT = 7700;

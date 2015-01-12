@@ -632,21 +632,20 @@ public class Sender {
 				futureResponse.removeCancel(writeCancel);
 				if (!future.isSuccess()) {
 					futureResponse.failedLater(future.cause());
-					reportFailed(futureResponse, future.channel().close());
 					LOG.warn("Failed to write channel the request {} {}.", futureResponse.request(), future.cause());
 				}
 				if (fireAndForget) {
 					futureResponse.responseLater(null);
 					LOG.debug("fire and forget, close channel now {}, {}", futureResponse.request(), future.channel());
-					reportMessage(futureResponse, future.channel().close());
 				}
+				reportAfterClose(futureResponse, future.channel().close());
 			}
 		});
 
 	}
 
 	/**
-	 * Report a failure after the channel was closed.
+	 * Report a the response after the channel was closed.
 	 * 
 	 * @param futureResponse
 	 *            The future to set the response
@@ -655,26 +654,7 @@ public class Sender {
 	 * @param cause
 	 *            The response message
 	 */
-	private void reportFailed(final FutureResponse futureResponse, final ChannelFuture close) {
-		close.addListener(new GenericFutureListener<ChannelFuture>() {
-			@Override
-			public void operationComplete(final ChannelFuture arg0) throws Exception {
-				futureResponse.responseNow();
-			}
-		});
-	}
-
-	/**
-	 * Report a successful response after the channel was closed.
-	 * 
-	 * @param futureResponse
-	 *            The future to set the response
-	 * @param close
-	 *            The close future
-	 * @param responseMessage
-	 *            The response message
-	 */
-	private void reportMessage(final FutureResponse futureResponse, final ChannelFuture close) {
+	private void reportAfterClose(final FutureResponse futureResponse, final ChannelFuture close) {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture arg0) throws Exception {

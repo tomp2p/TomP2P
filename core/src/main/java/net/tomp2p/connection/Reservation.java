@@ -368,21 +368,20 @@ public class Reservation {
 				}
 
 				try {
-					semaphoreUPD.acquire(permitsUDP);
+					semaphoreUPD.acquire(maxPermitsUDP);
 				} catch (InterruptedException e) {
 					futureChannelCreator.failed(e);
 					return;
 				}
 				try {
-					semaphoreTCP.acquire(permitsTCP);
+					semaphoreTCP.acquire(maxPermitsTCP);
 				} catch (InterruptedException e) {
 					semaphoreUPD.release(permitsUDP);
 					futureChannelCreator.failed(e);
 					return;
 				}
 
-				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, permitsUDP, permitsTCP,
-				        channelClientConfiguration);
+				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, maxPermitsUDP, maxPermitsTCP, channelClientConfiguration);
 				addToSet(channelCreator);
 			} finally {
 				read.unlock();

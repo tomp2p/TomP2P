@@ -106,16 +106,16 @@ public class ChannelCreator {
 	 *            The configuration that contains the pipeline filter
 	 */
 	ChannelCreator(final EventLoopGroup workerGroup, final FutureDone<Void> futureChannelCreationDone,
-	        final int maxPermitsUDP, final int maxPermitsTCP,
-	        final ChannelClientConfiguration channelClientConfiguration) {
+			int maxPermitsUDP, int maxPermitsTCP,
+			final ChannelClientConfiguration channelClientConfiguration) {
 		this.workerGroup = workerGroup;
 		this.futureChannelCreationDone = futureChannelCreationDone;
 		this.maxPermitsUDP = maxPermitsUDP;
 		this.maxPermitsTCP = maxPermitsTCP;
-		this.semaphoreUPD = new Semaphore(maxPermitsUDP);
-		this.semaphoreTCP = new Semaphore(maxPermitsTCP);
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.externalBindings = channelClientConfiguration.bindingsOutgoing();
+		this.semaphoreUPD = new Semaphore(maxPermitsUDP);
+		this.semaphoreTCP = new Semaphore(maxPermitsTCP);
 	}
 
 	/**

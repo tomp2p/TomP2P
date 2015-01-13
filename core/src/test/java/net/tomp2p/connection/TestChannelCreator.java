@@ -120,7 +120,7 @@ public class TestChannelCreator {
     	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
         ChannelServer cs = new ChannelServer(bossGroup, workerGroup, c, null, null);
         final int port = 4000;
-        cs.startupTCP(new InetSocketAddress("127.0.0.1", port), new ChannelServerConfiguration());
+        cs.startupTCP(new InetSocketAddress("127.0.0.1", port));
         // wait forever.
         Thread.sleep(Integer.MAX_VALUE);
     }

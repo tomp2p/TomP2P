@@ -170,7 +170,7 @@ public abstract class DispatchHandler {
 				}
         	}
         	LOG.error("Exception in custom dispatch handler.", e);
-            responder.failed(Type.EXCEPTION , e.toString());
+            responder.failed(Type.EXCEPTION);
         }
     }
 

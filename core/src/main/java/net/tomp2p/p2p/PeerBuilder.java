@@ -54,7 +54,7 @@ import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 /**
- * The maker / builder of a {@link Peer} class.
+ * The builder of a {@link Peer} class.
  * 
  * @author Thomas Bocek
  * 
@@ -80,9 +80,8 @@ public class PeerBuilder {
 	};
 
 	private static final KeyPair EMPTY_KEYPAIR = new KeyPair(EMPTY_PUBLICKEY, null);
-	// if the permits are chosen too high, then we might run into timeouts as we
-	// cant handle that many connections
-	// withing the time limit
+	// if the permits are chosen too high, then we might run into timeout
+	// as we can't handle that many connections within the time limit
 	private static final int MAX_PERMITS_PERMANENT_TCP = 250;
 	private static final int MAX_PERMITS_UDP = 250;
 	private static final int MAX_PERMITS_TCP = 250;
@@ -91,7 +90,6 @@ public class PeerBuilder {
 	private final Number160 peerId;
 
 	// optional with reasonable defaults
-
 	private KeyPair keyPair = null;
 	private int p2pID = -1;
 	private int tcpPort = -1;
@@ -105,15 +103,15 @@ public class PeerBuilder {
 	private ChannelServerConfiguration channelServerConfiguration = null;
 	private ChannelClientConfiguration channelClientConfiguration = null;
 	private Boolean behindFirewall = null;
-	private BroadcastHandler broadcastHandler;
-	private BloomfilterFactory bloomfilterFactory;
+	private BroadcastHandler broadcastHandler = null;
+	private BloomfilterFactory bloomfilterFactory = null;
 	private ScheduledExecutorService scheduledExecutorService = null;
 	private MaintenanceTask maintenanceTask = null;
 	private Random random = null;
 	private List<PeerInit> toInitialize = new ArrayList<PeerInit>(1);
 
-	// enable / disable RPC/P2P/other
-	private boolean enableHandShakeRPC = true;
+	// enable/disable RPC/P2P/other
+	private boolean enableHandshakeRPC = true;
 	private boolean enableNeighborRPC = true;
 	private boolean enableDirectDataRPC = true;
 	private boolean enableBroadcast = true;
@@ -121,23 +119,22 @@ public class PeerBuilder {
 	private boolean enableMaintenance = true;
 	private boolean enableQuitRPC = true;
 
-
 	/**
-	 * Creates a peermaker with the peer ID and an empty key pair.
+	 * Creates a peer builder with the provided peer ID and an empty key pair.
 	 * 
 	 * @param peerId
-	 *            The peer Id
+	 *            The peer ID
 	 */
 	public PeerBuilder(final Number160 peerId) {
 		this.peerId = peerId;
 	}
 
 	/**
-	 * Creates a peermaker with the key pair and generates out of this key pair
-	 * the peer ID.
+	 * Creates a peer builder with the provided key pair and a peer ID that is
+	 * generated out of this key pair.
 	 * 
 	 * @param keyPair
-	 *            The public private key
+	 *            The public private key pair
 	 */
 	public PeerBuilder(final KeyPair keyPair) {
 		this.peerId = Utils.makeSHAHash(keyPair.getPublic().getEncoded());
@@ -145,7 +142,7 @@ public class PeerBuilder {
 	}
 
 	/**
-	 * Create a peer and start to listen for incoming connections.
+	 * Creates a peer and starts to listen for incoming connections.
 	 * 
 	 * @return The peer that can operate in the P2P network.
 	 * @throws IOException .
@@ -168,18 +165,17 @@ public class PeerBuilder {
 			channelServerConfiguration.ports(new Ports(tcpPort, udpPort));
 			channelServerConfiguration.behindFirewall(behindFirewall);
 		}
-		
 		if (channelClientConfiguration == null) {
 			channelClientConfiguration = createDefaultChannelClientConfiguration();
 		}
+
 		if (keyPair == null) {
 			keyPair = EMPTY_KEYPAIR;
 		}
 		if (p2pID == -1) {
 			p2pID = 1;
 		}
-		
-		
+
 		if (interfaceBindings == null) {
 			interfaceBindings = new Bindings();
 		}
@@ -188,9 +184,9 @@ public class PeerBuilder {
 			externalBindings = new Bindings();
 		}
 		channelClientConfiguration.bindingsOutgoing(externalBindings);
+
 		if (peerMap == null) {
 			peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-			
 		}
 
 		if (masterPeer == null && scheduledExecutorService == null) {
@@ -202,14 +198,14 @@ public class PeerBuilder {
 			peerCreator = new PeerCreator(masterPeer.peerCreator(), peerId, keyPair);
 		} else {
 			peerCreator = new PeerCreator(p2pID, peerId, keyPair, channelServerConfiguration,
-			        channelClientConfiguration, scheduledExecutorService);
+					channelClientConfiguration, scheduledExecutorService);
 		}
 
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
 
 		PeerBean peerBean = peerCreator.peerBean();
 		peerBean.addPeerStatusListener(peerMap);
-		
+
 		ConnectionBean connectionBean = peerCreator.connectionBean();
 
 		peerBean.peerMap(peerMap);
@@ -222,14 +218,14 @@ public class PeerBuilder {
 		if (broadcastHandler == null) {
 			broadcastHandler = new DefaultBroadcastHandler(peer, new Random());
 		}
-		
-		//Set/enable RPC
 
-		if (isEnableHandShakeRPC()) {
+		// set/enable RPC
+
+		if (isEnableHandshakeRPC()) {
 			PingRPC pingRPC = new PingRPC(peerBean, connectionBean);
 			peer.pingRPC(pingRPC);
 		}
-		
+
 		if (isEnableQuitRPC()) {
 			QuitRPC quitRPC = new QuitRPC(peerBean, connectionBean);
 			quitRPC.addPeerStatusListener(peerMap);
@@ -246,35 +242,33 @@ public class PeerBuilder {
 			peer.directDataRPC(directDataRPC);
 		}
 
-		if (isEnableBroadcast()) {
+		if (isEnableBroadcastRpc()) {
 			BroadcastRPC broadcastRPC = new BroadcastRPC(peerBean, connectionBean, broadcastHandler);
 			peer.broadcastRPC(broadcastRPC);
 		}
-		
-		if (isEnableRouting() && isEnableNeighborRPC()) {
+
+		if (isEnableRoutingRpc() && isEnableNeighborRPC()) {
 			DistributedRouting routing = new DistributedRouting(peerBean, peer.neighborRPC());
 			peer.distributedRouting(routing);
 		}
 
-		if (maintenanceTask == null && isEnableMaintenance()) {
+		if (maintenanceTask == null && isEnableMaintenanceRpc()) {
 			maintenanceTask = new MaintenanceTask();
 		}
-
 		if (maintenanceTask != null) {
 			maintenanceTask.init(peer, connectionBean.timer());
 			maintenanceTask.addMaintainable(peerMap);
 		}
 		peerBean.maintenanceTask(maintenanceTask);
 
-
 		// set the ping builder for the heart beat
-		connectionBean.sender().pingBuilderFactory(new PingBuilderFactory() {			
+		connectionBean.sender().pingBuilderFactory(new PingBuilderFactory() {
 			@Override
 			public PingBuilder create() {
 				return peer.ping();
 			}
 		});
-				
+
 		for (PeerInit peerInit : toInitialize) {
 			peerInit.init(peer);
 		}
@@ -282,26 +276,24 @@ public class PeerBuilder {
 	}
 
 	public static ChannelServerConfiguration createDefaultChannelServerConfiguration() {
-		ChannelServerConfiguration channelServerConfiguration = new ChannelServerConfiguration();
-		channelServerConfiguration.bindingsIncoming(new Bindings());
-		//these two values may be overwritten in the peer builder
-		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
-		channelServerConfiguration.portsForwarding(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
-		channelServerConfiguration.behindFirewall(false);
-		channelServerConfiguration.pipelineFilter(new DefaultPipelineFilter());
-		channelServerConfiguration.signatureFactory(new DSASignatureFactory());
-		return channelServerConfiguration;
+		return new ChannelServerConfiguration()
+				.bindingsIncoming(new Bindings())
+				.behindFirewall(false)
+				.pipelineFilter(new DefaultPipelineFilter())
+				.signatureFactory(new DSASignatureFactory())
+				// these two values may be overwritten in the peer builder
+				.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT))
+				.portsForwarding(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
 	}
 
 	public static ChannelClientConfiguration createDefaultChannelClientConfiguration() {
-		ChannelClientConfiguration channelClientConfiguration = new ChannelClientConfiguration();
-		channelClientConfiguration.bindingsOutgoing(new Bindings());
-		channelClientConfiguration.maxPermitsPermanentTCP(MAX_PERMITS_PERMANENT_TCP);
-		channelClientConfiguration.maxPermitsTCP(MAX_PERMITS_TCP);
-		channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
-		channelClientConfiguration.pipelineFilter(new DefaultPipelineFilter());
-		channelClientConfiguration.signatureFactory(new DSASignatureFactory());
-		return channelClientConfiguration;
+		return new ChannelClientConfiguration()
+				.bindingsOutgoing(new Bindings())
+				.maxPermitsPermanentTCP(MAX_PERMITS_PERMANENT_TCP)
+				.maxPermitsTCP(MAX_PERMITS_TCP)
+				.maxPermitsUDP(MAX_PERMITS_UDP)
+				.pipelineFilter(new DefaultPipelineFilter())
+				.signatureFactory(new DSASignatureFactory());
 	}
 
 	public Number160 peerId() {
@@ -334,7 +326,7 @@ public class PeerBuilder {
 		this.tcpPortForwarding = tcpPortForwarding;
 		return this;
 	}
-	
+
 	public int tcpPort() {
 		return tcpPort;
 	}
@@ -352,7 +344,7 @@ public class PeerBuilder {
 		this.udpPort = udpPort;
 		return this;
 	}
-	
+
 	public int udpPortForwarding() {
 		return udpPortForwarding;
 	}
@@ -362,18 +354,36 @@ public class PeerBuilder {
 		return this;
 	}
 
+	/**
+	 * Sets the UDP and TCP ports to the specified value.
+	 * 
+	 * @param port
+	 * @return
+	 */
 	public PeerBuilder ports(int port) {
 		this.udpPort = port;
 		this.tcpPort = port;
 		return this;
 	}
-	
+
+	/**
+	 * Sets the external UDP and TCP ports to the specified value.
+	 * 
+	 * @param port
+	 * @return
+	 */
 	public PeerBuilder portsExternal(int port) {
 		this.udpPortForwarding = port;
 		this.tcpPortForwarding = port;
 		return this;
 	}
 
+	/**
+	 * Sets the interface- and external bindings to the specified value.
+	 * 
+	 * @param bindings
+	 * @return
+	 */
 	public PeerBuilder bindings(Bindings bindings) {
 		this.interfaceBindings = bindings;
 		this.externalBindings = bindings;
@@ -493,12 +503,12 @@ public class PeerBuilder {
 
 	// isEnabled methods
 
-	public boolean isEnableHandShakeRPC() {
-		return enableHandShakeRPC;
+	public boolean isEnableHandshakeRPC() {
+		return enableHandshakeRPC;
 	}
 
-	public PeerBuilder enableHandShakeRPC(boolean enableHandShakeRPC) {
-		this.enableHandShakeRPC = enableHandShakeRPC;
+	public PeerBuilder enableHandshakeRPC(boolean enableHandshakeRPC) {
+		this.enableHandshakeRPC = enableHandshakeRPC;
 		return this;
 	}
 
@@ -520,7 +530,7 @@ public class PeerBuilder {
 		return this;
 	}
 
-	public boolean isEnableRouting() {
+	public boolean isEnableRoutingRpc() {
 		return enableRouting;
 	}
 
@@ -529,7 +539,7 @@ public class PeerBuilder {
 		return this;
 	}
 
-	public boolean isEnableMaintenance() {
+	public boolean isEnableMaintenanceRpc() {
 		return enableMaintenance;
 	}
 
@@ -537,7 +547,7 @@ public class PeerBuilder {
 		this.enableMaintenance = enableMaintenance;
 		return this;
 	}
-	
+
 	public boolean isEnableQuitRPC() {
 		return enableQuitRPC;
 	}
@@ -546,9 +556,8 @@ public class PeerBuilder {
 		this.enableQuitRPC = enableQuitRPC;
 		return this;
 	}
-	
 
-	public boolean isEnableBroadcast() {
+	public boolean isEnableBroadcastRpc() {
 		return enableBroadcast;
 	}
 
@@ -577,13 +586,12 @@ public class PeerBuilder {
 	}
 
 	/**
-	 * Set peer to be behind a firewall and cannot be accessed directly.
+	 * Sets peer to be behind a firewall and not directly accessable.
 	 * 
 	 * @return This class
 	 */
 	public PeerBuilder behindFirewall() {
-		this.behindFirewall = true;
-		return this;
+		return behindFirewall(true);
 	}
 
 	/**
@@ -594,8 +602,9 @@ public class PeerBuilder {
 	 */
 	public static class DefaultPipelineFilter implements PipelineFilter {
 		@Override
-		public Map<String,Pair<EventExecutorGroup,ChannelHandler>> filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
-		        boolean client) {
+		public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(
+				final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
+				boolean client) {
 			return channelHandlers;
 		}
 	}
@@ -616,15 +625,16 @@ public class PeerBuilder {
 		}
 
 		@Override
-		public Map<String,Pair<EventExecutorGroup,ChannelHandler>> filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
-		        boolean client) {
+		public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(
+				final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
+				boolean client) {
 			setExecutor("handler", channelHandlers);
 			setExecutor("dispatcher", channelHandlers);
 			return channelHandlers;
 		}
 
 		private void setExecutor(String handlerName,
-		        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
+				final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
 			Pair<EventExecutorGroup, ChannelHandler> pair = channelHandlers.get(handlerName);
 			if (pair != null) {
 				channelHandlers.put(handlerName, pair.element0(eventExecutorGroup));

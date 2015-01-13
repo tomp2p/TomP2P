@@ -313,7 +313,7 @@ public class Peer {
      * @return The future, when shutdown is completed
      */
     public BaseFuture shutdown() {
-        //prevent the shutdown from being called twice
+        // prevent shutdown from being called twice
         if (!shutdown) {
             shutdown = true;
             
@@ -329,12 +329,12 @@ public class Peer {
             futureLateJoin.add(peerCreator.shutdown());
             return futureLateJoin;
         } else {
-            return new FutureDone<Void>().failed("already shutting / shut down");
+            return new FutureDone<Void>().failed("Already shutting / shut down.");
         }
     }
 
     /**
-     * @return True if the peer is about or already has shutdown
+     * @return True, if the peer is about to be shut down or has done so already.
      */
     public boolean isShutdown() {
         return shutdown;

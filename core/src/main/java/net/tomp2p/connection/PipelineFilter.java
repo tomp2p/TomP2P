@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 /**
- * The user may modify the filter by adding, removing, or changing the handlers.
+ * The user may modify the filter by adding, removing or changing the handlers.
  * 
  * @author Thomas Bocek
  * 

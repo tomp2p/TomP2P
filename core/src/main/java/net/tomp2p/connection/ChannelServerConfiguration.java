@@ -138,15 +138,17 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * @return Set the filter for the pipeline, where the user can add / remove or change filters
+     * Gets the filter for the pipeline, where the user can add, remove or change filters.
+     * @return 
      */
     public PipelineFilter pipelineFilter() {
         return pipelineFilter;
     }
 
     /**
+     * Sets the filter for the pipeline, where the user can add, remove or change filters.
      * @param pipelineFilter
-     *            Set the filter for the pipeline, where the user can add / remove or change filters
+     *            
      * @return This class
      */
     public ChannelServerConfiguration pipelineFilter(final PipelineFilter pipelineFilter) {

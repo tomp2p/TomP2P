@@ -77,7 +77,7 @@ public class ChannelCreator {
 	private final Lock readTCP = readWriteLockTCP.readLock();
 	private final Lock writeTCP = readWriteLockTCP.writeLock();
 
-	private final FutureDone<Void> futureChannelCreationDone;
+	private final FutureDone<Void> futureChannelShutdownDone;
 
 	private final ChannelClientConfiguration channelClientConfiguration;
 
@@ -109,7 +109,7 @@ public class ChannelCreator {
 			int maxPermitsUDP, int maxPermitsTCP,
 			final ChannelClientConfiguration channelClientConfiguration) {
 		this.workerGroup = workerGroup;
-		this.futureChannelCreationDone = futureChannelCreationDone;
+		this.futureChannelShutdownDone = futureChannelCreationDone;
 		this.maxPermitsUDP = maxPermitsUDP;
 		this.maxPermitsTCP = maxPermitsTCP;
 		this.channelClientConfiguration = channelClientConfiguration;
@@ -236,13 +236,13 @@ public class ChannelCreator {
 
 	/**
 	 * When a channel is closed, the semaphore is released and another channel can
-	 * be created. Also, the lock for the channel creating is beining released.
+	 * be created. Also, the lock for the channel creating is being released.
 	 * This means that the ChannelCreator can be shut down.
 	 * 
 	 * @param channelFuture
 	 *            The channel future
 	 * @param semaphore
-	 *            The semaphore to decrease
+	 *            The semaphore to release
 	 * @return The same future that was passed as an argument
 	 */
 	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore, final FutureResponse futureResponse) {
@@ -292,26 +292,26 @@ public class ChannelCreator {
 	}
 
 	/**
-	 * Shutdown this channel creator. This means that no TCP or UDP connection
+	 * Shuts down this channel creator. This means that no more TCP or UDP connections
 	 * can be established.
 	 * 
 	 * @return The shutdown future.
 	 */
 	public FutureDone<Void> shutdown() {
-		// set shutdown flag for UDP and TCP, if we acquire a write lock, all
-		// read locks are blocked as well
+		// set shutdown flag for UDP and TCP
+        // if we acquire a write lock, all read locks are blocked as well
 		writeUDP.lock();
 		writeTCP.lock();
 		try {
-			if (shutdownTCP || shutdownUDP) {
-				shutdownFuture().failed("already shutting down");
+			if (isShutdown()) {
+				shutdownFuture().failed("Already shutting down.");
 				return shutdownFuture();
 			}
 			shutdownUDP = true;
 			shutdownTCP = true;
 		} finally {
-			writeTCP.unlock();
 			writeUDP.unlock();
+			writeTCP.unlock();
 		}
 
 		recipients.close().addListener(new GenericFutureListener<ChannelGroupFuture>() {
@@ -331,7 +331,7 @@ public class ChannelCreator {
 	 * @return The shutdown future that is used when calling {@link #shutdown()}
 	 */
 	public FutureDone<Void> shutdownFuture() {
-		return futureChannelCreationDone;
+		return futureChannelShutdownDone;
 	}
 	
 	public int availableUDPPermits() {
@@ -344,14 +344,10 @@ public class ChannelCreator {
 	
 	@Override
 	public String toString() {
-	    StringBuilder sb = new StringBuilder("sem-udp:");
-	    sb.append(semaphoreUPD.availablePermits());
-	    sb.append(",sem-tcp:");
-	    sb.append(semaphoreTCP.availablePermits());
-	    sb.append(",addrUDP:");
-	    sb.append(semaphoreUPD);
+	    StringBuilder sb = new StringBuilder("ChannelCreator [").
+	    		append("sem-udp:").append(semaphoreUPD.availablePermits()).
+	    		append(",sem-tcp:").append(semaphoreTCP.availablePermits()).
+	    		append(",addrUDP:").append(semaphoreUPD);
 	    return sb.toString();
 	}
-
-	
 }

@@ -36,7 +36,7 @@ import org.junit.Test;
 public class TestFutures {
 
     private final int nr = 10;
-    private static final int RONUDS = 20000000;
+    private static final int RONUDS = 2000000;
     private static final int SUB = 1;
     private int steps = RONUDS / SUB;
     private final Set<Integer> done = new HashSet<Integer>();

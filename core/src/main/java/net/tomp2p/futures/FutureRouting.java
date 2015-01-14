@@ -46,7 +46,7 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
     private SortedSet<PeerAddress> routingPath;
 
     public FutureRouting() {
-        self(this);
+    	self(this);
     }
 
     /**
@@ -97,7 +97,6 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
                 // find other peers
                 this.type = BaseFuture.FutureType.OK;
             }
-
         }
         notifyListeners();
     }

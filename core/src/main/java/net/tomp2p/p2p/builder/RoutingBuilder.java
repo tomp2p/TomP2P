@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
+import net.tomp2p.p2p.RoutingFilter;
 import net.tomp2p.p2p.RoutingMechanism;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -26,6 +27,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     private Number640 to;
     
     private Collection<PeerFilter> peerFilters;
+    private Collection<RoutingFilter> routingFilters;
 
     private int maxDirectHits;
     private int maxNoNewInfo;
@@ -120,6 +122,15 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     
     public Collection<PeerFilter> peerFilters() {
     	return peerFilters;
+    }
+    
+    public RoutingBuilder routingFilter(Collection<RoutingFilter> routingFilters) {
+		this.routingFilters = routingFilters;
+    	return this;
+    }
+    
+    public Collection<RoutingFilter> routingFilters() {
+    	return routingFilters;
     }
 
     /**

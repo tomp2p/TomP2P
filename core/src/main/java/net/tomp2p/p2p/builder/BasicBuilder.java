@@ -21,6 +21,7 @@ import java.util.Collection;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
+import net.tomp2p.p2p.RoutingFilter;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerFilter;
 
@@ -54,5 +55,10 @@ public interface BasicBuilder<K> extends ConnectionConfiguration, Builder {
      * @return A set of filters or null if no filters set
      */
 	public Collection<PeerFilter> peerFilters();
+	
+	/**
+	 * @return A set of filters or null if not filters set
+	 */
+	public Collection<RoutingFilter> routingFilters();
 
 }

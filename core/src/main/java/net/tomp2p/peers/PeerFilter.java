@@ -20,6 +20,7 @@ import java.util.Collection;
 
 /**
  * A filter that can prevent peers from being stored in the map.
+ * Therefore it will be ignored in the routing
  * 
  * @author Thomas Bocek
  * 

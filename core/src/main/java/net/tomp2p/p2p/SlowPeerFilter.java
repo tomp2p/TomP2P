@@ -8,7 +8,7 @@ import net.tomp2p.peers.PeerAddress;
  * @author Nico Rutishauser
  *
  */
-public class SlowPeerFilter implements RoutingFilter {
+public class SlowPeerFilter implements PostRoutingFilter {
 
 	@Override
 	public boolean rejectPotentialHit(PeerAddress peerAddress) {

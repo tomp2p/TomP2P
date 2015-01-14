@@ -25,7 +25,7 @@ import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.RoutingFilter;
+import net.tomp2p.p2p.PostRoutingFilter;
 import net.tomp2p.p2p.builder.BasicBuilder;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.p2p.builder.SignatureBuilder;
@@ -69,7 +69,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     // private boolean forceTCP = false;
     
     private Collection<PeerFilter> peerFilters;
-    private Collection<RoutingFilter> routingFilters;
+    private Collection<PostRoutingFilter> postRoutingFilters;
 
     private K self;
 
@@ -279,17 +279,17 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     	return peerFilters;
     }
     
-    public K addRoutingFilter(RoutingFilter routingFilter) {
-    	if(routingFilter == null) {
+    public K addPostRoutingFilter(PostRoutingFilter postRoutingFilter) {
+    	if(postRoutingFilters == null) {
     		//most likely we have 1-2 filters
-    		routingFilters = new ArrayList<RoutingFilter>(2);
+    		postRoutingFilters = new ArrayList<PostRoutingFilter>(2);
     	}
-    	routingFilters.add(routingFilter);
+    	postRoutingFilters.add(postRoutingFilter);
     	return self;
     }
     
-    public Collection<RoutingFilter> routingFilters() {
-    	return routingFilters;
+    public Collection<PostRoutingFilter> postRoutingFilters() {
+    	return postRoutingFilters;
     }
 
     protected void preBuild(String name) {

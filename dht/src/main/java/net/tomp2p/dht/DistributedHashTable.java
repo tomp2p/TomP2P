@@ -682,7 +682,7 @@ public class DistributedHashTable {
         routingBuilder.locationKey(builder.locationKey());
         routingBuilder.domainKey(builder.domainKey());
         routingBuilder.peerFilters(builder.peerFilters());
-        routingBuilder.routingFilter(builder.routingFilters());
+        routingBuilder.postRoutingFilters(builder.postRoutingFilters());
         return routingBuilder;
     }
     

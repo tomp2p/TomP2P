@@ -228,8 +228,8 @@ public class DistributedRouting {
             }
         }
 
-        if(routingBuilder.routingFilters() != null) {
-        	for (RoutingFilter filter : routingBuilder.routingFilters()) {
+        if(routingBuilder.postRoutingFilters() != null) {
+        	for (PostRoutingFilter filter : routingBuilder.postRoutingFilters()) {
         		// filter the potential hits
 				Iterator<PeerAddress> potentialIter = potentialHits.iterator();
 				while(potentialIter.hasNext()) {

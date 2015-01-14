@@ -143,7 +143,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             if (caching) {
                 tmp.add(new CacheMap<Number160, PeerStatistic>(bagSizes[i], true));
             } else {
-                final int memAlloc = Math.max(0, bagSizes[i] / 8 - 1);
+                final int memAlloc = bagSizes[i] / 8;
                 tmp.add(new HashMap<Number160, PeerStatistic>(memAlloc));
             }
         }
@@ -251,9 +251,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     	if(peerFilters == null || peerFilters.size() ==0) {
     		return false;
     	}
-    	final Collection<PeerAddress> all = all();
+    	
     	for(PeerFilter peerFilter:peerFilters) {
-    		if(peerFilter.reject(peerAddress, all, self)) {
+    		if(peerFilter.rejectPeerMap(peerAddress, this)) {
     			return true;
     		}
     	}
@@ -596,7 +596,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Return all addresses from the neighbor list. The collection is a copy and it is partially sorted.
+     * Return all addresses from the neighbor list. The collection is a copy and it is partially sorted. This operation is slow.
      * 
      * @return All neighbors
      */

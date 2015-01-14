@@ -40,7 +40,7 @@ public class PeerStatRoutingFilter implements PeerFilter {
 	// see
 	// http://hal.inria.fr/docs/00/78/64/38/PDF/detection_mitigation_sybil_attacks.pdf
 	@Override
-	public boolean reject(final PeerAddress peerAddress, Collection<PeerAddress> all, Number160 target) {
+	public boolean rejectPeerMap(final PeerAddress peerAddress, final PeerMap peerMap) {
 		// immediate check
 		/*double numberOfPeers = statistics.getEstimatedNumberOfNodes();
 		int e = (int) (Math.log(numberOfPeers / replicationRate) / Math.log(2));
@@ -81,4 +81,10 @@ public class PeerStatRoutingFilter implements PeerFilter {
 
 		return false;
 	}
+
+	@Override
+    public boolean rejectPreRouting(PeerAddress peerAddress, Collection<PeerAddress> all) {
+	    // TODO Auto-generated method stub
+	    return false;
+    }
 }

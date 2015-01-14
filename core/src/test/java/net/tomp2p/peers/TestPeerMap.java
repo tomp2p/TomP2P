@@ -336,7 +336,7 @@ public class TestPeerMap {
      */
     @Test
     public void testMultiRandomAddRemove() throws InterruptedException {
-        final int rounds = 100;
+        final int rounds = 20;
         for (int i = 0; i < rounds; i++) {
             testRandomAddRemove();
         }

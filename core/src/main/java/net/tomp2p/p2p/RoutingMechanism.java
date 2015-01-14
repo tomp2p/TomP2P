@@ -323,7 +323,7 @@ public class RoutingMechanism {
 		for (Iterator<PeerStatistic> iterator = newNeighbors.iterator(); iterator.hasNext();) {
 			PeerAddress newNeighbor = iterator.next().peerAddress();
 			for (PeerFilter peerFilter : peerFilters) {
-				if (peerFilter.reject(newNeighbor, all, locationkey)) {
+				if (peerFilter.rejectPreRouting(newNeighbor, all)) {
 					iterator.remove();
 				}
 			}

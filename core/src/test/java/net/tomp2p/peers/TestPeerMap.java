@@ -490,7 +490,7 @@ public class TestPeerMap {
         peerMap.peerFound(pa3, null, null, null);
         peerStatatistic = peerMap.nextForMaintenance(notInterested);
         Assert.assertEquals(true, peerStatatistic == null);
-        Thread.sleep(1000);
+        Thread.sleep(1100);
         peerStatatistic = peerMap.nextForMaintenance(notInterested);
         Assert.assertEquals(peerStatatistic.peerAddress(), pa3);
     }

@@ -397,7 +397,7 @@ public class RoutingMechanism {
     static boolean merge(final SortedSet<PeerStatistic> queueToAsk, final Collection<PeerStatistic> newPeers,
             final Collection<PeerAddress> alreadyAsked) {
 
-        final SortedSet<PeerStatistic> result = new UpdatableTreeSet<>(queueToAsk.comparator());
+        final SortedSet<PeerStatistic> result = new UpdatableTreeSet<PeerStatistic>(queueToAsk.comparator());
 
         // Remove peers we already asked
         for (Iterator<PeerStatistic> iterator = newPeers.iterator(); iterator.hasNext(); ) {

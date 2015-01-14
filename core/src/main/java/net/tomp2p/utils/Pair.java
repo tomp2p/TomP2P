@@ -1,7 +1,5 @@
 package net.tomp2p.utils;
 
-import java.util.Objects;
-
 public class Pair<K, V> {
 
 	private final K element0;
@@ -59,7 +57,7 @@ public class Pair<K, V> {
 			return true;
 		}
 		Pair<?, ?> p = (Pair<?, ?>) o;
-		return Objects.equals(p.element0, element0) && Objects.equals(p.element1, element1);
+		return equals(p.element0, element0) && equals(p.element1, element1);
 	}
 
 	/**
@@ -72,6 +70,8 @@ public class Pair<K, V> {
 		return (element0 == null ? 0 : element0.hashCode()) ^ (element1 == null ? 0 : element1.hashCode());
 	}
 
-	
+	private static boolean equals(Object a, Object b) {
+        return (a == b) || (a != null && a.equals(b));
+    }
 
 }

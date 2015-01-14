@@ -681,7 +681,7 @@ public class DistributedHashTable {
                 builder.routingConfiguration());
         routingBuilder.locationKey(builder.locationKey());
         routingBuilder.domainKey(builder.domainKey());
-        routingBuilder.peerFilters(builder.peerFilters());
+        routingBuilder.peerMapFilters(builder.peerMapFilters());
         routingBuilder.postRoutingFilters(builder.postRoutingFilters());
         return routingBuilder;
     }

@@ -27,7 +27,7 @@ import net.tomp2p.p2p.Statistics;
  * @author Thibault Cholez
  * 
  */
-public class PeerStatRoutingFilter implements PeerFilter {
+public class PeerStatRoutingFilter implements PeerMapFilter {
 
 	//final private Statistics statistics;
 	//final private int replicationRate;

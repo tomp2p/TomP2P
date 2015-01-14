@@ -24,7 +24,7 @@ import java.util.Collection;
  * @author Thomas Bocek
  * 
  */
-public class DefaultPeerFilter implements PeerFilter {
+public class DefaultPeerFilter implements PeerMapFilter {
 
 	@Override
     public boolean reject(PeerAddress peerAddress, Collection<PeerAddress> all, Number160 target) {

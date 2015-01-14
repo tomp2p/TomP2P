@@ -25,7 +25,7 @@ import java.util.Collection;
  * @author Thomas Bocek
  * 
  */
-public interface PeerFilter {
+public interface PeerMapFilter {
 
     /**
      * Each peer that is added in the map runs through this filter.

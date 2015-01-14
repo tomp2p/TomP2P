@@ -30,7 +30,7 @@ import net.tomp2p.p2p.builder.BasicBuilder;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.p2p.builder.SignatureBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerFilter;
+import net.tomp2p.peers.PeerMapFilter;
 
 /**
  * Every DHT builder has those methods in common.
@@ -68,7 +68,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     // private boolean forceUDP = false;
     // private boolean forceTCP = false;
     
-    private Collection<PeerFilter> peerFilters;
+    private Collection<PeerMapFilter> peerMapFilters;
     private Collection<PostRoutingFilter> postRoutingFilters;
 
     private K self;
@@ -266,17 +266,17 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         return self;
     }
     
-    public K addPeerFilter(PeerFilter peerFilter) {
-    	if(peerFilters == null) {
+    public K addPeerMapFilter(PeerMapFilter peerMapFilter) {
+    	if(peerMapFilters == null) {
     		//most likely we have 1-2 filters
-    		peerFilters = new ArrayList<PeerFilter>(2);
+    		peerMapFilters = new ArrayList<PeerMapFilter>(2);
     	}
-    	peerFilters.add(peerFilter);
+    	peerMapFilters.add(peerMapFilter);
     	return self;
     }
     
-    public Collection<PeerFilter> peerFilters() {
-    	return peerFilters;
+    public Collection<PeerMapFilter> peerMapFilters() {
+    	return peerMapFilters;
     }
     
     public K addPostRoutingFilter(PostRoutingFilter postRoutingFilter) {

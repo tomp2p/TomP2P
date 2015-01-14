@@ -28,7 +28,7 @@ import net.tomp2p.p2p.builder.Builder;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.p2p.builder.SignatureBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerFilter;
+import net.tomp2p.peers.PeerMapFilter;
 
 public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends DefaultConnectionConfiguration
         implements SignatureBuilder<K>, Builder {
@@ -55,7 +55,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
 
     private KeyPair keyPair = null;
     
-    private Collection<PeerFilter> peerFilters;
+    private Collection<PeerMapFilter> peerMapFilters;
 
 
     public TrackerBuilder(PeerTracker peer, Number160 locationKey) {
@@ -195,16 +195,16 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
         return keyPair;
     }
 
-	public K addPeerFilter(PeerFilter peerFilter) {
-    	if(peerFilters == null) {
+	public K addPeerMapFilter(PeerMapFilter peerMapFilter) {
+    	if(peerMapFilters == null) {
     		//most likely we have 1-2 filters
-    		peerFilters = new ArrayList<PeerFilter>(2);
+    		peerMapFilters = new ArrayList<PeerMapFilter>(2);
     	}
-    	peerFilters.add(peerFilter);
+    	peerMapFilters.add(peerMapFilter);
     	return self;
     }
     
-    public Collection<PeerFilter> peerFilters() {
-    	return peerFilters;
+    public Collection<PeerMapFilter> peerMapFilters() {
+    	return peerMapFilters;
     }
 }

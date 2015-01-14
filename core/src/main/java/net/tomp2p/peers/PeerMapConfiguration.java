@@ -37,7 +37,7 @@ public class PeerMapConfiguration {
     private int exceptionTimeout;
     private int offlineCount;
     //we'll add 1-2 filters
-    private Collection<PeerFilter> peerFilters = new ArrayList<PeerFilter>(2);
+    private Collection<PeerMapFilter> peerMapFilters = new ArrayList<PeerMapFilter>(2);
     private Maintenance maintenance;
     private boolean peerVerification;
     private PeerStatisticComparator peerStatisticComparator;
@@ -227,17 +227,17 @@ public class PeerMapConfiguration {
     /**
      * @return This filter can be set to not accept certain peers
      */
-    public Collection<PeerFilter> peerFilters() {
-        return peerFilters;
+    public Collection<PeerMapFilter> peerMapFilters() {
+        return peerMapFilters;
     }
 
     /**
-     * @param peerFilter
+     * @param peerMapFilter
      *            This filter can be set to not accept certain peers
      * @return this class
      */
-    public PeerMapConfiguration addPeerFilter(final PeerFilter peerFilter) {
-        peerFilters.add(peerFilter);
+    public PeerMapConfiguration addMapPeerFilter(final PeerMapFilter peerMapFilter) {
+        peerMapFilters.add(peerMapFilter);
         return this;
     }
 

@@ -23,7 +23,7 @@ import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.p2p.PostRoutingFilter;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerFilter;
+import net.tomp2p.peers.PeerMapFilter;
 
 /**
  * The basic build methods for the builder classes.
@@ -54,7 +54,7 @@ public interface BasicBuilder<K> extends ConnectionConfiguration, Builder {
     /**
      * @return A set of filters or null if no filters set
      */
-	public Collection<PeerFilter> peerFilters();
+	public Collection<PeerMapFilter> peerMapFilters();
 	
 	/**
 	 * @return A set of filters or null if not filters set

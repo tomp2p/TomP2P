@@ -7,12 +7,17 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
+import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -132,7 +137,7 @@ public class TestH2H {
 
 		FutureRemove futureRemove1a = p1.remove(lKey).contentKey(cKey).start();
 		futureRemove1a.awaitUninterruptibly();
-		Assert.assertFalse(futureRemove1a.isSuccess());
+		Assert.assertFalse(futureRemove1a.isRemoved());
 
 		FutureGet futureGet2a = p1.get(lKey).contentKey(cKey).start();
 		futureGet2a.awaitUninterruptibly();
@@ -142,7 +147,7 @@ public class TestH2H {
 
 		FutureRemove futureRemove1b = p2.remove(lKey).contentKey(cKey).start();
 		futureRemove1b.awaitUninterruptibly();
-		Assert.assertFalse(futureRemove1b.isSuccess());
+		Assert.assertFalse(futureRemove1b.isRemoved());
 
 		FutureGet futureGet2b = p2.get(lKey).contentKey(cKey).start();
 		futureGet2b.awaitUninterruptibly();
@@ -154,7 +159,7 @@ public class TestH2H {
 
 		FutureRemove futureRemove2a = p1.remove(lKey).contentKey(cKey).keyPair(keyPair2).start();
 		futureRemove2a.awaitUninterruptibly();
-		Assert.assertFalse(futureRemove2a.isSuccess());
+		Assert.assertFalse(futureRemove2a.isRemoved());
 
 		FutureGet futureGet3a = p1.get(lKey).contentKey(cKey).start();
 		futureGet3a.awaitUninterruptibly();
@@ -164,7 +169,7 @@ public class TestH2H {
 
 		FutureRemove futureRemove2b = p2.remove(lKey).contentKey(cKey).start();
 		futureRemove2b.awaitUninterruptibly();
-		Assert.assertFalse(futureRemove2b.isSuccess());
+		Assert.assertFalse(futureRemove2b.isRemoved());
 
 		FutureGet futureGet3b = p2.get(lKey).contentKey(cKey).start();
 		futureGet3b.awaitUninterruptibly();
@@ -177,7 +182,7 @@ public class TestH2H {
 
 		FutureRemove futureRemove4 = p1.remove(lKey).contentKey(cKey).keyPair(keyPair1).start();
 		futureRemove4.awaitUninterruptibly();
-		Assert.assertTrue(futureRemove4.isSuccess());
+		Assert.assertTrue(futureRemove4.isRemoved());
 
 		FutureGet futureGet4a = p2.get(lKey).contentKey(cKey).start();
 		futureGet4a.awaitUninterruptibly();
@@ -243,7 +248,7 @@ public class TestH2H {
 		FutureRemove futureRemove1a = p1.remove(lKey).from(new Number640(lKey, Number160.ZERO, cKey, Number160.ZERO))
 		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).start();
 		futureRemove1a.awaitUninterruptibly();
-		Assert.assertFalse(futureRemove1a.isSuccess());
+		Assert.assertFalse(futureRemove1a.isRemoved());
 
 		FutureGet futureGet2a = p1.get(lKey).contentKey(cKey).start();
 		futureGet2a.awaitUninterruptibly();
@@ -254,7 +259,7 @@ public class TestH2H {
 		FutureRemove futureRemove1b = p2.remove(lKey).from(new Number640(lKey, Number160.ZERO, cKey, Number160.ZERO))
 		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).start();
 		futureRemove1b.awaitUninterruptibly();
-		Assert.assertFalse(futureRemove1b.isSuccess());
+		Assert.assertFalse(futureRemove1b.isRemoved());
 
 		FutureGet futureGet2b = p2.get(lKey).contentKey(cKey).start();
 		futureGet2b.awaitUninterruptibly();
@@ -268,7 +273,7 @@ public class TestH2H {
 		FutureRemove futureRemove2a = p1.remove(lKey).from(new Number640(lKey, Number160.ZERO, cKey, Number160.ZERO))
 		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).keyPair(key2).start();
 		futureRemove2a.awaitUninterruptibly();
-		Assert.assertFalse(futureRemove2a.isSuccess());
+		Assert.assertFalse(futureRemove2a.isRemoved());
 		FutureGet futureGet3a = p2.get(lKey).contentKey(cKey).start();
 		futureGet3a.awaitUninterruptibly();
 		Assert.assertTrue(futureGet3a.isSuccess());
@@ -277,7 +282,7 @@ public class TestH2H {
 		FutureRemove futureRemove2b = p2.remove(lKey).from(new Number640(lKey, Number160.ZERO, cKey, Number160.ZERO))
 		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).keyPair(key2).start();
 		futureRemove2b.awaitUninterruptibly();
-		Assert.assertFalse(futureRemove2b.isSuccess());
+		Assert.assertFalse(futureRemove2b.isRemoved());
 
 		FutureGet futureGet3b = p2.get(lKey).contentKey(cKey).start();
 		futureGet3b.awaitUninterruptibly();
@@ -290,7 +295,7 @@ public class TestH2H {
 		FutureRemove futureRemove4 = p1.remove(lKey).from(new Number640(lKey, Number160.ZERO, cKey, Number160.ZERO))
 		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).keyPair(key1).start();
 		futureRemove4.awaitUninterruptibly();
-		Assert.assertTrue(futureRemove4.isSuccess());
+		Assert.assertTrue(futureRemove4.isRemoved());
 		FutureGet futureGet4a = p2.get(lKey).contentKey(cKey).start();
 		futureGet4a.awaitUninterruptibly();
 		Assert.assertFalse(futureGet4a.isSuccess());
@@ -306,6 +311,47 @@ public class TestH2H {
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();
 	}
+	
+	@Test
+	public void getFromToTest1() throws IOException, ClassNotFoundException {
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).start()).start();
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).start()).start();
+
+		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
+
+		String locationKey = "location";
+		String contentKey = "content";
+
+		List<H2HTestData> content = new ArrayList<H2HTestData>();
+		for (int i = 0; i < 3; i++) {
+			H2HTestData data = new H2HTestData(randomString(i));
+			data.generateVersionKey();
+			if (i > 0) {
+				data.setBasedOnKey(content.get(i - 1).getVersionKey());
+			}
+			content.add(data);
+
+			p2.put(Number160.createHash(locationKey)).data(Number160.createHash(contentKey), new Data(data))
+					.versionKey(data.getVersionKey()).start().awaitUninterruptibly();
+		}
+
+		FutureGet future = p1
+				.get(Number160.createHash(locationKey))
+				.from(new Number640(Number160.createHash(locationKey), Number160.ZERO, Number160.createHash(contentKey),
+						Number160.ZERO))
+				.to(new Number640(Number160.createHash(locationKey), Number160.ZERO, Number160.createHash(contentKey),
+						Number160.MAX_VALUE)).descending().returnNr(1).start();
+		future.awaitUninterruptibly();
+
+		Assert.assertEquals(content.get(content.size() - 1).getTestString(), ((H2HTestData) future.data().object()).getTestString());
+
+		p1.shutdown().awaitUninterruptibly();
+		p2.shutdown().awaitUninterruptibly();
+	}
+
+	private String randomString(int i) {
+		return "random"+i;
+	}
 
 }
 
@@ -317,6 +363,8 @@ class H2HTestData extends NetworkContent {
 	public H2HTestData(String testContent) {
 		this.testString = testContent;
 	}
+
+	
 
 	@Override
 	public int getTimeToLive() {
@@ -353,5 +401,20 @@ abstract class NetworkContent implements Serializable {
 
 	public void setBasedOnKey(Number160 versionKey) {
 		this.basedOnKey = versionKey;
+	}
+	
+	public void generateVersionKey() {
+		// get the current time
+		long timestamp = new Date().getTime();
+		// get a MD5 hash of the object itself
+		byte[] hash = null;
+		try {
+			hash = Utils.makeMD5Hash(Utils.encodeJavaObject(this));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// use time stamp value and the first part of the MD5 hash as version key
+		versionKey = new Number160(timestamp, new Number160(Arrays.copyOf(hash, Number160.BYTE_ARRAY_SIZE)));
 	}
 }

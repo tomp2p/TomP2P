@@ -34,9 +34,6 @@ import net.tomp2p.storage.Data;
  * @param <K>
  */
 public class FutureRemove extends FutureDHT<FutureRemove> {
-    // The minimum number of expected results. This is also used for put()
-    // operations to decide if a future failed or not.
-    private final boolean failIfNotFound;
 
     // Since we receive multiple results, we have an evaluation scheme to
     // simplify the result
@@ -66,7 +63,6 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     public FutureRemove(final DHTBuilder<?> builder, final EvaluatingSchemeDHT evaluationScheme) {
         super(builder);
         this.evaluationScheme = evaluationScheme;
-        this.failIfNotFound = builder == null? false: ((RemoveBuilder)builder).isFailIfNotFound();
         self(this);
     }
 
@@ -236,21 +232,16 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
 		}
 		return result;
 	}
-
-    @Override
-    public boolean isSuccess() {
-        if(!super.isSuccess()) {
-            return false;
-        }
-        if(!failIfNotFound) {
-        	return true; 
-        }
-        if(rawKeys640 != null) {
-        	return checkAtLeastOneSuccess();
-        } else if (rawData!=null) {
-        	return checkAtLeastOneSuccessData();
-        } 
-        return false;
+    
+    public boolean isRemoved() {
+    	synchronized (lock) {
+    		if(rawKeys640 != null) {
+    			return checkAtLeastOneSuccess();
+    		} else if (rawData!=null) {
+    			return checkAtLeastOneSuccessData();
+    		} 	
+    	}
+    	 return false;
     }
     
     private boolean checkAtLeastOneSuccess() {

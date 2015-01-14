@@ -207,9 +207,7 @@ public class DataBuffer {
 		// finalizer
 		try {
 			for (ByteBuf buf : buffers) {
-				if(buf.refCnt() > 0) {
-					buf.release();
-				}
+				buf.release();
 			}
 		} catch (Throwable t) {
 			throw t;

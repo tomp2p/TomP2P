@@ -79,9 +79,7 @@ public class Buffer {
     
     @Override
     protected void finalize() throws Throwable {
-    	if(buffer.refCnt() > 0) {
-    		buffer.release();       
-    	}
+   		buffer.release();       
     }
     
     @Override

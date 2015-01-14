@@ -21,6 +21,7 @@ import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +31,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.FutureResponse;
@@ -65,11 +69,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     private final PeerBean peerBeanMaster;
     private final int heartBeatMillis;
 
-    /** copy on write map. The key {@link Number320} can be devided into two parts: first {@link Number160} is the peerID that registers,
-     * the second {@link Number160} the peerID for which the ioHandler is registered. For example a relay peer can register a handler
-     * on behalf of another peer.
-     */
-    private volatile Map<Number320, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number320, Map<Integer, DispatchHandler>>();
+    //use locks instead copy on write as testcases became really slow
+    final private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
+    final private Lock readLock = reentrantReadWriteLock.readLock();
+    final private Lock writeLock = reentrantReadWriteLock.writeLock();
+    private Map<Number320, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number320, Map<Integer, DispatchHandler>>();
     
 	/**
 	 * Map that stores requests that are not answered yet. Normally, the {@link RequestHandler} handles
@@ -115,17 +119,20 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            will receive these messages!
      */
     public void registerIoHandler(final Number160 peerId, final Number160 onBehalfOf, final DispatchHandler ioHandler, final int... names) {
-        Map<Number320, Map<Integer, DispatchHandler>> copy = new HashMap<Number320, Map<Integer, DispatchHandler>>(ioHandlers);
-        Map<Integer, DispatchHandler> types = copy.get(new Number320(peerId, onBehalfOf));
-        if (types == null) {
-            types = new HashMap<Integer, DispatchHandler>();
-            copy.put(new Number320(peerId, onBehalfOf), types);
-        }
-        for (Integer name : names) {
-            types.put(name, ioHandler);
-        }
+    	writeLock.lock();
+    	try {
+    		Map<Integer, DispatchHandler> types = ioHandlers.get(new Number320(peerId, onBehalfOf));
+    		if (types == null) {
+    			types = new HashMap<Integer, DispatchHandler>();
+    			ioHandlers.put(new Number320(peerId, onBehalfOf), types);
+    		}
+    		for (Integer name : names) {
+    			types.put(name, ioHandler);
+    		}
+    	} finally {
+    		writeLock.unlock();
+    	}
         
-        ioHandlers = Collections.unmodifiableMap(copy);
     }
 
     /**
@@ -137,9 +144,12 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
      */
     public void removeIoHandler(final Number160 peerId, final Number160 onBehalfOf) {
-        Map<Number320, Map<Integer, DispatchHandler>> copy = new HashMap<Number320, Map<Integer, DispatchHandler>>(ioHandlers);
-        copy.remove(new Number320(peerId, onBehalfOf));
-        ioHandlers = Collections.unmodifiableMap(copy);
+        writeLock.lock();
+    	try {
+    		ioHandlers.remove(new Number320(peerId, onBehalfOf));
+    	}  finally {
+    		writeLock.unlock();
+    	}
     }
 
     @Override
@@ -171,21 +181,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
         } else {
-        	//do better error handling, if a handler is not present at all, print a warning
-        	if(ioHandlers.isEmpty()) {
-        		LOG.debug("No handler found for {}. Probably we have shutdown this peer.", message);
-        	} else {
-        		final Collection<Integer> knownCommands = knownCommands();
-        		if(!knownCommands.contains(Integer.valueOf(message.command()))) {
-            		StringBuilder sb = new StringBuilder("known cmds");
-            		for(Integer integer:knownCommands()) {
-            			sb.append(", ").append(Commands.find(integer.intValue()));
-            		}
-            		LOG.warn("No handler found for {}. Did you register the RPC command {}? I have {}.", 
-            				message, Commands.find(message.command()), sb);
-        		} else {
-            		LOG.debug("No handler found for {}. Probably we have partially shutdown this peer.", message);
-            	}
+        	if (LOG.isWarnEnabled()) {
+        		printWarnMessage(message);
         	}
         	
             Message responseMessage = DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBeanMaster.serverPeerAddress());
@@ -193,12 +190,34 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
     }
     
-    private Collection<Integer> knownCommands() {
-    	Set<Integer> retVal = new HashSet<Integer>();
-    	for(final Map.Entry<Number320, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
-    		retVal.addAll(entry.getValue().keySet());
+    /**
+     * This is rather a slow operation, but it is only called when log level set to warning
+     */
+    private void printWarnMessage(Message message) {
+    	final Collection<Integer> knownCommands = new HashSet<Integer>();
+    	
+    	readLock.lock();
+    	try {
+    		for(final Map.Entry<Number320, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
+    			knownCommands.addAll(entry.getValue().keySet());
+    		}
+    	} finally {
+    		readLock.unlock();
     	}
-    	return retVal;
+    	
+    	if(!knownCommands.contains(Integer.valueOf(message.command()))) {
+    		StringBuilder sb = new StringBuilder("known cmds");
+    		for(Integer integer:knownCommands) {
+    			sb.append(", ").append(Commands.find(integer.intValue()));
+    		}
+    		LOG.warn("No handler found for {}. Did you register the RPC command {}? I have {}.", 
+        		message, Commands.find(message.command()), sb);
+    	} else if(knownCommands.isEmpty()) {
+    		LOG.debug("No handler found for {}. Probably we have shutdown this peer.", message);
+    	}
+    	else {
+    		LOG.debug("No handler found for {}. Probably we have partially shutdown this peer.", message);
+    	}
     }
     
     private class DirectResponder implements Responder {
@@ -295,12 +314,12 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 			// if we could not find a handler that we are responsible for, we
 			// are most likely a relay. Since we have no id of the relay, we
 			// just take the first one.
-			Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
-			for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
-				if (entry.getKey().domainKey().equals(recipient.peerId())) {
-					return entry.getValue();
-				}
-			}
+			//Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
+			//for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
+			//	if (entry.getKey().domainKey().equals(recipient.peerId())) {
+			//		return entry.getValue();
+			//	}
+			//}
 			return null;
 		}
 	}
@@ -316,10 +335,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            The type of the message to be filtered
      * @return the handler for the given message or null if none has been found
      */
-    public DispatchHandler searchHandler(final Number160 recipientID, Number160 onBehalfOf, final int cmd) {
+    public DispatchHandler searchHandler(final Number160 recipientID, final Number160 onBehalfOf, final int cmd) {
     	final Integer command = Integer.valueOf(cmd);
-        Map<Integer, DispatchHandler> types = ioHandlers.get(new Number320(recipientID, onBehalfOf));
-        
+        final Map<Integer, DispatchHandler> types = searchHandlerMap(recipientID, onBehalfOf);
         if (types != null && types.containsKey(command)) {
             return types.get(command);
         } else {
@@ -357,8 +375,12 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @return the map containing all dispatchers for each {@link Commands} type
      */
 	public Map<Integer, DispatchHandler> searchHandlerMap(Number160 peerId, Number160 onBehalfOf) {
-		Map<Integer, DispatchHandler> ioHandlerMap = ioHandlers.get(new Number320(peerId, onBehalfOf));
-		return ioHandlerMap;
+		readLock.lock();
+        try {
+        	return ioHandlers.get(new Number320(peerId, onBehalfOf));
+        } finally {
+        	readLock.unlock();
+        }
 	}
 	
 	/**

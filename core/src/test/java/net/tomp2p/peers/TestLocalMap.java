@@ -36,7 +36,7 @@ public class TestLocalMap {
 		Assert.assertTrue(added);
 		PeerStatistic ps = map.nextForMaintenance(Collections.<PeerAddress>emptyList());
 		Assert.assertTrue(ps == null);
-		Thread.sleep(2000);
+		Thread.sleep(2100);
 		ps = map.nextForMaintenance(Collections.<PeerAddress>emptyList());
 		Assert.assertTrue(ps != null);
 		

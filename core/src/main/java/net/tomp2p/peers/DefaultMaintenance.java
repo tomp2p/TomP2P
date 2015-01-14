@@ -190,12 +190,11 @@ public class DefaultMaintenance implements Maintenance {
      * @return True if the peer needs a maintenance check
      */
     public static boolean needMaintenance(final PeerStatistic peerStatatistic, final int[] intervalSeconds) {
-        final int onlineSec = peerStatatistic.onlineTime() / 1000;
-        int index;
+        final long onlineSec = TimeUnit.MILLISECONDS.toSeconds(peerStatatistic.onlineTime()); 
+        final long timeSinceLastCheckMillis = System.currentTimeMillis() - peerStatatistic.lastSeenOnline();
         if (onlineSec <= 0) {
-            index = 0;
+        	return timeSinceLastCheckMillis > TimeUnit.SECONDS.toMillis(intervalSeconds[0]);
         } else {
-        	index = intervalSeconds.length - 1;
         	for(int i=0;i<intervalSeconds.length;i++) {
         		//interval is 2,4,8,16,32,64
         		//examples
@@ -204,14 +203,11 @@ public class DefaultMaintenance implements Maintenance {
         		//I have seen a peer online for 17 sec -> next interval to check is 32
         		//I have seen a peer online for 112321 sec -> next interval to check is 64
         		if(intervalSeconds[i]>=onlineSec) {
-        			index=i;
-        			break;
+        			return timeSinceLastCheckMillis > TimeUnit.SECONDS.toMillis(intervalSeconds[i]);
         		}
         	}
+        	return timeSinceLastCheckMillis > TimeUnit.SECONDS.toMillis(intervalSeconds[intervalSeconds.length - 1]);
         }
-        final int time = intervalSeconds[index];
-        final long lastTimeWhenChecked = System.currentTimeMillis() - peerStatatistic.lastSeenOnline();
-        return lastTimeWhenChecked > TimeUnit.SECONDS.toMillis(time);
     }
 
     /**

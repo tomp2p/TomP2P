@@ -341,6 +341,11 @@ public class Data {
 	
 	public boolean decodeDone(final ByteBuf buf, SignatureFactory signatureFactory) {
 		if (signed) {
+			if(buf.readableBytes() < signatureFactory.signatureSize()) {
+				// don't even try to create a signature
+				return false;
+			}
+			
 			try {
 				signature = signatureFactory.signatureCodec(buf);
 			} catch (IOException e) {
@@ -355,6 +360,11 @@ public class Data {
 			if(publicKey != PeerBuilder.EMPTY_PUBLIC_KEY && publicKey!= null && 
 					(this.publicKey==null || this.publicKey == PeerBuilder.EMPTY_PUBLIC_KEY)) {
 				this.publicKey = publicKey;
+			}
+			
+			if(buf.readableBytes() < signatureFactory.signatureSize()) {
+				// don't even try to create a signature
+				return false;
 			}
 			
 			try {

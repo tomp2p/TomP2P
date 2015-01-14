@@ -31,6 +31,7 @@ import net.tomp2p.utils.Utils;
  */
 public class DSASignatureCodec implements SignatureCodec {
 	
+	public static final int SIGNATURE_SIZE = 2 * Number160.BYTE_ARRAY_SIZE;
 	private final Number160 number1;
 	private final Number160 number2;
 
@@ -151,6 +152,6 @@ public class DSASignatureCodec implements SignatureCodec {
 
 	@Override
 	public int signatureSize() {
-		return 2 * Number160.BYTE_ARRAY_SIZE;
+		return SIGNATURE_SIZE;
 	}
 }

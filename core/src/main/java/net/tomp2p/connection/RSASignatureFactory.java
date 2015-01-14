@@ -134,4 +134,9 @@ public class RSASignatureFactory implements SignatureFactory {
     public SignatureCodec signatureCodec(ByteBuf buf) throws IOException {
 	    return new RSASignatureCodec(buf);
     }
+
+	@Override
+	public int signatureSize() {
+		return RSASignatureCodec.SIGNATURE_SIZE;
+	}
 }

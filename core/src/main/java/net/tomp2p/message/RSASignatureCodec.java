@@ -7,6 +7,8 @@ import java.util.Arrays;
 
 public class RSASignatureCodec implements SignatureCodec {
 
+	// 1024 bits by default
+	public static final int SIGNATURE_SIZE = 128;
 	private final byte[] encodedData;
 
 	/**
@@ -63,7 +65,6 @@ public class RSASignatureCodec implements SignatureCodec {
 
 	@Override
 	public int signatureSize() {
-		// 1024 bits by default
-		return 128;
+		return SIGNATURE_SIZE;
 	}
 }

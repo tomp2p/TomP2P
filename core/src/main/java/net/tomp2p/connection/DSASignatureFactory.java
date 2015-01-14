@@ -150,4 +150,9 @@ public class DSASignatureFactory implements SignatureFactory {
     public SignatureCodec signatureCodec(ByteBuf buf) {
 	    return new DSASignatureCodec(buf);
     }
+
+	@Override
+	public int signatureSize() {
+		return DSASignatureCodec.SIGNATURE_SIZE;
+	}
 }

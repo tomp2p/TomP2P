@@ -67,5 +67,10 @@ public interface SignatureFactory extends Serializable {
 	 * @throws IOException if the signature cannot be read from the buffer
 	 */
 	SignatureCodec signatureCodec(ByteBuf buf) throws IOException;
+	
+	/**
+	 * @return the number of bytes of the signature codec
+	 */
+	int signatureSize();
 
 }

@@ -11,6 +11,8 @@ public class HolePTestDriver {
 
 	public static void main(String[] args) throws Exception {
 
+		System.err.println("TESTAPP STARTED");
+		
 		// set Logger Level
 		ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
 				.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);

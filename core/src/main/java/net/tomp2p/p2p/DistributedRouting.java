@@ -45,11 +45,10 @@ import net.tomp2p.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: add timing constraints for the routing. This would allow for slow routing requests to have a chance to repor the neighbors.
+
 /**
- * Handles routing of nodes to other nodes.
- * 
- * TODO: add timing constraints for the routing. This would allow for slow routing requests to have a chance to report
- * the neighbors.
+ * Handles the routing of nodes to other nodes.
  * 
  * @author Thomas Bocek
  */

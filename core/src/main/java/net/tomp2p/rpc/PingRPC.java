@@ -159,7 +159,7 @@ public class PingRPC extends DispatchHandler {
 	 * @param remotePeer
 	 *            The destination peer
 	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
+	 *            The channel creator where we create a UDP channel
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
 	public FutureResponse fireUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
@@ -173,7 +173,7 @@ public class PingRPC extends DispatchHandler {
 	 * @param remotePeer
 	 *            The destination peer
 	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
+	 *            The channel creator where we create a TCP channel
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
 	public FutureResponse fireTCP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
@@ -322,7 +322,7 @@ public class PingRPC extends DispatchHandler {
 							@Override
 							public void operationComplete(final FutureChannelCreator future) throws Exception {
 								if (future.isSuccess()) {
-									LOG.debug("fire UDP to {}", message.sender());
+									LOG.debug("Fire UDP to {}.", message.sender());
 									FutureResponse futureResponse = fireUDP(message.sender(), future
 											.channelCreator(), connectionBean().channelServer()
 											.channelServerConfiguration());
@@ -340,7 +340,7 @@ public class PingRPC extends DispatchHandler {
 							@Override
 							public void operationComplete(final FutureChannelCreator future) throws Exception {
 								if (future.isSuccess()) {
-									LOG.debug("fire TCP to {}", message.sender());
+									LOG.debug("Fire TCP to {}.", message.sender());
 									FutureResponse futureResponse = fireTCP(message.sender(), future
 											.channelCreator(), connectionBean().channelServer()
 											.channelServerConfiguration());

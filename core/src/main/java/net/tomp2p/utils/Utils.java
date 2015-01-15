@@ -807,14 +807,13 @@ public class Utils {
 	}
 
 	/**
-	 * Adds a listener to the response future and releases all aquired channels in channel creator.
+	 * Adds a listener to the response futures and releases all aquired channels in the channel creator.
 	 * 
 	 * @param channelCreator
 	 *            The channel creator that will be shutdown and all connections will be closed
 	 * @param baseFutures
-	 *            The futures to listen to. If all the futures finished, then the channel creator is shutdown.
-	 *            If null
-	 *            provided, the channel creator is shutdown immediately.
+	 *            The futures to listen to. If all the futures finished, then the channel creator is shut down.
+	 *            If null is provided, then the channel crator is shut down immediately.
 	 */
 	public static void addReleaseListener(final ChannelCreator channelCreator,
 			final BaseFuture... baseFutures) {

@@ -196,7 +196,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 	public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
 		LOG.debug("Error originating from: {}, cause {}", futureResponse.request(), cause);
 		if (futureResponse.isCompleted()) {
-			LOG.warn("Got exception, but ignored (future response completed): {}",
+			LOG.warn("Got exception, but ignored it. (FutureResponse completed.): {}",
 					futureResponse.failedReason());
 		} else {
 			if (LOG.isDebugEnabled()) {
@@ -212,9 +212,9 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 							peerStatusListener.peerFailed(futureResponse.request().recipient(), pe);
 						}
 					}
-					LOG.debug("removed from map, cause: {}, msg: {}", pe.toString(), message);
+					LOG.debug("Removed from map. Cause: {}. Message: {}.", pe.toString(), message);
 				} else {
-					LOG.warn("error in request", cause);
+					LOG.warn("Error in request.", cause);
 				}
 			} else {
 				synchronized (peerBean.peerStatusListeners()) {
@@ -226,7 +226,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 			}
 		}
 
-		LOG.debug("Report failure:", cause);
+		LOG.debug("Report failure: ", cause);
 		futureResponse.failedLater(cause);
 		ctx.close();
 	}

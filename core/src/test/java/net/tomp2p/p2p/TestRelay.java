@@ -10,14 +10,19 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Message;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.ObjectDataReply;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestRelay {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(TestRelay.class);
 	private final static Random rnd = new Random(42L);
 	
 	@Test 
@@ -98,6 +103,12 @@ public class TestRelay {
 
 		MyDirectDataRPC(PeerBean peerBean, ConnectionBean connectionBean) {
 			super(peerBean, connectionBean);
+		}
+		
+		@Override
+		public void register(Number160 onBehalfOf, final int... names) {
+		   	LOG.info("registering {} for {} with {}", peerBean().serverPeerAddress().peerId(), onBehalfOf, names);
+		    super.register(onBehalfOf, names);
 		}
 
 		@Override

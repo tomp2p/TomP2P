@@ -10,22 +10,18 @@ import org.junit.Test;
 public class TestMessageHeaderCodec {
     
     @Test
-    public void testStreaming() {
-        Message msg = new Message();
-    }
-    
-    @Test
     public void testContentTypeCodec() {
 
         Random rnd = new Random(42);
+        System.err.print("Round:");
         for (int i = 0; i < 100; i++) {
-            System.err.println("Round "+i);
+        	System.err.print(i + " ");
             Content[] types1 = initContentTypes(rnd);
             int nr = MessageHeaderCodec.encodeContentTypes(types1);
             Content[] types2 = MessageHeaderCodec.decodeContentTypes(nr, new Message());
             compare(types2, types1);
-            
         }
+        System.err.println(" done.");
     }
 
     private void compare(Content[] types2, Content[] types1) {

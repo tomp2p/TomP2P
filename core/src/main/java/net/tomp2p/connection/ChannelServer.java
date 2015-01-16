@@ -173,10 +173,6 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	private void listenSpecificInetAddresses(DiscoverResults discoverResults) {
 	    
 	    for (InetAddress inetAddress : discoverResults.newBroadcastAddresses()) {
-	    	if (LOG.isInfoEnabled()) {
-	    		LOG.info("Listening on broadcast address: " + inetAddress + " on port udp: "
-	    		        + channelServerConfiguration.ports().udpPort());
-	    	}
 	    	InetSocketAddress udpBroadcastSocket = new InetSocketAddress(inetAddress, channelServerConfiguration.ports()
 	                .udpPort());
 	    	broadcastAddressTried = true;
@@ -185,7 +181,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	    	if (udpStartBroadcast) {
 	    		//if one broadcast address was found, then we don't need to bind to 0.0.0.0
 	    		broadcastAddressSupported = true;
-	    		LOG.info("Listening on address: {} on port udp: {}"
+	    		LOG.info("Listening on broadcast address: {} on port udp: {}"
 		   		        , udpBroadcastSocket, channelServerConfiguration.ports().udpPort());
 	    	} else {
 	    		LOG.warn("cannot bind broadcast UDP {}", udpBroadcastSocket);

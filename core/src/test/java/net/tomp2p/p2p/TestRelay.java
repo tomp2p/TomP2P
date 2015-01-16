@@ -107,7 +107,7 @@ public class TestRelay {
 		
 		@Override
 		public void register(Number160 onBehalfOf, final int... names) {
-		   	LOG.info("registering {} for {} with {}", peerBean().serverPeerAddress().peerId(), onBehalfOf, names);
+		   	LOG.warn("registering {} for {} with {}", peerBean().serverPeerAddress().peerId(), onBehalfOf, names);
 		    super.register(onBehalfOf, names);
 		}
 

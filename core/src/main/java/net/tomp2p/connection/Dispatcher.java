@@ -21,18 +21,14 @@ import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.tomp2p.connection.PeerException.AbortCause;
@@ -73,7 +69,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     final private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
     final private Lock readLock = reentrantReadWriteLock.readLock();
     final private Lock writeLock = reentrantReadWriteLock.writeLock();
-    private Map<Number320, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number320, Map<Integer, DispatchHandler>>();
+    final private Map<Number320, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number320, Map<Integer, DispatchHandler>>();
     
 	/**
 	 * Map that stores requests that are not answered yet. Normally, the {@link RequestHandler} handles

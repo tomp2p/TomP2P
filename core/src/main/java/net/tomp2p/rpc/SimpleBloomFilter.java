@@ -25,8 +25,6 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 
-import net.tomp2p.peers.Number160;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -75,6 +75,7 @@ public abstract class DispatchHandler {
     * @param names
      */
     public void register(Number160 onBehalfOf, final int... names) {
+    	LOG.info("registering {} for {} with {}", peerBean.serverPeerAddress().peerId(), onBehalfOf, names);
         connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), onBehalfOf, this, names);
     }
 

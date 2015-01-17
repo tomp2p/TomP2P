@@ -332,16 +332,22 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @return the handler for the given message or null if none has been found
      */
     public DispatchHandler searchHandler(final Number160 recipientID, final Number160 onBehalfOf, final int cmd) {
-    	final Integer command = Integer.valueOf(cmd);
-        final Map<Integer, DispatchHandler> types = searchHandlerMap(recipientID, onBehalfOf);
-        if (types != null && types.containsKey(command)) {
-            return types.get(command);
-        } else {
-            // not registered
-            LOG.debug("Handler not found for type {} we are looking for the server with ID {}", command,
-                    recipientID);
-            return null;
-        }
+		final Integer command = Integer.valueOf(cmd);
+		readLock.lock();
+		try {
+			final Map<Integer, DispatchHandler> types = search(recipientID, onBehalfOf);
+			if (types != null && types.containsKey(command)) {
+				return types.get(command);
+			} else {
+				// not registered
+				LOG.debug(
+						"Handler not found for type {} we are looking for the server with ID {}",
+						command, recipientID);
+				return null;
+			}
+		} finally {
+			readLock.unlock();
+		}
     }
     
     /**
@@ -350,17 +356,50 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @return
      */
     public Map<Number320, DispatchHandler> searchHandler(final Integer command) {
-    	Map<Number320, DispatchHandler> result = new HashMap<Number320, DispatchHandler>();
-    	for(Map.Entry<Number320, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
-    		for(Map.Entry<Integer, DispatchHandler> entry2:entry.getValue().entrySet()) {
-    			DispatchHandler handlerh = entry.getValue().get(command);
-    			if(handlerh!=null && entry2.getKey().equals(command)) {
-    				result.put(entry.getKey(), handlerh);
-    			}
-    		}
-    	}
-    	return result;
+		readLock.lock();
+		try {
+			Map<Number320, DispatchHandler> result = new HashMap<Number320, DispatchHandler>();
+			for (Map.Entry<Number320, Map<Integer, DispatchHandler>> entry : ioHandlers
+					.entrySet()) {
+				for (Map.Entry<Integer, DispatchHandler> entry2 : entry
+						.getValue().entrySet()) {
+					DispatchHandler handlerh = entry.getValue().get(command);
+					if (handlerh != null && entry2.getKey().equals(command)) {
+						result.put(entry.getKey(), handlerh);
+					}
+				}
+			}
+			return result;
+		} finally {
+			readLock.unlock();
+		}
     }
+    
+	public DispatchHandler searchHandler(Class<?> clazz,
+			Number160 peerID, Number160 peerId2) {
+		readLock.lock();
+		try {
+			final Map<Integer, DispatchHandler> ioHandlers = search(
+					peerID, peerId2);
+			for (DispatchHandler handler : ioHandlers.values()) {
+				if (clazz.isInstance(handler)) {
+					return handler;
+				}
+			}
+			return null;
+		} finally {
+			readLock.unlock();
+		}
+	}
+	
+	public Map<Integer, DispatchHandler> searchHandler(Number160 peerId, Number160 onBehalfOf) {
+		readLock.lock();
+		try {
+			return new HashMap<Integer, DispatchHandler>(ioHandlers.get(new Number320(peerId, onBehalfOf)));
+		} finally {
+			readLock.unlock();
+		}
+	}
 
     /**
      * 
@@ -370,13 +409,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
      * @return the map containing all dispatchers for each {@link Commands} type
      */
-	public Map<Integer, DispatchHandler> searchHandlerMap(Number160 peerId, Number160 onBehalfOf) {
-		readLock.lock();
-        try {
-        	return ioHandlers.get(new Number320(peerId, onBehalfOf));
-        } finally {
-        	readLock.unlock();
-        }
+	private Map<Integer, DispatchHandler> search(Number160 peerId, Number160 onBehalfOf) {
+		return ioHandlers.get(new Number320(peerId, onBehalfOf));
 	}
 	
 	/**

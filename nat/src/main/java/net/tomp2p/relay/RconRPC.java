@@ -1,7 +1,6 @@
 package net.tomp2p.relay;
 
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 
@@ -116,13 +115,7 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private BaseRelayForwarderRPC extractRelayForwarder(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(peer.peerID(), message.recipient().peerId());
-		for (DispatchHandler handler : ioHandlers.values()) {
-			if (handler instanceof BaseRelayForwarderRPC) {
-				return (BaseRelayForwarderRPC) handler;
-			}
-		}
-		return null;
+		return (BaseRelayForwarderRPC) dispatcher.searchHandler(BaseRelayForwarderRPC.class, peer.peerID(), message.recipient().peerId());
 	}
 
 	/**

@@ -35,7 +35,7 @@ public class TestSecurity {
 	final private static Random rnd = new Random(42L);
 	private static final DSASignatureFactory factory = new DSASignatureFactory();
 	private static KeyPairGenerator keyGen;
-	
+
 	static {
 		try {
 			keyGen = KeyPairGenerator.getInstance("DSA");
@@ -43,7 +43,7 @@ public class TestSecurity {
 			Assert.fail("Cannot initialize DSA key pair generator");
 		}
 	}
-	
+
 	@Test
 	public void testPublicKeyReceived() throws Exception {
 		final Random rnd = new Random(43L);
@@ -89,8 +89,8 @@ public class TestSecurity {
 			master.put(locationKey).data(new Data("test1")).requestP2PConfiguration(rc).start().awaitUninterruptibly();
 			Assert.assertEquals(false, gotPK.get());
 		} finally {
-			master.shutdown().awaitUninterruptibly();
-			slave1.shutdown().awaitUninterruptibly();
+			master.shutdown();
+			slave1.shutdown();
 		}
 	}
 
@@ -237,10 +237,10 @@ public class TestSecurity {
 					.domainKey(Utils.makeSHAHash(pair1.getPublic().getEncoded())).protectDomain().start();
 			fdht1.awaitUninterruptibly();
 			// remove from different peer, should fail
-			FutureRemove fdht2 = slave1.remove(locationKey).domainKey(Utils.makeSHAHash(pair1.getPublic().getEncoded()))
-					.sign().start();
-			fdht2.awaitUninterruptibly();
-			Assert.assertFalse(fdht2.isSuccess());
+			FutureRemove futureRemove = slave1.remove(locationKey)
+					.domainKey(Utils.makeSHAHash(pair1.getPublic().getEncoded())).sign().start();
+			futureRemove.awaitUninterruptibly();
+			Assert.assertFalse(futureRemove.isRemoved());
 			// this should work
 			FutureRemove fdht3 = master.remove(locationKey).domainKey(Utils.makeSHAHash(pair1.getPublic().getEncoded()))
 					.sign().start();
@@ -325,7 +325,6 @@ public class TestSecurity {
 		System.err.println("PPK2 " + pair2.getPublic());
 		System.err.println("PPK3 " + pair3.getPublic());
 		try {
-
 			// make slave
 			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start()).start();
 			master.storageLayer().protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
@@ -368,7 +367,7 @@ public class TestSecurity {
 			FutureRemove fdht3 = slave2.remove(locationKey).start();
 			fdht3.awaitUninterruptibly();
 			// false, since we have domain protection yet
-			Assert.assertEquals(false, fdht3.isSuccess());
+			Assert.assertEquals(false, fdht3.isRemoved());
 			// try to put another thing
 			Data data3 = new Data("test2");
 			data3.protectEntry(pair1);
@@ -421,6 +420,7 @@ public class TestSecurity {
 			InterruptedException, InvalidKeyException, SignatureException {
 		KeyPair keyPairPeer1 = keyGen.generateKeyPair();
 		KeyPair keyPairPeer2 = keyGen.generateKeyPair();
+		KeyPair keyPairData = keyGen.generateKeyPair();
 
 		PeerDHT p1 = null, p2 = null;
 		try {
@@ -431,7 +431,6 @@ public class TestSecurity {
 
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
-			KeyPair keyPair = keyGen.generateKeyPair();
 
 			String locationKey = "location";
 			Number160 lKey = Number160.createHash(locationKey);
@@ -439,9 +438,10 @@ public class TestSecurity {
 			Number160 cKey = Number160.createHash(contentKey);
 
 			String testData1 = "data1";
-			Data data = new Data(testData1).protectEntry(keyPair);
-			// put trough peer 1 with key pair -------------------------------------------------------
-			FuturePut futurePut1 = p1.put(lKey).data(cKey, data).keyPair(keyPair).start();
+			Data data = new Data(testData1).protectEntry(keyPairData);
+			// put trough peer 1 with key pair
+			// -------------------------------------------------------
+			FuturePut futurePut1 = p1.put(lKey).data(cKey, data).keyPair(keyPairData).start();
 			futurePut1.awaitUninterruptibly();
 			Assert.assertTrue(futurePut1.isSuccess());
 
@@ -455,7 +455,8 @@ public class TestSecurity {
 
 			Assert.assertTrue(futureGet1b.isSuccess());
 			Assert.assertEquals(testData1, (String) futureGet1b.data().object());
-			// put trough peer 2 without key pair ----------------------------------------------------
+			// put trough peer 2 without key pair
+			// ----------------------------------------------------
 			String testData2 = "data2";
 			Data data2 = new Data(testData2);
 			FuturePut futurePut2 = p2.put(lKey).data(cKey, data2).start();
@@ -468,7 +469,8 @@ public class TestSecurity {
 			Assert.assertTrue(futureGet2.isSuccess());
 			// should have been not modified
 			Assert.assertEquals(testData1, (String) futureGet2.data().object());
-			// put trough peer 1 without key pair ----------------------------------------------------
+			// put trough peer 1 without key pair
+			// ----------------------------------------------------
 			String testData3 = "data3";
 			Data data3 = new Data(testData3);
 			FuturePut futurePut3 = p2.put(lKey).data(cKey, data3).start();
@@ -480,22 +482,24 @@ public class TestSecurity {
 			FutureGet futureGet3 = p2.get(lKey).contentKey(cKey).start();
 			futureGet3.awaitUninterruptibly();
 			Assert.assertTrue(futureGet3.isSuccess());
-			// should have been not modified ---> why it has been modified without giving a key pair?
+			// should have been not modified ---> why it has been modified
+			// without giving a key pair?
 			Assert.assertEquals(testData1, (String) futureGet3.data().object());
-			Assert.assertEquals(keyPair.getPublic(), futureGet3.data().publicKey());
+			Assert.assertEquals(keyPairData.getPublic(), futureGet3.data().publicKey());
 
-			// now we store a signed data object and we will get back the public key as well
-			data = new Data("Juhuu").protectEntryNow(keyPair, factory);
-			FuturePut futurePut4 = p1.put(lKey).data(cKey, data).keyPair(keyPair).start();
+			// now we store a signed data object and we will get back the public
+			// key as well
+			data = new Data("Juhuu").protectEntryNow(keyPairData, factory);
+			FuturePut futurePut4 = p1.put(lKey).data(cKey, data).keyPair(keyPairData).start();
 			futurePut4.awaitUninterruptibly();
 			Assert.assertTrue(futurePut4.isSuccess());
 			FutureGet futureGet4 = p2.get(lKey).contentKey(cKey).start();
 			futureGet4.awaitUninterruptibly();
 			Assert.assertTrue(futureGet4.isSuccess());
-			// should have been not modified ---> why it has been modified without giving a key pair?
+			// should have been not modified ---> why it has been modified
+			// without giving a key pair?
 			Assert.assertEquals("Juhuu", (String) futureGet4.data().object());
-			Assert.assertEquals(keyPair.getPublic(), futureGet4.data().publicKey());
-
+			Assert.assertEquals(keyPairData.getPublic(), futureGet4.data().publicKey());
 		} finally {
 			p1.shutdown().awaitUninterruptibly();
 			p2.shutdown().awaitUninterruptibly();
@@ -528,7 +532,8 @@ public class TestSecurity {
 			FutureGet futureGet4 = p1.get(lKey).contentKey(cKey).start();
 			futureGet4.awaitUninterruptibly();
 			Assert.assertTrue(futureGet4.isSuccess());
-			// should have been not modified ---> why it has been modified without giving a key pair?
+			// should have been not modified ---> why it has been modified
+			// without giving a key pair?
 			Assert.assertEquals(sb.toString(), (String) futureGet4.data().object());
 			Assert.assertEquals(keyPair.getPublic(), futureGet4.data().publicKey());
 		} finally {
@@ -541,7 +546,7 @@ public class TestSecurity {
 			InterruptedException, InvalidKeyException, SignatureException {
 		KeyPair keyPair1 = keyGen.generateKeyPair();
 		KeyPair keyPair2 = keyGen.generateKeyPair();
-		
+
 		PeerDHT p1 = null, p2 = null;
 		try {
 			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).keyPair(keyPair1).start()).start();
@@ -591,7 +596,7 @@ public class TestSecurity {
 			InterruptedException, InvalidKeyException, SignatureException {
 		KeyPair keyPair1 = keyGen.generateKeyPair();
 		KeyPair keyPair2 = keyGen.generateKeyPair();
-		
+
 		PeerDHT p1 = null, p2 = null;
 		try {
 			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).keyPair(keyPair1).start()).start();
@@ -611,7 +616,6 @@ public class TestSecurity {
 			Assert.assertTrue(fp3.isSuccess());
 			FuturePut fp4 = p2.put(Number160.createHash("key1")).protectDomain().data(data).start().awaitUninterruptibly();
 			Assert.assertTrue(fp4.isSuccess());
-
 		} finally {
 			p1.shutdown().awaitUninterruptibly();
 			p2.shutdown().awaitUninterruptibly();
@@ -644,7 +648,6 @@ public class TestSecurity {
 
 			FuturePut fp4 = p2.put(Number160.createHash("key1")).sign().data(data).start().awaitUninterruptibly();
 			Assert.assertTrue(fp4.isSuccess());
-
 		} finally {
 			p1.shutdown().awaitUninterruptibly();
 			p2.shutdown().awaitUninterruptibly();
@@ -656,7 +659,7 @@ public class TestSecurity {
 			NoSuchAlgorithmException, InterruptedException, InvalidKeyException, SignatureException {
 		KeyPair keyPair1 = keyGen.generateKeyPair();
 		KeyPair keyPair2 = keyGen.generateKeyPair();
-		
+
 		PeerDHT p1 = null, p2 = null;
 		try {
 			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).keyPair(keyPair1).start()).start();
@@ -713,7 +716,7 @@ public class TestSecurity {
 			Assert.assertTrue(fp2.isSuccess());
 
 			Data update = data.duplicateMeta();
-			update.ttlSeconds(10);
+			update.ttlSeconds(100);
 
 			FuturePut fp3 = p1.put(Number160.createHash("key1")).putMeta().data(update).start().awaitUninterruptibly();
 			System.err.println(fp3.failedReason());
@@ -723,8 +726,12 @@ public class TestSecurity {
 			retData = p2.get(Number160.createHash("key1")).start().awaitUninterruptibly().data();
 			Assert.assertEquals("test1", retData.object());
 		} finally {
-			p1.shutdown().awaitUninterruptibly();
-			p2.shutdown().awaitUninterruptibly();
+			if (p1 != null) {
+				p1.shutdown().awaitUninterruptibly();
+			}
+			if (p2 != null) {
+				p2.shutdown().awaitUninterruptibly();
+			}
 		}
 	}
 
@@ -733,6 +740,7 @@ public class TestSecurity {
 			ClassNotFoundException {
 		KeyPair keyPairPeer1 = keyGen.generateKeyPair();
 		KeyPair keyPairPeer2 = keyGen.generateKeyPair();
+		KeyPair keyPairData = keyGen.generateKeyPair();
 
 		PeerDHT p1 = null, p2 = null;
 		try {
@@ -744,8 +752,6 @@ public class TestSecurity {
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 
-			KeyPair key1 = keyGen.generateKeyPair();
-
 			String locationKey = "location";
 			Number160 lKey = Number160.createHash(locationKey);
 			String domainKey = "domain";
@@ -754,12 +760,12 @@ public class TestSecurity {
 			Number160 cKey = Number160.createHash(contentKey);
 
 			String testData1 = "data1";
-			Data data = new Data(testData1).protectEntryNow(key1, factory);
+			Data data = new Data(testData1).protectEntryNow(keyPairData, factory);
 
 			// put trough peer 1 with key pair
 			// -------------------------------------------------------
 
-			FuturePut futurePut1 = p1.put(lKey).domainKey(dKey).data(cKey, data).keyPair(key1).start();
+			FuturePut futurePut1 = p1.put(lKey).domainKey(dKey).data(cKey, data).keyPair(keyPairData).start();
 			futurePut1.awaitUninterruptibly();
 			Assert.assertTrue(futurePut1.isSuccess());
 
@@ -777,7 +783,7 @@ public class TestSecurity {
 			// -----------------------------------------------------------
 
 			FutureRemove futureRemove4 = p1.remove(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
-					.to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).keyPair(key1).start();
+					.to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).keyPair(keyPairData).start();
 			futureRemove4.awaitUninterruptibly();
 			Assert.assertTrue(futureRemove4.isSuccess());
 
@@ -807,6 +813,7 @@ public class TestSecurity {
 		KeyPair keyPairPeer2 = keyGen.generateKeyPair();
 
 		PeerDHT p1 = null, p2 = null;
+
 		try {
 			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).keyPair(keyPairPeer1).start())
 					.start();
@@ -858,9 +865,9 @@ public class TestSecurity {
 					.to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).start();
 			futureRemoveFromTo.awaitUninterruptibly();
 
-			Assert.assertEquals(futureRemoveDirect.isSuccess(), futureRemoveFromTo.isSuccess());
-			Assert.assertFalse(futureRemoveDirect.isSuccess());
-			Assert.assertFalse(futureRemoveFromTo.isSuccess());
+			Assert.assertEquals(futureRemoveDirect.isRemoved(), futureRemoveFromTo.isRemoved());
+			Assert.assertFalse(futureRemoveDirect.isRemoved());
+			Assert.assertFalse(futureRemoveFromTo.isRemoved());
 		} finally {
 			p1.shutdown().awaitUninterruptibly();
 			p2.shutdown().awaitUninterruptibly();
@@ -872,7 +879,7 @@ public class TestSecurity {
 			SignatureException, ClassNotFoundException {
 		KeyPair keyPairPeer1 = keyGen.generateKeyPair();
 		KeyPair keyPairPeer2 = keyGen.generateKeyPair();
-		
+
 		PeerDHT p1 = null, p2 = null;
 		try {
 			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1).start())
@@ -881,6 +888,7 @@ public class TestSecurity {
 					.start()).start();
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
+
 			KeyPair keyPair1 = keyGen.generateKeyPair();
 			KeyPair keyPair2 = keyGen.generateKeyPair();
 			Number160 lKey = Number160.createHash("location");
@@ -942,13 +950,14 @@ public class TestSecurity {
 	@Test
 	public void testChangeProtectionKeyWithVersions() throws NoSuchAlgorithmException, IOException, ClassNotFoundException,
 			InvalidKeyException, SignatureException {
+		KeyPair keyPairPeer1 = keyGen.generateKeyPair();
+		KeyPair keyPairPeer2 = keyGen.generateKeyPair();
+
 		PeerDHT p1 = null;
 		PeerDHT p2 = null;
 		try {
-			KeyPair keyPairPeer1 = keyGen.generateKeyPair();
 			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1).start())
 					.start();
-			KeyPair keyPairPeer2 = keyGen.generateKeyPair();
 			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
 					.start()).start();
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
@@ -1012,13 +1021,14 @@ public class TestSecurity {
 	@Test
 	public void testGetMeta() throws NoSuchAlgorithmException, IOException, ClassNotFoundException, InvalidKeyException,
 			SignatureException {
+		KeyPair keyPairPeer1 = keyGen.generateKeyPair();
+		KeyPair keyPairPeer2 = keyGen.generateKeyPair();
+
 		PeerDHT p1 = null;
 		PeerDHT p2 = null;
 		try {
-			KeyPair keyPairPeer1 = keyGen.generateKeyPair();
 			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1).start())
 					.start();
-			KeyPair keyPairPeer2 = keyGen.generateKeyPair();
 			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
 					.start()).start();
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
@@ -1068,17 +1078,16 @@ public class TestSecurity {
 	@Test
 	public void testTTLDecrement() throws IOException, ClassNotFoundException, NoSuchAlgorithmException,
 			InvalidKeyException, SignatureException, InterruptedException {
+		KeyPair keyPairPeer1 = keyGen.generateKeyPair();
+		KeyPair keyPairPeer2 = keyGen.generateKeyPair();
 		PeerDHT p1 = null;
 		PeerDHT p2 = null;
 		try {
-			KeyPair keyPairPeer1 = keyGen.generateKeyPair();
-
 			StorageMemory sm1 = new StorageMemory(1);
 			StorageMemory sm2 = new StorageMemory(1);
 
 			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1).start())
 					.storage(sm1).start();
-			KeyPair keyPairPeer2 = keyGen.generateKeyPair();
 			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
 					.start()).storage(sm2).start();
 
@@ -1201,7 +1210,8 @@ public class TestSecurity {
 					.data();
 			Assert.assertTrue(retData.verify(keyPairOld.getPublic(), factory));
 
-			// create a dummy data object for changing the content protection key
+			// create a dummy data object for changing the content protection
+			// key
 			// through a put meta
 			Data dummyData = new Data();
 			dummyData.addBasedOn(bKey).ttlSeconds(ttl);
@@ -1217,7 +1227,6 @@ public class TestSecurity {
 			// verify new content protection keys
 			retData = p1.get(lKey).domainKey(dKey).contentKey(cKey).versionKey(vKey).start().awaitUninterruptibly().data();
 			Assert.assertTrue(retData.verify(keyPairNew.getPublic(), factory));
-
 		} finally {
 			p1.shutdown().awaitUninterruptibly();
 			p2.shutdown().awaitUninterruptibly();

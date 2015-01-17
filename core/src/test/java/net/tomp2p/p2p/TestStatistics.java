@@ -37,7 +37,7 @@ public class TestStatistics {
 	public void testCountPeers1() throws UnknownHostException {
 		Random rnd = new Random(42L);
 
-		for (int j = 1; j < 20; j++) {
+		for (int j = 1; j < 10; j++) {
 			int nr = 100000 * j;
 			PeerMapConfiguration conf = new PeerMapConfiguration(ID);
 			conf.setFixedVerifiedBagSizes(20).setFixedOverflowBagSizes(20);

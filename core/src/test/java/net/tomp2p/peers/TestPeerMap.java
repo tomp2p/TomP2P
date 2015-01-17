@@ -336,7 +336,7 @@ public class TestPeerMap {
      */
     @Test
     public void testMultiRandomAddRemove() throws InterruptedException {
-        final int rounds = 100;
+        final int rounds = 20;
         for (int i = 0; i < rounds; i++) {
             testRandomAddRemove();
         }
@@ -490,7 +490,7 @@ public class TestPeerMap {
         peerMap.peerFound(pa3, null, null, null);
         peerStatatistic = peerMap.nextForMaintenance(notInterested);
         Assert.assertEquals(true, peerStatatistic == null);
-        Thread.sleep(1000);
+        Thread.sleep(1100);
         peerStatatistic = peerMap.nextForMaintenance(notInterested);
         Assert.assertEquals(peerStatatistic.peerAddress(), pa3);
     }

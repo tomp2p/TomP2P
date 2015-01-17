@@ -32,8 +32,11 @@ public interface PeerMapFilter {
      * 
      * @param peerAddress
      *            The peer address that is going to be added to the map
+     *            @param peerMap The peermap where additional information can be retrieved
      * @return True if the peer address should not be added, false otherwise
      */
-	boolean reject(PeerAddress peerAddress, Collection<PeerAddress> all, Number160 target);
+	boolean rejectPeerMap(PeerAddress peerAddress, PeerMap peerMap);
+	
+	boolean rejectPreRouting(PeerAddress peerAddress, Collection<PeerAddress> all);
 
 }

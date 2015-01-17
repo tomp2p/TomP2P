@@ -25,8 +25,6 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 
-import net.tomp2p.peers.Number160;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,7 +109,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 		if (byteArraySize > 0) {
 			byte[] me = new byte[byteArraySize];
 			channelBuffer.readBytes(me);
-			this.bitSet = BitSet.valueOf(me);
+			this.bitSet = RPCUtils.fromByteArray(me);
 		} else {
 			this.bitSet = new BitSet();
 		}
@@ -347,11 +345,11 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	 *            The byte buffer where the bloom filter will be written.
 	 */
 	public void toByteBuf(final ByteBuf buf) {
-		byte[] tmp = bitSet.toByteArray();
+		byte[] tmp = RPCUtils.toByteArray(bitSet);
 		int currentByteArraySize = tmp.length;
 		buf.writeShort(byteArraySize + SIZE_HEADER_ELEMENTS + SIZE_HEADER_LENGTH);
 		buf.writeInt(expectedElements);
-		buf.writeBytes(bitSet.toByteArray());
+		buf.writeBytes(tmp);
 		buf.writeZero(byteArraySize - currentByteArraySize);
 	}
 
@@ -402,14 +400,5 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 			sb.append(bitSet.get(i) ? "1" : "0");
 		}
 		return sb.toString();
-	}
-
-	/**
-	 * Invert the bloom filter
-	 */
-	public SimpleBloomFilter<Number160> not() {
-		BitSet copy = BitSet.valueOf(bitSet.toByteArray());
-		copy.flip(0, copy.length());
-		return new SimpleBloomFilter<Number160>(byteArraySize, expectedElements, copy);
 	}
 }

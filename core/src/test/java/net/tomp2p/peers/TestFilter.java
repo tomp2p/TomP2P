@@ -23,11 +23,11 @@ public class TestFilter {
 		all.add(pa2);
 		all.add(pa4);
 		
-		Assert.assertFalse(filter.reject(pa1, all, null));
-		Assert.assertFalse(filter.reject(pa3, all, null));
+		Assert.assertFalse(filter.rejectPreRouting(pa1, all));
+		Assert.assertFalse(filter.rejectPreRouting(pa3, all));
 		
-		Assert.assertTrue(filter.reject(pa2, all, null));
-		Assert.assertTrue(filter.reject(pa4, all, null));
+		Assert.assertTrue(filter.rejectPreRouting(pa2, all));
+		Assert.assertTrue(filter.rejectPreRouting(pa4, all));
 		
 	}
 	
@@ -47,14 +47,14 @@ public class TestFilter {
 		all.add(pa2);
 		all.add(pa4);
 		
-		Assert.assertTrue(filter.reject(pa1, all, null));
-		Assert.assertTrue(filter.reject(pa4, all, null));
+		Assert.assertTrue(filter.rejectPreRouting(pa1, all));
+		Assert.assertTrue(filter.rejectPreRouting(pa4, all));
 		
-		Assert.assertTrue(filter.reject(pa2, all, null));
-		Assert.assertTrue(filter.reject(pa5, all, null));
+		Assert.assertTrue(filter.rejectPreRouting(pa2, all));
+		Assert.assertTrue(filter.rejectPreRouting(pa5, all));
 		
-		Assert.assertFalse(filter.reject(pa3, all, null));
-		Assert.assertFalse(filter.reject(pa6, all, null));
+		Assert.assertFalse(filter.rejectPreRouting(pa3, all));
+		Assert.assertFalse(filter.rejectPreRouting(pa6, all));
 	}
 	
 	/*@Test

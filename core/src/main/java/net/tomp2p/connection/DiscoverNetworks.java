@@ -274,9 +274,12 @@ public final class DiscoverNetworks {
 				continue;
 			}
 			InetAddress inet = iface.getAddress();
-			if (iface.getBroadcast() != null) {
-				if(!foundBroadcastAddresses2.contains(iface.getBroadcast())) {
-					foundBroadcastAddresses2.add(iface.getBroadcast());
+			InetAddress broadcast = iface.getBroadcast();
+			// could be a bug, but on travis-ci I get an any address as a broadcast address, maybe reletade to this:
+			// http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7158636
+			if (broadcast != null && !broadcast.isAnyLocalAddress()) {
+				if(!foundBroadcastAddresses2.contains(broadcast)) {
+					foundBroadcastAddresses2.add(broadcast);
 				}
 			}
 

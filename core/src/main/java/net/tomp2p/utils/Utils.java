@@ -409,7 +409,6 @@ public class Utils {
      *            The second collections that will be searched for duplicates
      * @return Returns the collection the user specified as the resulting collection
      */
-    @SafeVarargs
     public static <K> Collection<K> difference(Collection<K> collection1, Collection<K> result,
             Collection<K>... collections2) {
         for (Iterator<K> iterator = collection1.iterator(); iterator.hasNext();) {

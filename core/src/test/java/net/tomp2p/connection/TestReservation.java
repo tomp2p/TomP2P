@@ -83,8 +83,9 @@ public class TestReservation {
     	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
 		cs = new ChannelServer(bossGroup, workerGroup, c, null, null, null);
 		
-		cs.startupTCP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration());
-		cs.startupUDP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration(), false);
+		boolean tcp = cs.startupTCP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration());
+		boolean udp = cs.startupUDP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration(), false);
+		System.out.println("started tcp: "+tcp+", started udp: "+udp);
 		
 	}
 

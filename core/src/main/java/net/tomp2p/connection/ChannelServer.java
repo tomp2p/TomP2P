@@ -152,34 +152,27 @@ public final class ChannelServer implements DiscoverNetworkListener{
     }
 
 	private void listenAny() {
-		if (LOG.isInfoEnabled()) {
-    		LOG.info("Listening on any address on port udp: "
-    		        + channelServerConfiguration.ports().udpPort() + " and tcp:"
-    		        + channelServerConfiguration.ports().tcpPort());
-    	}
-	    
-		InetSocketAddress tcpSocket = new InetSocketAddress(channelServerConfiguration.ports().tcpPort());
-    	boolean tcpStart = startupTCP(tcpSocket, channelServerConfiguration);
+		final InetSocketAddress tcpSocket = new InetSocketAddress(channelServerConfiguration.ports().tcpPort());
+		final boolean tcpStart = startupTCP(tcpSocket, channelServerConfiguration);
     	if(!tcpStart) {
     		LOG.warn("cannot bind TCP on socket {}",tcpSocket);
+    	} else {
+    		LOG.info("Listening TCP on socket {}",tcpSocket);
     	}
     	
-    	InetSocketAddress udpSocket = new InetSocketAddress(channelServerConfiguration.ports().udpPort());
-    	boolean udpStart = startupUDP(udpSocket, channelServerConfiguration, true); 
+    	final InetSocketAddress udpSocket = new InetSocketAddress(channelServerConfiguration.ports().udpPort());
+    	final boolean udpStart = startupUDP(udpSocket, channelServerConfiguration, true); 
     	if(!udpStart) {
     		LOG.warn("cannot bind UDP on socket {}",udpSocket);
+    	} else {
+    		LOG.info("Listening UDP on socket {}",udpSocket);
     	}
-		
     }
 
 	//this method has blocking calls in it
 	private void listenSpecificInetAddresses(DiscoverResults discoverResults) {
 	    
 	    for (InetAddress inetAddress : discoverResults.newBroadcastAddresses()) {
-	    	if (LOG.isInfoEnabled()) {
-	    		LOG.info("Listening on broadcast address: " + inetAddress + " on port udp: "
-	    		        + channelServerConfiguration.ports().udpPort());
-	    	}
 	    	InetSocketAddress udpBroadcastSocket = new InetSocketAddress(inetAddress, channelServerConfiguration.ports()
 	                .udpPort());
 	    	broadcastAddressTried = true;
@@ -188,6 +181,8 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	    	if (udpStartBroadcast) {
 	    		//if one broadcast address was found, then we don't need to bind to 0.0.0.0
 	    		broadcastAddressSupported = true;
+	    		LOG.info("Listening on broadcast address: {} on port udp: {}"
+		   		        , udpBroadcastSocket, channelServerConfiguration.ports().udpPort());
 	    	} else {
 	    		LOG.warn("cannot bind broadcast UDP {}", udpBroadcastSocket);
 	    	}
@@ -212,16 +207,14 @@ public final class ChannelServer implements DiscoverNetworkListener{
 		} 
 		
 		for (InetAddress inetAddress : discoverResults.newAddresses()) {
-		   	if (LOG.isInfoEnabled()) {
-		   		LOG.info("Listening on address: " + inetAddress + " on port udp: "
-		   		        + channelServerConfiguration.ports().udpPort() + " and tcp:"
-		   		        + channelServerConfiguration.ports().tcpPort());
-		   	}
-		    	InetSocketAddress tcpSocket = new InetSocketAddress(inetAddress, 
+		   	InetSocketAddress tcpSocket = new InetSocketAddress(inetAddress, 
 	    			channelServerConfiguration.ports().tcpPort());
 	    	boolean tcpStart = startupTCP(tcpSocket, channelServerConfiguration);
 	    	if(!tcpStart) {
 	    		LOG.warn("cannot bind TCP on socket {}",tcpSocket);
+	    	} else {
+	    		LOG.info("Listening on address: {} on port tcp: {}"
+		   		        , inetAddress, channelServerConfiguration.ports().tcpPort());
 	    	}
 	    	
 	    	//as we are listening to anything on UDP, we don't need to listen to any other interfaces
@@ -231,7 +224,10 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	    		boolean udpStart = startupUDP(udpSocket, channelServerConfiguration, false); 
 	    		if(!udpStart) {
 	    			LOG.warn("cannot bind UDP on socket {}",udpSocket);
-	    		}
+	    		} else {
+		    		LOG.info("Listening on address: {} on port udp: {}"
+			   		        , inetAddress, channelServerConfiguration.ports().udpPort());
+		    	}
 	    	}
 	    }
 		    

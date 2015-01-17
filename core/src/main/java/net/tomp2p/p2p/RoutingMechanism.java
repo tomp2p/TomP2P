@@ -323,7 +323,7 @@ public class RoutingMechanism {
 		for (Iterator<PeerStatistic> iterator = newNeighbors.iterator(); iterator.hasNext();) {
 			PeerAddress newNeighbor = iterator.next().peerAddress();
 			for (PeerMapFilter peerFilter : peerMapFilters) {
-				if (peerFilter.reject(newNeighbor, all, locationkey)) {
+				if (peerFilter.rejectPreRouting(newNeighbor, all)) {
 					iterator.remove();
 				}
 			}
@@ -397,7 +397,7 @@ public class RoutingMechanism {
     static boolean merge(final SortedSet<PeerStatistic> queueToAsk, final Collection<PeerStatistic> newPeers,
             final Collection<PeerAddress> alreadyAsked) {
 
-        final SortedSet<PeerStatistic> result = new UpdatableTreeSet<>(queueToAsk.comparator());
+        final SortedSet<PeerStatistic> result = new UpdatableTreeSet<PeerStatistic>(queueToAsk.comparator());
 
         // Remove peers we already asked
         for (Iterator<PeerStatistic> iterator = newPeers.iterator(); iterator.hasNext(); ) {

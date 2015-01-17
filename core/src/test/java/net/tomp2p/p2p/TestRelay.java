@@ -117,6 +117,7 @@ public class TestRelay {
 				throws Exception {
 			futurePeerConnection = new FuturePeerConnection(message.sender());
 			futurePeerConnection.done(peerConnection);
+			LOG.warn("handling response, object reply is {}", hasObjectDataReply());
 			super.handleResponse(message, peerConnection, sign, responder);
 		}
 

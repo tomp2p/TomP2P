@@ -2,3 +2,5 @@ language: java
 
 jdk:
  - openjdk7
+
+scrpit: mvn -Dtest=net.tomp2p.p2p.TestRelay test && exit 1

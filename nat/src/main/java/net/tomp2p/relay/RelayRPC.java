@@ -279,7 +279,7 @@ public class RelayRPC extends DispatchHandler {
 	}
 
 	/**
-	 * The unreachable peer received an envelope message with another message insice (piggypacked)
+	 * The unreachable peer received an envelope message with another message inside (piggypacked)
 	 */
 	private void handlePiggyBackedMessage(Message message, final Responder responderToRelay) throws Exception {
 		// TODO: check if we have right setup

@@ -28,7 +28,9 @@ public final class Number640 extends Number implements Comparable<Number640> {
     private static final long serialVersionUID = 1L;
 
 	public static final Number640 ZERO = new Number640(Number480.ZERO, Number160.ZERO);
-
+	
+	public static final int BYTE_ARRAY_SIZE = Number160.BYTE_ARRAY_SIZE * 4;
+	
     private final Number160 locationKey;
 
     private final Number160 domainKey;

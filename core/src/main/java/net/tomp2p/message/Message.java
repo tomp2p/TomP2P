@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Random;
 
@@ -1180,5 +1181,103 @@ public class Message {
 			dataMapListCopy.add(new DataMap(dataMapCopy, dataMap.isConvertMeta()));
 		}
 		return dataMapListCopy;
+	}
+	
+	/**
+	 * Returns the message size (without signature). To add the signature size, use the configured {@link SignatureFactory}.
+	 */
+	public int size() {
+		int current = MessageHeaderCodec.HEADER_SIZE;
+		
+		if(neighborsList != null) {
+			for (NeighborSet neighbors : neighborsList) {
+				for (PeerAddress address : neighbors.neighbors()) {
+					current += address.size() + 1;
+				}
+			}
+		}
+		
+		if(keyList != null) {
+			current += keyList.size() * Number160.BYTE_ARRAY_SIZE;
+		}
+		
+		if(bloomFilterList != null) {
+			for (SimpleBloomFilter<Number160> filter : bloomFilterList) {
+				current += filter.size();
+			}
+		}
+		
+		if(dataMapList != null) {
+			for (DataMap dataMap : dataMapList) {
+				current += 4;
+				for (Data data : dataMap.dataMap().values()) {
+					current += Number640.BYTE_ARRAY_SIZE; // the key
+					current += data.length();
+				}
+			}
+		}
+		
+		if(integerList != null) {
+			current += integerList.size() * 4;
+		}
+		
+		if(longList != null) {
+			current += longList.size() * 8;
+		}
+		
+		if(keyCollectionList != null) {
+			for (KeyCollection coll : keyCollectionList) {
+				current += 4;
+				current += coll.size() * Number640.BYTE_ARRAY_SIZE;
+			}
+		}
+		
+		if(keyMap640KeysList != null) {
+			for (KeyMap640Keys keys : keyMap640KeysList) {
+				current += 4;
+				current += keys.size() * Number640.BYTE_ARRAY_SIZE;
+			}
+		}
+		
+		if(keyMapByteList != null) {
+			for (KeyMapByte keys : keyMapByteList) {
+				current += 4 + keys.size();
+			}
+		}
+		
+		if(bufferList != null) {
+			for (Buffer buffer : bufferList) {
+				current += 4 + buffer.length();
+			}
+		}
+		
+		if(trackerDataList != null) {
+			for (TrackerData data : trackerDataList) {
+				current++; // size
+				for (Entry<PeerAddress, Data> entry : data.peerAddresses().entrySet()) {
+					current += entry.getKey().size();
+					current += entry.getValue().length();
+				}
+			}
+		}
+		
+		if(publicKeyList != null) {
+			for (PublicKey key : publicKeyList) {
+				// TODO "+1" is specific to DSA / RSA implementation, should be generic
+				current += key.getEncoded().length + 1;
+			}
+		}
+		
+		if(peerSocketAddressList != null) {
+			for (PeerSocketAddress address : peerSocketAddressList) {
+				current += address.size() + 1;
+			}
+		}
+		
+		if(signatureEncode != null) {
+			current += signatureEncode.signatureSize();
+		}
+		
+		return current;
 	}
 }

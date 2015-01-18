@@ -50,7 +50,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.cedarsoftware.util.DeepEquals;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.message.Message.Content;
@@ -66,6 +65,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import com.cedarsoftware.util.DeepEquals;
 
 /**
  * Tests encoding of an empty message. These tests should not be used for
@@ -528,6 +529,30 @@ public class TestMessage {
 		Message m2 = encodeDecode(m1);
 		Assert.assertEquals(m1.sender().isSlow(), m2.sender().isSlow());
 		compareMessage(m1, m2);
+	}
+	
+	@Test
+	public void testSize() throws Exception {
+		Message message = Utils2.createDummyMessage();
+		
+		// add some data
+		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		Data data = new Data(new byte[101]);
+		dataMap.put(new Number640(new Random()), data);
+		message.setDataMap(new DataMap(dataMap));
+		
+		// add some data
+		ByteBuf c = Unpooled.buffer().writeInt(99);
+		message.buffer(new Buffer(c));
+		
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		message.publicKey(gen.generateKeyPair().getPublic());
+	
+		message.intValue(-1);
+		message.longValue(9l);
+		
+		int size = message.size();
+		Assert.assertEquals(size, encodeDecode(message).size());
 	}
 
 	/**

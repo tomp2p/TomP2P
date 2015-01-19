@@ -1185,6 +1185,7 @@ public class Message {
 	
 	/**
 	 * Returns the message size (without signature). To add the signature size, use the configured {@link SignatureFactory}.
+	 * The implementation of this method depends on the {@link Encoder}.
 	 */
 	public int size() {
 		int current = MessageHeaderCodec.HEADER_SIZE;
@@ -1203,6 +1204,7 @@ public class Message {
 		
 		if(bloomFilterList != null) {
 			for (SimpleBloomFilter<Number160> filter : bloomFilterList) {
+				current += 6; // the size
 				current += filter.size();
 			}
 		}

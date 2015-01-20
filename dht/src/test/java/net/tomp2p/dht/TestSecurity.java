@@ -359,7 +359,7 @@ public class TestSecurity {
 
 			// since we have to peers, we store on both, otherwise this test may
 			// sometimes work, sometimes not.
-			RequestP2PConfiguration rc = new RequestP2PConfiguration(1, 1, 1);
+			RequestP2PConfiguration rc = new RequestP2PConfiguration(1, 1, 0);
 			Number160 locationKey = Number160.createHash("loctaion");
 			FuturePut futureDHT = master.put(locationKey)
 					.data(Number160.createHash("content1"), new Data("test1"))

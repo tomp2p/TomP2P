@@ -449,7 +449,7 @@ public class TestDHT {
 			fput.futureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fput.isSuccess());
 			rc = new RoutingConfiguration(4, 0, 10, 1);
-			pc = new RequestP2PConfiguration(4, 0, 0);
+			pc = new RequestP2PConfiguration(3, 0, 0);
 			FutureRemove frem = peers[222].remove(peers[30].peerID()).domainKey(Number160.createHash("test"))
 			        .contentKey(new Number160(5)).routingConfiguration(rc).requestP2PConfiguration(pc).start();
 			frem.awaitUninterruptibly();
@@ -459,7 +459,7 @@ public class TestDHT {
 			FutureGet fget = peers[555].get(peers[30].peerID()).domainKey(Number160.createHash("test"))
 			        .contentKey(new Number160(5)).routingConfiguration(rc).requestP2PConfiguration(pc).start();
 			fget.awaitUninterruptibly();
-			Assert.assertEquals(false, fget.isSuccess());
+			Assert.assertEquals(false, fget.isEmpty());
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -486,10 +486,11 @@ public class TestDHT {
 			        .requestP2PConfiguration(pc).start();
 			fput.awaitUninterruptibly();
 			fput.futureRequests().awaitUninterruptibly();
+			Assert.assertEquals(3, fput.rawResult().size());
 			Assert.assertEquals(true, fput.isSuccess());
 			System.err.println("remove");
 			rc = new RoutingConfiguration(4, 0, 10, 1);
-			pc = new RequestP2PConfiguration(4, 0, 0);
+			pc = new RequestP2PConfiguration(3, 0, 0);
 
 			FutureRemove frem = peers[222].remove(peers[30].peerID()).returnResults()
 			        .domainKey(Number160.createHash("test")).contentKey(new Number160(5))
@@ -504,7 +505,7 @@ public class TestDHT {
 			FutureGet fget = peers[555].get(peers[30].peerID()).domainKey(Number160.createHash("test"))
 			        .contentKey(new Number160(5)).routingConfiguration(rc).requestP2PConfiguration(pc).start();
 			fget.awaitUninterruptibly();
-			Assert.assertEquals(false, fget.isSuccess());
+			Assert.assertTrue(fget.isEmpty());
 		} finally {
 			if (master != null) {
 				master.shutdown().await();

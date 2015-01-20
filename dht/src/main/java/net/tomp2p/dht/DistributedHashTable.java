@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.dht.StorageLayer.PutStatus;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -336,6 +337,7 @@ public class DistributedHashTable {
                                         future.channelCreator(), new OperationMapper<FutureGet>() {
                                             Map<PeerAddress, Map<Number640, Data>> rawData = new HashMap<PeerAddress, Map<Number640, Data>>();
                                             Map<PeerAddress, DigestResult> rawDigest = new HashMap<PeerAddress, DigestResult>();
+                                            Map<PeerAddress, Byte> rawStatus = new HashMap<PeerAddress, Byte>();
 
                                             @Override
                                             public FutureResponse create(ChannelCreator channelCreator,
@@ -356,9 +358,7 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(FutureGet futureDHT, FutureDone<Void> futuresCompleted) {
-
-                                                futureDHT.receivedData(rawData, rawDigest, futuresCompleted);
-
+                                                futureDHT.receivedData(rawData, rawDigest, rawStatus, futuresCompleted);
                                             }
 
                                             @Override
@@ -367,9 +367,11 @@ public class DistributedHashTable {
                                                 // ok for digest
                                                 if (future.isSuccess()) {
                                                     
+                                                	boolean hasData = false;
                                                     Map<Number640, Data> data = future.responseMessage().dataMap(0).dataMap();
                                                     if(data !=null && !data.isEmpty()) {
                                                         rawData.put(future.request().recipient(), data);
+                                                        hasData = true;
                                                     }
 													
 													KeyMap640Keys keyMaps = future.responseMessage()
@@ -377,10 +379,19 @@ public class DistributedHashTable {
 													if (keyMaps != null && keyMaps.keysMap() != null) {
 														rawDigest.put(future.request().recipient(),
 																new DigestResult(keyMaps.keysMap()));
+														hasData = true;
+													}
+													
+													if(hasData) {
+														rawStatus.put(future.request().recipient(), (byte) PutStatus.OK.ordinal());
+													} else {
+														rawStatus.put(future.request().recipient(), (byte) PutStatus.NOT_FOUND.ordinal());
 													}
 
                                                     logger.debug("set data from {}", future.request()
                                                             .recipient());
+                                                } else {
+                                                	rawStatus.put(future.request().recipient(), (byte) PutStatus.FAILED.ordinal());
                                                 }
                                             }
                                         });

@@ -75,6 +75,7 @@ public class TestAnnounce {
             slave = new PeerBuilder(new Number160(rnd)).ports(4002).start();
             BaseFuture res = slave.localAnnounce().port(4001).start();
             res.awaitUninterruptibly();
+            System.err.println(res.failedReason());
             Assert.assertEquals(true, res.isSuccess());
             
             int size = master.peerBean().localMap().size();

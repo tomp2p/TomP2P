@@ -76,7 +76,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	 * responses, however, in case the asked peer has {@link PeerAddress#isSlow()} set to true, the answer
 	 * might arrive later. The key of the map is the expected message id.
 	 */
-    private volatile Map<Integer, FutureResponse> pendingRequests = new ConcurrentHashMap<Integer, FutureResponse>();
+    final private Map<Integer, FutureResponse> pendingRequests = new ConcurrentHashMap<Integer, FutureResponse>();
 
     
     /**

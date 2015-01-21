@@ -182,7 +182,6 @@ public class FutureGet extends FutureDHT<FutureGet> {
 				}
 			}
 			return true;
-		}
-	    
+		} 
     }
 }

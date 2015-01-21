@@ -477,7 +477,7 @@ public class TestSecurity {
 			FutureGet fdht6 = slave2.get(locationKey).all().start();
 			fdht6.awaitUninterruptibly();
 			Assert.assertEquals(0, fdht6.dataMap().size());
-			Assert.assertEquals(false, fdht6.isSuccess());
+			Assert.assertEquals(true, fdht6.isEmpty());
 			// put there the data again...
 			FuturePut fdht8 = slave1
 					.put(locationKey)
@@ -1026,14 +1026,14 @@ public class TestSecurity {
 				.start();
 		futureGet4a.awaitUninterruptibly();
 		// we did not find the data
-		Assert.assertTrue(futureGet4a.isFailed());
+		Assert.assertTrue(futureGet4a.isEmpty());
 		// should have been removed
 		Assert.assertNull(futureGet4a.data());
 
 		FutureGet futureGet4b = p2.get(lKey).contentKey(cKey).start();
 		futureGet4b.awaitUninterruptibly();
 		// we did not find the data
-		Assert.assertTrue(futureGet4b.isFailed());
+		Assert.assertTrue(futureGet4b.isEmpty());
 		// should have been removed
 		Assert.assertNull(futureGet4b.data());
 

@@ -95,9 +95,8 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
         if (twiceSeen(messageKey)) {
             return;
         }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("got broadcast map " + dataMap + " from " + peer.peerID());
-        }
+        LOG.debug("got broadcast map {} from {}", dataMap, peer.peerID());
+       
         synchronized (DEBUG_COUNTER) {
             DEBUG_COUNTER.add(peer.peerID());
         }
@@ -202,7 +201,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
                         
                         futures[i] = peer.broadcastRPC().send(randomAddress,
                                 broadcastBuilder, future.channelCreator(), broadcastBuilder);
-                        LOG.debug("2nd broadcast to {}", randomAddress);
+                        LOG.debug("2nd broadcast to {} with hop {}", randomAddress, hopCounter + 1);
                     }
                     Utils.addReleaseListener(future.channelCreator(), futures);
                 } else {

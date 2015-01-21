@@ -385,7 +385,7 @@ public class TestDHT {
 			fget.awaitUninterruptibly();
 			Assert.assertEquals(true, fget.isSuccess());
 			Assert.assertEquals(3, fget.rawData().size());
-			Assert.assertEquals(false, fget.isMinReached());
+			Assert.assertEquals(true, fget.isMinReached());
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -459,7 +459,7 @@ public class TestDHT {
 			FutureGet fget = peers[555].get(peers[30].peerID()).domainKey(Number160.createHash("test"))
 			        .contentKey(new Number160(5)).routingConfiguration(rc).requestP2PConfiguration(pc).start();
 			fget.awaitUninterruptibly();
-			Assert.assertEquals(false, fget.isEmpty());
+			Assert.assertEquals(true, fget.isEmpty());
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -789,7 +789,7 @@ public class TestDHT {
 			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey2), e2.getKey());
 			Entry<Number640, Collection<Number160>> e3 = map.pollFirstEntry();
 			Assert.assertEquals(versionKey2, e3.getValue().iterator().next());
-			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey2), e3.getKey());
+			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey3), e3.getKey());
 
 		} finally {
 			if (master != null) {
@@ -1353,7 +1353,7 @@ public class TestDHT {
 			master.peer().broadcast(Number160.createHash("blub")).udp(false).start();
 			DefaultBroadcastHandler d = (DefaultBroadcastHandler) master.peer().broadcastRPC().broadcastHandler();
 			int counter = 0;
-			while (d.getBroadcastCounter() < 900) {
+			while (d.getBroadcastCounter() < 500) {
 				Thread.sleep(200);
 				counter++;
 				if (counter > 100) {
@@ -1634,7 +1634,7 @@ public class TestDHT {
 			FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
 					.contentKey(contentKey).versionKey(versionKey).start();
 			fget.awaitUninterruptibly();
-			Assert.assertEquals(false, fget.isSuccess());
+			Assert.assertEquals(true, fget.isEmpty());
 
 			// confirm prepared put
 			Data tmp = new Data();

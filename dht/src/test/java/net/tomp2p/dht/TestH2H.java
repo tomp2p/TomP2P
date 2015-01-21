@@ -356,13 +356,13 @@ public class TestH2H {
 			Assert.assertTrue(futureRemove4.isRemoved());
 			FutureGet futureGet4a = p2.get(lKey).contentKey(cKey).start();
 			futureGet4a.awaitUninterruptibly();
-			Assert.assertFalse(futureGet4a.isSuccess());
+			Assert.assertTrue(futureGet4a.isEmpty());
 			// should have been removed
 			Assert.assertNull(futureGet4a.data());
 
 			FutureGet futureGet4b = p2.get(lKey).contentKey(cKey).start();
 			futureGet4b.awaitUninterruptibly();
-			Assert.assertFalse(futureGet4b.isSuccess());
+			Assert.assertTrue(futureGet4b.isEmpty());
 			// should have been removed
 			Assert.assertNull(futureGet4b.data());
 

@@ -128,16 +128,13 @@ public class TestDHT {
 			UtilsDHT2.perfectRouting(peers);
 
 			for (int i = 0; i < 500; i++) {
-				long start = System.currentTimeMillis();
+				//long start = System.currentTimeMillis();
 				FuturePut fp = peers[444].put(Number160.createHash("1")).data(new Data("test")).start();
 				fp.awaitUninterruptibly();
 				fp.futureRequests().awaitUninterruptibly();
-				for (FutureResponse fr : fp.futureRequests().completed()) {
-					LOG.error(fr + " / " + fr.request());
-				}
-
-				long stop = System.currentTimeMillis();
-				System.err.println("Test " + fp.failedReason() + " / " + (stop - start) + "ms");
+				
+				//long stop = System.currentTimeMillis();
+				//System.err.println("Test " + fp.failedReason() + " / " + (stop - start) + "ms");
 				Assert.assertEquals(true, fp.isSuccess());
 			}
 
@@ -927,7 +924,9 @@ public class TestDHT {
 	@Test
 	public void testObjectLoop() throws Exception {
 		for (int i = 0; i < 1000; i++) {
-			System.err.println("nr: " + i);
+			if(i%10==0) {
+				System.err.println("nr: " + i);
+			}
 			testObject();
 		}
 	}
@@ -946,14 +945,14 @@ public class TestDHT {
 			String toStore2 = "hallo2";
 			Data data1 = new Data(toStore1);
 			Data data2 = new Data(toStore2);
-			System.err.println("begin add : ");
+			//System.err.println("begin add : ");
 			FuturePut fput = peers[30].add(nr).data(data1).start();
 			fput.awaitUninterruptibly();
-			System.err.println("stop added: " + toStore1 + " (" + fput.isSuccess() + ")");
+			//System.err.println("stop added: " + toStore1 + " (" + fput.isSuccess() + ")");
 			fput = peers[50].add(nr).data(data2).start();
 			fput.awaitUninterruptibly();
 			fput.futureRequests().awaitUninterruptibly();
-			System.err.println("added: " + toStore2 + " (" + fput.isSuccess() + ")");
+			//System.err.println("added: " + toStore2 + " (" + fput.isSuccess() + ")");
 			FutureGet fget = peers[77].get(nr).all().start();
 			fget.awaitUninterruptibly();
 			fget.futureRequests().awaitUninterruptibly();
@@ -961,7 +960,7 @@ public class TestDHT {
 				System.err.println(fget.failedReason());
 			Assert.assertEquals(true, fget.isSuccess());
 			Assert.assertEquals(2, fget.dataMap().size());
-			System.err.println("got it");
+			//System.err.println("got it");
 		} finally {
 			if (master != null) {
 				master.shutdown().awaitListenersUninterruptibly();

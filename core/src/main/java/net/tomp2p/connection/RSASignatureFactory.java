@@ -131,7 +131,7 @@ public class RSASignatureFactory implements SignatureFactory {
 	}
 
 	@Override
-    public SignatureCodec signatureCodec(ByteBuf buf) throws IOException {
+    public SignatureCodec signatureCodec(ByteBuf buf) {
 	    return new RSASignatureCodec(buf);
     }
 

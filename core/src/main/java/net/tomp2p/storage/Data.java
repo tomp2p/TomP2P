@@ -346,11 +346,7 @@ public class Data {
 				return false;
 			}
 			
-			try {
-				signature = signatureFactory.signatureCodec(buf);
-			} catch (IOException e) {
-				return false;
-			}
+			signature = signatureFactory.signatureCodec(buf);
 		}
 		return true;
 	}
@@ -367,11 +363,7 @@ public class Data {
 				return false;
 			}
 			
-			try {
-				signature = signatureFactory.signatureCodec(buf);
-			} catch (IOException e) {
-				return false;
-			}
+			signature = signatureFactory.signatureCodec(buf);
 		}
 		return true;
 	}

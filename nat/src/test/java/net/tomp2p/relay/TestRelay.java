@@ -96,8 +96,7 @@ public class TestRelay {
 		// get all forwarders and add another listener
 		Set<AndroidForwarderRPC> mockedForwarders = new HashSet<AndroidForwarderRPC>();
 		for (Peer peer : peers) {
-			Map<Integer, DispatchHandler> handlers = peer.connectionBean().dispatcher()
-					.searchHandlerMap(peer.peerID(), unreachablePeer.peer().peerID());
+			Map<Integer, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(peer.peerID(), unreachablePeer.peer().peerID());
 			if (handlers == null) {
 				continue;
 			}

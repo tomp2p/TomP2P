@@ -27,7 +27,7 @@ public class TestRelay {
 	
 	@Test 
 	public void testLoop() throws Exception {
-		for(int i=0;i<1000;i++) {
+		for(int i=0;i<100;i++) {
 			 testPeerConnection();
 		}
 	}
@@ -117,6 +117,7 @@ public class TestRelay {
 				throws Exception {
 			futurePeerConnection = new FuturePeerConnection(message.sender());
 			futurePeerConnection.done(peerConnection);
+			LOG.warn("handling response, object reply is {}", hasObjectDataReply());
 			super.handleResponse(message, peerConnection, sign, responder);
 		}
 

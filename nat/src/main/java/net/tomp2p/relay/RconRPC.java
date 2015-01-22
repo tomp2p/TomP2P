@@ -167,6 +167,7 @@ public class RconRPC extends DispatchHandler {
 						final PeerConnection peerConnection = future.peerConnection();
 						
 						final Message readyMessage = createReadyForRequestMessage(message, peerConnection.remotePeer());
+						LOG.debug("Sending 'RconAfterconnect' message to relay. {}", readyMessage);
 						FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(),
 								peer.connectionBean(), config, readyMessage);
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -241,8 +242,7 @@ public class RconRPC extends DispatchHandler {
 			LOG.debug("This reverse connection is only used for sending a direct message {}", cachedMessage);
 
 			// send the message to the unreachable peer through the open channel
-			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config,
-					cachedMessage);
+			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config, cachedMessage);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
 				public void operationComplete(final FutureResponse future) throws Exception {
@@ -259,7 +259,7 @@ public class RconRPC extends DispatchHandler {
 						peerConnection.close();
 					} else {
 						cachedRequest.failed("Cannot send the request message", future);
-						handleFail(message, responder, "The AfterConnectMessage could not be sent!");
+						handleFail(message, responder, "Cannot send the request message");
 					}
 				}
 			});

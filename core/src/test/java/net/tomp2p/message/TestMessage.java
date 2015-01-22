@@ -350,6 +350,24 @@ public class TestMessage {
 		Message m2 = encodeDecode(m1);
 		compareMessage(m1, m2);
 	}
+	
+	@Test
+	public void testBigDataSigned() throws Exception {
+		final int size = 50 * 1024 * 1024;
+		Random rnd = new Random(42);
+		Message m1 = Utils2.createDummyMessage();
+		
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair pair1 = gen.generateKeyPair();
+		m1.publicKeyAndSign(pair1);
+
+		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		Data data = new Data(new byte[size]);
+		dataMap.put(new Number640(rnd), data);
+		m1.setDataMap(new DataMap(dataMap));
+		Message m2 = encodeDecode(m1);
+		compareMessage(m1, m2);
+	}
 
 	@Test
 	public void testEncodeDecode480Map() throws Exception { // encode
@@ -543,7 +561,7 @@ public class TestMessage {
 				.sender().createSocketTCP());
 		return decoder.message();
 	}
-
+	
 	/**
 	 * Mock Nettys ChannelHandlerContext with the minimal functions.
 	 * 
@@ -617,53 +635,33 @@ public class TestMessage {
 		Assert.assertEquals(m1.sender(), m2.sender());
 		Assert.assertEquals(m1.sender().tcpPort(), m2.sender().tcpPort());
 
-		Assert.assertEquals(
-				true,
-				Utils.isSameSets(m1.bloomFilterList(),
-						m2.bloomFilterList()));
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.bufferList(), m2.bufferList()));
-		
-		
-		Assert.assertEquals(m1.dataMapList().size(), m2.dataMapList().size());
-		
-		//;
-		for(Iterator<DataMap> iter1 = m1.dataMapList().iterator(), 
-				iter2 = m2.dataMapList().iterator();iter1.hasNext() && iter2.hasNext();) {
-			Assert.assertEquals(true,
-					DeepEquals.deepEquals(iter1.next().dataMap(), iter2.next().dataMap()));
-		}
-		
-		
-		
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.intList(), m2.intList()));
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.keyList(), m2.keyList()));
-		Assert.assertEquals(
-				true,
-				Utils.isSameSets(m1.keyCollectionList(),
-						m2.keyCollectionList()));
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.keyMap640KeysList(), m2.keyMap640KeysList()));
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.longList(), m2.longList()));
-		
-		Assert.assertEquals(m1.neighborsSetList().size(), m2.neighborsSetList().size()); 
-		for(Iterator<NeighborSet> iter1 = m1.neighborsSetList().iterator(), 
-				iter2 = m2.neighborsSetList().iterator();iter1.hasNext() && iter2.hasNext();) {
-			Assert.assertEquals(
-					true,
-					Utils.isSameSets(iter1.next().neighbors(),
-							iter2.next().neighbors()));	
-		}
-		
-		
+		Assert.assertEquals(true, Utils.isSameSets(m1.bloomFilterList(), m2.bloomFilterList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.bufferList(), m2.bufferList()));
 
-		Assert.assertEquals(m1.sender().isFirewalledTCP(), m2.sender()
-				.isFirewalledTCP());
-		Assert.assertEquals(m1.sender().isFirewalledUDP(), m2.sender()
-				.isFirewalledUDP());
+		Assert.assertEquals(m1.dataMapList().size(), m2.dataMapList().size());
+
+		for (Iterator<DataMap> iter1 = m1.dataMapList().iterator(), iter2 = m2.dataMapList().iterator(); iter1.hasNext()
+				&& iter2.hasNext();) {
+			Assert.assertEquals(true, DeepEquals.deepEquals(iter1.next().dataMap(), iter2.next().dataMap()));
+		}
+
+		Assert.assertEquals(true, Utils.isSameSets(m1.intList(), m2.intList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.keyList(), m2.keyList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.keyCollectionList(), m2.keyCollectionList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.keyMap640KeysList(), m2.keyMap640KeysList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.longList(), m2.longList()));
+
+		Assert.assertEquals(m1.neighborsSetList().size(), m2.neighborsSetList().size());
+		for (Iterator<NeighborSet> iter1 = m1.neighborsSetList().iterator(), iter2 = m2.neighborsSetList().iterator(); iter1
+				.hasNext() && iter2.hasNext();) {
+			Assert.assertEquals(true, Utils.isSameSets(iter1.next().neighbors(), iter2.next().neighbors()));
+		}
+
+		Assert.assertEquals(m1.sender().isFirewalledTCP(), m2.sender().isFirewalledTCP());
+		Assert.assertEquals(m1.sender().isFirewalledUDP(), m2.sender().isFirewalledUDP());
+		Assert.assertEquals(m1.sender().isRelayed(), m2.sender().isRelayed());
+		Assert.assertEquals(m1.sender().isSlow(), m2.sender().isSlow());
+		Assert.assertEquals(m1.sender().isPortForwarding(), m2.sender().isPortForwarding());
 	}
 
 	/**

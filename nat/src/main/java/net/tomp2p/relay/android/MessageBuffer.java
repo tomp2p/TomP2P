@@ -41,6 +41,7 @@ public class MessageBuffer<T> {
 
 	/**
 	 * Create a new buffer using the configuration
+	 * 
 	 * @param config the buffer limit configuration
 	 */
 	public MessageBuffer(MessageBufferConfiguration config) {
@@ -110,31 +111,57 @@ public class MessageBuffer<T> {
 				// cancel such that it does not notify the listener twice
 				task.cancel();
 			}
-			notifyAndClear();
+			notifyAndClear(true);
 		}
+	}
+
+	/**
+	 * Flush the buffer and notify the listeners
+	 */
+	public void flushNow() {
+		// no need to flush the buffer because it's empty
+		synchronized (buffer) {
+			if(buffer.isEmpty()) {
+				return;
+			}
+		}
+		
+		LOG.trace("Flushing buffer...");
+		if (task != null) {
+			// cancel such that it does not notify the listener twice
+			task.cancel();
+		}
+		notifyAndClear(false);
 	}
 
 	/**
 	 * Called when the buffer exceeds either the message count limit. the maximally
 	 * allowed buffer size or the maximally allowed age of the first buffer entry. Otherwise
 	 * <code>false</code>.
+	 * 
+	 * @param wasFull <code>true</code> if this method was triggered because of buffer overflow.
+	 *            <code>False</code> if this method was triggered manually (because messages need to be ready now.
 	 */
-	private void notifyAndClear() {
+	private void notifyAndClear(boolean wasFull) {
 		List<T> copy;
 		synchronized (buffer) {
 			if (buffer.isEmpty()) {
 				LOG.warn("Buffer is empty. Listener won't be notified.");
 				return;
 			}
-			
+
 			copy = new ArrayList<T>(buffer);
 			buffer.clear();
 			bufferSize.set(0);
 		}
-		
+
 		// notify the listeners with a copy of the buffer and the segmentation indices
 		for (MessageBufferListener<T> listener : listeners) {
-			listener.bufferFull(copy);
+			if(wasFull) {
+				listener.bufferFull(copy);
+			} else {
+				listener.bufferFlushed(copy);
+			}
 		}
 	}
 
@@ -150,7 +177,7 @@ public class MessageBuffer<T> {
 		public void run() {
 			if (!cancelled.get()) {
 				LOG.debug("Buffer age exceeds the limit of {}ms", bufferAgeLimitMS);
-				notifyAndClear();
+				notifyAndClear(true);
 			}
 		}
 

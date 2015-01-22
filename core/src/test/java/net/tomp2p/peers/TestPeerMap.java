@@ -65,7 +65,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(4).setFixedOverflowBagSizes(4);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
 
         Number160 id1 = new Number160("0x2");
@@ -115,7 +115,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
 
         Number160 id1 = new Number160("0x2");
@@ -192,7 +192,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         SortedSet<PeerStatistic> rc = peerMap.closePeers(new Number160(98), 3);
         rc.add(new PeerStatistic(rn2));
@@ -206,7 +206,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(4).setFixedOverflowBagSizes(4);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i < 12; i++) {
             PeerAddress r1 = new PeerAddress(new Number160(i));
@@ -223,7 +223,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i < 12; i++) {
             PeerAddress r1 = new PeerAddress(new Number160((i % 6) + 1));
@@ -240,7 +240,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(1);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i <= 200; i++) {
             PeerAddress r1 = new PeerAddress(new Number160(i + 1));
@@ -264,7 +264,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(1);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         final PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i <= 200; i++) {
             PeerAddress r1 = new PeerAddress(new Number160(i + 1));
@@ -302,7 +302,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(1);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         final PeerMap peerMap = new PeerMap(conf);
         Thread t1 = new Thread(new Runnable() {
             @Override
@@ -354,7 +354,7 @@ public class TestPeerMap {
             PeerMapConfiguration conf = new PeerMapConfiguration(ID);
             conf.setFixedVerifiedBagSizes(j + 1).setFixedOverflowBagSizes(j + 1);
             conf.offlineCount(1000).offlineTimeout(1);
-            conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+            conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
             final PeerMap peerMap = new PeerMap(conf);
 
             final AtomicInteger add = new AtomicInteger();
@@ -399,7 +399,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(100);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         final PeerMap peerMap = new PeerMap(conf);
         final Random random = new Random(42L);
         final List<PeerAddress> listAdded = new ArrayList<PeerAddress>();
@@ -469,7 +469,7 @@ public class TestPeerMap {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(10).setFixedOverflowBagSizes(10);
         conf.offlineCount(1000).offlineTimeout(100);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         
         conf.maintenance(new DefaultMaintenance(4, new int[] { 1, 1 }));
         
@@ -510,7 +510,7 @@ public class TestPeerMap {
             PeerMapConfiguration conf = new PeerMapConfiguration(ID);
             conf.setFixedVerifiedBagSizes(10).setFixedOverflowBagSizes(10);
             conf.offlineCount(1000).offlineTimeout(100);
-            conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+            conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
             final PeerMap peerMap = new PeerMap(conf);
             List<PeerAddress> peers = new ArrayList<PeerAddress>();
             for (int i = 0; i < round; i++) {

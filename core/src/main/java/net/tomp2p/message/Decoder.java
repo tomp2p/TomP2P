@@ -6,7 +6,6 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -16,6 +15,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -140,7 +140,7 @@ public class Decoder {
 		}
 	}
 	
-	public void decodeSignature(final ByteBuf buf, final int readerBefore, final boolean donePayload) throws InvalidKeyException, SignatureException, IOException {
+	public void decodeSignature(final ByteBuf buf, final int readerBefore, final boolean donePayload) throws InvalidKeyException, SignatureException {
 		final int readerAfter = buf.readerIndex();
 		final int len = readerAfter - readerBefore;
 		if(len > 0) {
@@ -149,7 +149,7 @@ public class Decoder {
 	}
 
 	private void verifySignature(final ByteBuf buf, final int readerBefore, final int len, final boolean donePayload)
-	        throws SignatureException, IOException, InvalidKeyException {
+	        throws SignatureException, InvalidKeyException {
 
 		if (!message.isSign()) {
 			return;
@@ -168,6 +168,7 @@ public class Decoder {
 
 		if (donePayload) {
 			byte[] signatureReceived = message.receivedSignature().encode();
+			LOG.debug("Verifying received signature: {}", Arrays.toString(signatureReceived));
 			if (signature.verify(signatureReceived)) {
 				// set public key only if signature is correct
 				message.setVerified();
@@ -587,13 +588,12 @@ public class Decoder {
 			}
 		}
 		if (message.isSign()) {
-			SignatureCodec signatureEncode = signatureFactory.signatureCodec();
-			size = signatureEncode.signatureSize();
-			if (buf.readableBytes() < size) {
+			size = signatureFactory.signatureSize();
+			if(buf.readableBytes() < size) {
 				return false;
 			}
 			
-			signatureEncode.read(buf);
+			SignatureCodec signatureEncode = signatureFactory.signatureCodec(buf);
 			message.receivedSignature(signatureEncode);
 		}
 		return true;

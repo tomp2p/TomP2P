@@ -43,15 +43,15 @@ public class BufferedMessageHandler {
 			List<Message> bufferedMessages = RelayUtils.decomposeCompositeBuffer(buffer.buffer(), bufferResponse.recipientSocket(),
 					bufferResponse.senderSocket(), peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 			LOG.debug("Received {} buffered messages", bufferedMessages.size());
+
+			// process the messages
 			for (Message bufferedMessage : bufferedMessages) {
 					processMessage(bufferedMessage);
 			}
-
-			futureDone.done();
 		} else {
-			LOG.warn("Buffer message does not contain any buffered message");
-			futureDone.failed("Cannot find any buffer in the message");
+			LOG.debug("Buffer message does not contain any buffered message");
 		}
+		futureDone.done();
 	}
 
 	/**

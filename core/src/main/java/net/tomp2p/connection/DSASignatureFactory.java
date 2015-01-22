@@ -117,14 +117,12 @@ public class DSASignatureFactory implements SignatureFactory {
 		}
 		byte[] signatureData = signature.sign();
 
-		SignatureCodec decodedSignature = new DSASignatureCodec();
-		decodedSignature.decode(signatureData);
-		return decodedSignature;
+		return new DSASignatureCodec(signatureData);
 	}
 
 	@Override
 	public boolean verify(PublicKey publicKey, ByteBuf buf, SignatureCodec signatureEncoded)
-			throws SignatureException, InvalidKeyException, IOException {
+			throws SignatureException, InvalidKeyException {
 		Signature signature = signatureInstance();
 		signature.initVerify(publicKey);
 		ByteBuffer[] byteBuffers = buf.nioBuffers();
@@ -149,7 +147,12 @@ public class DSASignatureFactory implements SignatureFactory {
     }
 
 	@Override
-    public SignatureCodec signatureCodec() {
-	    return new DSASignatureCodec();
+    public SignatureCodec signatureCodec(ByteBuf buf) {
+	    return new DSASignatureCodec(buf);
     }
+
+	@Override
+	public int signatureSize() {
+		return DSASignatureCodec.SIGNATURE_SIZE;
+	}
 }

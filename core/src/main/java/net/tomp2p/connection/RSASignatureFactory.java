@@ -100,15 +100,12 @@ public class RSASignatureFactory implements SignatureFactory {
 		}
 		
 		byte[] signatureData = signature.sign();
-
-		SignatureCodec decodedSignature = new RSASignatureCodec();
-		decodedSignature.decode(signatureData);
-		return decodedSignature;
+		return new RSASignatureCodec(signatureData);
 	}
 
 	@Override
 	public boolean verify(PublicKey publicKey, ByteBuf buf, SignatureCodec signatureEncoded)
-			throws SignatureException, InvalidKeyException, IOException {
+			throws SignatureException, InvalidKeyException {
 		Signature signature = signatureInstance();
 		signature.initVerify(publicKey);
 		ByteBuffer[] byteBuffers = buf.nioBuffers();
@@ -134,7 +131,12 @@ public class RSASignatureFactory implements SignatureFactory {
 	}
 
 	@Override
-    public SignatureCodec signatureCodec() {
-	    return new RSASignatureCodec();
+    public SignatureCodec signatureCodec(ByteBuf buf) {
+	    return new RSASignatureCodec(buf);
     }
+
+	@Override
+	public int signatureSize() {
+		return RSASignatureCodec.SIGNATURE_SIZE;
+	}
 }

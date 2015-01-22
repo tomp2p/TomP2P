@@ -66,7 +66,7 @@ public class TestRelayUtils {
 		message.recipientSocket(receiver.createSocketTCP());
 		
 		Buffer encoded = RelayUtils.encodeMessage(message, signature);
-		Message decoded = RelayUtils.decodeMessage(encoded, message.recipientSocket(), message.senderSocket(), signature);
+		Message decoded = RelayUtils.decodeMessage(encoded.buffer(), message.recipientSocket(), message.senderSocket(), signature);
 		Assert.assertEquals(message.peerSocketAddresses().size(), decoded.peerSocketAddresses().size());
 	}
 	

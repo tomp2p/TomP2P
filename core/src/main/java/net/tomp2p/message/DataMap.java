@@ -138,11 +138,11 @@ public class DataMap {
         if (obj == this) {
             return true;
         }
-        final DataMap d = (DataMap) obj;
-        final Map<Number640, Data> dataMap2 = convert(this);
-        final Map<Number640, Data> dataMap3 = convert(d);
-        final boolean test1 = Utils.isSameSets(dataMap2.keySet(), dataMap3.keySet());
-        final boolean test2 = Utils.isSameSets(dataMap2.values(), dataMap3.values());
+        
+        final Map<Number640, Data> dataMapThis = convert(this);
+        final Map<Number640, Data> dataMapOther = convert((DataMap) obj);
+        final boolean test1 = Utils.isSameSets(dataMapThis.keySet(), dataMapOther.keySet());
+        final boolean test2 = Utils.isSameSets(dataMapThis.values(), dataMapOther.values());
         return test1 && test2;
     }
 }

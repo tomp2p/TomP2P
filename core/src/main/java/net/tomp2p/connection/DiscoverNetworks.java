@@ -26,6 +26,7 @@ import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -60,6 +61,8 @@ public final class DiscoverNetworks {
 
 	public FutureDone<Void> start() {
 		final FutureDone<Void> futureDone = new FutureDone<Void>();
+		// the thread could be executed faster than the initialization of the future variable, which would result in an NPE
+		final CountDownLatch futureExistsLatch = new CountDownLatch(1);
 		future = timer.scheduleWithFixedDelay(new Runnable() {
 			
 			private boolean firstRun = true;
@@ -68,6 +71,7 @@ public final class DiscoverNetworks {
 				try {
 					discoverResults = discoverInterfaces(bindings, discoverResults);
 					if(discoverResults.isListenAny()) {
+						futureExistsLatch.await();
 						future.cancel(false);
 						notifyDiscoverNetwork(discoverResults);
 					} else if(!discoverResults.isEmpty()) {
@@ -83,6 +87,7 @@ public final class DiscoverNetworks {
 				}
 			}
 		}, 0, checkIntervalMillis, TimeUnit.MILLISECONDS);
+		futureExistsLatch.countDown();
 		return futureDone;
 	}
 	

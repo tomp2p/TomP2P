@@ -42,7 +42,7 @@ public class TestStatistics {
 			PeerMapConfiguration conf = new PeerMapConfiguration(ID);
 			conf.setFixedVerifiedBagSizes(20).setFixedOverflowBagSizes(20);
 			conf.offlineCount(1000).offlineTimeout(60);
-			conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+			conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
 			PeerMap peerMap = new PeerMap(conf);
 
 			Statistics statistics = new Statistics(peerMap);

@@ -77,23 +77,6 @@ public class RelayUtils {
 	}
 
 	/**
-	 * Basically does the same as
-	 * {@link MessageUtils#decodeMessage(Buffer, InetSocketAddress, InetSocketAddress, SignatureFactory)}, but
-	 * in addition checks that the relay peers of the decoded message are set correctly
-	 */
-	public static Message decodeRelayedMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender,
-			SignatureFactory signatureFactory) throws InvalidKeyException, NoSuchAlgorithmException,
-			InvalidKeySpecException, SignatureException, IOException {
-		Message decodedMessage = decodeMessage(buf, recipient, sender, signatureFactory);
-		boolean isRelay = decodedMessage.sender().isRelayed();
-		if (isRelay && !decodedMessage.peerSocketAddresses().isEmpty()) {
-			PeerAddress tmpSender = decodedMessage.sender().changePeerSocketAddresses(decodedMessage.peerSocketAddresses());
-			decodedMessage.sender(tmpSender);
-		}
-		return decodedMessage;
-	}
-	
-	/**
 	 * Composes all messages of a list into a single buffer object, ready to be transmitted over the network.
 	 * The composing happens in-order. Alternatively, the message size and then the message is written to the
 	 * buffer. Use {@link MessageBuffer#decomposeCompositeBuffer(ByteBuf)} to disassemble.
@@ -136,7 +119,7 @@ public class RelayUtils {
 			ByteBuf message = messageBuffer.readBytes(size);
 			
 			try {
-				Message decodedMessage = decodeRelayedMessage(new Buffer(message), recipient, sender, signatureFactory);
+				Message decodedMessage = decodeRelayedMessage(message, recipient, sender, signatureFactory);
 				messages.add(decodedMessage);
 			} catch (Exception e) {
 				LOG.error("Cannot decode buffered message. Skip it.", e);
@@ -159,14 +142,31 @@ public class RelayUtils {
 	/**
 	 * Decodes a message which was encoded using {{@link #encodeMessage(Message, SignatureFactory)}}.
 	 */
-	public static Message decodeMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
+	public static Message decodeMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
 	        throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, IOException {
 		Decoder d = new Decoder(signatureFactory);
-		final int readerBefore = buf.buffer().readerIndex();
-		d.decodeHeader(buf.buffer(), recipient, sender);
-		final boolean donePayload = d.decodePayload(buf.buffer());
-		d.decodeSignature(buf.buffer(), readerBefore, donePayload);
+		final int readerBefore = buf.readerIndex();
+		d.decodeHeader(buf, recipient, sender);
+		final boolean donePayload = d.decodePayload(buf);
+		d.decodeSignature(buf, readerBefore, donePayload);
 		return d.message();
+	}
+	
+	/**
+	 * Basically does the same as
+	 * {@link MessageUtils#decodeMessage(Buffer, InetSocketAddress, InetSocketAddress, SignatureFactory)}, but
+	 * in addition checks that the relay peers of the decoded message are set correctly
+	 */
+	public static Message decodeRelayedMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender,
+			SignatureFactory signatureFactory) throws InvalidKeyException, NoSuchAlgorithmException,
+			InvalidKeySpecException, SignatureException, IOException {
+		Message decodedMessage = decodeMessage(buf, recipient, sender, signatureFactory);
+		boolean isRelay = decodedMessage.sender().isRelayed();
+		if (isRelay && !decodedMessage.peerSocketAddresses().isEmpty()) {
+			PeerAddress tmpSender = decodedMessage.sender().changePeerSocketAddresses(decodedMessage.peerSocketAddresses());
+			decodedMessage.sender(tmpSender);
+		}
+		return decodedMessage;
 	}
 	
 	/**

@@ -17,7 +17,7 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerFilter;
+import net.tomp2p.peers.PeerMapFilter;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.utils.Utils;
@@ -40,7 +40,7 @@ public class RoutingMechanism {
     
     private final AtomicReferenceArray<FutureResponse> futureResponses;
     private final FutureRouting futureRoutingResponse;
-    private final Collection<PeerFilter> peerFilters;
+    private final Collection<PeerMapFilter> peerMapFilters;
     
     private NavigableSet<PeerStatistic> queueToAsk;
     private SortedSet<PeerAddress> alreadyAsked;
@@ -66,10 +66,10 @@ public class RoutingMechanism {
      *            The reponse future from this routing request
      */
     public RoutingMechanism(final AtomicReferenceArray<FutureResponse> futureResponses,
-            final FutureRouting futureRoutingResponse, final Collection<PeerFilter> peerFilters) {
+            final FutureRouting futureRoutingResponse, final Collection<PeerMapFilter> peerMapFilters) {
         this.futureResponses = futureResponses;
         this.futureRoutingResponse = futureRoutingResponse;
-        this.peerFilters = peerFilters;
+        this.peerMapFilters = peerMapFilters;
     }
     
     public FutureRouting futureRoutingResponse() {
@@ -312,7 +312,7 @@ public class RoutingMechanism {
 
 	private void filterPeers(Collection<PeerStatistic> newNeighbors, SortedSet<PeerAddress> alreadyAsked,
 	        NavigableSet<PeerStatistic> queueToAsk, Number160 locationkey) {
-		if (peerFilters == null || peerFilters.size() == 0) {
+		if (peerMapFilters == null || peerMapFilters.size() == 0) {
 			return;
 		}
 		Collection<PeerAddress> all = new ArrayList<PeerAddress>();
@@ -322,7 +322,7 @@ public class RoutingMechanism {
         }
 		for (Iterator<PeerStatistic> iterator = newNeighbors.iterator(); iterator.hasNext();) {
 			PeerAddress newNeighbor = iterator.next().peerAddress();
-			for (PeerFilter peerFilter : peerFilters) {
+			for (PeerMapFilter peerFilter : peerMapFilters) {
 				if (peerFilter.rejectPreRouting(newNeighbor, all)) {
 					iterator.remove();
 				}

@@ -22,6 +22,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.android.AndroidForwarderRPC;
+import net.tomp2p.relay.android.AndroidOfflineListener;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
 import net.tomp2p.relay.android.gcm.GCMSenderRPC;
 import net.tomp2p.relay.android.gcm.IGCMSender;
@@ -241,7 +242,12 @@ public class RelayRPC extends DispatchHandler {
 
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
 		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection.remotePeer(), bufferConfig,
-				registrationId, sender, mapUpdateInterval);
+				registrationId, sender, mapUpdateInterval, new AndroidOfflineListener() {
+					@Override
+					public void onAndroidOffline() {
+						forwarders.remove(peerConnection.remotePeer());
+					}
+				});
 		registerRelayForwarder(forwarderRPC);
 
 		responder.response(createResponseMessage(message, Type.OK));
@@ -288,7 +294,7 @@ public class RelayRPC extends DispatchHandler {
 		}
 
 		Buffer requestBuffer = message.buffer(0);
-		Message realMessage = RelayUtils.decodeRelayedMessage(requestBuffer, message.recipientSocket(), sender,
+		Message realMessage = RelayUtils.decodeRelayedMessage(requestBuffer.buffer(), message.recipientSocket(), sender,
 				signatureFactory());
 		realMessage.restoreContentReferences();
 
@@ -351,11 +357,21 @@ public class RelayRPC extends DispatchHandler {
 			return;
 		}
 
-		if (message.neighborsSet(1) != null && forwarder instanceof AndroidForwarderRPC) {
-			((AndroidForwarderRPC) forwarder).changeGCMServers(message.neighborsSet(1).neighbors());
-		}
-
 		Message response = createResponseMessage(message, Type.OK);
+		if(forwarder instanceof AndroidForwarderRPC) {
+			AndroidForwarderRPC androidForwarder = ((AndroidForwarderRPC) forwarder);
+			if (message.neighborsSet(1) != null) {
+				// update the GCM servers
+				androidForwarder.changeGCMServers(message.neighborsSet(1).neighbors());
+			}
+			
+			// Use the situation to send the buffer to the mobile phone
+			Buffer bufferedMessages = androidForwarder.collectBufferedMessages();
+			if(bufferedMessages != null) {
+				response.buffer(bufferedMessages);
+			}
+		}
+		
 		responder.response(response);
 	}
 
@@ -375,8 +391,12 @@ public class RelayRPC extends DispatchHandler {
 
 			try {
 				Message response = createResponseMessage(message, Type.OK);
+				
 				// add all buffered messages
-				response.buffer(androidForwarder.collectBufferedMessages());
+				Buffer bufferedMessages = androidForwarder.collectBufferedMessages();
+				if(bufferedMessages != null) {
+					response.buffer(bufferedMessages);
+				}
 
 				LOG.debug("Responding all buffered messages to Android device {}", message.sender());
 				responder.response(response);
@@ -409,7 +429,7 @@ public class RelayRPC extends DispatchHandler {
 
 		Message realMessage = null;
 		try {
-			realMessage = RelayUtils.decodeRelayedMessage(message.buffer(0), message.recipientSocket(),
+			realMessage = RelayUtils.decodeRelayedMessage(message.buffer(0).buffer(), message.recipientSocket(),
 					message.senderSocket(), signatureFactory());
 		} catch (Exception e) {
 			LOG.error("Cannot decode the late response", e);

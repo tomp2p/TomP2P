@@ -86,7 +86,6 @@ public class TestH2H {
 					.domainKey(dKey).versionKey(vKey).keyPair(keyPair).start();
 			futurePut1.awaitUninterruptibly();
 			Assert.assertTrue(futurePut1.isSuccess());
-
 		} finally {
 			if (p1 != null) {
 				p1.shutdown().awaitUninterruptibly();

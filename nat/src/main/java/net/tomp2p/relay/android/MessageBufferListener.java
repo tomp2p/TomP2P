@@ -12,4 +12,12 @@ public interface MessageBufferListener<T> {
 	 *            cleared as soon as this method call has been set.
 	 */
 	void bufferFull(List<T> messages);
+
+	/**
+	 * Notification when the buffer at the relay peer has been flushed manually (using
+	 * {@link MessageBuffer#flushNow()}.
+	 * 
+	 * @param messages the messages that were buffered
+	 */
+	void bufferFlushed(List<T> messages);
 }

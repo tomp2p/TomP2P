@@ -25,7 +25,7 @@ import java.util.Collection;
  * @author Thomas Bocek
  * 
  */
-public class DefaultPeerFilter implements PeerFilter {
+public class DefaultPeerFilter implements PeerMapFilter {
 
 	@Override
     public boolean rejectPeerMap(PeerAddress peerAddress, final PeerMap peerMap) {

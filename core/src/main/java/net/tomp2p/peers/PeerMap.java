@@ -66,7 +66,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     // stores listeners that will be notified if a peer gets removed or added
     private final List<PeerMapChangeListener> peerMapChangeListeners = new ArrayList<PeerMapChangeListener>();
 
-    private final Collection<PeerFilter> peerFilters;
+    private final Collection<PeerMapFilter> peerMapFilters;
 
     // the number of failures until a peer is considered offline
     private final int offlineCount;
@@ -94,7 +94,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         this.bagSizesVerified = peerMapConfiguration.getVerifiedBagSizes();
         this.bagSizesOverflow = peerMapConfiguration.getOverflowBagSizes();
         this.offlineCount = peerMapConfiguration.offlineCount();
-        this.peerFilters = peerMapConfiguration.peerFilters();
+        this.peerMapFilters = peerMapConfiguration.peerMapFilters();
         this.peerMapVerified = initMap(bagSizesVerified, false);
         this.peerMapOverflow = initMap(bagSizesOverflow, true);
         // bagSizeVerified * Number160.BITS should be enough
@@ -248,11 +248,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
     
     private boolean reject (PeerAddress peerAddress) {
-    	if(peerFilters == null || peerFilters.size() ==0) {
+    	if(peerMapFilters == null || peerMapFilters.size() ==0) {
     		return false;
     	}
     	
-    	for(PeerFilter peerFilter:peerFilters) {
+    	for(PeerMapFilter peerFilter:peerMapFilters) {
     		if(peerFilter.rejectPeerMap(peerAddress, this)) {
     			return true;
     		}

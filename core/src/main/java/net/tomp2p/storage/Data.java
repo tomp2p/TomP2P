@@ -303,7 +303,6 @@ public class Data {
 			//get public key
 			buf.skipBytes(indexPublicKeySize);
 			publicKey = signatureFactory.decodePublicKey(buf);
-			
 		} else {
 			publicKeySize = 0;
 			indexPublicKey = indexPublicKeySize;
@@ -342,11 +341,12 @@ public class Data {
 	
 	public boolean decodeDone(final ByteBuf buf, SignatureFactory signatureFactory) {
 		if (signed) {
-			signature = signatureFactory.signatureCodec();
-			if(buf.readableBytes() < signature.signatureSize()) {
+			if(buf.readableBytes() < signatureFactory.signatureSize()) {
+				// don't even try to create a signature
 				return false;
 			}
-			signature.read(buf);
+			
+			signature = signatureFactory.signatureCodec(buf);
 		}
 		return true;
 	}
@@ -357,20 +357,22 @@ public class Data {
 					(this.publicKey==null || this.publicKey == PeerBuilder.EMPTY_PUBLIC_KEY)) {
 				this.publicKey = publicKey;
 			}
-			signature = signatureFactory.signatureCodec();
-			if(buf.readableBytes() < signature.signatureSize()) {
+			
+			if(buf.readableBytes() < signatureFactory.signatureSize()) {
+				// don't even try to create a signature
 				return false;
 			}
-			signature.read(buf);
+			
+			signature = signatureFactory.signatureCodec(buf);
 		}
 		return true;
 	}
 
-	public boolean verify(SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public boolean verify(SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException {
 		return verify(publicKey, signatureFactory);
 	}
 
-	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException {
 		return signatureFactory.verify(publicKey, buffer.toByteBuf(), signature);
 	}
 

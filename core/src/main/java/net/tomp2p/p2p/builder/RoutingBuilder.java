@@ -6,10 +6,11 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
+import net.tomp2p.p2p.PostRoutingFilter;
 import net.tomp2p.p2p.RoutingMechanism;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.peers.PeerFilter;
+import net.tomp2p.peers.PeerMapFilter;
 import net.tomp2p.rpc.NeighborRPC.SearchValues;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
@@ -25,7 +26,8 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     private Number640 from;
     private Number640 to;
     
-    private Collection<PeerFilter> peerFilters;
+    private Collection<PeerMapFilter> peerMapFilters;
+    private Collection<PostRoutingFilter> postRoutingFilters;
 
     private int maxDirectHits;
     private int maxNoNewInfo;
@@ -113,13 +115,22 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         this.domainKey = domainKey;
     }
     
-    public RoutingBuilder peerFilters(Collection<PeerFilter> peerFilters) {
-    	this.peerFilters = peerFilters;
+    public RoutingBuilder peerMapFilters(Collection<PeerMapFilter> peerMapFilters) {
+    	this.peerMapFilters = peerMapFilters;
     	return this;
     }
     
-    public Collection<PeerFilter> peerFilters() {
-    	return peerFilters;
+    public Collection<PeerMapFilter> peerMapFilters() {
+    	return peerMapFilters;
+    }
+    
+    public RoutingBuilder postRoutingFilters(Collection<PostRoutingFilter> postRoutingFilters) {
+		this.postRoutingFilters = postRoutingFilters;
+    	return this;
+    }
+    
+    public Collection<PostRoutingFilter> postRoutingFilters() {
+    	return postRoutingFilters;
     }
 
     /**
@@ -175,7 +186,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     public RoutingMechanism createRoutingMechanism(FutureRouting futureRouting) {
         final FutureResponse[] futureResponses = new FutureResponse[parallel()];
         RoutingMechanism routingMechanism = new RoutingMechanism(
-                new AtomicReferenceArray<FutureResponse>(futureResponses), futureRouting, peerFilters);
+                new AtomicReferenceArray<FutureResponse>(futureResponses), futureRouting, peerMapFilters);
         routingMechanism.maxDirectHits(maxDirectHits());
         routingMechanism.maxFailures(maxFailures());
         routingMechanism.maxNoNewInfo(maxNoNewInfo());

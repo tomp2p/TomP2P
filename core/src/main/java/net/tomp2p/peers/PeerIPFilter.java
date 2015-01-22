@@ -29,7 +29,7 @@ import java.util.Collection;
  * @author Thomas Bocek
  * 
  */
-public class PeerIPFilter implements PeerFilter {
+public class PeerIPFilter implements PeerMapFilter {
 
 	final int mask4;
 	final int mask6;

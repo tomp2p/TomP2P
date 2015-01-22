@@ -280,9 +280,12 @@ public class StorageMemory implements Storage {
     public boolean isDomainProtectedByOthers(Number320 key, PublicKey publicKey) {
         PublicKey other = protectedMap.get(key);
         if (other == null) {
+        	LOG.debug("domain {} not protected", key);
             return false;
         }
-        return !other.equals(publicKey);
+        final boolean retVal = !other.equals(publicKey);
+        LOG.debug("domain {} protected: {}", key, retVal);
+        return retVal;
     }
 
     private Set<Number640> putIfAbsent2(long expiration, Set<Number640> hashSet) {

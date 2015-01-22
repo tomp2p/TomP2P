@@ -2,10 +2,12 @@ package net.tomp2p.p2p;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
 import net.tomp2p.Utils2;
+import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureAnnounce;
 import net.tomp2p.futures.FuturePing;
@@ -27,6 +29,9 @@ public class TestAnnounce {
             // setup
             Peer[] peers = Utils2.createNonMaintenanceNodes(100, rnd, 4001);
             master = peers[0];
+            if(!hasBroadcastAddress(master)) {
+            	return;
+            }
             // do testing
             List<FutureAnnounce> tmp = new ArrayList<FutureAnnounce>();
             // we start from 1, because a broadcast to ourself will not get
@@ -73,8 +78,12 @@ public class TestAnnounce {
         try {
             master = new PeerBuilder(new Number160(rnd)).ports(4001).start();
             slave = new PeerBuilder(new Number160(rnd)).ports(4002).start();
+            if(!hasBroadcastAddress(slave)) {
+            	return;
+            }
             BaseFuture res = slave.localAnnounce().port(4001).start();
             res.awaitUninterruptibly();
+            System.err.println(res.failedReason());
             Assert.assertEquals(true, res.isSuccess());
             
             int size = master.peerBean().localMap().size();
@@ -98,5 +107,11 @@ public class TestAnnounce {
                 slave.shutdown().await();
             }
         }
+    }
+    
+    private boolean hasBroadcastAddress(Peer peer) {
+    	final DiscoverResults discoverResults = peer.connectionBean().channelServer().discoverNetworks().currentDiscoverResults();
+        final Collection<InetAddress> broadcastAddresses = discoverResults.existingBroadcastAddresses();
+        return broadcastAddresses.size() > 0;
     }
 }

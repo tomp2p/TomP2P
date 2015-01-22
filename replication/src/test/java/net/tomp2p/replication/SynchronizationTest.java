@@ -12,6 +12,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -36,10 +37,13 @@ import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SynchronizationTest {
 
 	private final static Random random = new Random(42);
+	private static final Logger LOG = LoggerFactory.getLogger(SynchronizationTest.class);
 
 	@Test
 	public void testAdler() {
@@ -152,10 +156,9 @@ public class SynchronizationTest {
 		for (int i = 0; i < 3; i++) {
 			System.out.print(" " + (char) (i + 65));
 		}
-		System.out.println();
-		System.out.println("changes: " + l);
-		System.out.println("content size: " + k);
-		System.out.println("block size: " + size);
+		LOG.debug("changes: " + l);
+		LOG.debug("content size: " + k);
+		LOG.debug("block size: " + size);
 
 		String oldValue = "";
 		StringBuilder sb = new StringBuilder(k);
@@ -164,8 +167,8 @@ public class SynchronizationTest {
 			sb.append((char) (temp + 65));
 		}
 		oldValue = sb.toString();
-		System.out.println("oldvalue.length=" + oldValue.length());
-		System.out.println("old value: " + oldValue);
+		LOG.debug("oldvalue.length=" + oldValue.length());
+		LOG.debug("old value: " + oldValue);
 
 		String newValue = oldValue;
 		for (int i = 0; i < l; i++) {
@@ -174,12 +177,12 @@ public class SynchronizationTest {
 			sb1.setCharAt(temp, 'X');
 			newValue = sb1.toString();
 		}
-		System.out.println("new value: " + newValue);
+		LOG.debug("new value: " + newValue);
 
 		List<Checksum> checksums = RSync.checksums(oldValue.getBytes(), size);
 		List<Instruction> instructions = RSync.instructions(newValue.getBytes(), checksums, size);
-		System.out.println("checksums(" + checksums.size() + "): " + checksums);
-		System.out.println("instructions(" + instructions.size() + "): " + instructions);
+		LOG.debug("checksums(" + checksums.size() + "): " + checksums);
+		LOG.debug("instructions(" + instructions.size() + "): " + instructions);
 
 		DataBuffer reconstructedValue = RSync.reconstruct(oldValue.getBytes(), instructions, size);
 

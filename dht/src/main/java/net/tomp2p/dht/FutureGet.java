@@ -17,6 +17,7 @@ package net.tomp2p.dht;
 
 import java.util.Map;
 
+import net.tomp2p.dht.StorageLayer.PutStatus;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.peers.Number640;
@@ -42,6 +43,8 @@ public class FutureGet extends FutureDHT<FutureGet> {
     private Map<PeerAddress, Map<Number640, Data>> rawData;
     // Digest results
     private Map<PeerAddress, DigestResult> rawDigest;
+    // here we store also failed attempts
+    private Map<PeerAddress, Byte> rawStatus;
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
@@ -75,20 +78,22 @@ public class FutureGet extends FutureDHT<FutureGet> {
      *            The keys and data that have been received with information from which peer it has been received.
      * @param rawDigest
      *            The hashes of the content stored with information from which peer it has been received.
+     * @param rawStatus 
      * @param futuresCompleted 
      */
-    public void receivedData(final Map<PeerAddress, Map<Number640, Data>> rawData, final Map<PeerAddress, DigestResult> rawDigest, FutureDone<Void> futuresCompleted) {
+    public void receivedData(final Map<PeerAddress, Map<Number640, Data>> rawData, final Map<PeerAddress, DigestResult> rawDigest, Map<PeerAddress, Byte> rawStatus, FutureDone<Void> futuresCompleted) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
             }
             this.rawData = rawData;
             this.rawDigest = rawDigest;
+            this.rawStatus = rawStatus;
             this.futuresCompleted = futuresCompleted;
-            final int size = rawData.size();
+            final int size = rawStatus.size();
             this.minReached = size >= min;
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
-            this.reason = size > 0 ? "Minimum number of results reached" : "Expected >0 result, but got " + size;
+            this.reason = size > 0 ? "Minimum number of answers reached" : "Expected >0 answers, but got " + size;
         }
         notifyListeners();
     }
@@ -110,6 +115,15 @@ public class FutureGet extends FutureDHT<FutureGet> {
     public Map<PeerAddress, DigestResult> rawDigest() {
         synchronized (lock) {
             return rawDigest;
+        }
+    }
+    
+    /**
+     * @return The raw digest information with hashes of the content and the information which peer has been contacted
+     */
+    public Map<PeerAddress, Byte> rawStatus() {
+        synchronized (lock) {
+            return rawStatus;
         }
     }
 
@@ -158,5 +172,16 @@ public class FutureGet extends FutureDHT<FutureGet> {
         synchronized (lock) {
             return minReached;
         }
+    }
+
+	public boolean isEmpty() {
+		synchronized (lock) {
+			for(byte b:rawStatus.values()) {
+				if (b == PutStatus.OK.ordinal()) {
+					return false;
+				}
+			}
+			return true;
+		} 
     }
 }

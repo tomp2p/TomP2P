@@ -138,6 +138,7 @@ public class TestStorage {
 		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
 		Data data1 = new Data("test1");
 		Data data2 = new Data("test2").prepareFlag();
+		data2.addBasedOn(new Number160(0));
 		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(key2, data2, null, true, false, false);
@@ -158,6 +159,7 @@ public class TestStorage {
 		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
 		Data data1 = new Data("test1");
 		Data data2 = new Data("test2").prepareFlag();
+		data2.addBasedOn(new Number160(0));
 		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(key2, data2, null, true, false, false);
@@ -181,6 +183,7 @@ public class TestStorage {
 		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
 		Data data1 = new Data("test1");
 		Data data2 = new Data("test2").prepareFlag();
+		data2.addBasedOn(new Number160(0));
 		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(key2, data2, null, true, false, false);
@@ -205,6 +208,7 @@ public class TestStorage {
 		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
 		Data data1 = new Data("test1");
 		Data data2 = new Data("test2").prepareFlag();
+		data2.addBasedOn(new Number160(0));
 		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(key2, data2, null, true, false, false);

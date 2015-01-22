@@ -294,7 +294,7 @@ public class TestSecurity {
 
 			// since we have to peers, we store on both, otherwise this test may
 			// sometimes work, sometimes not.
-			RequestP2PConfiguration rc = new RequestP2PConfiguration(1, 1, 1);
+			RequestP2PConfiguration rc = new RequestP2PConfiguration(1, 1, 0);
 			Number160 locationKey = Number160.createHash("loctaion");
 			FuturePut futureDHT = master.put(locationKey).data(Number160.createHash("content1"), new Data("test1"))
 					.domainKey(Number160.createHash("domain1")).protectDomain().requestP2PConfiguration(rc).start();
@@ -391,7 +391,7 @@ public class TestSecurity {
 			FutureGet fdht6 = slave2.get(locationKey).all().start();
 			fdht6.awaitUninterruptibly();
 			Assert.assertEquals(0, fdht6.dataMap().size());
-			Assert.assertEquals(false, fdht6.isSuccess());
+			Assert.assertEquals(true, fdht6.isEmpty());
 			// put there the data again...
 			FuturePut fdht8 = slave1.put(locationKey)
 					.data(Utils.makeSHAHash(pair1.getPublic().getEncoded()), new Data("test1")).sign().start();
@@ -790,14 +790,14 @@ public class TestSecurity {
 			FutureGet futureGet4a = p2.get(lKey).domainKey(dKey).contentKey(cKey).start();
 			futureGet4a.awaitUninterruptibly();
 			// we did not find the data
-			Assert.assertTrue(futureGet4a.isFailed());
+			Assert.assertTrue(futureGet4a.isEmpty());
 			// should have been removed
 			Assert.assertNull(futureGet4a.data());
 
 			FutureGet futureGet4b = p2.get(lKey).contentKey(cKey).start();
 			futureGet4b.awaitUninterruptibly();
 			// we did not find the data
-			Assert.assertTrue(futureGet4b.isFailed());
+			Assert.assertTrue(futureGet4b.isEmpty());
 			// should have been removed
 			Assert.assertNull(futureGet4b.data());
 		} finally {
@@ -1017,6 +1017,7 @@ public class TestSecurity {
 			p2.shutdown().awaitUninterruptibly();
 		}
 	}
+
 
 	@Test
 	public void testGetMeta() throws NoSuchAlgorithmException, IOException, ClassNotFoundException, InvalidKeyException,

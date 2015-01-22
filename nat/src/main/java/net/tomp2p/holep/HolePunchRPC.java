@@ -1,7 +1,6 @@
 package net.tomp2p.holep;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.HolePunchInitiator;
@@ -161,13 +160,7 @@ public class HolePunchRPC extends DispatchHandler {
 	 */
 	private BaseRelayForwarderRPC extractRelayForwarder(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(peer.peerID(), message.recipient().peerId());
-		for (DispatchHandler handler : ioHandlers.values()) {
-			if (handler instanceof BaseRelayForwarderRPC) {
-				return (BaseRelayForwarderRPC) handler;
-			}
-		}
-		return null;
+		return (BaseRelayForwarderRPC) dispatcher.searchHandler(BaseRelayForwarderRPC.class, peer.peerID(), message.recipient().peerId());
 	}
 
 	/**

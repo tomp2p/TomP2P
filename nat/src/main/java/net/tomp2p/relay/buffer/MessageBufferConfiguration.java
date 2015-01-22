@@ -1,4 +1,4 @@
-package net.tomp2p.relay.android;
+package net.tomp2p.relay.buffer;
 
 /**
  * Configure multiple parameters of relay nodes being able to serve unreachable Android devices. This

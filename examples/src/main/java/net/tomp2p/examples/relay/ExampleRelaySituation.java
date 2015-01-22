@@ -24,9 +24,9 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.RelayConfig;
+import net.tomp2p.relay.RelayClientConfig;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.android.MessageBufferConfiguration;
+import net.tomp2p.relay.buffer.MessageBufferConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * requests on these nodes.
  * 
  * The Google Cloud Messaging Authentication Key is required as argument when using
- * {@link RelayConfig#ANDROID}
+ * {@link RelayClientConfig#ANDROID}
  * 
  * @author Nico Rutishauser
  * 
@@ -159,12 +159,12 @@ public class ExampleRelaySituation {
 				relayAddresses.add(relay.peer().peerAddress());
 			}
 
-			RelayConfig config;
+			RelayClientConfig config;
 			PeerBuilderNAT builder = new PeerBuilderNAT(peer);
 			if (RELAY_TYPE == RelayType.ANDROID) {
-				config = RelayConfig.Android("abc").manualRelays(relayAddresses);
+				config = RelayClientConfig.Android("abc").manualRelays(relayAddresses);
 			} else {
-				config = RelayConfig.OpenTCP();
+				config = RelayClientConfig.OpenTCP();
 			}
 
 			PeerNAT peerNat = builder.start();

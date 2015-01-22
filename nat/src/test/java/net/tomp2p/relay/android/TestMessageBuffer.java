@@ -15,6 +15,8 @@ import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Message;
 import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.relay.UtilsNAT;
+import net.tomp2p.relay.buffer.MessageBuffer;
+import net.tomp2p.relay.buffer.MessageBufferListener;
 
 import org.junit.Test;
 // create three messages

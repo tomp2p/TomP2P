@@ -44,18 +44,20 @@ import org.slf4j.LoggerFactory;
  * @author Raphael Voellmy
  *
  */
-public abstract class BaseRelayForwarderRPC extends DispatchHandler implements PeerStatusListener {
+public abstract class BaseRelayServer extends DispatchHandler implements PeerStatusListener {
 
-	private final static Logger LOG = LoggerFactory.getLogger(BaseRelayForwarderRPC.class);
+	private final static Logger LOG = LoggerFactory.getLogger(BaseRelayServer.class);
 
 	private final Number160 relayPeerId;
 	private PeerAddress unreachablePeer;
+	private final ArrayList<OfflineListener> offlineListeners;
 	private List<Map<Number160, PeerStatistic>> peerMap = null;
 
-	public BaseRelayForwarderRPC(Peer peer, PeerAddress unreachablePeer, RelayType relayType) {
+	protected BaseRelayServer(Peer peer, PeerAddress unreachablePeer, RelayType relayType) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.unreachablePeer = unreachablePeer.changeRelayed(true).changeSlow(relayType.isSlow());
 		this.relayPeerId = peer.peerID();
+		this.offlineListeners = new ArrayList<OfflineListener>();
 	}
 
 	public final PeerAddress unreachablePeerAddress() {
@@ -66,6 +68,16 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		return unreachablePeer.peerId();
 	}
 
+	public void addOfflineListener(OfflineListener listener) {
+		offlineListeners.add(listener);
+	}
+
+	protected void notifyOfflineListeners() {
+		for (OfflineListener listener : offlineListeners) {
+			listener.onUnreachableOffline(unreachablePeer, this);
+		}
+	}
+
 	@Override
 	public final boolean peerFailed(PeerAddress remotePeer, PeerException exception) {
 		// not handled here
@@ -73,7 +85,8 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	}
 
 	@Override
-	public final boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection, RTT roundTripTime) {
+	public final boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection,
+			RTT roundTripTime) {
 		if (referrer == null || remotePeer.equals(referrer)) {
 			// if firsthand (referrer is null), then full trust.
 			// if second hand and a stable peerconnection, we can trust as well
@@ -207,12 +220,13 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		if (peerMap == null) {
 			return null;
 		} else {
-            SortedSet<PeerStatistic> closePeers =  PeerMap.closePeers(unreachablePeerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap, null);
-            SortedSet<PeerAddress> result = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(id));
-            for (PeerStatistic p : closePeers) {
-                result.add(p.peerAddress());
-            }
-            return result;
+			SortedSet<PeerStatistic> closePeers = PeerMap.closePeers(unreachablePeerId(), id, NeighborRPC.NEIGHBOR_SIZE,
+					peerMap, null);
+			SortedSet<PeerAddress> result = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(id));
+			for (PeerStatistic p : closePeers) {
+				result.add(p.peerAddress());
+			}
+			return result;
 		}
 	}
 
@@ -237,14 +251,23 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 
 	/**
 	 * Update the peerMap of the unreachable peer
+	 * 
+	 * @param peerMap the extracted peer map
+	 * @param requestMessage the original message that contained the extracted peer map
+	 * @param preparedResponse the response that will be sent to the unreachable peer
 	 */
-	public final void setPeerMap(List<Map<Number160, PeerStatistic>> peerMap) {
+	public final void setPeerMap(List<Map<Number160, PeerStatistic>> peerMap, Message requestMessage,
+			Message preparedResponse) {
 		this.peerMap = peerMap;
-		peerMapUpdated();
+		peerMapUpdated(requestMessage, preparedResponse);
 	}
 
 	/**
-	 * Is called when the unreachable peer sent an update to the relay peer
+	 * Is called when the unreachable peer sent an update to the relay peer. This gives the server
+	 * implementation the chance to extract further information from the original map update message or attach
+	 * something to the response.
+	 * 
+	 * @param originalMessage the original message that contained the extracted peer map
 	 */
-	protected abstract void peerMapUpdated();
+	protected abstract void peerMapUpdated(Message originalMessage, Message preparedResponse);
 }

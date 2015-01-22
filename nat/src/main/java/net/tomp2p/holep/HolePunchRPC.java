@@ -13,7 +13,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.BaseRelayForwarderRPC;
+import net.tomp2p.relay.BaseRelayServer;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
@@ -94,7 +94,7 @@ public class HolePunchRPC extends DispatchHandler {
 	 * @param responder
 	 */
 	private void forwardHolePunchRequest(final Message message, PeerConnection peerConnection, final Responder responder) {
-		final BaseRelayForwarderRPC forwarder = extractRelayForwarder(message);
+		final BaseRelayServer forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardPortsMessage(message, forwarder.unreachablePeerAddress());
 
@@ -150,7 +150,7 @@ public class HolePunchRPC extends DispatchHandler {
 	}
 
 	/**
-	 * This method extracts a registered {@link BaseRelayForwarderRPC} from the
+	 * This method extracts a registered {@link BaseRelayServer} from the
 	 * {@link Dispatcher}. This RelayForwarder can then be used to extract the
 	 * {@link PeerConnection} to the unreachable Peer we want to contact.
 	 * 
@@ -158,9 +158,9 @@ public class HolePunchRPC extends DispatchHandler {
 	 *            the unreachable peer
 	 * @return forwarder
 	 */
-	private BaseRelayForwarderRPC extractRelayForwarder(final Message message) {
+	private BaseRelayServer extractRelayForwarder(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		return (BaseRelayForwarderRPC) dispatcher.searchHandler(BaseRelayForwarderRPC.class, peer.peerID(), message.recipient().peerId());
+		return (BaseRelayServer) dispatcher.searchHandler(BaseRelayServer.class, peer.peerID(), message.recipient().peerId());
 	}
 
 	/**

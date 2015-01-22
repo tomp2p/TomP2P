@@ -1,8 +1,7 @@
-package net.tomp2p.relay.android;
+package net.tomp2p.relay.buffer;
 
 import java.util.List;
 
-import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -22,11 +21,9 @@ public class BufferedMessageHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BufferedMessageHandler.class);
 	private final Peer peer;
-	private final ConnectionConfiguration connectionConfig;
 
-	public BufferedMessageHandler(Peer peer, ConnectionConfiguration connectionConfig) {
+	public BufferedMessageHandler(Peer peer) {
 		this.peer = peer;
-		this.connectionConfig = connectionConfig;
 	}
 
 	/**
@@ -104,7 +101,7 @@ public class BufferedMessageHandler {
 			}
 			
 			LOG.debug("Sending late response {} in an envelope {}", responseMessage, envelope);
-			FutureResponse futureResponse = RelayUtils.connectAndSend(peer, envelope, connectionConfig);
+			FutureResponse futureResponse = RelayUtils.connectAndSend(peer, envelope);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
 				public void operationComplete(FutureResponse future) throws Exception {

@@ -1,4 +1,4 @@
-package net.tomp2p.relay.android;
+package net.tomp2p.relay.buffer;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;

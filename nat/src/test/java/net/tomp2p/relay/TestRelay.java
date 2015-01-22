@@ -37,10 +37,8 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.relay.android.AndroidForwarderRPC;
-import net.tomp2p.relay.android.MessageBufferConfiguration;
-import net.tomp2p.relay.android.MessageBufferListener;
-import net.tomp2p.relay.android.gcm.GCMMessageHandler;
+import net.tomp2p.relay.buffer.MessageBufferConfiguration;
+import net.tomp2p.relay.buffer.MessageBufferListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
@@ -57,7 +55,7 @@ public class TestRelay {
 	private static final long DEFAULT_GCM_MOCK_DELAY_MS = 100;
 	private static final MessageBufferConfiguration gcmMessageBuffer = new MessageBufferConfiguration().bufferAgeLimit(2000).bufferCountLimit(10).bufferSizeLimit(Long.MAX_VALUE);
 	
-	private final RelayConfig relayConfig;
+	private final RelayClientConfig relayConfig;
 	private long gcmMockDelayMS;
 
 	private final MessageBufferConfiguration bufferConfig;
@@ -67,13 +65,13 @@ public class TestRelay {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection data() {
 		return Arrays.asList(new Object[][] {
-				{ RelayConfig.OpenTCP().peerMapUpdateInterval(5) },
-				{ RelayConfig.Android("dummy-registration-id").peerMapUpdateInterval(3) },
-				{ RelayConfig.Android("dummy-registration-id", gcmMessageBuffer).peerMapUpdateInterval(3) } }
+				{ RelayClientConfig.OpenTCP().peerMapUpdateInterval(5) },
+				{ RelayClientConfig.Android("dummy-registration-id").peerMapUpdateInterval(3) },
+				{ RelayClientConfig.Android("dummy-registration-id", gcmMessageBuffer).peerMapUpdateInterval(3) } }
 		);
 	}
 	
-	public TestRelay(RelayConfig relayType) {
+	public TestRelay(RelayClientConfig relayType) {
 		this.relayConfig = relayType;
 		this.gcmMockDelayMS = DEFAULT_GCM_MOCK_DELAY_MS;
 		
@@ -529,7 +527,7 @@ public class TestRelay {
 			Assert.assertEquals(8, nrOfNeighbors);
 
 			System.err.println("neighbors: " + nrOfNeighbors);
-			for (BaseRelayConnection relay : frNAT.relays()) {
+			for (BaseRelayClient relay : frNAT.relays()) {
 				System.err.println("pc:" + relay.relayAddress());
 			}
 
@@ -995,8 +993,8 @@ public class TestRelay {
 		
 		Map<Number320, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(5);
 		for (Map.Entry<Number320, DispatchHandler> entry : handlers.entrySet()) {
-			if (entry.getValue() instanceof BaseRelayForwarderRPC) {
-				return ((BaseRelayForwarderRPC) entry.getValue()).getPeerMap();
+			if (entry.getValue() instanceof BaseRelayServer) {
+				return ((BaseRelayServer) entry.getValue()).getPeerMap();
 			}
 		}
 		return Collections.emptyList();

@@ -15,12 +15,12 @@ import net.tomp2p.peers.PeerAddress;
  * @author Nico Rutishauser
  *
  */
-public abstract class BaseRelayConnection {
+public abstract class BaseRelayClient {
 
 	private final PeerAddress relayAddress;
 	protected final Set<RelayListener> listeners;
 
-	public BaseRelayConnection(PeerAddress relayAddress) {
+	public BaseRelayClient(PeerAddress relayAddress) {
 		this.relayAddress = relayAddress;
 		this.listeners = new HashSet<RelayListener>();
 	}
@@ -38,6 +38,7 @@ public abstract class BaseRelayConnection {
 	 * to the relay peer.
 	 */
 	public abstract void onMapUpdateSuccess();
+	
 	/**
 	 * Is called when the {@link PeerMapUpdateTask} failed to send the new map.
 	 * This can act as an indicator that the relay peer is now offline.
@@ -59,7 +60,7 @@ public abstract class BaseRelayConnection {
 	}
 	
 	/**
-	 * Call this to notify all listeners attached by {@link BaseRelayConnection#addCloseListener(RelayListener)}
+	 * Call this to notify all listeners attached by {@link BaseRelayClient#addCloseListener(RelayListener)}
 	 */
 	protected final void notifyCloseListeners() {
 		for (RelayListener relayListener : listeners) {

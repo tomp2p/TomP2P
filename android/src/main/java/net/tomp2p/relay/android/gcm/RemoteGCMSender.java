@@ -3,14 +3,12 @@ package net.tomp2p.relay.android.gcm;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayUtils;
-import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
@@ -31,14 +29,9 @@ public class RemoteGCMSender implements IGCMSender {
 	private static final int TIMEOUT_MS = 10000;
 
 	private final Peer peer;
-	private final ConnectionConfiguration config;
-	private final DispatchHandler dispatchHandler;
 	private Collection<PeerAddress> gcmServers;
 
-	public RemoteGCMSender(Peer peer, DispatchHandler dispatchHandler, ConnectionConfiguration config,
-			Collection<PeerAddress> gcmServers) {
-		this.dispatchHandler = dispatchHandler;
-		this.config = config;
+	public RemoteGCMSender(Peer peer, Collection<PeerAddress> gcmServers) {
 		this.gcmServers = gcmServers;
 		this.peer = peer;
 	}
@@ -49,7 +42,7 @@ public class RemoteGCMSender implements IGCMSender {
 		synchronized (gcmServers) {
 			copy = new ArrayList<PeerAddress>(gcmServers);
 		}
-		
+
 		if (copy.isEmpty()) {
 			LOG.error("Cannot send GCM messages because no GCM server is known");
 			futureGCM.failed("Cannot send GCM messages because no GCM server is known");
@@ -63,9 +56,11 @@ public class RemoteGCMSender implements IGCMSender {
 				// send to one of the servers
 				for (PeerAddress gcmServer : copy) {
 					LOG.debug("Try sending message to {}", gcmServer);
-					Message message = dispatchHandler.createMessage(gcmServer, RPC.Commands.GCM.getNr(), Type.REQUEST_1);
-					message.buffer(RelayUtils.encodeString(futureGCM.registrationId()));
-					FutureResponse futureResponse = RelayUtils.connectAndSend(peer, message, config);
+					Message message = new Message().recipient(gcmServer).sender(peer.peerAddress())
+							.command(RPC.Commands.GCM.getNr()).type(Type.REQUEST_1).version(peer.p2pId())
+							.buffer(RelayUtils.encodeString(futureGCM.registrationId()));
+
+					FutureResponse futureResponse = RelayUtils.connectAndSend(peer, message);
 					if (futureResponse.awaitUninterruptibly(TIMEOUT_MS) && futureResponse.isSuccess()) {
 						LOG.debug("GCM server {} sent the message successfully", gcmServer);
 						return;

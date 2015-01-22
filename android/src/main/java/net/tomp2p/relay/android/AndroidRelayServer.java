@@ -3,7 +3,6 @@ package net.tomp2p.relay.android;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -14,12 +13,13 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.relay.android.gcm.FutureGCM;
 import net.tomp2p.relay.android.gcm.IGCMSender;
 import net.tomp2p.relay.android.gcm.RemoteGCMSender;
+import net.tomp2p.relay.buffer.BufferedRelayServer;
+import net.tomp2p.relay.buffer.MessageBufferConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,44 +31,31 @@ import org.slf4j.LoggerFactory;
  * @author Nico Rutishauser
  *
  */
-public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements MessageBufferListener<Message> {
+public class AndroidRelayServer extends BufferedRelayServer {
 
-	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AndroidRelayServer.class);
 
 	private final String registrationId;
 	private final IGCMSender sender;
 	private final int mapUpdateIntervalMS;
-	private final MessageBuffer<Message> buffer;
 	private final AtomicLong lastUpdate;
-	
-	// to callback the relay RPC when the device is offline
-	private final AndroidOfflineListener offlineListener;
 
 	// holds the current requests
 	private List<FutureGCM> pendingRequests;
 
-
-	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, MessageBufferConfiguration bufferConfig,
-			String registrationId, IGCMSender sender, int mapUpdateIntervalS, AndroidOfflineListener offlineListener) {
-		super(peer, unreachablePeer, RelayType.ANDROID);
+	public AndroidRelayServer(Peer peer, PeerAddress unreachablePeer, MessageBufferConfiguration bufferConfig,
+			String registrationId, IGCMSender sender, int mapUpdateIntervalS) {
+		super(peer, unreachablePeer, RelayType.ANDROID, bufferConfig);
 		this.registrationId = registrationId;
 		this.sender = sender;
-		this.offlineListener = offlineListener;
 
 		// stretch the update interval by factor 1.5 to be tolerant for slow messages
 		this.mapUpdateIntervalMS = (int) (mapUpdateIntervalS * 1000 * 1.5);
 		this.lastUpdate = new AtomicLong(System.currentTimeMillis());
 
 		this.pendingRequests = Collections.synchronizedList(new ArrayList<FutureGCM>());
-
-		buffer = new MessageBuffer<Message>(bufferConfig);
-		addBufferListener(this);
 	}
 
-	public void addBufferListener(MessageBufferListener<Message> listener) {
-		buffer.addListener(listener);
-	}
-	
 	@Override
 	public FutureDone<Message> forwardToUnreachable(Message message) {
 		// create temporal OK message
@@ -78,9 +65,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		response.sender(unreachablePeerAddress());
 
 		try {
-			int messageSize = RelayUtils.getMessageSize(message, connectionBean().channelServer()
-					.channelServerConfiguration().signatureFactory());
-			buffer.addMessage(message, messageSize);
+			addToBuffer(message);
 		} catch (Exception e) {
 			LOG.error("Cannot encode the message", e);
 			return futureDone.done(createResponseMessage(message, Type.EXCEPTION));
@@ -108,35 +93,30 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 			pendingRequests.add(futureGCM);
 		}
 	}
-	
-	/**
-	 * Retrieves the messages that are ready to send. Ready to send means that they have been buffered and the
-	 * Android device has already been notified.
-	 * 
-	 * @return the buffer containing all buffered messages or <code>null</code> in case no message has been buffered
-	 */
+
+	@Override
 	public Buffer collectBufferedMessages() {
 		// the mobile device seems to be alive
 		lastUpdate.set(System.currentTimeMillis());
 
 		// flush the current buffer to get all messages
 		buffer.flushNow();
-		
+
 		List<Message> messages = new ArrayList<Message>();
 		synchronized (pendingRequests) {
 			for (FutureGCM futureGCM : pendingRequests) {
 				messages.addAll(futureGCM.buffer());
 				futureGCM.done();
 			}
-			
+
 			pendingRequests.clear();
 		}
 
-		if(messages.isEmpty()) {
+		if (messages.isEmpty()) {
 			LOG.trace("Currently there are no buffered messages");
 			return null;
 		}
-		
+
 		ByteBuf byteBuffer = RelayUtils.composeMessageBuffer(messages, connectionBean().channelServer()
 				.channelServerConfiguration().signatureFactory());
 		LOG.debug("Buffer of {} messages collected", messages.size());
@@ -144,10 +124,19 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	}
 
 	@Override
-	protected void peerMapUpdated() {
+	protected void peerMapUpdated(Message requestMessage, Message preparedResponse) {
 		// take this event as an indicator that the mobile device is online
 		lastUpdate.set(System.currentTimeMillis());
 		LOG.trace("Timeout for {} refreshed", registrationId);
+		
+		if (requestMessage.neighborsSet(1) != null && sender instanceof RemoteGCMSender) {
+			// update the GCM servers
+			RemoteGCMSender remoteGCMSender = (RemoteGCMSender) sender;
+			remoteGCMSender.gcmServers(requestMessage.neighborsSet(1).neighbors());
+			LOG.debug("Received update of the GCM servers");
+		}
+
+		super.peerMapUpdated(requestMessage, preparedResponse);
 	}
 
 	@Override
@@ -158,19 +147,8 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 			return true;
 		} else {
 			LOG.warn("Device {} did not send any messages for a long time", registrationId);
-			// unregister this RPC
-			peerBean().removePeerStatusListener(this);
-			connectionBean().dispatcher().removeIoHandler(relayPeerId(), unreachablePeerId());
-			offlineListener.onAndroidOffline();
+			notifyOfflineListeners();
 			return false;
-		}
-	}
-	
-	public void changeGCMServers(Collection<PeerAddress> gcmServers) {
-		if(sender instanceof RemoteGCMSender) {
-			RemoteGCMSender remoteGCMSender = (RemoteGCMSender) sender;
-			remoteGCMSender.gcmServers(gcmServers);
-			LOG.debug("Received update of the GCM servers");
 		}
 	}
 }

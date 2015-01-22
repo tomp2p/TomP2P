@@ -1,31 +1,28 @@
 package net.tomp2p.relay.tcp;
 
-import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.relay.BaseRelayConnection;
+import net.tomp2p.relay.BaseRelayClient;
 import net.tomp2p.relay.RelayUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OpenTCPRelayConnection extends BaseRelayConnection {
+public class TCPRelayClient extends BaseRelayClient {
 
-	private final static Logger LOG = LoggerFactory.getLogger(OpenTCPRelayConnection.class);
+	private final static Logger LOG = LoggerFactory.getLogger(TCPRelayClient.class);
 
 	private final PeerConnection connection;
 	private final Peer peer;
-	private final ConnectionConfiguration config;
 
-	public OpenTCPRelayConnection(PeerConnection connection, Peer peer, ConnectionConfiguration config) {
+	public TCPRelayClient(PeerConnection connection, Peer peer) {
 		super(connection.remotePeer());
 		this.connection = connection;
 		this.peer = peer;
-		this.config = config;
 		
 		initCloseListener();
 	}
@@ -48,7 +45,7 @@ public class OpenTCPRelayConnection extends BaseRelayConnection {
 			return new FutureResponse(message).failed("Connection to relay has been closed");
 		}
 		message.keepAlive(true);
-		return RelayUtils.send(connection, peer.peerBean(), peer.connectionBean(), config, message);
+		return RelayUtils.send(connection, peer.peerBean(), peer.connectionBean(), message);
 	}
 
 	@Override

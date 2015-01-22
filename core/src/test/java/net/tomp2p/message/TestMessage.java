@@ -551,8 +551,8 @@ public class TestMessage {
 		message.intValue(-1);
 		message.longValue(9l);
 		
-		int size = message.size();
-		Assert.assertEquals(size, encodeDecode(message).size());
+		int size = message.estimateSize();
+		Assert.assertEquals(size, encodeDecode(message).estimateSize());
 	}
 
 	/**

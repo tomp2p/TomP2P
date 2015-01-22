@@ -294,11 +294,11 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	}
 
 	/**
-	 * @return the byte array size of the data
+	 * @return the byte array size of the data (incl. header)
 	 */
 	@Override
 	public int size() {
-		return byteArraySize;
+		return byteArraySize + 2 + 4;
 	}
 
 	/**

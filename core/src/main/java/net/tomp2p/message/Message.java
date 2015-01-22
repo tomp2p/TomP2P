@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Random;
 
@@ -1184,10 +1183,9 @@ public class Message {
 	}
 	
 	/**
-	 * Returns the message size (without signature). To add the signature size, use the configured {@link SignatureFactory}.
-	 * The implementation of this method depends on the {@link Encoder}.
+	 * Returns the estimated message size. If the message contains data, a constant value of 1000bytes is added.
 	 */
-	public int size() {
+	public int estimateSize() {
 		int current = MessageHeaderCodec.HEADER_SIZE;
 		
 		if(neighborsList != null) {
@@ -1204,18 +1202,7 @@ public class Message {
 		
 		if(bloomFilterList != null) {
 			for (SimpleBloomFilter<Number160> filter : bloomFilterList) {
-				current += 6; // the size
 				current += filter.size();
-			}
-		}
-		
-		if(dataMapList != null) {
-			for (DataMap dataMap : dataMapList) {
-				current += 4;
-				for (Data data : dataMap.dataMap().values()) {
-					current += Number640.BYTE_ARRAY_SIZE; // the key
-					current += data.length();
-				}
 			}
 		}
 		
@@ -1229,15 +1216,13 @@ public class Message {
 		
 		if(keyCollectionList != null) {
 			for (KeyCollection coll : keyCollectionList) {
-				current += 4;
-				current += coll.size() * Number640.BYTE_ARRAY_SIZE;
+				current += 4 + coll.size() * Number640.BYTE_ARRAY_SIZE;
 			}
 		}
 		
 		if(keyMap640KeysList != null) {
 			for (KeyMap640Keys keys : keyMap640KeysList) {
-				current += 4;
-				current += keys.size() * Number640.BYTE_ARRAY_SIZE;
+				current += 4 + keys.size() * Number640.BYTE_ARRAY_SIZE;
 			}
 		}
 		
@@ -1253,20 +1238,9 @@ public class Message {
 			}
 		}
 		
-		if(trackerDataList != null) {
-			for (TrackerData data : trackerDataList) {
-				current++; // size
-				for (Entry<PeerAddress, Data> entry : data.peerAddresses().entrySet()) {
-					current += entry.getKey().size();
-					current += entry.getValue().length();
-				}
-			}
-		}
-		
 		if(publicKeyList != null) {
 			for (PublicKey key : publicKeyList) {
-				// TODO "+1" is specific to DSA / RSA implementation, should be generic
-				current += key.getEncoded().length + 1;
+				current += key.getEncoded().length;
 			}
 		}
 		
@@ -1278,6 +1252,17 @@ public class Message {
 		
 		if(signatureEncode != null) {
 			current += signatureEncode.signatureSize();
+		}
+		
+		/**
+		 * Here are the estimations to skip CPU intensive calculations
+		 */
+		if(dataMapList != null) {
+			current += 1000;
+		}
+		
+		if(trackerDataList != null) {
+			current += 1000; // estimated size
 		}
 		
 		return current;

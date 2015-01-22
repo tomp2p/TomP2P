@@ -12,7 +12,7 @@ import net.tomp2p.rpc.RPC;
  */
 public class DefaultSendBehavior implements SendBehavior {
 
-	private static final int MTU = 1500;
+	private static final int MTU = 1000;
 	
 	@Override
 	public SendMethod tcpSendBehavior(Message message) {
@@ -32,7 +32,7 @@ public class DefaultSendBehavior implements SendBehavior {
 				return SendMethod.RELAY;
 			} else {
 				// Messages with small size can be sent over relay, other messages should be sent directly (more efficient)
-				if(message.size() > MTU) {
+				if(message.estimateSize() > MTU) {
 					return SendMethod.RCON;
 				} else {
 					return SendMethod.RELAY;

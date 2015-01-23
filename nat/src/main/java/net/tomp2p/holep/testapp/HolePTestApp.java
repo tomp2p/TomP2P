@@ -7,8 +7,10 @@ import java.util.Scanner;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureShutdown;
+import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
@@ -109,6 +111,11 @@ public class HolePTestApp {
 
 		// setup relay
 		pNAT = new PeerBuilderNAT(peer).start();
+		FutureDone<NATType> fd = pNAT.checkNATType(bootstrapPeerAddress);
+		fd.awaitUninterruptibly();
+		if (fd.isSuccess()) {
+			System.err.println(fd.object().toString());
+		}
 
 		// set up 3 relays
 		// FutureRelay futureRelay = uNat.startSetupRelay(new FutureRelay());

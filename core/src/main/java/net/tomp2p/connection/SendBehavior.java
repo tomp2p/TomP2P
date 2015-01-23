@@ -6,7 +6,7 @@ import net.tomp2p.message.Message;
  * Decice how a direct message is sent.
  * 
  * @author Nico Rutishauser
- *
+ * 
  */
 public interface SendBehavior {
 
@@ -22,21 +22,29 @@ public interface SendBehavior {
 		RELAY,
 
 		/**
-		 * Open a reverse connection to the receiver and send the message. The reverse conneciton is closed
-		 * afterwards.
+		 * Open a reverse connection to the receiver and send the message. The
+		 * reverse conneciton is closed afterwards.
 		 */
 		RCON,
-		
+
 		/**
-		 * Don't send the message over the network but directly pass it to the own dispatcher
+		 * Don't send the message over the network but directly pass it to the
+		 * own dispatcher
 		 */
-		SELF
+		SELF,
+
+		/**
+		 * Send the message after a direct connection via hole punching is
+		 * established. The connection is closed afterwards. This is not possible via TCP.
+		 */
+		HOLEPUNCH
 	}
 
 	/**
 	 * Returns the send behavior depending on the message to be sent over TCP.
 	 * 
-	 * @param message the message to be sent
+	 * @param message
+	 *            the message to be sent
 	 * @return the sending behavior which should be used
 	 */
 	SendMethod tcpSendBehavior(Message message);
@@ -44,9 +52,11 @@ public interface SendBehavior {
 	/**
 	 * Returns the send behavior depending on the message to be sent over UDP.
 	 * 
-	 * @param message the message to be sent
+	 * @param message
+	 *            the message to be sent
 	 * @return the sending behavior which should be used
-	 * @throws UnsupportedOperationException sending over UDP is not allowed for this message.
+	 * @throws UnsupportedOperationException
+	 *             sending over UDP is not allowed for this message.
 	 */
 	SendMethod udpSendBehavior(Message message) throws UnsupportedOperationException;
 }

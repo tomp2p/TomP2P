@@ -136,7 +136,7 @@ public class PeerBuilderNAT {
 		});
 		
 		peer.peerBean().holePunchInitiator(new HolePunchInitiatorImpl(peer));
-
+		
 		return new PeerNAT(peer, natUtils, relayRPC, manualPorts, connectionConfiguration);
 	}
 }

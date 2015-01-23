@@ -12,4 +12,7 @@ public interface HolePunchInitiator {
 
 	public FutureDone<Message> handleHolePunch(final ChannelCreator channelCreator, final int idleUDPSeconds,
 			final FutureResponse futureResponse, final Message originalMessage);
+	
+	//TODO jwa this is not a very good reference...
+	public void natType(Object natType);
 }

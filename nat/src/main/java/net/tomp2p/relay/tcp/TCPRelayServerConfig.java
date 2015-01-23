@@ -15,23 +15,23 @@ public class TCPRelayServerConfig extends RelayServerConfig {
 
 	private final static Logger LOG = LoggerFactory.getLogger(TCPRelayServerConfig.class);
 
-	public TCPRelayServerConfig(Peer peer) {
-		super(peer);
-	}
-
 	@Override
-	public BaseRelayServer createServer(Message message, PeerConnection peerConnection, Responder responder) {
+	public void start(Peer peer) {
+		// nothing to do
+	}
+	
+	@Override
+	public BaseRelayServer createServer(Message message, PeerConnection peerConnection, Responder responder, Peer peer) {
 		if (peer.peerAddress().isRelayed()) {
 			// peer is behind a NAT as well -> deny request
 			LOG.warn("I cannot be a relay since I'm relayed as well! {}", message);
-			responder.response(createResponse(message, Type.DENIED));
+			responder.response(createResponse(message, Type.DENIED, peer.peerBean().serverPeerAddress()));
 			return null;
 		}
 
 		LOG.debug("Hello unreachable peer! You'll be relayed over an open TCP connection.");
 		TCPRelayServer tcpForwarder = new TCPRelayServer(peerConnection, peer);
-		responder.response(createResponse(message, Type.OK));
+		responder.response(createResponse(message, Type.OK, peer.peerBean().serverPeerAddress()));
 		return tcpForwarder;
 	}
-
 }

@@ -24,44 +24,55 @@ public class AndroidRelayServerConfig extends RelayServerConfig {
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidRelayServerConfig.class);
 	private static final int DEFAULT_GCM_RETRIES = 5;
 
-	// can be null in case this peer cannot send GCM messages. But then, the mobile device must provide peers
-	// with GCM ability.
-	private final IGCMSender gcmSender;
 	private final MessageBufferConfiguration bufferConfig;
+	private final String gcmAuthenticationKey;
+	private IGCMSender gcmSender;
 
 	/**
 	 * Creates an Android relay server configuration that is able to send GCM messages itself
 	 * 
-	 * @param peer the peer
-	 * @param config the connection configuration
 	 * @param gcmAuthenticationKey the api key / authentication token for Google Cloud Messaging. The key
 	 *            can be obtained through Google's developer console. The key should be kept secret.
-	 * @param gcmSendRetries the number of retries sending a GCM message
 	 * @param bufferConfig the buffer behavior before sending a GCM message to the Android device
 	 */
-	public AndroidRelayServerConfig(Peer peer, String gcmAuthenticationKey, MessageBufferConfiguration bufferConfig) {
-		this(peer, new GCMSenderRPC(peer, gcmAuthenticationKey, DEFAULT_GCM_RETRIES), bufferConfig);
-	}
-
-	public AndroidRelayServerConfig(Peer peer, IGCMSender gcmSender, MessageBufferConfiguration bufferConfig) {
-		super(peer);
-		this.gcmSender = gcmSender;
+	public AndroidRelayServerConfig(String gcmAuthenticationKey, MessageBufferConfiguration bufferConfig) {
+		this.gcmAuthenticationKey = gcmAuthenticationKey;
 		this.bufferConfig = bufferConfig;
 	}
 
+	/**
+	 * Creates an Android relay server config that is <strong>not</strong> able to send GCM messages itself.
+	 * Connecting unreachable peers need to provide at least one known other peer that has the ability to send
+	 * GCM messages.
+	 * 
+	 * @param bufferConfig the buffer behavior before sending a GCM message to the Android device (over a
+	 *            {@link RemoteGCMSender}).
+	 */
+	public AndroidRelayServerConfig(MessageBufferConfiguration bufferConfig) {
+		this(null, bufferConfig);
+	}
+
 	@Override
-	public BaseRelayServer createServer(Message message, PeerConnection peerConnection, Responder responder) {
+	public void start(Peer peer) {
+		if (gcmAuthenticationKey != null) {
+			gcmSender = new GCMSenderRPC(peer, gcmAuthenticationKey, DEFAULT_GCM_RETRIES);
+			LOG.debug("GCM server started on {}", peer.peerAddress());
+		}
+	}
+
+	@Override
+	public BaseRelayServer createServer(Message message, PeerConnection peerConnection, Responder responder, Peer peer) {
 		/** The registration ID */
 		if (message.bufferList().size() < 1) {
 			LOG.error("Device {} did not send any GCM registration id", peerConnection.remotePeer());
-			responder.response(createResponse(message, Type.DENIED));
+			responder.response(createResponse(message, Type.DENIED, peer.peerBean().serverPeerAddress()));
 			return null;
 		}
 
 		String registrationId = RelayUtils.decodeString(message.buffer(0));
 		if (registrationId == null) {
 			LOG.error("Cannot decode the registrationID from the message");
-			responder.response(createResponse(message, Type.DENIED));
+			responder.response(createResponse(message, Type.DENIED, peer.peerBean().serverPeerAddress()));
 			return null;
 		}
 
@@ -69,20 +80,19 @@ public class AndroidRelayServerConfig extends RelayServerConfig {
 		Integer mapUpdateInterval = message.intAt(1);
 		if (mapUpdateInterval == null) {
 			LOG.error("Android device did not send the peer map update interval.");
-			responder.response(createResponse(message, Type.DENIED));
+			responder.response(createResponse(message, Type.DENIED, peer.peerBean().serverPeerAddress()));
 			return null;
 		}
 
 		/** GCM handing */
 		IGCMSender sender = null;
 		if (message.neighborsSetList().isEmpty()) {
-			// no known GCM servers, check GCM ability of this peer
-			if (gcmSender == null) {
+			// no known GCM servers, use GCM ability of this peer
+			sender = gcmSender;
+			if (sender == null) {
 				LOG.error("This relay is unable to serve unreachable Android devices because no GCM Authentication Key is configured");
-				responder.response(createResponse(message, Type.DENIED));
+				responder.response(createResponse(message, Type.DENIED, peer.peerBean().serverPeerAddress()));
 				return null;
-			} else {
-				sender = gcmSender;
 			}
 		} else {
 			// device sent well-known GCM servers to use
@@ -93,8 +103,7 @@ public class AndroidRelayServerConfig extends RelayServerConfig {
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
 		AndroidRelayServer androidServer = new AndroidRelayServer(peer, peerConnection.remotePeer(), bufferConfig,
 				registrationId, sender, mapUpdateInterval);
-		responder.response(createResponse(message, Type.OK));
+		responder.response(createResponse(message, Type.OK, peer.peerBean().serverPeerAddress()));
 		return androidServer;
 	}
-
 }

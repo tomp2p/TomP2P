@@ -156,7 +156,7 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 		RelayType relayType = RelayType.values()[message.intAt(0)];
 
 		if (serverConfigs.containsKey(relayType)) {
-			BaseRelayServer server = serverConfigs.get(relayType).createServer(message, peerConnection, responder);
+			BaseRelayServer server = serverConfigs.get(relayType).createServer(message, peerConnection, responder, peer);
 			if (server != null) {
 				server.addOfflineListener(this);
 				registerRelayServer(server);

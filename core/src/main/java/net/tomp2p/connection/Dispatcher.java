@@ -341,8 +341,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 			} else {
 				// not registered
 				LOG.debug(
-						"Handler not found for type {} we are looking for the server with ID {}",
-						command, recipientID);
+						"Handler not found for type {} we are looking for the server with ID {} on behalf of {}",
+						command, recipientID, onBehalfOf);
 				return null;
 			}
 		} finally {
@@ -375,15 +375,14 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 		}
     }
     
-	public DispatchHandler searchHandler(Class<?> clazz,
-			Number160 peerID, Number160 peerId2) {
+	@SuppressWarnings("unchecked")
+	public <T> T searchHandler(Class<T> clazz, Number160 peerID, Number160 peerId2) {
 		readLock.lock();
 		try {
-			final Map<Integer, DispatchHandler> ioHandlers = search(
-					peerID, peerId2);
+			final Map<Integer, DispatchHandler> ioHandlers = search(peerID, peerId2);
 			for (DispatchHandler handler : ioHandlers.values()) {
 				if (clazz.isInstance(handler)) {
-					return handler;
+					return (T) handler;
 				}
 			}
 			return null;

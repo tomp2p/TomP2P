@@ -29,7 +29,7 @@ public class PeerBuilderNAT {
 		
 		// add TCP server by default
 		this.relayServerConfigurations = new HashMap<RelayType, RelayServerConfig>();
-		relayServerConfigurations.put(RelayType.OPENTCP, new TCPRelayServerConfig(peer));
+		relayServerConfigurations.put(RelayType.OPENTCP, new TCPRelayServerConfig());
 	}
 
 	public boolean isManualPorts() {
@@ -54,22 +54,35 @@ public class PeerBuilderNAT {
 
 	/**
 	 * Set all relay server configurations
+	 * @return this instance
 	 */
-	public void relayServerConfigurations(Map<RelayType, RelayServerConfig> relayServerConfigurations) {
+	public PeerBuilderNAT relayServerConfigurations(Map<RelayType, RelayServerConfig> relayServerConfigurations) {
 		this.relayServerConfigurations = relayServerConfigurations;
+		return this;
 	}
 	
 	/**
 	 * Add a new server configuration (e.g. for {@link RelayType#ANDROID}).
+	 * @return  this instance
 	 */
-	public void addRelayServerConfiguration(RelayType relayType, RelayServerConfig configuration) {
+	public PeerBuilderNAT addRelayServerConfiguration(RelayType relayType, RelayServerConfig configuration) {
 		relayServerConfigurations.put(relayType, configuration);
+		return this;
 	}
 
 	public PeerNAT start() {
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
 		final HolePunchRPC holePunchRPC = new HolePunchRPC(peer);
+		
+		if(relayServerConfigurations == null) {
+			relayServerConfigurations = new HashMap<RelayType, RelayServerConfig>(0);
+		} else {
+			// start the server configurations
+			for (RelayServerConfig config : relayServerConfigurations.values()) {
+				config.start(peer);
+			}
+		}
 		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC, relayServerConfigurations);
 
 		peer.addShutdownListener(new Shutdown() {

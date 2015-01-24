@@ -39,14 +39,12 @@ public class TestAndroidRelay {
 	public static Collection data() throws Exception {
 		return Arrays.asList(new Object[][] {
 				{ new MessageBufferConfiguration().bufferAgeLimit(2000).bufferCountLimit(10).bufferSizeLimit(Long.MAX_VALUE), 10 },
-				{ new MessageBufferConfiguration().bufferAgeLimit(Long.MAX_VALUE).bufferCountLimit(1).bufferSizeLimit(Long.MAX_VALUE), 10 },
-				{ new MessageBufferConfiguration().bufferAgeLimit(Long.MAX_VALUE).bufferCountLimit(Integer.MAX_VALUE).bufferSizeLimit(1), 10 } }
+				{ new MessageBufferConfiguration().bufferAgeLimit(Long.MAX_VALUE).bufferCountLimit(1).bufferSizeLimit(Long.MAX_VALUE), 10 } }
 		);
 	}
 	
 	public TestAndroidRelay(MessageBufferConfiguration bufferConfig, int peerMapIntervalS) {
-		clientConfig = new MockedAndroidRelayClientConfig(60);
-		clientConfig.peerMapUpdateInterval(peerMapIntervalS);
+		clientConfig = new MockedAndroidRelayClientConfig(peerMapIntervalS);
 		serverConfig = new MockedAndroidRelayServerConfig(bufferConfig, clientConfig);
 		testRelay = new TestRelay(RelayType.ANDROID, serverConfig, clientConfig);
 	}
@@ -150,6 +148,9 @@ public class TestAndroidRelay {
 
 			// wait for maintenance to kick in
 			Thread.sleep(clientConfig.peerMapUpdateInterval() * 1000);
+			
+			// block message buffers transmitted through the map update task
+			clientConfig.getClient(unreachablePeer.peerAddress()).bufferReceptionDelay(2 * slowResponseTimeoutS * 1000);
 
 			RoutingConfiguration r = new RoutingConfiguration(5, 1, 1);
             RequestP2PConfiguration rp = new RequestP2PConfiguration(1, 1, 0);

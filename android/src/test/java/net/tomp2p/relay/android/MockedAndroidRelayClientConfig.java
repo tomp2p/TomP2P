@@ -11,11 +11,11 @@ import net.tomp2p.relay.BaseRelayClient;
 public class MockedAndroidRelayClientConfig extends AndroidRelayClientConfig {
 
 	public static final String DUMMY_GCM_API_KEY = "dummy-gcm-key";
-	private final Map<PeerAddress, AndroidRelayClient> clientList;
+	private final Map<PeerAddress, MockedAndroidRelayClient> clientList;
 
 	public MockedAndroidRelayClientConfig(int peerMapUpdateIntervalS) {
 		super(DUMMY_GCM_API_KEY, peerMapUpdateIntervalS);
-		this.clientList = new HashMap<PeerAddress, AndroidRelayClient>();
+		this.clientList = new HashMap<PeerAddress, MockedAndroidRelayClient>();
 	}
 	
 	@Override
@@ -34,5 +34,9 @@ public class MockedAndroidRelayClientConfig extends AndroidRelayClientConfig {
 		} else {
 			throw new IllegalStateException("No client with PeerAddress " + unreachablePeer + " connected");
 		}
+	}
+	
+	public MockedAndroidRelayClient getClient(PeerAddress clientAddress) {
+		return clientList.get(clientAddress);
 	}
 }

@@ -91,7 +91,8 @@
 				<directory>src/test/resources</directory>
 			</testResource>
 		</testResources>
-
+		
+		<!-- Because the android project tests have a dependency to TestRelay -->
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

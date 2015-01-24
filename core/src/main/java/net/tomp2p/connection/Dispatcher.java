@@ -417,7 +417,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	 * @param futureResponse the future to respond as soon as a (satisfying) response from the slow peer
 	 *            arrived.
 	 * @param scheduler 
-	 * @param timeout 
+	 * @param timeout the timeout in seconds
 	 */
 	public void addPendingRequest(final int messageId, final FutureResponse futureResponse, final int timeout, final ScheduledExecutorService scheduler) {
 		pendingRequests.put(messageId, futureResponse);

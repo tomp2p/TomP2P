@@ -39,14 +39,12 @@ public class TestAndroidRelay {
 	public static Collection data() throws Exception {
 		return Arrays.asList(new Object[][] {
 				{ new MessageBufferConfiguration().bufferAgeLimit(2000).bufferCountLimit(10).bufferSizeLimit(Long.MAX_VALUE), 10 },
-				{ new MessageBufferConfiguration().bufferAgeLimit(Long.MAX_VALUE).bufferCountLimit(1).bufferSizeLimit(Long.MAX_VALUE), 10 },
-				{ new MessageBufferConfiguration().bufferAgeLimit(Long.MAX_VALUE).bufferCountLimit(Integer.MAX_VALUE).bufferSizeLimit(1), 10 } }
+				{ new MessageBufferConfiguration().bufferAgeLimit(Long.MAX_VALUE).bufferCountLimit(1).bufferSizeLimit(Long.MAX_VALUE), 10 } }
 		);
 	}
 	
 	public TestAndroidRelay(MessageBufferConfiguration bufferConfig, int peerMapIntervalS) {
-		clientConfig = new MockedAndroidRelayClientConfig(60);
-		clientConfig.peerMapUpdateInterval(peerMapIntervalS);
+		clientConfig = new MockedAndroidRelayClientConfig(peerMapIntervalS);
 		serverConfig = new MockedAndroidRelayServerConfig(bufferConfig, clientConfig);
 		testRelay = new TestRelay(RelayType.ANDROID, serverConfig, clientConfig);
 	}
@@ -128,7 +126,7 @@ public class TestAndroidRelay {
 	@Test
 	public void testRelaySlowPeer() throws Exception {
 		// make the timeout very small, such that the mobile device is too slow to answer the request
-		int slowResponseTimeoutS = 1;
+		int slowResponseTimeoutS = 2;
 		
 		final Random rnd = new Random(42);
 		PeerDHT master = null;
@@ -148,8 +146,11 @@ public class TestAndroidRelay {
 			FutureRelayNAT fbn = uNat.startRelay(clientConfig, master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
 
-			// wait for maintenance to kick in
-			Thread.sleep(clientConfig.peerMapUpdateInterval() * 1000);
+			// wait to be about in the middle of two map updates
+			Thread.sleep(clientConfig.peerMapUpdateInterval() * 500);
+			
+			// block message buffers transmitted through the map update task
+			clientConfig.getClient(unreachablePeer.peerAddress()).bufferReceptionDelay(slowResponseTimeoutS * 1200);
 
 			RoutingConfiguration r = new RoutingConfiguration(5, 1, 1);
             RequestP2PConfiguration rp = new RequestP2PConfiguration(1, 1, 0);

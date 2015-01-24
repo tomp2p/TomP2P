@@ -6,7 +6,6 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -589,12 +588,13 @@ public class Decoder {
 			}
 		}
 		if (message.isSign()) {
-			try {
-				SignatureCodec signatureEncode = signatureFactory.signatureCodec(buf);
-				message.receivedSignature(signatureEncode);
-			} catch (IOException e) {
+			size = signatureFactory.signatureSize();
+			if(buf.readableBytes() < size) {
 				return false;
 			}
+			
+			SignatureCodec signatureEncode = signatureFactory.signatureCodec(buf);
+			message.receivedSignature(signatureEncode);
 		}
 		return true;
 	}

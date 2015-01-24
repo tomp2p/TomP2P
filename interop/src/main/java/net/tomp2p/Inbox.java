@@ -21,18 +21,20 @@ public class Inbox {
 
 			try {
 				execute(argument);
+
+				System.out.println("Waiting for next argument...");
+				Scanner scanner = new Scanner(System.in);
+				argument = scanner.nextLine();
+				scanner.close();
+
 			} catch (Exception ex) {
 				System.err.println(String.format("Exception occurred:\n%s.", ex));
+				System.out.println("Exiting due to error.");
 				System.exit(-1);
 			}			
-			
-			System.out.println("Waiting for next argument...");
-			Scanner scanner = new Scanner(System.in);
-			argument = scanner.nextLine();
-			scanner.close();
 		}
 
-		System.out.println("Exiting.");
+		System.out.println("Exiting with success.");
 		System.exit(0);
 	}
 
@@ -168,7 +170,7 @@ public class Inbox {
 			// pings
 			case "TestPingJavaUdp-start":
 				exit = false;
-				Pings.startJavaPingReceiver();
+				Pings.startJavaPingReceiver(argument);
 				break;
 			case "TestPingJavaUdp-stop":
 				Pings.stopJavaPingReceiver();
@@ -180,6 +182,8 @@ public class Inbox {
 				break;
 		}
 
-		InteropUtil.writeToFile(argument, result);
+		if (result != null) {
+			InteropUtil.writeToFile(argument, result);
+		}
 	}
 }

@@ -6,8 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import net.tomp2p.message.Encoder;
-import net.tomp2p.message.Message;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 import org.apache.commons.io.IOUtils;

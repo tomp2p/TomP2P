@@ -633,12 +633,13 @@ public class Sender {
 				if (!future.isSuccess()) {
 					futureResponse.failedLater(future.cause());
 					LOG.warn("Failed to write channel the request {} {}.", futureResponse.request(), future.cause());
+					reportAfterClose(futureResponse, future.channel().close());
 				}
 				if (fireAndForget) {
 					futureResponse.responseLater(null);
 					LOG.debug("fire and forget, close channel now {}, {}", futureResponse.request(), future.channel());
+					reportAfterClose(futureResponse, future.channel().close());
 				}
-				reportAfterClose(futureResponse, future.channel().close());
 			}
 		});
 

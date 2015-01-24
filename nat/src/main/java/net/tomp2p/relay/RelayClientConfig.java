@@ -48,14 +48,14 @@ public abstract class RelayClientConfig {
 	}
 
 	/**
-	 * Get the peer map update interval
+	 * Get the peer map update interval in seconds
 	 */
 	public int peerMapUpdateInterval() {
 		return peerMapUpdateInterval;
 	}
 
 	/**
-	 * Defines the time interval of sending the peer map of the unreachable peer
+	 * Defines the time interval (in seconds) of sending the peer map of the unreachable peer
 	 * to its relays. The routing requests are not relayed to the unreachable
 	 * peer but handled by the relay peers. Therefore, the relay peers should
 	 * always have an up-to-date peer map of the relayed peer

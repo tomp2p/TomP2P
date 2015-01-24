@@ -88,4 +88,31 @@ public class MessageBufferConfiguration {
 		this.gcmSendRetries = gcmSendRetries;
 		return this;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder("MessageBuffer");
+		
+		sb.append("[count=");
+		if(bufferCountLimit == Integer.MAX_VALUE) {
+			sb.append("inf");
+		} else {
+			sb.append(bufferCountLimit);
+		}
+		
+		sb.append(", size=");
+		if(bufferSizeLimit == Long.MAX_VALUE) {
+			sb.append("inf");
+		} else {
+			sb.append(bufferSizeLimit).append("b");
+		}
+		
+		sb.append(", age=");
+		if(bufferAgeLimit == Long.MAX_VALUE) {
+			sb.append("inf]");
+		} else {
+			sb.append(bufferAgeLimit).append("ms]");
+		}
+		return sb.toString();
+	}
 }

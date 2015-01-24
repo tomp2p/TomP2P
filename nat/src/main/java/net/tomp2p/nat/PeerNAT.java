@@ -301,7 +301,7 @@ public class PeerNAT {
 					LOG.debug("bootstrap completed");
 					final FutureRelay futureRelay = new FutureRelay();
 					final DistributedRelay distributedRelay = startSetupRelay(futureRelay, relayConfig);
-					futureRelayNAT.gcmMessageHandler(distributedRelay);
+					futureRelayNAT.bufferRequestListener(distributedRelay);
 					futureRelayNAT.futureRelay(futureRelay);
 					futureRelay.addListener(new BaseFutureAdapter<FutureRelay>() {
 

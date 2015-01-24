@@ -35,7 +35,11 @@ public class AndroidRelayClientConfig extends RelayClientConfig {
 	 *            each senderID.
 	 */
 	public AndroidRelayClientConfig(String registrationId) {
-		super(RelayType.ANDROID, 60, 120, 2);
+		this(registrationId, 60);
+	}
+	
+	public AndroidRelayClientConfig(String registrationId, int peerMapUpdateIntervalS) {
+		super(RelayType.ANDROID, peerMapUpdateIntervalS, 120, 2);
 		
 		assert registrationId != null;
 		this.registrationId = registrationId;

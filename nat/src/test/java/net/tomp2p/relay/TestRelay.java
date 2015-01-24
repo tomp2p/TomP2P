@@ -54,7 +54,7 @@ public class TestRelay {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection data() throws Exception {
 		return Arrays.asList(new Object[][] {
-				{ RelayType.OPENTCP, new TCPRelayServerConfig(), new TCPRelayClientConfig() } }
+				{ RelayType.OPENTCP, new TCPRelayServerConfig(), new TCPRelayClientConfig().peerMapUpdateInterval(5) } }
 		);
 	}
 	
@@ -538,7 +538,7 @@ public class TestRelay {
 			// Test setting up relay peers
 			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
 			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).start();
-			FutureRelayNAT startRelay = uNat.startRelay(clientConfig, master.peerAddress());
+			uNat.startRelay(clientConfig, master.peerAddress());
 //			mockGCM(peers, uNat, startRelay.gcmMessageHandler());
 
 			FutureRelayNAT fbn = uNat.startRelay(clientConfig, master.peerAddress()).awaitUninterruptibly();

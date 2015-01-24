@@ -63,12 +63,12 @@ public class FutureRelayNAT extends BaseFutureImpl<FutureRelayNAT> {
 		}
 	}
 	
-	public FutureRelayNAT gcmMessageHandler(BufferRequestListener bufferRequestListener) {
+	public FutureRelayNAT bufferRequestListener(BufferRequestListener bufferRequestListener) {
 		this.bufferRequestListener = bufferRequestListener;
 		return this;
 	}
 	
-	public BufferRequestListener gcmMessageHandler() {
+	public BufferRequestListener bufferRequestListener() {
 		return bufferRequestListener;
 	}
 }

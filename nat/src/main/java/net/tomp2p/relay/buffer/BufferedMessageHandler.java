@@ -46,7 +46,7 @@ public class BufferedMessageHandler {
 					processMessage(bufferedMessage);
 			}
 		} else {
-			LOG.debug("Buffer message does not contain any buffered message");
+			LOG.trace("Buffer message does not contain any buffered message");
 		}
 		futureDone.done();
 	}

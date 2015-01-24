@@ -26,7 +26,7 @@ public class AndroidRelayServerConfig extends RelayServerConfig {
 
 	private final MessageBufferConfiguration bufferConfig;
 	private final String gcmAuthenticationKey;
-	private IGCMSender gcmSender;
+	protected IGCMSender gcmSender;
 
 	/**
 	 * Creates an Android relay server configuration that is able to send GCM messages itself

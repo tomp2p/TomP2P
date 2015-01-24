@@ -15,7 +15,7 @@ public class Pings {
 		// setup a receiver, write it's address to harddisk and notify via System.out
 
 		try {
-			receiver = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
+			receiver = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(7777).start();
 			
 			byte[] result = receiver.peerAddress().toByteArray();
 			InteropUtil.writeToFile(argument, result);

@@ -17,23 +17,23 @@ public class Inbox {
 		
 		while (!exit) {
 			exit = true;
-			System.out.println(String.format("Argument: %s ", argument));
-
 			try {
+				System.out.println(String.format("Argument: %s ", argument));
 				execute(argument);
 
-				System.out.println("Waiting for next argument...");
-				Scanner scanner = new Scanner(System.in);
-				argument = scanner.nextLine();
-				scanner.close();
-
+				if (!exit)
+				{
+					System.out.println("Waiting for next argument...");
+					Scanner scanner = new Scanner(System.in);
+					argument = scanner.nextLine();
+					scanner.close();
+				}
 			} catch (Exception ex) {
 				System.err.println(String.format("Exception occurred:\n%s.", ex));
 				System.out.println("Exiting due to error.");
 				System.exit(-1);
 			}			
 		}
-
 		System.out.println("Exiting with success.");
 		System.exit(0);
 	}

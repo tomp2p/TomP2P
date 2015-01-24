@@ -148,7 +148,6 @@ public class TestAndroidRelay {
 
 			// wait to be about in the middle of two map updates
 			Thread.sleep(clientConfig.peerMapUpdateInterval() * 500);
-			
 			// block message buffers transmitted through the map update task
 			clientConfig.getClient(unreachablePeer.peerAddress()).bufferReceptionDelay(slowResponseTimeoutS * 1200);
 

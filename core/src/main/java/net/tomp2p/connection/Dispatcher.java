@@ -310,12 +310,12 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 			// if we could not find a handler that we are responsible for, we
 			// are most likely a relay. Since we have no id of the relay, we
 			// just take the first one.
-			//Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
-			//for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
-			//	if (entry.getKey().domainKey().equals(recipient.peerId())) {
-			//		return entry.getValue();
-			//	}
-			//}
+			Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
+			for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
+				if (entry.getKey().domainKey().equals(recipient.peerId())) {
+					return entry.getValue();
+				}
+			}
 			return null;
 		}
 	}
@@ -359,13 +359,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 		readLock.lock();
 		try {
 			Map<Number320, DispatchHandler> result = new HashMap<Number320, DispatchHandler>();
-			for (Map.Entry<Number320, Map<Integer, DispatchHandler>> entry : ioHandlers
-					.entrySet()) {
-				for (Map.Entry<Integer, DispatchHandler> entry2 : entry
-						.getValue().entrySet()) {
-					DispatchHandler handlerh = entry.getValue().get(command);
-					if (handlerh != null && entry2.getKey().equals(command)) {
-						result.put(entry.getKey(), handlerh);
+			for (Map.Entry<Number320, Map<Integer, DispatchHandler>> entry : ioHandlers.entrySet()) {
+				for (Map.Entry<Integer, DispatchHandler> entry2 : entry.getValue().entrySet()) {
+					DispatchHandler handler = entry.getValue().get(command);
+					if (handler != null && entry2.getKey().equals(command)) {
+						result.put(entry.getKey(), handler);
 					}
 				}
 			}

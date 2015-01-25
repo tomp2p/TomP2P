@@ -10,7 +10,7 @@ public class Pings {
 	
 	private static Peer receiver = null;
 
-	public static void startJavaPingReceiver(String argument) throws IOException {
+	public static void startJavaPingReceiver(String argument) throws IOException, InterruptedException {
 		
 		// setup a receiver, write it's address to harddisk and notify via System.out
 
@@ -29,10 +29,10 @@ public class Pings {
 		}
 	}
 	
-	public static void stopJavaPingReceiver()
+	public static void stopJavaPingReceiver() throws InterruptedException
 	{
 		if (receiver != null) {
-			receiver.shutdown();
+			receiver.shutdown().await();
 		}
 	}
 }

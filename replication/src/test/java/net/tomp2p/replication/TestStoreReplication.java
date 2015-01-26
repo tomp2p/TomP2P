@@ -211,6 +211,12 @@ public class TestStoreReplication {
             if (master != null) {
                 master.shutdown().await();
             }
+            if (slave1 != null) {
+            	slave1.shutdown().await();
+            }
+            if (slave2 != null) {
+            	slave2.shutdown().await();
+            }
         }
 
     }
@@ -956,11 +962,10 @@ public class TestStoreReplication {
 		ChannelCreator cc = null;
 		try {
 			char[] letters = { 'a', 'b', 'c', 'd' };
-			StorageMemory storage = new StorageMemory();
 			for (int i = 0; i < joins.length; i++) {
 				if(i == 0) {
 					PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
-							.start()).storage(storage).start();
+							.start()).start();
 					ind = new IndirectReplication(peer).replicationFactor(replicationFactor).nRoot(nRoot).start();
 					peers.add(peer);
 				} else {

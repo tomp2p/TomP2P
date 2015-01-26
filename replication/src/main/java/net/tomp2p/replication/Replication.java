@@ -530,8 +530,10 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
     private boolean isInReplicationRange(final Number160 locationKey, final PeerAddress peerAddress,
             final int replicationFactor) {
         SortedSet<PeerStatistic> tmp = peerMap.closePeers(locationKey, replicationFactor);
+        PeerStatistic peerAddressStatistic = new PeerStatistic(peerAddress);
         PeerStatistic selfStatistic = new PeerStatistic(selfAddress);
         tmp.add(selfStatistic);
-        return tmp.headSet(selfStatistic).size() < replicationFactor * 2;
+        SortedSet<PeerStatistic> tmp2 = tmp.headSet(peerAddressStatistic);
+        return tmp2.size() < replicationFactor;
     }	
 }

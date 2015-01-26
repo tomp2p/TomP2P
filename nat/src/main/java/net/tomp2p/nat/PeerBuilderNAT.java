@@ -1,7 +1,8 @@
 package net.tomp2p.nat;
 
-import net.tomp2p.connection.ConnectionConfiguration;
-import net.tomp2p.connection.DefaultConnectionConfiguration;
+import java.util.HashMap;
+import java.util.Map;
+
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.holep.HolePunchInitiatorImpl;
@@ -9,10 +10,10 @@ import net.tomp2p.holep.HolePunchRPC;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.relay.RconRPC;
-import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.RelayRPC;
-import net.tomp2p.relay.android.MessageBufferConfiguration;
-import net.tomp2p.relay.android.gcm.GCMSenderRPC;
+import net.tomp2p.relay.RelayServerConfig;
+import net.tomp2p.relay.RelayType;
+import net.tomp2p.relay.tcp.TCPRelayServerConfig;
 
 public class PeerBuilderNAT {
 
@@ -20,13 +21,15 @@ public class PeerBuilderNAT {
 
 	private boolean manualPorts = false;
 
-	// Android configuration
-	private String gcmAuthenticationKey;
-	private int gcmSendRetries = 5;
-	private MessageBufferConfiguration bufferConfig = new MessageBufferConfiguration();
+	// holds multiple implementations for serving relay peers
+	private Map<RelayType, RelayServerConfig> relayServerConfigurations;
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
+		
+		// add TCP server by default
+		this.relayServerConfigurations = new HashMap<RelayType, RelayServerConfig>();
+		relayServerConfigurations.put(RelayType.OPENTCP, new TCPRelayServerConfig());
 	}
 
 	public boolean isManualPorts() {
@@ -43,89 +46,44 @@ public class PeerBuilderNAT {
 	}
 
 	/**
-	 * Set the authentication key, which is used by relay peers to send messages to
-	 * {@link RelayConfig#ANDROID} devices. This key needs to
-	 * be kept secret.
-	 * 
-	 * @param gcmAuthenticationKey the api key / authentication token for Google Cloud Messaging. The key
-	 *            can be obtained through Google's developer console
+	 * @return the relay server configurations. By default, {@link RelayType#OPENTCP} is implemented.
+	 */
+	public Map<RelayType, RelayServerConfig> relayServerConfigurations() {
+		return relayServerConfigurations;
+	}
+
+	/**
+	 * Set all relay server configurations
 	 * @return this instance
 	 */
-	public PeerBuilderNAT gcmAuthenticationKey(String gcmAuthenticationKey) {
-		this.gcmAuthenticationKey = gcmAuthenticationKey;
+	public PeerBuilderNAT relayServerConfigurations(Map<RelayType, RelayServerConfig> relayServerConfigurations) {
+		this.relayServerConfigurations = relayServerConfigurations;
 		return this;
 	}
-
+	
 	/**
-	 * @return the {@link RelayConfig#ANDROID} authentication key
+	 * Add a new server configuration (e.g. for {@link RelayType#ANDROID}).
+	 * @return  this instance
 	 */
-	public String gcmAuthenticationKey() {
-		return gcmAuthenticationKey;
-	}
-
-	/**
-	 * <strong>Only used for {@link RelayConfig#ANDROID} and if this peer should act as a relay for android
-	 * devices.</strong><br>
-	 * 
-	 * @return the number of retires sending a GCM message
-	 */
-	public int gcmSendRetries() {
-		return gcmSendRetries;
-	}
-
-	/**
-	 * <strong>Only used for {@link RelayConfig#ANDROID} and if this peer should act as a relay for android
-	 * devices.</strong><br>
-	 * 
-	 * @param gcmSendRetries the number of retries sending a GCM message
-	 * @return this instance
-	 */
-	public PeerBuilderNAT gcmSendRetries(int gcmSendRetries) {
-		this.gcmSendRetries = gcmSendRetries;
-		return this;
-	}
-
-	/**
-	 * @return the {@link RelayConfig#ANDROID} buffer configuration.
-	 */
-	public MessageBufferConfiguration bufferConfiguration() {
-		return bufferConfig;
-	}
-
-	/**
-	 * Set the android relay buffer configuration. This needs to be set on relay nodes only, not on mobile
-	 * peers.
-	 * It is only used with {@link RelayConfig#ANDROID}.
-	 * 
-	 * @param bufferConfiguration the configuration
-	 * @return this instance
-	 */
-	public PeerBuilderNAT bufferConfiguration(MessageBufferConfiguration bufferConfiguration) {
-		this.bufferConfig = bufferConfiguration;
+	public PeerBuilderNAT addRelayServerConfiguration(RelayType relayType, RelayServerConfig configuration) {
+		relayServerConfigurations.put(relayType, configuration);
 		return this;
 	}
 
 	public PeerNAT start() {
-		ConnectionConfiguration connectionConfiguration = new DefaultConnectionConfiguration();
-
-		if (bufferConfig == null) {
-			bufferConfig = new MessageBufferConfiguration();
-		}
-
-		if (gcmSendRetries <= 0) {
-			gcmSendRetries = 5;
-		}
-
-		// start GCM server functionality if configured
-		GCMSenderRPC gcmSenderRPC = null;
-		if (gcmAuthenticationKey != null && !gcmAuthenticationKey.isEmpty()) {
-			gcmSenderRPC = new GCMSenderRPC(peer, gcmAuthenticationKey, gcmSendRetries);
-		}
-
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
 		final HolePunchRPC holePunchRPC = new HolePunchRPC(peer);
-		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC, gcmSenderRPC, bufferConfig, connectionConfiguration);
+		
+		if(relayServerConfigurations == null) {
+			relayServerConfigurations = new HashMap<RelayType, RelayServerConfig>(0);
+		} else {
+			// start the server configurations
+			for (RelayServerConfig config : relayServerConfigurations.values()) {
+				config.start(peer);
+			}
+		}
+		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC, relayServerConfigurations);
 
 		peer.addShutdownListener(new Shutdown() {
 			@Override
@@ -137,6 +95,6 @@ public class PeerBuilderNAT {
 		
 		peer.peerBean().holePunchInitiator(new HolePunchInitiatorImpl(peer));
 
-		return new PeerNAT(peer, natUtils, relayRPC, manualPorts, connectionConfiguration);
+		return new PeerNAT(peer, natUtils, relayRPC, manualPorts);
 	}
 }

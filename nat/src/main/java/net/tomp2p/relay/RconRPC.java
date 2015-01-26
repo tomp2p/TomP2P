@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 
-import net.tomp2p.connection.ConnectionConfiguration;
-import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
@@ -40,13 +38,11 @@ public class RconRPC extends DispatchHandler {
 	private static final Logger LOG = LoggerFactory.getLogger(RconRPC.class);
 
 	private final Peer peer;
-	private final ConnectionConfiguration config;
 
 	public RconRPC(final Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.RCON.getNr());
 		this.peer = peer;
-		this.config = new DefaultConnectionConfiguration();
 	}
 
 	/**
@@ -96,7 +92,7 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private void handleRconForward(final Message message, final Responder responder) {
 		// get the relayForwarderRPC via Dispatcher to retrieve the existing peerConnection
-		final BaseRelayForwarderRPC forwarder = extractRelayForwarder(message);
+		final BaseRelayServer forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardMessage(message, forwarder.unreachablePeerAddress());
 			forwarder.handleResponse(forwardMessage, responder);
@@ -107,15 +103,15 @@ public class RconRPC extends DispatchHandler {
 	}
 
 	/**
-	 * This method extracts a registered {@link BaseRelayForwarderRPC} from the {@link Dispatcher}. This RelayForwarder
+	 * This method extracts a registered {@link BaseRelayServer} from the {@link Dispatcher}. This RelayForwarder
 	 * can then be used to extract the {@link PeerConnection} to the unreachable Peer we want to contact.
 	 * 
 	 * @param unreachablePeerId the unreachable peer
 	 * @return forwarder
 	 */
-	private BaseRelayForwarderRPC extractRelayForwarder(final Message message) {
+	private BaseRelayServer extractRelayForwarder(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		return (BaseRelayForwarderRPC) dispatcher.searchHandler(BaseRelayForwarderRPC.class, peer.peerID(), message.recipient().peerId());
+		return (BaseRelayServer) dispatcher.searchHandler(BaseRelayServer.class, peer.peerID(), message.recipient().peerId());
 	}
 
 	/**
@@ -169,7 +165,7 @@ public class RconRPC extends DispatchHandler {
 						final Message readyMessage = createReadyForRequestMessage(message, peerConnection.remotePeer());
 						LOG.debug("Sending 'RconAfterconnect' message to relay. {}", readyMessage);
 						FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(),
-								peer.connectionBean(), config, readyMessage);
+								peer.connectionBean(), readyMessage);
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(final FutureResponse future) throws Exception {
@@ -242,7 +238,7 @@ public class RconRPC extends DispatchHandler {
 			LOG.debug("This reverse connection is only used for sending a direct message {}", cachedMessage);
 
 			// send the message to the unreachable peer through the open channel
-			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config, cachedMessage);
+			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), cachedMessage);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
 				public void operationComplete(final FutureResponse future) throws Exception {

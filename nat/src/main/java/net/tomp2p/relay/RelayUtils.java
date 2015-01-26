@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
@@ -40,7 +39,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatistic;
-import net.tomp2p.relay.android.MessageBuffer;
+import net.tomp2p.relay.buffer.MessageBuffer;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 import org.slf4j.Logger;
@@ -234,8 +233,8 @@ public class RelayUtils {
 	 * Send a Message from one Peer to another Peer internally. This avoids the
 	 * overhead of sendDirect.
 	 */
-	private static void send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config, final FutureResponse futureResponse) {
-		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean, connectionBean, config);
+	private static void send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, final FutureResponse futureResponse) {
+		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean, connectionBean, connectionBean.channelServer().channelServerConfiguration());
 		final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
 		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
@@ -255,9 +254,9 @@ public class RelayUtils {
 	 * Connection setup.
 	 * @return the response
 	 */
-	public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config, Message message) {
+	public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, Message message) {
 		final FutureResponse futureResponse = new FutureResponse(message);
-		send(peerConnection, peerBean, connectionBean, config, futureResponse);
+		send(peerConnection, peerBean, connectionBean, futureResponse);
 		return futureResponse;
 	}
 	
@@ -268,7 +267,7 @@ public class RelayUtils {
 	 * @param config
 	 * @return
 	 */
-	public static FutureResponse connectAndSend(final Peer peer, final Message message, final ConnectionConfiguration config) {
+	public static FutureResponse connectAndSend(final Peer peer, final Message message) {
 		final FutureResponse futureResponse = new FutureResponse(message);
 		final FuturePeerConnection fpc = peer.createPeerConnection(message.recipient());
 		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
@@ -278,7 +277,7 @@ public class RelayUtils {
                 	final PeerConnection peerConnection = futurePeerConnection.object();
                 	
                 	// send the message
-                	send(peerConnection, peer.peerBean(), peer.connectionBean(), config, futureResponse);
+                	send(peerConnection, peer.peerBean(), peer.connectionBean(), futureResponse);
                 } else {
                     futureResponse.failed(fpc);
                 }

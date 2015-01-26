@@ -12,6 +12,8 @@ import net.tomp2p.rpc.RPC;
  */
 public class DefaultSendBehavior implements SendBehavior {
 
+	private static final int MTU = 1000;
+	
 	@Override
 	public SendMethod tcpSendBehavior(Message message) {
 		if(message.recipient().equals(message.sender())) {
@@ -29,8 +31,12 @@ public class DefaultSendBehavior implements SendBehavior {
 				// one can handle latency and buffer multiple requests
 				return SendMethod.RELAY;
 			} else {
-				// TODO check the message size. If > 1500bytes, use RCON, otherwise use Relay peer
-				return SendMethod.RCON;
+				// Messages with small size can be sent over relay, other messages should be sent directly (more efficient)
+				if(message.estimateSize() > MTU) {
+					return SendMethod.RCON;
+				} else {
+					return SendMethod.RELAY;
+				}
 			}
 		} else {
 			// send directly

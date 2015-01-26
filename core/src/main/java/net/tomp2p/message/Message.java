@@ -1181,4 +1181,90 @@ public class Message {
 		}
 		return dataMapListCopy;
 	}
+	
+	/**
+	 * Returns the estimated message size. If the message contains data, a constant value of 1000bytes is added.
+	 */
+	public int estimateSize() {
+		int current = MessageHeaderCodec.HEADER_SIZE;
+		
+		if(neighborsList != null) {
+			for (NeighborSet neighbors : neighborsList) {
+				for (PeerAddress address : neighbors.neighbors()) {
+					current += address.size() + 1;
+				}
+			}
+		}
+		
+		if(keyList != null) {
+			current += keyList.size() * Number160.BYTE_ARRAY_SIZE;
+		}
+		
+		if(bloomFilterList != null) {
+			for (SimpleBloomFilter<Number160> filter : bloomFilterList) {
+				current += filter.size();
+			}
+		}
+		
+		if(integerList != null) {
+			current += integerList.size() * 4;
+		}
+		
+		if(longList != null) {
+			current += longList.size() * 8;
+		}
+		
+		if(keyCollectionList != null) {
+			for (KeyCollection coll : keyCollectionList) {
+				current += 4 + coll.size() * Number640.BYTE_ARRAY_SIZE;
+			}
+		}
+		
+		if(keyMap640KeysList != null) {
+			for (KeyMap640Keys keys : keyMap640KeysList) {
+				current += 4 + keys.size() * Number640.BYTE_ARRAY_SIZE;
+			}
+		}
+		
+		if(keyMapByteList != null) {
+			for (KeyMapByte keys : keyMapByteList) {
+				current += 4 + keys.size();
+			}
+		}
+		
+		if(bufferList != null) {
+			for (Buffer buffer : bufferList) {
+				current += 4 + buffer.length();
+			}
+		}
+		
+		if(publicKeyList != null) {
+			for (PublicKey key : publicKeyList) {
+				current += key.getEncoded().length;
+			}
+		}
+		
+		if(peerSocketAddressList != null) {
+			for (PeerSocketAddress address : peerSocketAddressList) {
+				current += address.size() + 1;
+			}
+		}
+		
+		if(signatureEncode != null) {
+			current += signatureEncode.signatureSize();
+		}
+		
+		/**
+		 * Here are the estimations to skip CPU intensive calculations
+		 */
+		if(dataMapList != null) {
+			current += 1000;
+		}
+		
+		if(trackerDataList != null) {
+			current += 1000; // estimated size
+		}
+		
+		return current;
+	}
 }

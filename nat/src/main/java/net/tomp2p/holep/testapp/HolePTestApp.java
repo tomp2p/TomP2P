@@ -14,7 +14,8 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.RelayConfig;
+import net.tomp2p.relay.RelayClientConfig;
+import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 import net.tomp2p.rpc.ObjectDataReply;
 
 public class HolePTestApp {
@@ -23,7 +24,7 @@ public class HolePTestApp {
 	private static final String PEER_1 = "peer1";
 	private static final String PEER_2 = "peer2";
 	private static final String PEER_3 = "peer3";
-	private static final RelayConfig RELAY_CONFIG = RelayConfig.OpenTCP();
+	private static final RelayClientConfig RELAY_CONFIG = new TCPRelayClientConfig();
 
 	private Peer peer;
 	private PeerNAT pNAT;

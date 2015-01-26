@@ -8,6 +8,7 @@
     </appender>
 
     <logger name="net.tomp2p" level="ERROR"/>
+    <logger name="net.tomp2p.connection" level="INFO"/>
     
     <logger name="net.tomp2p.rcon" level="DEBUG"/>
     <logger name="net.tomp2p.relay" level="DEBUG"/>

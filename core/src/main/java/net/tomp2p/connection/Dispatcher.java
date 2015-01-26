@@ -310,12 +310,12 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 			// if we could not find a handler that we are responsible for, we
 			// are most likely a relay. Since we have no id of the relay, we
 			// just take the first one.
-			//Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
-			//for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
-			//	if (entry.getKey().domainKey().equals(recipient.peerId())) {
-			//		return entry.getValue();
-			//	}
-			//}
+			Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
+			for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
+				if (entry.getKey().domainKey().equals(recipient.peerId())) {
+					return entry.getValue();
+				}
+			}
 			return null;
 		}
 	}
@@ -341,8 +341,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 			} else {
 				// not registered
 				LOG.debug(
-						"Handler not found for type {} we are looking for the server with ID {}",
-						command, recipientID);
+						"Handler not found for type {} we are looking for the server with ID {} on behalf of {}",
+						command, recipientID, onBehalfOf);
 				return null;
 			}
 		} finally {
@@ -359,13 +359,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 		readLock.lock();
 		try {
 			Map<Number320, DispatchHandler> result = new HashMap<Number320, DispatchHandler>();
-			for (Map.Entry<Number320, Map<Integer, DispatchHandler>> entry : ioHandlers
-					.entrySet()) {
-				for (Map.Entry<Integer, DispatchHandler> entry2 : entry
-						.getValue().entrySet()) {
-					DispatchHandler handlerh = entry.getValue().get(command);
-					if (handlerh != null && entry2.getKey().equals(command)) {
-						result.put(entry.getKey(), handlerh);
+			for (Map.Entry<Number320, Map<Integer, DispatchHandler>> entry : ioHandlers.entrySet()) {
+				for (Map.Entry<Integer, DispatchHandler> entry2 : entry.getValue().entrySet()) {
+					DispatchHandler handler = entry.getValue().get(command);
+					if (handler != null && entry2.getKey().equals(command)) {
+						result.put(entry.getKey(), handler);
 					}
 				}
 			}
@@ -375,15 +373,14 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 		}
     }
     
-	public DispatchHandler searchHandler(Class<?> clazz,
-			Number160 peerID, Number160 peerId2) {
+	@SuppressWarnings("unchecked")
+	public <T> T searchHandler(Class<T> clazz, Number160 peerID, Number160 peerId2) {
 		readLock.lock();
 		try {
-			final Map<Integer, DispatchHandler> ioHandlers = search(
-					peerID, peerId2);
+			final Map<Integer, DispatchHandler> ioHandlers = search(peerID, peerId2);
 			for (DispatchHandler handler : ioHandlers.values()) {
 				if (clazz.isInstance(handler)) {
-					return handler;
+					return (T) handler;
 				}
 			}
 			return null;
@@ -420,7 +417,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	 * @param futureResponse the future to respond as soon as a (satisfying) response from the slow peer
 	 *            arrived.
 	 * @param scheduler 
-	 * @param timeout 
+	 * @param timeout the timeout in seconds
 	 */
 	public void addPendingRequest(final int messageId, final FutureResponse futureResponse, final int timeout, final ScheduledExecutorService scheduler) {
 		pendingRequests.put(messageId, futureResponse);

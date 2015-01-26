@@ -294,13 +294,11 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	}
 
 	/**
-	 * Not implemented.
-	 * 
-	 * @return nothing
+	 * @return the byte array size of the data (incl. header)
 	 */
 	@Override
 	public int size() {
-		throw new UnsupportedOperationException();
+		return byteArraySize + 2 + 4;
 	}
 
 	/**
@@ -345,10 +343,10 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	 *            The byte buffer where the bloom filter will be written.
 	 */
 	public void toByteBuf(final ByteBuf buf) {
-		byte[] tmp = RPCUtils.toByteArray(bitSet);
-		int currentByteArraySize = tmp.length;
 		buf.writeShort(byteArraySize + SIZE_HEADER_ELEMENTS + SIZE_HEADER_LENGTH);
 		buf.writeInt(expectedElements);
+		byte[] tmp = RPCUtils.toByteArray(bitSet);
+		int currentByteArraySize = tmp.length;
 		buf.writeBytes(tmp);
 		buf.writeZero(byteArraySize - currentByteArraySize);
 	}

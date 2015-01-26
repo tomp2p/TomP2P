@@ -117,6 +117,8 @@ public class PingRPC extends DispatchHandler {
 	 *            The destination peer
 	 * @param channelCreator
 	 *            The channel creator where we create a UPD channel
+	 * @param configuration
+	 *            
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
 	public FutureResponse pingUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
@@ -131,26 +133,13 @@ public class PingRPC extends DispatchHandler {
 	 *            The destination peer
 	 * @param channelCreator
 	 *            The channel creator where we create a UPD channel
+	 * @param configuration
+	 *            
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
 	public FutureResponse pingBroadcastUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		return createHandler(remotePeer, Type.REQUEST_4, configuration).sendBroadcastUDP(channelCreator);
-	}
-
-	/**
-	 * Ping a TCP peer.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
-	 * @return The future that will be triggered when we receive an answer or something fails.
-	 */
-	public FutureResponse pingTCP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
-			final ConnectionConfiguration configuration) {
-		LOG.debug("ping the remote peer {}", remotePeer);
-		return ping(remotePeer, configuration).sendTCP(channelCreator);
 	}
 
 	/**
@@ -165,6 +154,21 @@ public class PingRPC extends DispatchHandler {
 	public FutureResponse fireUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		return createHandler(remotePeer, Type.REQUEST_FF_1, configuration).fireAndForgetUDP(channelCreator);
+	}
+
+	/**
+	 * Ping a TCP peer.
+	 * 
+	 * @param remotePeer
+	 *            The destination peer
+	 * @param channelCreator
+	 *            The channel creator where we create a TCP channel
+	 * @return The future that will be triggered when we receive an answer or something fails.
+	 */
+	public FutureResponse pingTCP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
+			final ConnectionConfiguration configuration) {
+		LOG.debug("Pinging TCP the remote peer {}.", remotePeer);
+		return ping(remotePeer, configuration).sendTCP(channelCreator);
 	}
 
 	/**

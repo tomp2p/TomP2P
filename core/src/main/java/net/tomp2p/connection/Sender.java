@@ -122,11 +122,13 @@ public class Sender {
 	 * @param message
 	 *            The message to send
 	 * @param channelCreator
-	 *            The channel creator for the UDP channel.
+	 *            The channel creator for the TCP channel.
 	 * @param idleTCPSeconds
 	 *            The idle time until message fail.
 	 * @param connectTimeoutMillis
 	 *            The idle time for the connection setup.
+	 * @param peerConnection
+	 *            
 	 */
 	public void sendTCP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
 	        final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds,

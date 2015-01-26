@@ -135,18 +135,6 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 	}
 
 	/**
-	 * Sends a UDP message and doesn't expect a response.
-	 * 
-	 * @param channelCreator
-	 *            The channel creator will create a UDP connection
-	 * @return The future that was added in the constructor
-	 */
-	public K fireAndForgetUDP(final ChannelCreator channelCreator) {
-		connectionBean.sender().sendUDP(null, futureResponse, message, channelCreator, 0, false);
-		return futureResponse;
-	}
-
-	/**
 	 * Broadcasts a UDP message (layer 2) and expects a response.
 	 * 
 	 * @param channelCreator
@@ -155,6 +143,18 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 	 */
 	public K sendBroadcastUDP(final ChannelCreator channelCreator) {
 		connectionBean.sender().sendUDP(this, futureResponse, message, channelCreator, idleUDPSeconds, true);
+		return futureResponse;
+	}
+
+	/**
+	 * Sends a UDP message and doesn't expect a response.
+	 * 
+	 * @param channelCreator
+	 *            The channel creator will create a UDP connection
+	 * @return The future that was added in the constructor
+	 */
+	public K fireAndForgetUDP(final ChannelCreator channelCreator) {
+		connectionBean.sender().sendUDP(null, futureResponse, message, channelCreator, 0, false);
 		return futureResponse;
 	}
 

@@ -33,9 +33,9 @@ public interface ResponsibilityListener {
      * @param locationKey
      *            The location key
      */
-    void meResponsible(Number160 locationKey);
+	FutureDone<?> meResponsible(Number160 locationKey);
     
-    void meResponsible(Number160 locationKey, PeerAddress newPeer);
+	FutureDone<?> meResponsible(Number160 locationKey, PeerAddress newPeer);
 
     /**
      * Here an other peer is responsible and we need to transfer data.

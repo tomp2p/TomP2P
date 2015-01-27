@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +28,11 @@ import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.dht.StorageMemory;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
@@ -67,21 +70,23 @@ public class TestStoreReplication {
 
             ResponsibilityListener responsibilityListener = new ResponsibilityListener() {
                 @Override
-                public void meResponsible(final Number160 locationKey) {
+                public FutureDone<?> meResponsible(final Number160 locationKey) {
                     System.err.println("I'm responsible for " + locationKey + " / ");
                     test2.incrementAndGet();
+                    return new FutureDone<Void>().done();
                 }
 
 				@Override
-                public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
+                public FutureDone<?> meResponsible(Number160 locationKey, PeerAddress newPeer) {
 	                System.err.println("I sync for " + locationKey + " / ");
+	                return new FutureDone<Void>().done();
                 }
 
 				@Override
                 public FutureDone<?> otherResponsible(Number160 locationKey, PeerAddress other) {
 					System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
-	                return null;
+                    return new FutureDone<Void>().done();
                 }
             };
             
@@ -154,17 +159,19 @@ public class TestStoreReplication {
                 public FutureDone<?> otherResponsible(final Number160 locationKey, final PeerAddress other) {
                     System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
-                    return null;
+                    return new FutureDone<Void>().done();
                 }
 
                 @Override
-                public void meResponsible(final Number160 locationKey) {
+                public FutureDone<?> meResponsible(final Number160 locationKey) {
                     System.err.println("I'm responsible for " + locationKey);
                     test2.incrementAndGet();
+                    return new FutureDone<Void>().done();
                 }
                 @Override
-                public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
+                public FutureDone<?> meResponsible(Number160 locationKey, PeerAddress newPeer) {
 	                System.err.println("I sync for " + locationKey + " / ");
+	                return new FutureDone<Void>().done();
                 }
             };
 
@@ -986,17 +993,19 @@ public class TestStoreReplication {
 				@Override
 				public FutureDone<?> otherResponsible(final Number160 locationKey, final PeerAddress other) {
 					replicateOther.incrementAndGet();
-					return null;
+					return new FutureDone<Void>().done();
 				}
 
 				@Override
-				public void meResponsible(final Number160 locationKey) {
+				public FutureDone<?> meResponsible(final Number160 locationKey) {
 					replicateI.incrementAndGet();
+					return new FutureDone<Void>().done();
 				}
 
 				@Override
-				public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
+				public FutureDone<?> meResponsible(Number160 locationKey, PeerAddress newPeer) {
 					replicateWe.incrementAndGet();
+					return new FutureDone<Void>().done();
 				}
 			});
 			
@@ -1024,12 +1033,27 @@ public class TestStoreReplication {
 			
 			for (int i = 1; i < joins.length; i++) {
 				// insert a peer
+				final List<BaseFuture> bf = Collections.synchronizedList(new ArrayList<BaseFuture>());
+				AutomaticFuture af = new AutomaticFuture() {
+					@Override
+					public void futureCreated(BaseFuture future) {
+						bf.add(future);
+					}
+				};
+				master.peer().addAutomaticFuture(af);
 				master.peerBean().peerMap().peerFound(peers.get(i).peerAddress(), null, null, null);
+				master.peer().removeAutomaticFuture(af);
+				for(BaseFuture b:bf) {
+					b.awaitUninterruptibly();
+					b.awaitListenersUninterruptibly();
+				}
+				
 				// verify replication notifications
 				Assert.assertEquals(joins[i][0], replicateI.get());
 				replicateI.set(0);
 				Assert.assertEquals(joins[i][1], replicateWe.get());
 				replicateWe.set(0);
+				System.out.println(i);
 				Assert.assertEquals(joins[i][2], replicateOther.get());
 				replicateOther.set(0);
 			}
@@ -1048,13 +1072,15 @@ public class TestStoreReplication {
 			
 		} finally {
 			if (cc != null) {
-				cc.shutdown().awaitListenersUninterruptibly();
+				cc.shutdown().awaitUninterruptibly();
 			}
 			for (PeerDHT peer: peers) {
 				peer.shutdown().await();
 			}
 		}
 	}
+	
+	
 
 	@Test
 	public void testHeavyLoadNRootReplication() throws Exception {

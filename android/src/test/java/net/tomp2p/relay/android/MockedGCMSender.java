@@ -33,7 +33,7 @@ public class MockedGCMSender extends GCMSenderRPC implements IGCMSender {
 				} catch (InterruptedException e) {
 					// ignore
 				}
-				PeerAddress recipient = futureGCM.buffer().get(0).recipient();
+				PeerAddress recipient = futureGCM.recipient();
 				client.mockGCMNotification(recipient);
 				LOG.debug("Mocked sending a message to the unreachable peer {}", recipient);
 			}

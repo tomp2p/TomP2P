@@ -546,16 +546,16 @@ public class Sender {
 	}
 
 	/**
-	 * Create a timeout handler or null if its a fire and forget. In this case
-	 * we don't expect a reply and we don't need a timeout.
+	 * Creates a timeout handler or null if it is a fire and forget message.
+	 * In this case we don't expect a response and we don't need a timeout.
 	 * 
 	 * @param futureResponse
 	 *            The future to set the response
 	 * @param idleMillis
 	 *            The timeout
 	 * @param fireAndForget
-	 *            True, if we don't expect a message
-	 * @return The timeout creator that will create timeout handlers
+	 *            True, if we don't expect a response
+	 * @return The timeout factory that will create timeout handlers
 	 */
 	private TimeoutFactory createTimeoutHandler(final FutureResponse futureResponse, final int idleMillis,
 	        final boolean fireAndForget) {

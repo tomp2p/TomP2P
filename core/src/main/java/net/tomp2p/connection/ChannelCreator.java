@@ -183,8 +183,9 @@ public class ChannelCreator {
 				return null;
 			}
 			if (!semaphoreTCP.tryAcquire()) {
-				LOG.error("Tried to acquire more resources (TCP) than announced!");
-				throw new RuntimeException("Tried to acquire more resources (TCP) than announced!");
+				final String errorMsg = "Tried to acquire more resources (TCP) than announced.";
+				LOG.error(errorMsg);
+				throw new RuntimeException(errorMsg);
 			}
 			Bootstrap b = new Bootstrap();
 			b.group(workerGroup);

@@ -51,12 +51,13 @@ public class TimeoutFactory {
 	private final String name;
 
 	/**
+	 * Creates a factory for timeout handlers.
 	 * @param futureResponse
 	 *            The future that will be called if a timeout occured
 	 * @param timeoutSeconds
 	 *            The time for a timeout
 	 * @param peerStatusListeners
-	 *            The listeners that get notified when a timeout happend
+	 *            The listeners that get notified when a timeout happens
 	 */
 	public TimeoutFactory(final FutureResponse futureResponse, final int timeoutSeconds,
 	        final List<PeerStatusListener> peerStatusListeners, final String name) {
@@ -90,7 +91,7 @@ public class TimeoutFactory {
 	}
 
 	/**
-	 * The timeout handler that gets called form the {@link IdleStateHandler}.
+	 * The timeout handler that gets called from the {@link IdleStateHandler}.
 	 * 
 	 * @author Thomas Bocek
 	 * 

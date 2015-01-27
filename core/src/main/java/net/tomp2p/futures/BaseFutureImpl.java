@@ -268,19 +268,34 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 
     @Override
     public K awaitListeners() throws InterruptedException {
-        listenersFinished.await();
+    	boolean wait = false;
+    	synchronized (lock) {
+    		if(listeners.size() > 0) {
+    			wait = true;
+    		}
+    	}
+    	if(wait) {
+    		listenersFinished.await();
+    	}
         return self;
     }
     
     @Override
     public K awaitListenersUninterruptibly() {
-        while (!completed) {
-            try {
-                listenersFinished.await();
-            } catch (InterruptedException e) {
+    	boolean wait = false;
+    	synchronized (lock) {
+    		if(listeners.size() > 0) {
+    			wait = true;
+    		}
+    	}
+    	while(wait) {
+    		try {
+    			listenersFinished.await();
+    			wait = false;
+    		} catch (InterruptedException e) {
                 LOG.debug("interrupted, but ignoring", e);
             }
-        }
+    	}
         return self;
     }
     

@@ -2,9 +2,7 @@ package net.tomp2p.relay.android;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
-import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayType;
@@ -42,25 +40,6 @@ public class AndroidRelayServer extends BufferedRelayServer {
 		// stretch the update interval by factor 1.5 to be tolerant for slow messages
 		this.mapUpdateIntervalMS = (int) (mapUpdateIntervalS * 1000 * 1.5);
 		this.lastUpdate = new AtomicLong(System.currentTimeMillis());
-	}
-
-	@Override
-	public FutureDone<Message> forwardToUnreachable(Message message) {
-		// create temporal OK message
-		final FutureDone<Message> futureDone = new FutureDone<Message>();
-		final Message response = createResponseMessage(message, Type.PARTIALLY_OK);
-		response.recipient(message.sender());
-		response.sender(unreachablePeerAddress());
-
-		try {
-			addToBuffer(message);
-		} catch (Exception e) {
-			LOG.error("Cannot encode the message", e);
-			return futureDone.done(createResponseMessage(message, Type.EXCEPTION));
-		}
-
-		LOG.debug("Added message {} to buffer and returning a partially ok", message);
-		return futureDone.done(response);
 	}
 
 	@Override

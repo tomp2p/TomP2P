@@ -42,7 +42,7 @@ public class DistributedRelay implements BufferRequestListener {
 	private final Peer peer;
 	private final RelayRPC relayRPC;
 
-	private final List<BaseRelayClient> relays;
+	private final List<BaseRelayClient> relayClients;
 	private final Set<PeerAddress> failedRelays;
 
 	private final Collection<RelayListener> relayListeners;
@@ -65,7 +65,7 @@ public class DistributedRelay implements BufferRequestListener {
 		this.relayRPC = relayRPC;
 		this.relayConfig = relayConfig;
 
-		relays = Collections.synchronizedList(new ArrayList<BaseRelayClient>());
+		relayClients = Collections.synchronizedList(new ArrayList<BaseRelayClient>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(relayConfig.failedRelayWaitTime());
 		relayListeners = Collections.synchronizedList(new ArrayList<RelayListener>(1));
 	}
@@ -79,10 +79,10 @@ public class DistributedRelay implements BufferRequestListener {
 	 * 
 	 * @return List of PeerAddresses of the relay peers (copy)
 	 */
-	public List<BaseRelayClient> relays() {
-		synchronized (relays) {
+	public List<BaseRelayClient> relayClients() {
+		synchronized (relayClients) {
 			// make a copy
-			return Collections.unmodifiableList(new ArrayList<BaseRelayClient>(relays));
+			return Collections.unmodifiableList(new ArrayList<BaseRelayClient>(relayClients));
 		}
 	}
 
@@ -94,10 +94,10 @@ public class DistributedRelay implements BufferRequestListener {
 
 	public FutureForkJoin<FutureDone<Void>> shutdown() {
 		final AtomicReferenceArray<FutureDone<Void>> futureDones;
-		synchronized (relays) {
-			futureDones = new AtomicReferenceArray<FutureDone<Void>>(relays.size());
-			for (int i = 0; i < relays.size(); i++) {
-				futureDones.set(i, relays.get(i).shutdown());
+		synchronized (relayClients) {
+			futureDones = new AtomicReferenceArray<FutureDone<Void>>(relayClients.size());
+			for (int i = 0; i < relayClients.size(); i++) {
+				futureDones.set(i, relayClients.get(i).shutdown());
 			}
 		}
 
@@ -151,8 +151,8 @@ public class DistributedRelay implements BufferRequestListener {
 			}
 
 			// filter relays that are already connected
-			synchronized (relays) {
-				for (BaseRelayClient relay : relays) {
+			synchronized (relayClients) {
+				for (BaseRelayClient relay : relayClients) {
 					if (relay.relayAddress().equals(pa)) {
 						iterator.remove();
 						break;
@@ -171,7 +171,7 @@ public class DistributedRelay implements BufferRequestListener {
 	 * @return FutureDone
 	 */
 	private void setupPeerConnections(final FutureRelay futureRelay, List<PeerAddress> relayCandidates) {
-		final int nrOfRelays = Math.min(relayConfig.type().maxRelayCount() - relays.size(), relayCandidates.size());
+		final int nrOfRelays = Math.min(relayConfig.type().maxRelayCount() - relayClients.size(), relayCandidates.size());
 		if (nrOfRelays > 0) {
 			LOG.debug("Setting up {} relays", nrOfRelays);
 
@@ -242,7 +242,7 @@ public class DistributedRelay implements BufferRequestListener {
 			public void operationComplete(FutureForkJoin<FutureDone<PeerConnection>> futureForkJoin) throws Exception {
 				if (futureForkJoin.isSuccess()) {
 					updatePeerAddress();
-					futureRelay.done(relays());
+					futureRelay.done(relayClients());
 				} else if (!peer.isShutdown()) {
 					setupPeerConnectionsRecursive(futures, relayCandidates, numberOfRelays, futureRelay, fail + 1,
 							status.append(futureForkJoin.failedReason()).append(" "));
@@ -313,8 +313,8 @@ public class DistributedRelay implements BufferRequestListener {
 	 * Is called when the setup with the relay worked. Adds the relay to the list.
 	 */
 	private void setupAddRelays(PeerConnection peerConnection) {
-		synchronized (relays) {
-			if (relays.size() >= relayConfig.type().maxRelayCount()) {
+		synchronized (relayClients) {
+			if (relayClients.size() >= relayConfig.type().maxRelayCount()) {
 				LOG.warn("The maximum number ({}) of relays is reached", relayConfig.type().maxRelayCount());
 				return;
 			}
@@ -322,10 +322,11 @@ public class DistributedRelay implements BufferRequestListener {
 
 		BaseRelayClient connection = relayConfig.createClient(peerConnection, peer);
 		addCloseListener(connection);
-
-		synchronized (relays) {
+		
+		synchronized (relayClients) {
 			LOG.debug("Adding peer {} as a relay", peerConnection.remotePeer());
-			relays.add(connection);
+			relayClients.add(connection);
+			relayRPC.addClient(connection);
 		}
 	}
 
@@ -347,7 +348,8 @@ public class DistributedRelay implements BufferRequestListener {
 				// unreachable peer's PeerAddress if a relay peer failed.
 				// It will also cancel the {@link PeerMapUpdateTask}
 				// maintenance task if the last relay is removed.
-				relays.remove(connection);
+				relayClients.remove(connection);
+				relayRPC.removeClient(connection);
 				failedRelays.add(relayAddress);
 				updatePeerAddress();
 
@@ -367,11 +369,11 @@ public class DistributedRelay implements BufferRequestListener {
 	 */
 	private void updatePeerAddress() {
 		// add relay addresses to peer address
-		boolean hasRelays = !relays.isEmpty();
+		boolean hasRelays = !relayClients.isEmpty();
 
-		Collection<PeerSocketAddress> socketAddresses = new ArrayList<PeerSocketAddress>(relays.size());
-		synchronized (relays) {
-			for (BaseRelayClient relay : relays) {
+		Collection<PeerSocketAddress> socketAddresses = new ArrayList<PeerSocketAddress>(relayClients.size());
+		synchronized (relayClients) {
+			for (BaseRelayClient relay : relayClients) {
 				PeerAddress pa = relay.relayAddress();
 				socketAddresses.add(new PeerSocketAddress(pa.inetAddress(), pa.tcpPort(), pa.udpPort()));
 			}
@@ -386,15 +388,15 @@ public class DistributedRelay implements BufferRequestListener {
 
 
 	@Override
-	public void sendBufferRequest(String relayPeerId) {
-		for (BaseRelayClient relayConnection : relays()) {
+	public FutureDone<Void> sendBufferRequest(String relayPeerId) {
+		for (BaseRelayClient relayConnection : relayClients()) {
 			String peerId = relayConnection.relayAddress().peerId().toString();
 			if (peerId.equals(relayPeerId) && relayConnection instanceof BufferedRelayClient) {
-				((BufferedRelayClient) relayConnection).sendBufferRequest();
-				return;
+				return ((BufferedRelayClient) relayConnection).sendBufferRequest();
 			}
 		}
 
 		LOG.warn("No connection to relay {} found. Ignoring the message.", relayPeerId);
+		return new FutureDone<Void>().failed("No connection to relay " + relayPeerId + " found");
 	}
 }

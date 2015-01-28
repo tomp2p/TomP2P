@@ -2,15 +2,14 @@ package net.tomp2p.relay.buffer;
 
 import io.netty.buffer.ByteBuf;
 
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayServer;
@@ -41,15 +40,27 @@ public abstract class BufferedRelayServer extends BaseRelayServer implements Mes
 		buffer.addListener(this);
 	}
 
-	/**
-	 * Helper method to add the message to the buffer
-	 */
-	protected void addToBuffer(Message message) throws InvalidKeyException, SignatureException, IOException {
-		int messageSize = RelayUtils.getMessageSize(message, connectionBean().channelServer().channelServerConfiguration()
-				.signatureFactory());
-		buffer.addMessage(message, messageSize);
-	}
+	@Override
+	public FutureDone<Message> forwardToUnreachable(Message message) {
+		// create temporal OK message
+		final FutureDone<Message> futureDone = new FutureDone<Message>();
+		final Message response = createResponseMessage(message, Type.PARTIALLY_OK);
+		response.recipient(message.sender());
+		response.sender(unreachablePeerAddress());
 
+		try {
+			int messageSize = RelayUtils.getMessageSize(message, connectionBean().channelServer().channelServerConfiguration()
+					.signatureFactory());
+			buffer.addMessage(message, messageSize);
+		} catch (Exception e) {
+			LOG.error("Cannot encode the message", e);
+			return futureDone.done(createResponseMessage(message, Type.EXCEPTION));
+		}
+
+		LOG.debug("Added message {} to buffer and returning a partially ok", message);
+		return futureDone.done(response);
+	}
+	
 	@Override
 	public void bufferFull(List<Message> messages) {
 		synchronized (bufferedMessages) {

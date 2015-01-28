@@ -64,7 +64,7 @@ public class PeerMapUpdateTask extends TimerTask {
 
 		// send the peer map to the relays
 		List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
-		for (final BaseRelayClient relay : distributedRelay.relays()) {
+		for (final BaseRelayClient relay : distributedRelay.relayClients()) {
 			sendPeerMap(relay, peerMapVerified);
 		}
 

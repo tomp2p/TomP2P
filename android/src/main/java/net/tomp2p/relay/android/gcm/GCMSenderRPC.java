@@ -85,7 +85,7 @@ public class GCMSenderRPC extends DispatchHandler implements IGCMSender {
 			return;
 		}
 		
-		FutureGCM futureGCM = new FutureGCM(null, registrationId, message.sender().peerId());
+		FutureGCM futureGCM = new FutureGCM(registrationId, message.sender().peerId(), message.recipient());
 		send(futureGCM);
 		futureGCM.addListener(new BaseFutureAdapter<FutureGCM>() {
 

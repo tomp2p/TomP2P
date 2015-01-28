@@ -8,9 +8,14 @@ public enum RelayType {
 	OPENTCP(true, 5, false),
 
 	/**
-	 * Data exchange will take place over Google Cloud Messaging
+	 * Data exchange will take place over Google Cloud Messaging. The server buffers multiple requests.
 	 */
-	ANDROID(false, 4, true);
+	ANDROID(false, 4, true),
+	
+	/**
+	 * Same as {@link #OPENTCP}, but the server buffers messages and sends them in bulk.
+	 */
+	BUFFERED_OPENTCP(true, 5, true);
 
 	private final boolean keepConnectionOpen;
 	private final int maxRelayCount;

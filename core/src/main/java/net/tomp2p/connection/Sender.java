@@ -377,8 +377,8 @@ public class Sender {
 		if (timeoutHandler != null) {
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
 			handlers.put("timeout0",
-			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
-			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
+			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.createIdleStateHandlerTomP2P()));
+			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.createTimeHandler()));
 		} else {
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
 		}
@@ -506,8 +506,8 @@ public class Sender {
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds, isFireAndForget);
 			handlers.put("timeout0",
-			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
-			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
+			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.createIdleStateHandlerTomP2P()));
+			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.createTimeHandler()));
 		}
 
 		handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(
@@ -578,7 +578,7 @@ public class Sender {
 	        final ChannelFuture channelFuture, final boolean fireAndForget) {
 		// check if channel could be created (due to resource constraints)
 		if (channelFuture == null) {
-			futureResponse.failed("Could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel. (Due to resource contraints.)");
+			futureResponse.failed("Could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel. (Due to shutdown.)");
 			return;
 		}
 		LOG.debug("About to connect to {} with channel {}, ff={}.", message.recipient(), channelFuture.channel(), fireAndForget);

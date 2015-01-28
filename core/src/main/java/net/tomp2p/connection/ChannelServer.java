@@ -227,12 +227,11 @@ public final class ChannelServer {
 	}
 
 	/**
-	 * Creates the Netty handlers. After it sends it to the user, where the
-	 * handlers can be modified. We add a couple or null handlers where the user
-	 * can add its own handler.
+	 * Creates the handlers. After this, it passes the user-set pipeline
+	 * filter where the handlers can be modified.
 	 * 
 	 * @param tcp
-	 *            Set to true if connection is TCP, false if UDP
+	 *            True, if connection is TCP. False, if UDP
 	 * @return The channel handlers that may have been modified by the user
 	 */
 	private Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers(final boolean tcp) {
@@ -244,15 +243,14 @@ public final class ChannelServer {
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
 			handlers.put("dropconnection", new Pair<EventExecutorGroup, ChannelHandler>(null, tcpDropConnectionInboundHandler));
 			handlers.put("timeout0",
-			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.idleStateHandlerTomP2P()));
-			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.timeHandler()));
+			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.createIdleStateHandlerTomP2P()));
+			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.createTimeHandler()));
 			handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(
 			        channelServerConfiguration.signatureFactory())));
 		} else {
-			// we don't need here a timeout since we receive a packet or
-			// nothing. It is different than with TCP where we
-			// may get a stream and in the middle of it, the other peer goes
-			// offline. This cannot happen with UDP
+			// no need for a timeout handler, since whole packet arrives or nothing
+            // different from TCP where the stream can be closed by the remote peer
+            // in the middle of the transmission
 			final int nrUDPHandlers = 6; // 4 = 0.75 = 4 
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrUDPHandlers);
 			handlers.put("dropconnection", new Pair<EventExecutorGroup, ChannelHandler>(null, udpDropConnectionInboundHandler));

@@ -125,7 +125,7 @@ public class ChannelCreator {
 	 * @param broadcast
 	 *            Sets this channel to be able to broadcast
 	 * @param channelHandlers
-	 *            The handlers to set
+	 *            The handlers to filter and set
 	 * @return The channel future object or null if we are shut down
 	 */
 	public ChannelFuture createUDP(final boolean broadcast,
@@ -171,7 +171,7 @@ public class ChannelCreator {
 	 * @param connectionTimeoutMillis
 	 *            The timeout for establishing a TCP connection
 	 * @param channelHandlers
-	 *            The handlers to set
+	 *            The handlers to filter and set
 	 * @param futureResponse 
 	 * @return The channel future object or null if we are shut down.
 	 */

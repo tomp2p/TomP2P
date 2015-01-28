@@ -113,6 +113,7 @@ public class TestDHT {
 			LOG.error("done");
 		} finally {
 			if (master != null) {
+				master.shutdown().awaitUninterruptibly();
 				master.shutdown().awaitListenersUninterruptibly();
 			}
 		}
@@ -963,6 +964,7 @@ public class TestDHT {
 			//System.err.println("got it");
 		} finally {
 			if (master != null) {
+				master.shutdown().awaitUninterruptibly();
 				master.shutdown().awaitListenersUninterruptibly();
 			}
 		}
@@ -1419,6 +1421,7 @@ public class TestDHT {
 				        .start());
 			}
 			for (BaseFuture bf : list1) {
+				bf.awaitUninterruptibly();
 				bf.awaitListenersUninterruptibly();
 				if (bf.isFailed()) {
 					System.err.println("WTF " + bf.failedReason());
@@ -1428,9 +1431,11 @@ public class TestDHT {
 				Assert.assertEquals(true, bf.isSuccess());
 			}
 			for (FuturePeerConnection pc : list3) {
+				pc.close().awaitUninterruptibly();
 				pc.close().awaitListenersUninterruptibly();
 			}
 			for (BaseFuture bf : list2) {
+				bf.awaitUninterruptibly();
 				bf.awaitListenersUninterruptibly();
 				if (bf.isFailed()) {
 					System.err.println("WTF " + bf.failedReason());

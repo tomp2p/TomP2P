@@ -571,7 +571,8 @@ public class StorageLayer implements DigestStorage {
 			// false if the domain is protected
 			return !entryProtectedByOthers;
 		} else {
-			if (canClaimEntry(key, publicKeyMessage)) {
+			//replication cannot sign messages with the originators key, so we must also check the public key of the data
+			if (canClaimEntry(key, publicKeyMessage) || canClaimEntry(key, publicKeyData)) {
 				if (canProtectEntry(key.domainKey(), publicKeyMessage)) {
 					return backend.protectEntry(key, publicKeyData);
 				} else {

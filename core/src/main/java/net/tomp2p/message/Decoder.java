@@ -156,7 +156,7 @@ public class Decoder {
 		}
 		// if we read the complete data, we also read the signature
 		// for the verification, we should not use this for the signature
-		final int length = donePayload ? len - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) : len;
+		final int length = donePayload ? len - signatureFactory.signatureSize() : len; 
 		ByteBuffer[] byteBuffers = buf.nioBuffers(readerBefore, length);
 		if(signature == null) {
 			signature = signatureFactory.update(message.publicKey(0), byteBuffers);

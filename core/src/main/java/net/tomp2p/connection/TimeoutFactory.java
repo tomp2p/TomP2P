@@ -70,14 +70,14 @@ public class TimeoutFactory {
 	/**
 	 * @return Two handlers, one default Netty that will call the second handler
 	 */
-	public ChannelHandler idleStateHandlerTomP2P() {
+	public ChannelHandler createIdleStateHandlerTomP2P() {
 		return new IdleStateHandlerTomP2P(timeoutSeconds);
 	}
 
 	/**
 	 * @return Two handlers, one default Netty that will call the second handler
 	 */
-	public ChannelHandler timeHandler() {
+	public ChannelHandler createTimeHandler() {
 		return new TimeHandler(futureResponse, peerStatusListeners, name);
 	}
 

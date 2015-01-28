@@ -22,10 +22,10 @@ import org.slf4j.LoggerFactory;
 public class AndroidRelayServerConfig extends RelayServerConfig {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidRelayServerConfig.class);
-	private static final int DEFAULT_GCM_RETRIES = 5;
 
 	private final MessageBufferConfiguration bufferConfig;
 	private final String gcmAuthenticationKey;
+	private final int gcmRetries;
 	protected IGCMSender gcmSender;
 
 	/**
@@ -33,10 +33,12 @@ public class AndroidRelayServerConfig extends RelayServerConfig {
 	 * 
 	 * @param gcmAuthenticationKey the api key / authentication token for Google Cloud Messaging. The key
 	 *            can be obtained through Google's developer console. The key should be kept secret.
+	 * @param gcmRetries how many times the GCM message should be resent before giving up. Normal ranges are 1-5
 	 * @param bufferConfig the buffer behavior before sending a GCM message to the Android device
 	 */
-	public AndroidRelayServerConfig(String gcmAuthenticationKey, MessageBufferConfiguration bufferConfig) {
+	public AndroidRelayServerConfig(String gcmAuthenticationKey, int gcmRetries, MessageBufferConfiguration bufferConfig) {
 		this.gcmAuthenticationKey = gcmAuthenticationKey;
+		this.gcmRetries = gcmRetries;
 		this.bufferConfig = bufferConfig;
 	}
 
@@ -49,13 +51,13 @@ public class AndroidRelayServerConfig extends RelayServerConfig {
 	 *            {@link RemoteGCMSender}).
 	 */
 	public AndroidRelayServerConfig(MessageBufferConfiguration bufferConfig) {
-		this(null, bufferConfig);
+		this(null, 0, bufferConfig);
 	}
 
 	@Override
 	public void start(Peer peer) {
 		if (gcmAuthenticationKey != null) {
-			gcmSender = new GCMSenderRPC(peer, gcmAuthenticationKey, DEFAULT_GCM_RETRIES);
+			gcmSender = new GCMSenderRPC(peer, gcmAuthenticationKey, gcmRetries);
 			LOG.debug("GCM server started on {}", peer.peerAddress());
 		}
 	}

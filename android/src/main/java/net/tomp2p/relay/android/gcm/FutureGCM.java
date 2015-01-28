@@ -1,29 +1,20 @@
 package net.tomp2p.relay.android.gcm;
 
-import java.util.List;
-
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.message.Message;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 
 public class FutureGCM extends FutureDone<Void> {
 
-	private final List<Message> buffer;
 	private final String registrationId;
 	private final Number160 senderId;
+	private final PeerAddress recipient;
 
-	public FutureGCM(List<Message> buffer, String registrationId, Number160 senderId) {
+	public FutureGCM(String registrationId, Number160 senderId, PeerAddress recipient) {
 		self(this);
 		this.registrationId = registrationId;
 		this.senderId = senderId;
-		this.buffer = buffer;
-	}
-
-	/**
-	 * The buffered messages (not sent over GCM)
-	 */
-	public List<Message> buffer() {
-		return buffer;
+		this.recipient = recipient;
 	}
 
 	/**
@@ -38,5 +29,12 @@ public class FutureGCM extends FutureDone<Void> {
 	 */
 	public Number160 senderId() {
 		return senderId;
+	}
+
+	/**
+	 * The unreachable peer receiving the GCM
+	 */
+	public PeerAddress recipient() {
+		return recipient;
 	}
 }

@@ -1,5 +1,7 @@
 package net.tomp2p.relay.buffer;
 
+import net.tomp2p.futures.FutureDone;
+
 public interface BufferRequestListener {
 
 	/**
@@ -7,5 +9,5 @@ public interface BufferRequestListener {
 	 * 
 	 * @param relayPeerId the relay's peer id
 	 */
-	void sendBufferRequest(String relayPeerId);
+	FutureDone<Void> sendBufferRequest(String relayPeerId);
 }

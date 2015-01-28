@@ -11,6 +11,8 @@ import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.connection.SignatureFactory;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.holep.HolePunchRPC;
 import net.tomp2p.message.Buffer;
@@ -20,6 +22,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.relay.buffer.BufferedRelayClient;
 import net.tomp2p.relay.buffer.BufferedRelayServer;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
@@ -37,8 +40,11 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 	// Holds a map of server configuations for multiple relay types
 	private final Map<RelayType, RelayServerConfig> serverConfigs;
 
-	// holds the forwarder for each client
-	private final Map<Number160, BaseRelayServer> forwarders;
+	// holds the server for each client
+	private final Map<Number160, BaseRelayServer> servers;
+
+	// holds the client for each server
+	private ConcurrentHashMap<Number160, BaseRelayClient> clients;
 
 	/**
 	 * This variable is needed, because a relay overwrites every RPC of an
@@ -75,7 +81,8 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peer = peer;
 		this.serverConfigs = serverConfigs;
-		this.forwarders = new ConcurrentHashMap<Number160, BaseRelayServer>();
+		this.servers = new ConcurrentHashMap<Number160, BaseRelayServer>();
+		this.clients = new ConcurrentHashMap<Number160, BaseRelayClient>();
 		this.rconRPC = rconRPC;
 		this.holePunchRPC = holePunchRPC;
 
@@ -100,8 +107,9 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 			// the relay server receives the update of the routing table regularly from the unrachable peer
 			handleMap(message, responder);
 		} else if (message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
-			// An android unreachable peer requests the buffer
-			handleBufferRequest(message, responder);
+			// An unreachable peer requests the buffer at the relay peer
+			// or a buffer is transmitted to the unreachable peer directly
+			handleBuffer(message, responder);
 		} else if (message.type() == Type.REQUEST_5 && message.command() == RPC.Commands.RELAY.getNr()) {
 			// A late response
 			handleLateResponse(message, peerConnection, sign, responder);
@@ -136,11 +144,25 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 	 * @return all unreachable peers currently connected to this relay node
 	 */
 	public Set<PeerAddress> unreachablePeers() {
-		Set<PeerAddress> unreachablePeers = new HashSet<PeerAddress>(forwarders.size());
-		for (BaseRelayServer forwarder : forwarders.values()) {
+		Set<PeerAddress> unreachablePeers = new HashSet<PeerAddress>(servers.size());
+		for (BaseRelayServer forwarder : servers.values()) {
 			unreachablePeers.add(forwarder.unreachablePeerAddress());
 		}
 		return unreachablePeers;
+	}
+
+	/**
+	 * Add a client to the list
+	 */
+	public void addClient(BaseRelayClient connection) {
+		clients.put(connection.relayAddress().peerId(), connection);
+	}
+
+	/**
+	 * Remove a client from the list
+	 */
+	public void removeClient(BaseRelayClient connection) {
+		clients.remove(connection.relayAddress().peerId());
 	}
 
 	/**
@@ -171,7 +193,7 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 	@Override
 	public void onUnreachableOffline(PeerAddress unreachablePeer, BaseRelayServer server) {
 		// clean up
-		forwarders.remove(unreachablePeer);
+		servers.remove(unreachablePeer);
 		peerBean().removePeerStatusListener(server);
 		connectionBean().dispatcher().removeIoHandler(peer.peerID(), unreachablePeer.peerId());
 	}
@@ -198,7 +220,7 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 		}
 
 		peer.peerBean().addPeerStatusListener(server);
-		forwarders.put(server.unreachablePeerId(), server);
+		servers.put(server.unreachablePeerId(), server);
 	}
 
 	/**
@@ -270,7 +292,7 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 	 */
 	private void handleMap(Message message, Responder responder) {
 		LOG.debug("Handle foreign map update {}", message);
-		BaseRelayServer server = forwarders.get(message.sender().peerId());
+		BaseRelayServer server = servers.get(message.sender().peerId());
 		if (server != null) {
 			Collection<PeerAddress> map = message.neighborsSet(0).neighbors();
 			Message response = createResponseMessage(message, Type.OK);
@@ -283,16 +305,23 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 	}
 
 	/**
-	 * The relay buffers messages for unreachable peers (like Android devices). They get notified when the
-	 * buffer is full or request the buffer content by themselves through this request.
+	 * There are two cases, when this method is called:<br>
+	 * <ul>
+	 * <li>The relay buffers messages for unreachable peers (like Android devices). They get notified when the
+	 * buffer is full or request the buffer content by themselves through this request.</li>
+	 * <li>The relay peer has buffered the messages and is able to transmit them through an already existing
+	 * channel (e.g. in buffered tcp case). The unreachable peer can then process the buffer directly, without
+	 * the need to obtain it at the relay peer.</li>
+	 * </ul>
 	 * 
 	 * @param message
 	 * @param responder
 	 */
-	private void handleBufferRequest(Message message, Responder responder) {
-		LOG.debug("Handle buffer request of unreachable peer {}", message.sender());
-		BaseRelayServer server = forwarders.get(message.sender().peerId());
-		if (server instanceof BufferedRelayServer) {
+	private void handleBuffer(final Message message, final Responder responder) {
+		BaseRelayServer server = servers.get(message.sender().peerId());
+		BaseRelayClient client = clients.get(message.sender().peerId());
+		if (server != null && server instanceof BufferedRelayServer) {
+			LOG.debug("Handle buffer request from unreachable peer {} to server", message.sender());
 			BufferedRelayServer bufferedServer = (BufferedRelayServer) server;
 			Message response = createResponseMessage(message, Type.OK);
 
@@ -304,6 +333,18 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 
 			LOG.debug("Responding all buffered messages to Android device {}", message.sender());
 			responder.response(response);
+		} else if (client != null && client instanceof BufferedRelayClient) {
+			LOG.debug("Handle message with buffer from server {} to unreachable client", message.sender());
+			BufferedRelayClient bufferedClient = (BufferedRelayClient) client;
+			FutureDone<Void> futureDone = new FutureDone<Void>();
+			bufferedClient.onReceiveMessageBuffer(message, futureDone);
+			futureDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+				@Override
+				public void operationComplete(FutureDone<Void> future) throws Exception {
+					// all buffered messages have been processed or at least started to process
+					responder.response(createResponseMessage(message, Type.OK));
+				}
+			});
 		} else {
 			responder.failed(Type.EXCEPTION, "This message type is intended for buffering forwarders only");
 		}
@@ -355,7 +396,7 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 		} else {
 			// handle Relayed <--> Relayed.
 			// This could be a pending message for one of the relayed peers, not for this peer
-			BaseRelayServer forwarder = forwarders.get(realMessage.recipient().peerId());
+			BaseRelayServer forwarder = servers.get(realMessage.recipient().peerId());
 			if (forwarder == null) {
 				LOG.error("Forwarder for the relayed peer not found. Cannot send late response {}", realMessage);
 				responder.response(createResponseMessage(message, Type.NOT_FOUND));

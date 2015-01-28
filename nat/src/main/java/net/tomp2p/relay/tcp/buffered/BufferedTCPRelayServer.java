@@ -13,6 +13,13 @@ import net.tomp2p.relay.buffer.MessageBufferConfiguration;
 import net.tomp2p.relay.tcp.TCPRelayServer;
 import net.tomp2p.rpc.RPC.Commands;
 
+/**
+ * The buffered TCP server acts similar to the normal {@link TCPRelayServer}, but instead of sending messages
+ * immediately to the unreachable peer, messages are buffered for a certain time.
+ * 
+ * @author Nico Rutishauser
+ *
+ */
 public class BufferedTCPRelayServer extends BufferedRelayServer {
 
 	private final PeerConnection connection;

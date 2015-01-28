@@ -5,9 +5,18 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.buffer.BufferedRelayClient;
 import net.tomp2p.relay.tcp.TCPRelayClient;
 
+/**
+ * Basically the same implementation as {@link TCPRelayClient}, but exending from the
+ * {@link BufferedRelayClient} such that the {@link RelayRPC} can distinguish between buffered and unbuffered
+ * connections.
+ * 
+ * @author Nico Rutishauser
+ *
+ */
 public class BufferedTCPRelayClient extends BufferedRelayClient {
 
 	private final TCPRelayClient tcpRelayClient;

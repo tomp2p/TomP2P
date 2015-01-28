@@ -289,6 +289,7 @@ public class TestDirect {
 
             FutureDirect fd1 = sender.sendDirect(peerConnection).object("test")
                     .connectionTimeoutTCPMillis(2000).idleTCPSeconds(10 * 1000).start();
+            fd1.awaitUninterruptibly();
             fd1.awaitListenersUninterruptibly();
             Assert.assertEquals(true, fd1.isSuccess());
             Assert.assertEquals(1, ccohTCP.total());

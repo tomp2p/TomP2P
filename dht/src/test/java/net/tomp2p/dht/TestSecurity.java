@@ -636,12 +636,13 @@ public class TestSecurity {
 			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 
 			Data data = new Data("test").protectEntry(keyPair1);
+			Data data2 = new Data().protectEntry(keyPair2);
 			FuturePut fp1 = p1.put(Number160.createHash("key1")).sign().data(data).start().awaitUninterruptibly();
 			Assert.assertTrue(fp1.isSuccess());
-			FuturePut fp2 = p2.put(Number160.createHash("key1")).data(data).start().awaitUninterruptibly();
+			FuturePut fp2 = p2.put(Number160.createHash("key1")).data(data2).start().awaitUninterruptibly();
 			Assert.assertTrue(!fp2.isSuccess());
 
-			Data data2 = new Data().protectEntry(keyPair2);
+			
 			data2.publicKey(keyPair2.getPublic());
 			FuturePut fp3 = p1.put(Number160.createHash("key1")).sign().putMeta().data(data2).start().awaitUninterruptibly();
 			Assert.assertTrue(fp3.isSuccess());
@@ -669,12 +670,13 @@ public class TestSecurity {
 			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 
 			Data data = new Data("test1").protectEntryNow(keyPair1, factory);
+			Data data2 = new Data("test1").protectEntryNow(keyPair2, factory);
 			FuturePut fp1 = p1.put(Number160.createHash("key1")).sign().data(data).start().awaitUninterruptibly();
 			Assert.assertTrue(fp1.isSuccess());
-			FuturePut fp2 = p2.put(Number160.createHash("key1")).data(data).start().awaitUninterruptibly();
+			FuturePut fp2 = p2.put(Number160.createHash("key1")).data(data2).start().awaitUninterruptibly();
 			Assert.assertTrue(!fp2.isSuccess());
 
-			Data data2 = new Data("test1").protectEntryNow(keyPair2, factory).duplicateMeta();
+			data2 = data2.duplicateMeta();
 			FuturePut fp3 = p1.put(Number160.createHash("key1")).sign().putMeta().data(data2).start().awaitUninterruptibly();
 			Assert.assertTrue(fp3.isSuccess());
 

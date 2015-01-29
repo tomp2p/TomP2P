@@ -434,7 +434,15 @@ public class PingRPC extends DispatchHandler {
 			// simply sends back the sourceport on which the peer sent the ping
 			// from
 			responseMessage = createResponseMessage(message, Type.OK);
-			PeerSocketAddress pAddress = new PeerSocketAddress(message.sender().inetAddress(), message.sender().tcpPort(), message.sender().udpPort());
+			int udpPort = -1;
+			int tcpPort = -1;
+			if (message.isUdp()) {
+				udpPort = message.senderSocket().getPort();
+			} else {
+				tcpPort = message.senderSocket().getPort();
+			}
+			PeerSocketAddress pAddress = new PeerSocketAddress(message.senderSocket().getAddress(), tcpPort, udpPort);
+			System.err.println(pAddress.toString());
 			responseMessage.peerSocketAddresses().clear();
 			Collection<PeerSocketAddress> list = new ArrayList<PeerSocketAddress>(2);
 			list.add(pAddress);

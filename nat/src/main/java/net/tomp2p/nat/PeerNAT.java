@@ -1,5 +1,6 @@
 package net.tomp2p.nat;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -24,6 +25,7 @@ import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.PeerMapUpdateTask;
@@ -293,7 +295,7 @@ public class PeerNAT {
 
 	private FutureRelayNAT startRelay(final RelayConfig relayConfig, final FutureRelayNAT futureRelayNAT,
 			final BootstrapBuilder bootstrapBuilder) {
-		
+
 		PeerAddress upa = peer.peerBean().serverPeerAddress();
 		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true).changeSlow(relayConfig.type().isSlow());
 		peer.peerBean().serverPeerAddress(upa);
@@ -446,8 +448,8 @@ public class PeerNAT {
 		return futureDone;
 	}
 
-	private void pingRelayNATTest(final FutureDone<NATType> fd, final PeerAddress relayPeer, final Message firstRequestMessage,
-			final Message firstResponseMessage) {
+	private void pingRelayNATTest(final FutureDone<NATType> fd, final PeerAddress relayPeer, final PeerSocketAddress senderPsa,
+			final PeerSocketAddress recipientPsa) {
 		// watch out for sideEffects
 		// test NATType
 		FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(1, 0);
@@ -455,16 +457,17 @@ public class PeerNAT {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					FutureResponse fr1 = peer.pingRPC().pingNATType(relayPeer, future.channelCreator(),
-							new DefaultConnectionConfiguration());
-					fr1.addListener(new BaseFutureAdapter<FutureResponse>() {
+					FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(relayPeer, future.channelCreator(),
+							new DefaultConnectionConfiguration(), peer);
+					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
 						@Override
-						public void operationComplete(FutureResponse future) throws Exception {
+						public void operationComplete(FutureDone<List<PeerSocketAddress>> future) throws Exception {
 							if (future.isSuccess()) {
-								if (firstResponseMessage == null && firstRequestMessage == null) {
-									pingRelayNATTest(fd, relayPeer, future.request(), future.responseMessage());
+								List<PeerSocketAddress> addresses = future.object();
+								if (senderPsa == null || recipientPsa == null) {
+									pingRelayNATTest(fd, relayPeer, addresses.get(0), addresses.get(1));
 								} else {
-									checkNATType(fd, firstRequestMessage, firstResponseMessage, future.request(), future.responseMessage());
+									checkNATType(fd, senderPsa, recipientPsa, addresses.get(0), addresses.get(1));
 								}
 							} else {
 								fd.failed("Could not emit NAT type!");
@@ -477,21 +480,19 @@ public class PeerNAT {
 			}
 		});
 	}
-
-	private void checkNATType(final FutureDone<NATType> fd, final Message request1, final Message response1, final Message request2,
-			final Message response2) {
-		if (request1.sender().inetAddress().equals(response1.recipient().inetAddress())) {
+	
+	private void checkNATType(FutureDone<NATType> fd, PeerSocketAddress senderPsa, PeerSocketAddress recipientPsa,
+			PeerSocketAddress senderPsa2, PeerSocketAddress recipientPsa2) {
+		if (senderPsa.inetAddress().equals(recipientPsa.inetAddress())) {
 			signalNAT("there is no NAT to be traversed!", NATType.NO_NAT, fd);
-		} else if (request1.sender().udpPort() == response1.recipient().udpPort()
-				&& request2.sender().udpPort() == response2.recipient().udpPort()) {
+		} else if (senderPsa.udpPort() == recipientPsa.udpPort() && senderPsa2.udpPort() == recipientPsa2.udpPort()) {
 			signalNAT("Port preserving NAT detected. UDP hole punching is possible", NATType.PORT_PRESERVING, fd);
-		} else if (request2.sender().udpPort() - request1.sender().udpPort() > 10) {
+		} else if (recipientPsa2.udpPort() - recipientPsa.udpPort() < 10) {
 			signalNAT("NAT with sequential port multiplexing detected. UDP hole punching is still possible",
 					NATType.NON_PRESERVING_SEQUENTIAL, fd);
 		} else {
 			signalNAT("Symmetric NAT detected (assumed since all other tests failed)", NATType.NON_PRESERVING_OTHER, fd);
 		}
-
 	}
 
 	private void signalNAT(final String debugMsg, final NATType natType, final FutureDone<NATType> fd) {

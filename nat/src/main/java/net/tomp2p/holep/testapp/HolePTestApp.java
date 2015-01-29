@@ -111,10 +111,10 @@ public class HolePTestApp {
 
 		// setup relay
 		pNAT = new PeerBuilderNAT(peer).start();
-		FutureDone<NATType> fd = pNAT.checkNATType(bootstrapPeerAddress);
-		fd.awaitUninterruptibly();
-		if (fd.isSuccess()) {
-			System.err.println(fd.object().toString());
+		FutureDone<NATType> fDone = pNAT.checkNATType(bootstrapPeerAddress);
+		fDone.awaitUninterruptibly();
+		if (fDone.isSuccess()) {
+			System.err.println(fDone.object().toString());
 		}
 
 		// set up 3 relays

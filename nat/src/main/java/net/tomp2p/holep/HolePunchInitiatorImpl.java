@@ -16,7 +16,6 @@ import net.tomp2p.p2p.Peer;
 public class HolePunchInitiatorImpl implements HolePunchInitiator {
 
 	private Peer peer;
-	@SuppressWarnings("unused")
 	private NATType natType;
 
 	public HolePunchInitiatorImpl(Peer peer) {

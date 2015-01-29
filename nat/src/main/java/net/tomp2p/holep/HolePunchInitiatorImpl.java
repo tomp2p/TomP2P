@@ -16,6 +16,7 @@ import net.tomp2p.p2p.Peer;
 public class HolePunchInitiatorImpl implements HolePunchInitiator {
 
 	private Peer peer;
+	private NATType natType;
 
 	public HolePunchInitiatorImpl(Peer peer) {
 		this.peer = peer;
@@ -26,5 +27,13 @@ public class HolePunchInitiatorImpl implements HolePunchInitiator {
 			Message originalMessage) {
 		HolePuncher holePuncher = new HolePuncher(peer, HolePunchInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
 		return holePuncher.initiateHolePunch(channelCreator, futureResponse);
+	}
+	
+	public void natType(Object natType) {
+		if (natType instanceof NATType) {
+			this.natType = (NATType) natType;
+		} else {
+			this.natType = null;
+		}
 	}
 }

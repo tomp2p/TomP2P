@@ -584,6 +584,18 @@ public class Sender {
 				case DIRECT:
 					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
 					break;
+				case HOLEPUNCH:
+						// initiate the holepunching process
+						if (peerBean.holePunchInitiator() != null) {
+							handleHolePunch(futureResponse, message, channelCreator, idleUDPSeconds);
+
+							// all the send mechanics are done in the HolePuncher class.
+							// Therefore we must execute this return statement.
+							return;
+						} else {
+							//TODO jwa implement relay as a fallback scenario
+							LOG.debug("No hole punching possible, because There is no PeerNAT. New Attempt with Relaying");
+						}
 				case RELAY:
 					List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
 					LOG.debug("send neighbor request to random relay peer {}", psa);

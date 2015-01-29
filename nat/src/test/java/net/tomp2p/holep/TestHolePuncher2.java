@@ -5,12 +5,11 @@ import io.netty.channel.ChannelFuture;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -20,6 +19,7 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.RPC.Commands;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -126,6 +126,20 @@ public class TestHolePuncher2 {
 		Assert.assertEquals(atomic.get(), 0);
 	}
 	
-	@Test
-	public void test
+	@After
+	public void shutdown() {
+		BaseFuture future = null;
+		BaseFuture future2 = null;
+		
+		if (peer != null) {
+			future = peer.shutdown();
+		}
+		
+		if (peer2 != null) {
+			future2 = peer2.shutdown();
+		}
+		
+		future.awaitUninterruptibly();
+		future2.awaitUninterruptibly();
+	}
 }

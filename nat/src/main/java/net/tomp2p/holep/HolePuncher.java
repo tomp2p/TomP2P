@@ -267,6 +267,8 @@ public class HolePuncher {
 					LOG.debug("Successfully transmitted the original message to peer:[" + msg.sender().toString()
 							+ "]. Now here's the reply:[" + msg.toString() + "]");
 					mainFutureDone.done(msg);
+					//TODO jwa does this work?
+					ctx.close();
 				} else if (Message.Type.REQUEST_3 == msg.type() && Commands.HOLEP.getNr() == msg.command()) {
 					LOG.debug("Holes successfully punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
 							+ msg.sender().udpPort() + "}!");

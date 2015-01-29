@@ -262,7 +262,8 @@ public class DiscoverBuilder {
                                 } else {
                                     // we need to find a relay, because there is a NAT in the way.
                                 	// we cannot use futureResponseTCP.responseMessage().recipient() as this may return also IPv6 addresses
-                                    futureDiscover
+                                    
+                                	futureDiscover
                                             .externalHost("We are most likely behind NAT, try to UPNP, NATPMP or relay {}, {}" + peerAddress, serverAddress.inetAddress(), seenAs.inetAddress());
                                     return;
                                 }

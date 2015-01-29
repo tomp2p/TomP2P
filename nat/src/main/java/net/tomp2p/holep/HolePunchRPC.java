@@ -1,7 +1,9 @@
 package net.tomp2p.holep;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
@@ -29,7 +32,7 @@ import net.tomp2p.rpc.RPC.Commands;
 public class HolePunchRPC extends DispatchHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePunchRPC.class);
-
+	private static final ConcurrentHashMap<Number160, List<Integer>> PORTLIST = new ConcurrentHashMap<Number160, List<Integer>>();
 	private final Peer peer;
 
 	public HolePunchRPC(Peer peer) {
@@ -50,6 +53,9 @@ public class HolePunchRPC extends DispatchHandler {
 		else if (message.type() == Message.Type.REQUEST_2) {
 			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
 			handleHolePunch(message, peerConnection, responder);
+		} else if (message.type() == Message.Type.REQUEST_4){
+			LOG.debug("Port prediction running with peer: " + message.sender().peerId());
+			predictPorts(message, peerConnection, responder);
 		} else {
 			throw new IllegalArgumentException("Message Content is wrong!");
 		}
@@ -170,6 +176,16 @@ public class HolePunchRPC extends DispatchHandler {
 		return null;
 	}
 
+	private void predictPorts(Message message, PeerConnection peerConnection, Responder responder) {
+		if (message.intList() != null && !message.intList().isEmpty()) {
+			
+			
+			
+		} else {
+			handleFail(message, responder, "Intlist on Message was empty!");
+		}
+	}
+	
 	/**
 	 * This method is called if something went wrong while the hole punching
 	 * procedure. It responds then with a {@link Type}.EXCEPTION message.
@@ -182,5 +198,4 @@ public class HolePunchRPC extends DispatchHandler {
 		LOG.error(failReason);
 		responder.response(createResponseMessage(message, Type.EXCEPTION));
 	}
-
 }

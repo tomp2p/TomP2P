@@ -24,14 +24,17 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message>{
 	
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-		if (msg.intList() != null && !msg.intList().isEmpty()) {
+		if (msg.isExpectDuplicate()) {
 			if (first) {
 				first = false;
 				messageId = msg.intAt(POSITION_ZERO);
 				dispatcher.channelRead(ctx, msg);
 				LOG.debug("message with original messageId = " + messageId + " has been received!");
-			} else {
+			} else if (messageId == msg.intAt(POSITION_ZERO)){
 				LOG.trace("message with original messageId = " + messageId + " has been ignored!");
+			} else {
+				LOG.debug("Message received via hole punching will be forwarded to the Dispatcher!");
+				dispatcher.channelRead(ctx, msg);
 			}
 		} else {
 			LOG.debug("Message received via hole punching will be forwarded to the Dispatcher!");

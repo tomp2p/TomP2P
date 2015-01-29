@@ -57,6 +57,7 @@ public class KeyLock<K> {
         } finally {
             lockInternal.unlock();
         }
+        //System.err.println("lock: "+ key);
         cur.sem.lock();
         return cur;
     }

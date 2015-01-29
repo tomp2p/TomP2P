@@ -231,67 +231,6 @@ public class TestStorage {
 	}
 
 	@Test
-	public void testLock1() {
-		KeyLock<Number160> lock = new KeyLock<Number160>();
-		KeyLock<Number160>.RefCounterLock tmp = lock.lock(Number160.createHash("test"));
-		Assert.assertEquals(1, lock.cacheSize());
-		lock.unlock(tmp);
-		Assert.assertEquals(0, lock.cacheSize());
-		lock.unlock(tmp);
-	}
-
-	@Test
-	public void testLock2() {
-		KeyLock<Number160> lock = new KeyLock<Number160>();
-		KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test1"));
-		KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test2"));
-		Assert.assertEquals(2, lock.cacheSize());
-		lock.unlock(tmp1);
-		lock.unlock(tmp2);
-		Assert.assertEquals(0, lock.cacheSize());
-	}
-
-	@Test
-	public void testLockConcurrent() throws InterruptedException {
-		final KeyLock<Number160> lock = new KeyLock<Number160>();
-		for (int i = 0; i < 100; i++) {
-			final int ii = i;
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test1"));
-					KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test2"));
-					lock.unlock(tmp1);
-					lock.unlock(tmp2);
-					System.err.print("a" + ii + " ");
-				}
-			}).start();
-		}
-		for (int i = 0; i < 100; i++) {
-			final int ii = i;
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test3"));
-					KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test4"));
-					lock.unlock(tmp1);
-					lock.unlock(tmp2);
-					System.err.print("b" + ii + " ");
-				}
-			}).start();
-		}
-		Thread.sleep(500);
-		Assert.assertEquals(0, lock.cacheSize());
-		KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test1"));
-		KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test2"));
-		Assert.assertEquals(2, lock.cacheSize());
-		lock.unlock(tmp1);
-		Assert.assertEquals(1, lock.cacheSize());
-		lock.unlock(tmp2);
-		Assert.assertEquals(0, lock.cacheSize());
-	}
-
-	@Test
 	public void testConcurrency() throws InterruptedException, IOException {
 		final Storage sM = createStorage();
 		final StorageLayer storageGeneric = new StorageLayer(sM);

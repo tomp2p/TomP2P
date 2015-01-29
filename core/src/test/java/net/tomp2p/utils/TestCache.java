@@ -95,7 +95,7 @@ public class TestCache {
         }
         long waitfor = 2900 - (System.currentTimeMillis() - start);
         System.out.println("waitfor: " + waitfor);
-        Thread.sleep((int) waitfor);
+        Thread.sleep(Math.max((int) waitfor, 1));
         System.out.println("TestCache: expected: " + (800 - 1) + ", got: " + test.size() + ", failed: " + failed.get()
                 + " - expired " + test.expiredCounter() + ", inserts: " + integer1 + "/" + integer2 + ", threads: "
                 + Thread.activeCount());

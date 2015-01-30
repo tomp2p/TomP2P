@@ -46,7 +46,7 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
                 LOG.warn("Did not get the complete packet!");
             }
         } catch (Throwable t) {
-        	LOG.error("Error in UDP decoding", t);
+        	LOG.error("Error in UDP decoding.", t);
             throw t;
         } finally {
             buf.release();

@@ -143,7 +143,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         if (!message.isRequest()) {
-            LOG.debug("handing message to the next handler {}", message);
+            LOG.debug("Handing request message to the next handler. {}", message);
             ctx.fireChannelRead(message);
             return;
         }
@@ -242,7 +242,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         	// Check, if channel is still open. If not, then do not send anything
             // because this will cause an exception that will be logged.
             if (!ctx.channel().isOpen()) {
-                LOG.debug("Channel UDP is not open, do not reply {}.", response);
+                LOG.debug("Channel UDP is not open. Do not reply {}.", response);
                 return;
             }
             LOG.debug("Response UDP message {}.", response);
@@ -250,7 +250,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         	// Check, if channel is still open. If not, then do not send anything
             // because this will cause an exception that will be logged.
             if (!ctx.channel().isActive()) {
-                LOG.debug("Channel TCP is not open, do not reply {}.", response);
+                LOG.debug("Channel TCP is not open. Do not reply {}.", response);
                 return;
             }
             LOG.debug("Response TCP message {} to {}", response, ctx.channel().remoteAddress());

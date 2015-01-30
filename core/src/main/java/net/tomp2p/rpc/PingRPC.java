@@ -317,7 +317,6 @@ public class PingRPC extends DispatchHandler {
 		// probe
 		if (message.type() == Type.REQUEST_3) {
 			LOG.debug("Respond to probing. Firing message to {}.", message.sender());
-
 			responseMessage = createResponseMessage(message, Type.OK);
 
 			if (message.isUdp()) {

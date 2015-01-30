@@ -194,13 +194,13 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 
 	@Override
 	public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
-		LOG.debug("Error originating from: {}, cause {}", futureResponse.request(), cause);
+		LOG.debug("Error originating from {}. Cause {}.", futureResponse.request(), cause);
 		if (futureResponse.isCompleted()) {
-			LOG.warn("Got exception, but ignored it. (FutureResponse completed.): {}",
+			LOG.warn("Got exception, but ignored it. (FutureResponse completed.): {}.",
 					futureResponse.failedReason());
 		} else {
 			if (LOG.isDebugEnabled()) {
-				LOG.debug("exception caught, but handled properly: " + cause.toString());
+				LOG.debug("Exception caught, but handled properly: " + cause.toString());
 			}
 			if (cause instanceof PeerException) {
 				PeerException pe = (PeerException) cause;
@@ -241,27 +241,26 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 					+ this.message;
 			exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
 			return;
-		} else if (responseMessage.type() == Message.Type.EXCEPTION) {
+		} if (responseMessage.type() == Message.Type.EXCEPTION) {
 			String msg = "Message caused an exception on the other side, handle as peer_abort: "
 					+ this.message;
 			exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
 			return;
-		} else if (responseMessage.isRequest()) {
+		} if (responseMessage.isRequest()) {
 			ctx.fireChannelRead(responseMessage);
 			return;
-		} else if (!sendMessageID.equals(recvMessageID)) {
+		} if (!sendMessageID.equals(recvMessageID)) {
 			String msg = "Response message [" + responseMessage
 					+ "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
 			exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
 			return;
-
 		}
 		// We need to exclude RCON Messages from the sanity check because we
 		// use this RequestHandler for sending a Type.REQUEST_1,
 		// RPC.Commands.RCON message on top of it. Therefore the response
 		// type will never be the same Type as the one the user initially
 		// used (e.g. DIRECT_DATA).
-		else if (responseMessage.command() != RPC.Commands.RCON.getNr()
+		if (responseMessage.command() != RPC.Commands.RCON.getNr()
 				&& message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
 			String msg = "Response message [" + responseMessage + "] sent has a different relay flag than we sent with request message ["
 					+ this.message + "]. Recipient (" + message.recipient().isRelayed() + ") / Sender ("
@@ -289,19 +288,19 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 		// call this for streaming support
 		futureResponse.progress(responseMessage);
 		if (!responseMessage.isDone()) {
-			LOG.debug("good message is streaming {}", responseMessage);
+			LOG.debug("Good message is streaming. {}", responseMessage);
 			return;
 		}
 
 		if (!message.isKeepAlive()) {
-			LOG.debug("good message, we can close {}, {}", responseMessage, ctx.channel());
+			LOG.debug("Good message {}. Close channel {}.", responseMessage, ctx.channel());
 			// set the success now, but trigger the notify when we closed the channel.
 			futureResponse.responseLater(responseMessage);
 			// the channel creator adds a listener that sets futureResponse.setResponseNow, when the channel
 			// is closed
 			ctx.close();
 		} else {
-			LOG.debug("good message, leave open {}", responseMessage);
+			LOG.debug("Good message {}. Leave channel {} open.", responseMessage, ctx.channel());
 			futureResponse.response(responseMessage);
 		}
 	}

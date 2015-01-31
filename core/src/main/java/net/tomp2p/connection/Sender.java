@@ -423,9 +423,8 @@ public class Sender {
 		}
 		ChannelPipeline pipeline = channelFuture.channel().pipeline();
 
-		// we need to replace the handler if this comes from the peer that
-		// create a peerconnection, otherwise we
-		// need to add a handler
+		// we need to replace the handler if this comes from the peer that created a peer connection,
+        // otherwise we need to add a handler
 		addOrReplace(pipeline, "dispatcher", "handler", handler);
 		// uncomment this if the recipient should also heartbeat
 		// addIfAbsent(pipeline, "handler", "heartbeat",
@@ -449,18 +448,16 @@ public class Sender {
 	// }
 	// }
 
-	private boolean addOrReplace(ChannelPipeline pipeline, String before, String name, ChannelHandler channelHandler) {
+	private void addOrReplace(ChannelPipeline pipeline, String before, String name, ChannelHandler channelHandler) {
 		List<String> names = pipeline.names();
 		if (names.contains(name)) {
 			pipeline.replace(name, name, channelHandler);
-			return false;
 		} else {
 			if (before == null) {
 				pipeline.addFirst(name, channelHandler);
 			} else {
 				pipeline.addBefore(before, name, channelHandler);
 			}
-			return true;
 		}
 	}
 
@@ -639,7 +636,7 @@ public class Sender {
 				}
 				if (fireAndForget) {
 					futureResponse.responseLater(null);
-					LOG.debug("fire and forget, close channel now {}, {}", futureResponse.request(), future.channel());
+					LOG.debug("fire and forget, close channel {} now. {}", futureResponse.request(), future.channel());
 					reportAfterClose(futureResponse, future.channel().close());
 				}
 			}

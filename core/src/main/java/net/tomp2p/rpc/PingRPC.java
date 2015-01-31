@@ -361,7 +361,7 @@ public class PingRPC extends DispatchHandler {
 			responseMessage = createResponseMessage(message, Type.OK);
 			responseMessage.neighborsSet(createNeighborSet(message.sender()));
 		} else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4) { // regular ping
-			LOG.debug("Respond to regular ping. {}.", message.sender());
+			LOG.debug("Respond to regular ping from {}.", message.sender());
 			// Test, of this is a broadcast message to ourselves.
             // If it is, do not reply.
 			if (message.isUdp() && message.sender().peerId().equals(peerBean().serverPeerAddress().peerId())

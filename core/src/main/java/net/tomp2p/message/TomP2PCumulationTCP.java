@@ -49,7 +49,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			LOG.error("Error in TCP decoding", t);
             throw t;
 		} finally {
-			if (!cumulation.isReadable()) {
+			if (cumulation != null && !cumulation.isReadable()) {
                 cumulation.release();
                 cumulation = null;
             } // no need to discard bytes as this was done in the decoder already

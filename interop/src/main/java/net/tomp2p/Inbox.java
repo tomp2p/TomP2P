@@ -168,11 +168,11 @@ public class Inbox {
 				break;
 
 			// pings
-			case "TestPingJavaUdp-start":
+			case "JavaPingReceiver-start":
 				exit = false;
 				Pings.startJavaPingReceiver(argument);
 				break;
-			case "TestPingJavaUdp-stop":
+			case "JavaPingReceiver-stop":
 				Pings.stopJavaPingReceiver();
 				break;
 				

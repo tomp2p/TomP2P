@@ -28,7 +28,8 @@ public class RPC {
 		HOLEP(),
 		GET_LATEST_WITH_DIGEST(),
 		GCM(),
-		LOCAL_ANNOUNCE();
+		LOCAL_ANNOUNCE(),
+		REPLICA_PUT();
 	public byte getNr() {
 		return (byte) ordinal();
 	}

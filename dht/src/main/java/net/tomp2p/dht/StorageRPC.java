@@ -80,11 +80,17 @@ public class StorageRPC extends DispatchHandler {
     public StorageRPC(final PeerBean peerBean, final ConnectionBean connectionBean, final StorageLayer storageLayer) {
         super(peerBean, connectionBean);
         register(RPC.Commands.PUT.getNr(), 
-        		RPC.Commands.GET.getNr(), RPC.Commands.ADD.getNr(), 
-        		RPC.Commands.REMOVE.getNr(), RPC.Commands.DIGEST.getNr(), 
-        		RPC.Commands.DIGEST_BLOOMFILTER.getNr(), RPC.Commands.PUT_META.getNr(), 
-				RPC.Commands.DIGEST_META_VALUES.getNr(), RPC.Commands.PUT_CONFIRM.getNr(),
-				RPC.Commands.GET_LATEST.getNr(), RPC.Commands.GET_LATEST_WITH_DIGEST.getNr());
+        		RPC.Commands.GET.getNr(), 
+        		RPC.Commands.ADD.getNr(), 
+        		RPC.Commands.REMOVE.getNr(), 
+        		RPC.Commands.DIGEST.getNr(), 
+        		RPC.Commands.DIGEST_BLOOMFILTER.getNr(), 
+        		RPC.Commands.PUT_META.getNr(), 
+				RPC.Commands.DIGEST_META_VALUES.getNr(), 
+				RPC.Commands.PUT_CONFIRM.getNr(),
+				RPC.Commands.GET_LATEST.getNr(), 
+				RPC.Commands.GET_LATEST_WITH_DIGEST.getNr(),
+				RPC.Commands.REPLICA_PUT.getNr());
         this.factory = peerBean.bloomfilterFactory();
         this.storageLayer = storageLayer;
     }
@@ -128,7 +134,7 @@ public class StorageRPC extends DispatchHandler {
     public FutureResponse put(final PeerAddress remotePeer, final PutBuilder putBuilder,
             final ChannelCreator channelCreator) {
         final Type request = putBuilder.isProtectDomain() ? Type.REQUEST_2 : Type.REQUEST_1;
-        return put(remotePeer, putBuilder, request, channelCreator);
+        return put(remotePeer, putBuilder, request, RPC.Commands.PUT, channelCreator);
     }
 
     /**
@@ -166,7 +172,7 @@ public class StorageRPC extends DispatchHandler {
         } else {
             request = Type.REQUEST_3;
         }
-        return put(remotePeer, putBuilder, request, channelCreator);
+        return put(remotePeer, putBuilder, request, RPC.Commands.PUT, channelCreator);
     }
 
     /**
@@ -195,7 +201,13 @@ public class StorageRPC extends DispatchHandler {
      * final Map<Number160, Data> dataMap, final Type type, boolean signMessage, ChannelCreator channelCreator, boolean
      * forceUDP, SenderCacheStrategy senderCacheStrategy) {
      */
-    private FutureResponse put(final PeerAddress remotePeer, final PutBuilder putBuilder, final Type type,
+    
+    public FutureResponse putReplica(PeerAddress remotePeer, PutBuilder putBuilder,
+			ChannelCreator channelCreator) {
+		return put(remotePeer, putBuilder, Type.REQUEST_1, RPC.Commands.REPLICA_PUT, channelCreator);
+	}
+    
+    private FutureResponse put(final PeerAddress remotePeer, final PutBuilder putBuilder, final Type type, final RPC.Commands rpcCommand,
             final ChannelCreator channelCreator) {
 
         Utils.nullCheck(remotePeer);
@@ -208,7 +220,7 @@ public class StorageRPC extends DispatchHandler {
                     putBuilder.versionKey(), putBuilder.dataMapContent());
         }
 
-        final Message message = createMessage(remotePeer, RPC.Commands.PUT.getNr(), type);
+        final Message message = createMessage(remotePeer, rpcCommand.getNr(), type);
 
         if (putBuilder.isSign()) {
             message.publicKeyAndSign(putBuilder.keyPair());
@@ -613,25 +625,13 @@ public class StorageRPC extends DispatchHandler {
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
             Responder responder) throws Exception {
 
-    	if (!(message.command() == RPC.Commands.ADD.getNr() || message.command() == RPC.Commands.PUT.getNr()
-				|| message.command() == RPC.Commands.GET.getNr()
-				|| message.command() == RPC.Commands.REMOVE.getNr()
-				|| message.command() == RPC.Commands.DIGEST.getNr()
-				|| message.command() == RPC.Commands.DIGEST_BLOOMFILTER.getNr()
-				|| message.command() == RPC.Commands.DIGEST_META_VALUES.getNr()
-				|| message.command() == RPC.Commands.PUT_META.getNr()
-				|| message.command() == RPC.Commands.PUT_CONFIRM.getNr()
-				|| message.command() == RPC.Commands.GET_LATEST.getNr()
-				|| message.command() == RPC.Commands.GET_LATEST_WITH_DIGEST.getNr())) {
-			throw new IllegalArgumentException("Message content is wrong " + message.command());
-		}
-        final Message responseMessage = createResponseMessage(message, Type.OK);
+    	final Message responseMessage = createResponseMessage(message, Type.OK);
 
         //switch/case does not work here out of the box, need to convert byte back to enum, not sure if thats worth it.
         if (message.command() == RPC.Commands.ADD.getNr()) {
         	handleAdd(message, responseMessage, isDomainProtected(message));
-        } else if(message.command() == RPC.Commands.PUT.getNr()) {
-            handlePut(message, responseMessage, isStoreIfAbsent(message), isDomainProtected(message));
+        } else if(message.command() == RPC.Commands.PUT.getNr() || message.command() == RPC.Commands.REPLICA_PUT.getNr()) {
+            handlePut(message, responseMessage, isStoreIfAbsent(message), isDomainProtected(message), isReplicaPut(message));
         } else if (message.command() == RPC.Commands.PUT_CONFIRM.getNr()) {
         	handlePutConfirm(message, responseMessage);
         } else if (message.command() == RPC.Commands.GET.getNr()) {
@@ -648,8 +648,8 @@ public class StorageRPC extends DispatchHandler {
             handleRemove(message, responseMessage, message.type() == Type.REQUEST_2);
         } else if (message.command() == RPC.Commands.PUT_META.getNr()) {
             handlePutMeta(message, responseMessage, message.type() == Type.REQUEST_2);
-        }else {
-            throw new IllegalArgumentException("Message content is wrong");
+        } else {
+            throw new IllegalArgumentException("Message content is wrong " + message.command());
         }
         if (sign) {
             responseMessage.publicKeyAndSign(peerBean().getKeyPair());
@@ -658,7 +658,9 @@ public class StorageRPC extends DispatchHandler {
         responder.response(responseMessage);
     }
 
-    
+    private boolean isReplicaPut(final Message message) {
+        return message.command() == RPC.Commands.REPLICA_PUT.getNr();
+    }
 
 	private boolean isDomainProtected(final Message message) {
         boolean protectDomain = message.publicKey(0) != null
@@ -717,7 +719,7 @@ public class StorageRPC extends DispatchHandler {
     }
 
     private Message handlePut(final Message message, final Message responseMessage,
-            final boolean putIfAbsent, final boolean protectDomain) throws IOException {
+            final boolean putIfAbsent, final boolean protectDomain, final boolean replicaPut) throws IOException {
     	LOG.debug("handlePut {}", message);
         final PublicKey publicKey = message.publicKey(0);
         final DataMap toStore = message.dataMap(0);
@@ -730,7 +732,7 @@ public class StorageRPC extends DispatchHandler {
             // (notify) if we are responsible
             if (!entry.getValue().hasPrepareFlag()) {
             	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK || putStatus == PutStatus.DELETED)
-            			&& replicationListener != null) {
+            			&& !replicaPut && replicationListener != null) {
             		replicationListener.dataInserted(
             				entry.getKey().locationKey());
             	}

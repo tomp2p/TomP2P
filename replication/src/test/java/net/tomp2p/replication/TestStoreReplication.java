@@ -1104,6 +1104,7 @@ public class TestStoreReplication {
 
 			String content = "";
 			for (int i = 0; i < 500; i++) {
+				System.err.println("round: "+i);
 				content += "a";
 				Number160 vKey = generateVersionKey(i, content);
 				Data data = new Data(content);

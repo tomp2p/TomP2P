@@ -68,12 +68,12 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 				moreData = cumulation.readableBytes() > 0;
 				ctx.fireChannelRead(decoder.prepareFinish());
 			} else {
-				// this id was the same as the last and the last message already
-				// finished the parsing. So this message
-				// is finished as well although it may send only partial data.
 				//TODO testBroadcast
 				//if(decoder.message() != null) {
 				if (lastId == decoder.message().messageId()) {
+					// this id was the same as the last and the last message already
+					// finished the parsing. So this message
+					// is finished as well although it may send only partial data.
 					finished = true;
 					moreData = cumulation.readableBytes() > 0;
 					ctx.fireChannelRead(decoder.prepareFinish());

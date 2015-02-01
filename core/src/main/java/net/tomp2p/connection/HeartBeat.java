@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Striped down version of the IdleStateHandler.
+ * Stripped-down version of the IdleStateHandler.
  */
 public class HeartBeat extends ChannelDuplexHandler {
 	
@@ -77,11 +77,7 @@ public class HeartBeat extends ChannelDuplexHandler {
         ctx.write(msg, promise);
     }
 
-    /**
-     * Return the allIdleTime that was given when instance this class in milliseconds.
-     * 
-     */
-    public long getAllIdleTimeInMillis() {
+    public long getTimeToHeartBeatMillis() {
         return timeToHeartBeatMillis;
     }
     
@@ -182,13 +178,13 @@ public class HeartBeat extends ChannelDuplexHandler {
             long nextDelay = timeToHeartBeatMillis - (currentTime - lastIoTime);
             
             if(peerConnection!=null && nextDelay <= 0) {
-                LOG.debug("sending heart beat to {}, {}", peerConnection.remotePeer(), 
+                LOG.debug("Sending heart beat to {}. Channel: {}.", peerConnection.remotePeer(), 
                 		(peerConnection.channelFuture() != null ? peerConnection.channelFuture().channel() : null));
                 PingBuilder builder = pingBuilderFactory.create();
                 BaseFuture baseFuture = builder.peerConnection(peerConnection).start();
                 builder.notifyAutomaticFutures(baseFuture);
             } else {
-            	LOG.debug("Not sending heart beat to {}, {}", peerConnection.remotePeer(), 
+            	LOG.debug("Not sending heart beat to {}. Channel: {}", peerConnection.remotePeer(), 
                 		(peerConnection.channelFuture() != null ? peerConnection.channelFuture().channel() : null));
             }
         }

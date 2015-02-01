@@ -389,7 +389,7 @@ public class Sender {
 		        channelClientConfiguration.signatureFactory())));
 
 		if (peerConnection != null) {
-			// we expect replies on this connection
+			// we expect responses on this connection
 			handlers.put("dispatcher", new Pair<EventExecutorGroup, ChannelHandler>(null, dispatcher));
 		}
 

@@ -170,13 +170,16 @@ public class Inbox {
 			// pings
 			case "JavaPingReceiver-start":
 				exit = false;
-				Pings.startJavaPingReceiver(argument);
+				Pings.startJavaPingReceiver();
 				break;
 			case "JavaPingReceiver-stop":
 				Pings.stopJavaPingReceiver();
 				break;
 			case "TestPingFromJavaUdp":
-				result = Pings.pingDotNetUdp(argument);
+				result = Pings.pingDotNet(argument, true);
+				break;
+			case "TestPingFromJavaTcp":
+				result = Pings.pingDotNet(argument, false);
 				break;
 				
 			default:

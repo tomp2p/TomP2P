@@ -2,9 +2,8 @@ package net.tomp2p;
 
 import java.io.IOException;
 
-import org.junit.Assert;
-
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
@@ -18,7 +17,7 @@ public class Pings {
 	
 	private static Peer receiver = null;
 
-	public static void startJavaPingReceiver(String argument) throws IOException, InterruptedException {
+	public static void startJavaPingReceiver() throws IOException, InterruptedException {
 		
 		// setup a receiver, write it's address to harddisk and notify via System.out
 
@@ -26,7 +25,7 @@ public class Pings {
 			receiver = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(7777).start();
 			
 			byte[] result = receiver.peerAddress().toByteArray();
-			InteropUtil.writeToFile(argument, result);
+			InteropUtil.writeToFile("JavaServerAddress", result);
 
 			System.out.println("[---RESULT-READY---]");
 
@@ -44,11 +43,16 @@ public class Pings {
 		}
 	}
 	
-	public static byte[] pingDotNetUdp(String argument) throws IOException, InterruptedException
+	public static byte[] pingDotNet(String argument, boolean isUdp) throws IOException, InterruptedException
 	{
 		// read .NET server address from harddisk
 		byte[] bytes = InteropUtil.readFromFile(argument);
 		PeerAddress serverAddress = new PeerAddress(bytes);
+		
+		// prepare a connection config that allows for longer short-lived connections ("debugging")
+		ConnectionConfiguration config = new DefaultConnectionConfiguration().
+				idleTCPSeconds(60).
+				idleUDPSeconds(60);
 		
 		// setup sender and ping .NET server
 		Peer sender = null;
@@ -58,12 +62,21 @@ public class Pings {
             
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
 
-            FutureChannelCreator fcc = sender.connectionBean().reservation().create(1, 0);
+            FutureChannelCreator fcc;
+            if (isUdp) {
+            	fcc = sender.connectionBean().reservation().create(1, 0);
+            } else {
+            	fcc = sender.connectionBean().reservation().create(0, 1);
+            }
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
             
-            FutureResponse fr = handshake.pingUDP(serverAddress, cc,
-                    new DefaultConnectionConfiguration());
+            FutureResponse fr;
+            if (isUdp) {
+            	fr = handshake.pingUDP(serverAddress, cc, config);
+            } else {
+            	fr = handshake.pingTCP(serverAddress, cc, config);
+            }
             fr.awaitUninterruptibly();
             
             // check and return result of test

@@ -298,12 +298,12 @@ public final class ChannelServer {
 		final int maxListeners = (channelUDP!=null && channelTCP!=null) ? 2 : 1;
 		// we have two things to shut down: UDP and TCP
 		final AtomicInteger listenerCounter = new AtomicInteger(0);
-		LOG.debug("shutdown servers");
 		if(channelUDP != null) {
+			LOG.debug("Shutting down UDP server.");
 			channelUDP.close().addListener(new GenericFutureListener<ChannelFuture>() {
 				@Override
 				public void operationComplete(final ChannelFuture future) throws Exception {
-					LOG.debug("shutdown TCP server");
+					LOG.debug("UDP server shut down.");
 					if(listenerCounter.incrementAndGet()==maxListeners) {
 						futureServerDone.done();
 					}
@@ -311,10 +311,11 @@ public final class ChannelServer {
 			});
 		}
 		if(channelTCP != null) {
+			LOG.debug("Shutting down TCP server.");
 			channelTCP.close().addListener(new GenericFutureListener<ChannelFuture>() {
 				@Override
 				public void operationComplete(final ChannelFuture future) throws Exception {
-					LOG.debug("shutdown TCP channels");
+					LOG.debug("TCP server shut down.");
 					if(listenerCounter.incrementAndGet()==maxListeners) {
 						futureServerDone.done();
 					}

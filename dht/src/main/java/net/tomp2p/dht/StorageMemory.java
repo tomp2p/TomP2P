@@ -145,11 +145,8 @@ public class StorageMemory implements Storage {
         // 
         // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
         // then you will call next() that returns null and an exception is thrown.
-        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
-        for(Map.Entry<Number640, Data> entry:tmp.entrySet()) {
-        	retVal.put(entry.getKey(), entry.getValue());
-        }
         
+        final NavigableMap<Number640, Data> retVal = new ConcurrentSkipListMap<Number640, Data>(tmp);
         tmp.clear();
         return retVal;
     }
@@ -157,7 +154,9 @@ public class StorageMemory implements Storage {
     @Override
     public NavigableMap<Number640, Data> subMap(Number640 fromKey, Number640 toKey, int limit,
             boolean ascending) {
-    	final NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
+    	
+    	final NavigableMap<Number640, Data> clone = ((ConcurrentSkipListMap<Number640, Data>)dataMap).clone();
+    	final NavigableMap<Number640, Data> tmp = clone.subMap(fromKey, true, toKey, true);
         final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
         if (limit < 0) {
         	
@@ -181,11 +180,11 @@ public class StorageMemory implements Storage {
             // 
             // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
             // then you will call next() that returns null and an exception is thrown.
-        	for(Map.Entry<Number640, Data> entry:(ascending ? tmp : tmp.descendingMap()).entrySet()) {
-            	retVal.put(entry.getKey(), entry.getValue());
-            }
+        	//for(Map.Entry<Number640, Data> entry:(ascending ? tmp : tmp.descendingMap()).entrySet()) {
+            //	retVal.put(entry.getKey(), entry.getValue());
+            //}
+        	return ascending ? tmp : tmp.descendingMap();
         } else {
-            limit = Math.min(limit, tmp.size());
             Iterator<Map.Entry<Number640, Data>> iterator = ascending ? tmp.entrySet().iterator() : tmp
                     .descendingMap().entrySet().iterator();
             for (int i = 0; iterator.hasNext() && i < limit; i++) {

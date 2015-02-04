@@ -1,5 +1,7 @@
 package net.tomp2p.storage;
 
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Assert;
@@ -48,5 +50,21 @@ public class TestRangeLock {
 		cd.await();
 		r.unlock(lock);
 		Assert.assertEquals(0, r.size());
+	}
+	
+	@Test
+	public void testTreeMap() {
+		final NavigableMap<Integer, Integer> cache = new TreeMap<Integer, Integer>();
+		
+		cache.put(10, 10);
+		cache.put(20, 20);
+		cache.put(30, 30);
+		cache.put(40, 40);
+		
+		NavigableMap<Integer, Integer> tmp = cache.subMap(20, true, 30, true);
+		Assert.assertEquals(2, tmp.size());
+		tmp.put(25, 25);
+		Assert.assertEquals(3, tmp.size());
+		
 	}
 }

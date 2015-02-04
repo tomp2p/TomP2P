@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
@@ -203,10 +204,11 @@ public class StorageLayer implements DigestStorage {
 					return PutStatus.DELETED;
 				}
 			}
-			
-			
+				
+			//since we also have timeouts, we need to go through all the versions to see if we have a version fork
 			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
 			tmp.put(key, newData);
+			removePrepared(tmp);
 			boolean versionFork = getLatestInternal(tmp).size() > 1;
 			
 
@@ -313,7 +315,7 @@ public class StorageLayer implements DigestStorage {
 	    }
     }
 
-	private void deletePredecessors(Number640 key, NavigableMap<Number640, Data> sortedMap) {
+	private void deletePredecessors2(Number640 key, NavigableMap<Number640, Data> sortedMap) {
 		Data version = sortedMap.remove(key);
 		// check if version has been already deleted
 		if (version == null) {
@@ -326,6 +328,22 @@ public class StorageLayer implements DigestStorage {
 		// remove all predecessor versions recursively
 		for (Number160 basedOnKey : version.basedOnSet()) {
 			deletePredecessors(new Number640(key.locationAndDomainAndContentKey(), basedOnKey), sortedMap);
+		}
+	}
+	
+	private void deletePredecessors(Number640 key, NavigableMap<Number640, Data> sortedMap) {
+		final List<Number640> toRemove = new ArrayList<Number640>();
+		toRemove.add(key);
+		//int counter = 0;
+		while(!toRemove.isEmpty()) {
+			//System.err.println("counter: "+ (counter++));
+			final Data version = sortedMap.remove(toRemove.remove(0));
+			// check if version has been already deleted && // check if version is initial version
+			if(version != null && !version.basedOnSet().isEmpty()) {
+				for (final Number160 basedOnKey : version.basedOnSet()) {
+					toRemove.add(new Number640(key.locationAndDomainAndContentKey(), basedOnKey));
+				}
+			}
 		}
 	}
 

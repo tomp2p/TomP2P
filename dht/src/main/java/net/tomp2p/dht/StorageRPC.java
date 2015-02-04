@@ -733,8 +733,7 @@ public class StorageRPC extends DispatchHandler {
             if (!entry.getValue().hasPrepareFlag()) {
             	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK || putStatus == PutStatus.DELETED)
             			&& !replicaPut && replicationListener != null) {
-            		replicationListener.dataInserted(
-            				entry.getKey().locationKey());
+            		replicationListener.dataInserted(entry.getKey().locationKey(), replicaPut);
             	}
             }
            
@@ -758,8 +757,7 @@ public class StorageRPC extends DispatchHandler {
 			
 			if ((status == PutStatus.OK || status == PutStatus.VERSION_FORK)
         			&& replicationListener != null) {
-        		replicationListener.dataInserted(
-        				entry.getKey().locationKey());
+        		replicationListener.dataInserted(entry.getKey().locationKey(), false);
         	}
 		}
 		
@@ -788,11 +786,9 @@ public class StorageRPC extends DispatchHandler {
             // (notify) if we are responsible
             if (!entry.getValue().hasPrepareFlag()) {
             	if (status == PutStatus.OK && replicationListener!=null) {
-            		replicationListener.dataInserted(
-            				entry.getKey().locationKey());
+            		replicationListener.dataInserted(entry.getKey().locationKey(), false);
             	}
             }
-
         }
         responseMessage.keyMapByte(new KeyMapByte(result));
         return responseMessage;

@@ -299,7 +299,7 @@ public final class ChannelServer {
 		// we have two things to shut down: UDP and TCP
 		final AtomicInteger listenerCounter = new AtomicInteger(0);
 		if(channelUDP != null) {
-			LOG.debug("Shutting down UDP server.");
+			LOG.debug("Shutting down UDP server...");
 			channelUDP.close().addListener(new GenericFutureListener<ChannelFuture>() {
 				@Override
 				public void operationComplete(final ChannelFuture future) throws Exception {
@@ -311,7 +311,7 @@ public final class ChannelServer {
 			});
 		}
 		if(channelTCP != null) {
-			LOG.debug("Shutting down TCP server.");
+			LOG.debug("Shutting down TCP server...");
 			channelTCP.close().addListener(new GenericFutureListener<ChannelFuture>() {
 				@Override
 				public void operationComplete(final ChannelFuture future) throws Exception {

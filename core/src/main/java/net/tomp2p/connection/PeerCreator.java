@@ -142,7 +142,7 @@ public class PeerCreator {
 	 */
 	public FutureDone<Void> shutdown() {
 		if (master) {
-			LOG.debug("Shutdown is in progress...");
+			LOG.debug("Shutting down...");
 		}
 		// de-register in dispatcher
 		connectionBean.dispatcher().removeIoHandlers(peerBean().serverPeerAddress().peerId(),
@@ -162,7 +162,7 @@ public class PeerCreator {
 		// shutdown the timer
 		connectionBean.timer().shutdown();
 
-		LOG.debug("Starting shutdown in client done...");
+		LOG.debug("Shutting down client...");
 		connectionBean.reservation().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
@@ -184,11 +184,11 @@ public class PeerCreator {
 		workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
 			@Override
 			public void operationComplete(final Future future) throws Exception {
-				LOG.debug("shutdown done in client / workerGroup...");
+				LOG.debug("Client / WorkerGroup shut down.");
 				bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
 					@Override
 					public void operationComplete(final Future future) throws Exception {
-						LOG.debug("shutdown done in client / bossGroup...");
+						LOG.debug("Client / BossGroup shut down.");
 						shutdownFuture().done();
 					}
 				});

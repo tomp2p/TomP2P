@@ -175,6 +175,9 @@ public class Inbox {
 			case "JavaPingReceiver-stop":
 				Pings.stopJavaPingReceiver();
 				break;
+			case "TestPingFromJavaUdp":
+				result = Pings.pingDotNetUdp(argument);
+				break;
 				
 			default:
 				System.err.println(String.format("Invalid argument: %s.", argument));

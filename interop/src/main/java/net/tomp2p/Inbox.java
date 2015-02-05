@@ -175,10 +175,10 @@ public class Inbox {
 			case "JavaPingReceiver-stop":
 				Pings.stopJavaPingReceiver();
 				break;
-			case "TestPingFromJavaUdp":
+			case "TestPingUdpFromJava":
 				result = Pings.pingDotNet(argument, true);
 				break;
-			case "TestPingFromJavaTcp":
+			case "TestPingTcpFromJava":
 				result = Pings.pingDotNet(argument, false);
 				break;
 				

@@ -123,6 +123,7 @@ public class PingRPC extends DispatchHandler {
 	 */
 	public FutureResponse pingUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
+		LOG.debug("Pinging UDP the remote peer {}.", remotePeer);
 		return ping(remotePeer, configuration).sendUDP(channelCreator);
 	}
 
@@ -186,7 +187,7 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	/**
-	 * Ping a UDP peer, and find out how the other peer sees us.
+	 * Ping a UDP peer and find out how the other peer sees us.
 	 * 
 	 * @param remotePeer
 	 *            The destination peer
@@ -202,12 +203,12 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	/**
-	 * Ping a TCP peer, and find out how the other peer sees us.
+	 * Ping a TCP peer and find out how the other peer sees us.
 	 * 
 	 * @param remotePeer
 	 *            The destination peer
 	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
+	 *            The channel creator where we create a TCP channel
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
 	public FutureResponse pingTCPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
@@ -218,7 +219,7 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	/**
-	 * Ping a UDP peer, and request the other peer to ping us on our public address with a fire and forget
+	 * Ping a UDP peer and request the other peer to ping us on our public address with a fire and forget
 	 * message.
 	 * 
 	 * @param remotePeer
@@ -236,13 +237,13 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	/**
-	 * Ping a TCP peer, and request the other peer to ping us on our public address with a fire and forget
+	 * Ping a TCP peer and request the other peer to ping us on our public address with a fire and forget
 	 * message.
 	 * 
 	 * @param remotePeer
 	 *            The destination peer
 	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
+	 *            The channel creator where we create a TCP channel
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
 	public FutureResponse pingTCPProbe(final PeerAddress remotePeer, final ChannelCreator channelCreator,

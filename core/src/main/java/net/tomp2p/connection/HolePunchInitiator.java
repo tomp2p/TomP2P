@@ -1,5 +1,8 @@
 package net.tomp2p.connection;
 
+/**
+ * @author Jonas Wagner
+ */
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;

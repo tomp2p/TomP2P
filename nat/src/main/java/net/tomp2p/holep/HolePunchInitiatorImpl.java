@@ -1,5 +1,9 @@
 package net.tomp2p.holep;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.netty.util.internal.logging.Log4JLoggerFactory;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.HolePunchInitiator;
 import net.tomp2p.futures.FutureDone;
@@ -15,18 +19,27 @@ import net.tomp2p.p2p.Peer;
  */
 public class HolePunchInitiatorImpl implements HolePunchInitiator {
 
+	private static final Logger LOG = LoggerFactory.getLogger(HolePunchInitiatorImpl.class);
 	private Peer peer;
 	private NATType natType;
 
 	public HolePunchInitiatorImpl(Peer peer) {
 		this.peer = peer;
+		this.natType = NATType.UNKNOWN;
 	}
 
 	@Override
 	public FutureDone<Message> handleHolePunch(ChannelCreator channelCreator, int idleUDPSeconds, FutureResponse futureResponse,
 			Message originalMessage) {
+		FutureDone<Message> futureDone = new FutureDone<Message>();
+		
+		if (natType == NATType.NON_PRESERVING_OTHER) {
+			LOG.error("A symmetric NAT can't be traversed. No HolePunching possible!");
+			return futureDone.failed("A symmetric NAT can't be traversed. No HolePunching possible!");
+		}
+		
 		HolePuncher holePuncher = new HolePuncher(peer, HolePunchInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
-		return holePuncher.initiateHolePunch(channelCreator, futureResponse);
+		return holePuncher.initiateHolePunch(futureDone, channelCreator, futureResponse, natType);
 	}
 	
 	public void natType(Object natType) {
@@ -35,5 +48,9 @@ public class HolePunchInitiatorImpl implements HolePunchInitiator {
 		} else {
 			this.natType = null;
 		}
+	}
+	
+	public NATType natType() {
+		return this.natType;
 	}
 }

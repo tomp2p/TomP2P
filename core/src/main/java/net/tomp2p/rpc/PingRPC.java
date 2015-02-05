@@ -64,7 +64,8 @@ public class PingRPC extends DispatchHandler {
 	public static final int WAIT_TIME = 10 * 1000;
 
 	private final List<PeerReachable> reachableListeners = new ArrayList<PeerReachable>(1);
-	private final List<PeerReceivedBroadcastPing> receivedBroadcastPingListeners = new ArrayList<PeerReceivedBroadcastPing>(1);
+	private final List<PeerReceivedBroadcastPing> receivedBroadcastPingListeners = new ArrayList<PeerReceivedBroadcastPing>(
+			1);
 
 	// used for testing and debugging
 	private final boolean enable;
@@ -96,13 +97,14 @@ public class PingRPC extends DispatchHandler {
 	 * @param wait
 	 *            Used for test cases, set to false in production
 	 */
-	PingRPC(final PeerBean peerBean, final ConnectionBean connectionBean, final boolean enable, final boolean register, final boolean wait) {
+	PingRPC(final PeerBean peerBean, final ConnectionBean connectionBean, final boolean enable, final boolean register,
+			final boolean wait) {
 		super(peerBean, connectionBean);
 		this.enable = enable;
 		this.wait = wait;
 		if (register) {
-			connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), peerBean.serverPeerAddress().peerId(),
-					this, RPC.Commands.PING.getNr());
+			connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(),
+					peerBean.serverPeerAddress().peerId(), this, RPC.Commands.PING.getNr());
 		}
 	}
 
@@ -206,7 +208,8 @@ public class PingRPC extends DispatchHandler {
 	public FutureResponse pingUDPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		final FutureResponse futureResponse = createDiscoverHandler(remotePeer);
-		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration).sendUDP(channelCreator);
+		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
+				.sendUDP(channelCreator);
 	}
 
 	/**
@@ -222,7 +225,8 @@ public class PingRPC extends DispatchHandler {
 	public FutureResponse pingTCPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		final FutureResponse futureResponse = createDiscoverHandler(remotePeer);
-		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration).sendTCP(channelCreator);
+		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
+				.sendTCP(channelCreator);
 	}
 
 	/**
@@ -240,7 +244,8 @@ public class PingRPC extends DispatchHandler {
 			final ConnectionConfiguration configuration) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration).sendUDP(channelCreator);
+		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
+				.sendUDP(channelCreator);
 	}
 
 	/**
@@ -258,11 +263,15 @@ public class PingRPC extends DispatchHandler {
 			final ConnectionConfiguration configuration) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration).sendTCP(channelCreator);
+		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
+				.sendTCP(channelCreator);
 	}
 
 	/**
-	 * Ping a peer, and request the other peer to return the source port of our socket used to send the message.
+	 * Ping a peer, and request the other peer to return the source port of our
+	 * socket used to send the message. This method needs to do the setup of a
+	 * ChannelFuture manually since we need to know the port number of the
+	 * assigned socket.
 	 * 
 	 * @param remotePeer
 	 *            The destination peer
@@ -271,8 +280,8 @@ public class PingRPC extends DispatchHandler {
 	 * @return The future that will be triggered when we receive an answer or
 	 *         something fails.
 	 */
-	public FutureDone<List<PeerSocketAddress>> pingNATType(final PeerAddress remotePeer, final ChannelCreator channelCreator,
-			final ConnectionConfiguration configuration, final Peer peer) {
+	public FutureDone<List<PeerSocketAddress>> pingNATType(final PeerAddress remotePeer,
+			final ChannelCreator channelCreator, final ConnectionConfiguration configuration, final Peer peer) {
 		final FutureDone<List<PeerSocketAddress>> fDone = new FutureDone<List<PeerSocketAddress>>();
 		final List<PeerSocketAddress> peerSocketAddresses = new ArrayList<PeerSocketAddress>(2);
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_5);
@@ -288,15 +297,17 @@ public class PingRPC extends DispatchHandler {
 				}
 			}
 		};
-		
-		final ChannelFuture cF = channelCreator.createUDP(false, peer.connectionBean().sender().configureHandlers(inbound, futureResponse, 30, false), futureResponse);
+
+		final ChannelFuture cF = channelCreator.createUDP(false,
+				peer.connectionBean().sender().configureHandlers(inbound, futureResponse, 30, false), futureResponse);
 		cF.addListener(new GenericFutureListener<ChannelFuture>() {
 
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
 				if (future.isSuccess()) {
 					InetSocketAddress srcAddress = (InetSocketAddress) future.channel().localAddress();
-					peerSocketAddresses.add(new PeerSocketAddress(srcAddress.getAddress(), srcAddress.getPort(), srcAddress.getPort()));
+					peerSocketAddresses.add(new PeerSocketAddress(srcAddress.getAddress(), srcAddress.getPort(),
+							srcAddress.getPort()));
 					peer.connectionBean().sender().afterConnect(futureResponse, message, future, false);
 				}
 			}
@@ -348,11 +359,12 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	@Override
-	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder)
-			throws Exception {
-		if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2
-				|| message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4 || message.type() == Type.REQUEST_5) && message
-				.command() == RPC.Commands.PING.getNr())) {
+	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
+			Responder responder) throws Exception {
+		if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
+				|| message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3
+				|| message.type() == Type.REQUEST_4 || message.type() == Type.REQUEST_5) && message.command() == RPC.Commands.PING
+				.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
 		final Message responseMessage;
@@ -368,8 +380,8 @@ public class PingRPC extends DispatchHandler {
 					public void operationComplete(final FutureChannelCreator future) throws Exception {
 						if (future.isSuccess()) {
 							LOG.debug("fire UDP to {}", message.sender());
-							FutureResponse futureResponse = fireUDP(message.sender(), future.channelCreator(), connectionBean()
-									.channelServer().channelServerConfiguration());
+							FutureResponse futureResponse = fireUDP(message.sender(), future.channelCreator(),
+									connectionBean().channelServer().channelServerConfiguration());
 							Utils.addReleaseListener(future.channelCreator(), futureResponse);
 						} else {
 							Utils.addReleaseListener(future.channelCreator());
@@ -383,8 +395,8 @@ public class PingRPC extends DispatchHandler {
 					public void operationComplete(final FutureChannelCreator future) throws Exception {
 						if (future.isSuccess()) {
 							LOG.debug("fire TCP to {}", message.sender());
-							FutureResponse futureResponse = fireTCP(message.sender(), future.channelCreator(), connectionBean()
-									.channelServer().channelServerConfiguration());
+							FutureResponse futureResponse = fireTCP(message.sender(), future.channelCreator(),
+									connectionBean().channelServer().channelServerConfiguration());
 							Utils.addReleaseListener(future.channelCreator(), futureResponse);
 						} else {
 							Utils.addReleaseListener(future.channelCreator());

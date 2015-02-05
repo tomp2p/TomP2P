@@ -186,14 +186,14 @@ public class Sender {
 
 			message.keepAlive(true);
 
-			LOG.debug("initiate reverse connection setup to peer with peerAddress {}", message.recipient());
+			LOG.debug("Initiate reverse connection setup to peer with address {}.", message.recipient());
 			Message rconMessage = createRconMessage(message);
 
 			// cache the original message until the connection is established
 			cachedRequests.put(message.messageId(), futureResponse);
 
 			// wait for response (whether the reverse connection setup was successful)
-			final FutureResponse rconResponse = new FutureResponse(rconMessage);
+			final FutureResponse futureRconResponse = new FutureResponse(rconMessage);
 			
 			//TODO: expose peer somehow in sender to be able to notify on automatic requests
 			//peer.notifyAutomaticFutures(rconResponse);
@@ -202,18 +202,18 @@ public class Sender {
 				@Override
 				protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
 					if(msg.command() == Commands.RCON.getNr() && msg.type() == Type.OK) {
-						LOG.debug("Successfully set up the reverse connection to peer {}", message.recipient().peerId());
-						rconResponse.response(msg);
+						LOG.debug("Successfully set up the reverse connection to peer {}.", message.recipient().peerId());
+						futureRconResponse.response(msg);
 					} else {
 						LOG.debug("Could not acquire a reverse connection to peer {}", message.recipient().peerId());
-						rconResponse.failed("Could not acquire a reverse connection, got: "+msg);
-						futureResponse.failed(rconResponse.failedReason());
+						futureRconResponse.failed("Could not acquire a reverse connection, got: "+msg);
+						futureResponse.failed(futureRconResponse.failedReason());
 					}
 				}
 			};
 			
 			// send reverse connection request instead of normal message
-			sendTCP(rconInboundHandler, rconResponse, rconMessage, channelCreator, connectTimeoutMillis, connectTimeoutMillis, peerConnection);
+			sendTCP(rconInboundHandler, futureRconResponse, rconMessage, channelCreator, connectTimeoutMillis, connectTimeoutMillis, peerConnection);
 		}
 
 	/**
@@ -224,7 +224,7 @@ public class Sender {
 	 * @return rconMessage
 	 */
 	private static Message createRconMessage(final Message message) {
-		// get Relay InetAddress from unreachable peer
+		// get relay address from the unreachable peer
 		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
 		PeerSocketAddress socketAddress = null;
 		
@@ -233,7 +233,7 @@ public class Sender {
 			socketAddress = (PeerSocketAddress) relayInetAdresses[Utils.randomPositiveInt(relayInetAdresses.length)]; 
 		} else {
 			throw new IllegalArgumentException(
-					"There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");
+					"There are no PeerSocketAdresses available for this relayed peer. This should not be possible!");
 		}
 
 		// we need to make a copy of the original message
@@ -242,10 +242,12 @@ public class Sender {
 		rconMessage.version(message.version());
 		rconMessage.intValue(message.messageId());
 
-		// making the message ready to send
-		PeerAddress recipient = message.recipient().changeAddress(socketAddress.inetAddress()).changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
+		// make the message ready to send
+		PeerAddress recipient = message.recipient()
+				.changeAddress(socketAddress.inetAddress())
+				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort())
+				.changeRelayed(false);
 		rconMessage.recipient(recipient);
-		 
 		rconMessage.command(RPC.Commands.RCON.getNr());
 		rconMessage.type(Message.Type.REQUEST_1);
 
@@ -288,8 +290,7 @@ public class Sender {
 	private void handleRelay(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
 	        final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds,
 	        final int connectTimeoutMillis, final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
-		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses(),
-		        pingBuilderFactory);
+		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses());
 		futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
 			@Override
 			public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
@@ -339,8 +340,7 @@ public class Sender {
 	 * @param pingBuilder
 	 * @return
 	 */
-	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses,
-	        PingBuilderFactory pingBuilderFactory) {
+	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses) {
 		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
 
 		FuturePing[] forks = new FuturePing[peerSocketAddresses.size()];

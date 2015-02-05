@@ -143,10 +143,9 @@ public class Sender {
 			message.peerSocketAddresses(message.sender().peerSocketAddresses());
 		}
 
-		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null
 		        && peerConnection.channelFuture().channel().isActive()) {
-			channelFuture = sendTCPPeerConnection(peerConnection, handler, channelCreator, futureResponse);
+			ChannelFuture channelFuture = sendTCPPeerConnection(peerConnection, handler, channelCreator, futureResponse);
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		} else if (channelCreator != null) {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
@@ -327,7 +326,7 @@ public class Sender {
 					});
 
 				} else {
-					futureResponse.failed("no relay could be contacted", futureDone);
+					futureResponse.failed("No relay could be contacted.", futureDone);
 				}
 			}
 		});

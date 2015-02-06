@@ -1092,7 +1092,7 @@ public class TestStoreReplication {
 			Utils2.perfectRouting(peers);
 			
 			for (int i = 0; i < peers.length; i++) {
-				new net.tomp2p.replication.IndirectReplication(peers[i]).intervalMillis(500).nRoot()
+				new net.tomp2p.replication.IndirectReplication(peers[i]).intervalMillis(1000).nRoot()
 				.replicationFactor(6).start();
 			}
 

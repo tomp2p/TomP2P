@@ -305,7 +305,7 @@ public class StorageDisk implements Storage {
         	contentIDs = new HashSet<Number160>();
         }
         boolean isNew = contentIDs.add(locationKey);
-        responsibilityMapRev.put(locationKey, contentIDs);
+        responsibilityMapRev.put(peerId, contentIDs);
         return isNew;
     }
 

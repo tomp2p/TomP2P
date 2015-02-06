@@ -69,8 +69,7 @@ public class DirectDataRPC extends DispatchHandler {
             final SendDirectBuilderI sendDirectBuilder) {
         final Message message = createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(),
                 sendDirectBuilder.isRaw() ? Type.REQUEST_1 : Type.REQUEST_2);
-        final FutureResponse futureResponse = new FutureResponse(message,
-                sendDirectBuilder.progressListener());
+        final FutureResponse futureResponse = new FutureResponse(message);
 
         if (sendDirectBuilder.isSign()) {
             message.publicKeyAndSign(sendDirectBuilder.keyPair());

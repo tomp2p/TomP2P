@@ -294,7 +294,6 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 		}
         
         // call this for streaming support
-        futureResponse.progress(responseMessage);
         if (!responseMessage.isDone()) {
             LOG.debug("good message is streaming {}", responseMessage);
             return;

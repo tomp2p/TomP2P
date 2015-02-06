@@ -17,9 +17,7 @@ package net.tomp2p.futures;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.concurrent.CountDownLatch;
 
-import net.tomp2p.connection.ProgresHandler;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.RTT;
 
@@ -37,13 +35,6 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
 
     // the reply to this request
     private Message responseMessage;
-
-    private ProgresHandler progressHandler;
-
-    private final ProgressListener progressListener;
-
-    private final CountDownLatch firstProgressHandler = new CountDownLatch(1);
-    private final CountDownLatch secondProgressHandler = new CountDownLatch(1);
     
     private boolean reponseLater = false;
 
@@ -60,44 +51,18 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     }
 
     /**
-     * Create the future and set the request message.
+     * Create the future and set the request message. This will set the progress listener for streaming support.
      * 
      * @param requestMessage
      *            The request message that will be send over the wire.
      * @param futureSuccessEvaluator
      *            Evaluates if the future was a success or failure
+     * @param progressListener
+     *            The progress listener for streaming support
      */
     public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator) {
-        this(requestMessage, futureSuccessEvaluator, null);
-    }
-
-    /**
-     * Create the future and set the request message. This will set the progress listener for streaming support.
-     * 
-     * @param requestMessage
-     *            The request message that will be send over the wire.
-     * @param progressListener
-     *            The progress listener for streaming support
-     */
-    public FutureResponse(final Message requestMessage, final ProgressListener progressListener) {
-        this(requestMessage, new FutureSuccessEvaluatorCommunication(), progressListener);
-    }
-
-    /**
-     * Create the future and set the request message. This will set the progress listener for streaming support.
-     * 
-     * @param requestMessage
-     *            The request message that will be send over the wire.
-     * @param futureSuccessEvaluator
-     *            Evaluates if the future was a success or failure
-     * @param progressListener
-     *            The progress listener for streaming support
-     */
-    public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator,
-            final ProgressListener progressListener) {
         this.requestMessage = requestMessage;
         this.futureSuccessEvaluator = futureSuccessEvaluator;
-        this.progressListener = progressListener;
         self(this);
     }
 
@@ -217,69 +182,6 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     public Message request() {
         synchronized (lock) {
             return requestMessage;
-        }
-    }
-
-    /**
-     * Set the user based progres handler, where the user can add more data and call {@link #progress()} when data has
-     * been added.
-     * 
-     * @param progressHandler
-     *            The progress handler that will be added by the TomP2P library.
-     * @return This class
-     */
-    public FutureResponse progressHandler(final ProgresHandler progressHandler) {
-        synchronized (lock) {
-            this.progressHandler = progressHandler;
-        }
-        firstProgressHandler.countDown();
-        return this;
-    }
-
-    /**
-     * Do not call this directly, as this is called from the TomP2P library. This must be the first call to the
-     * progress handler, otherwise we might not be able to decode the header.
-     * 
-     * @return This class
-     * @throws InterruptedException .
-     */
-    public FutureResponse progressFirst() throws InterruptedException {
-        firstProgressHandler.await();
-        synchronized (lock) {
-            progressHandler.progres();
-        }
-        secondProgressHandler.countDown();
-        return this;
-    }
-
-    /**
-     * This will be called by the user, when the user provides more data. This will block until a progress handler has
-     * been set by the TomP2P library.
-     * 
-     * @return This class
-     * @throws InterruptedException
-     *             If latch is interrupted
-     */
-    public FutureResponse progress() throws InterruptedException {
-        secondProgressHandler.await();
-        synchronized (lock) {
-            progressHandler.progres();
-        }
-        return this;
-    }
-
-    /**
-     * This will be called by the TomP2P library when a partial message is ready.
-     * 
-     * @param interMediateMessage
-     *            The message that is either incomplete as indicated with {@link Message#isDone()} or completed. This
-     *            will be called before the future completes.
-     */
-    public void progress(final Message interMediateMessage) {
-        synchronized (lock) {
-            if (progressListener != null) {
-                progressListener.progress(interMediateMessage);
-            }
         }
     }
 

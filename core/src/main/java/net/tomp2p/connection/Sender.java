@@ -738,15 +738,8 @@ public class Sender {
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				futureResponse.removeCancel(connectCancel);
 				if (future.isSuccess()) {
-					futureResponse.progressHandler(new ProgresHandler() {
-						@Override
-						public void progres() {
-							final ChannelFuture writeFuture = future.channel().writeAndFlush(message);
-							afterSend(writeFuture, futureResponse, fireAndForget);
-						}
-					});
-					// this needs to be called first before all other progress
-					futureResponse.progressFirst();
+					final ChannelFuture writeFuture = future.channel().writeAndFlush(message);
+					afterSend(writeFuture, futureResponse, fireAndForget);
 				} else {
 					LOG.debug("Channel creation failed", future.cause());
 					futureResponse.failed("Channel creation failed " + future.channel() + "/" + future.cause());

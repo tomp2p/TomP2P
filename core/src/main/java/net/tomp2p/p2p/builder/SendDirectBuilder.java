@@ -27,7 +27,6 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.ProgressListener;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
@@ -63,8 +62,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	private int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
 
 	private boolean forceTCP = false;
-
-	private ProgressListener progressListener;
 
 	public SendDirectBuilder(Peer peer, PeerAddress recipientAddress) {
 		this.peer = peer;
@@ -350,15 +347,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	public SendDirectBuilder slowResponseTimeoutSeconds(final int slowResponseTimeoutSeconds) {
 		this.slowResponseTimeoutSeconds = slowResponseTimeoutSeconds;
 		return this;
-	}
-
-	public SendDirectBuilder progressListener(ProgressListener progressListener) {
-		this.progressListener = progressListener;
-		return this;
-	}
-
-	public ProgressListener progressListener() {
-		return progressListener;
 	}
 
 	/**

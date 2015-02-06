@@ -742,7 +742,6 @@ public class TestRouting {
                 for (int i = 0; i < 5; i++) {
                     PeerAddress pa = ss.first();
                     PeerAddress pa2 = ss2.first();
-                    System.err.println("test " + pa + " - " + pa2);
                     Assert.assertEquals(pa.peerId(), pa2.peerId());
                     ss.remove(pa);
                     ss2.remove(pa2);

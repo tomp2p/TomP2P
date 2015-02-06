@@ -7,14 +7,14 @@
         </encoder>
     </appender>
 
-    <logger name="net.tomp2p" level="ERROR"/>
+    <!-- <logger name="net.tomp2p" level="ERROR"/>
     <logger name="net.tomp2p.connection" level="INFO"/>
     
     <logger name="net.tomp2p.rcon" level="DEBUG"/>
     <logger name="net.tomp2p.relay" level="DEBUG"/>
     <logger name="net.tomp2p.nat" level="DEBUG"/>
     
-    <!-- <logger name="net.tomp2p.dht.StorageRPC" level="TRACE"/>
+    <logger name="net.tomp2p.dht.StorageRPC" level="TRACE"/>
     <logger name="net.tomp2p.dht.DistributedHashTable" level="TRACE"/>
     <logger name="net.tomp2p.dht.DistributedHashTable" level="TRACE"/>
     <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/>

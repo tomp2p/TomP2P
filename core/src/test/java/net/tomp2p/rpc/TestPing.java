@@ -406,7 +406,6 @@ public class TestPing {
                 }
                 int ii = 0;
                 for (FutureResponse fr2 : list) {
-                    System.err.println("waiting for " + (ii++) + fr2.request());
                     fr2.awaitUninterruptibly();
                     Assert.assertEquals(true, fr2.isSuccess());
                 }

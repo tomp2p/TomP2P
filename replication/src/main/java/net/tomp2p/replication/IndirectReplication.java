@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.SortedSet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -268,7 +269,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
         Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
         		Number160.MAX_VALUE);
-        final Map<Number640, Data> dataMap = peer.storageLayer().get(min, max, -1, true);
+        final NavigableMap<Number640, Data> dataMap = peer.storageLayer().get(min, max, -1, true);
         LOG.debug("transfer from {} to {} for key {}", peer.peerAddress(), other, locationKey);
         return replicationSender.sendDirect(other, locationKey, dataMap);
     }
@@ -285,7 +286,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
         Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
                 Number160.MAX_VALUE);
-        final Map<Number640, Data> dataMap = peer.storageLayer().get(min, max, -1, true);
+        final NavigableMap<Number640, Data> dataMap = peer.storageLayer().get(min, max, -1, true);
         return replicationSender.sendDirect(newPeer, locationKey, dataMap);
     }
 
@@ -322,7 +323,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
         Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
                 Number160.MAX_VALUE);
-        final Map<Number640, Data> dataMap = peer.storageLayer().get(min, max, -1, true);
+        final NavigableMap<Number640, Data> dataMap = peer.storageLayer().get(min, max, -1, true);
         return send(locationKey, dataMap);
         
     }
@@ -338,7 +339,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
      *            The data to store
      * @return The future of the put
      */
-    protected FutureDone<?> send(final Number160 locationKey, final Map<Number640, Data> dataMapConverted) {
+    protected FutureDone<?> send(final Number160 locationKey, final NavigableMap<Number640, Data> dataMapConverted) {
         int replicationFactor = replication.replicationFactor() - 1;
         List<PeerAddress> closePeers = new ArrayList<PeerAddress>();
         SortedSet<PeerStatistic> sortedSet = peer.peerBean().peerMap()
@@ -385,7 +386,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
          * @param dataMapConvert
          *            The data to store
          */
-        public FutureDone<Void> sendDirect(final PeerAddress other, final Number160 locationKey, final Map<Number640, Data> dataMap) {
+        public FutureDone<Void> sendDirect(final PeerAddress other, final Number160 locationKey, final NavigableMap<Number640, Data> dataMap) {
             final FutureDone<Void> futureDone = new FutureDone<Void>();
         	FutureChannelCreator futureChannelCreator = peer.peer().connectionBean().reservation().create(0, 1);
         	Utils.addReleaseListener(futureChannelCreator, futureDone);

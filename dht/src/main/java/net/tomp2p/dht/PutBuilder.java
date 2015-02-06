@@ -18,9 +18,9 @@ package net.tomp2p.dht;
 
 import java.io.IOException;
 import java.security.PublicKey;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -31,9 +31,9 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
             .failed("put builder - peer is shutting down");
     private Entry<Number640, Data> data;
 
-    private Map<Number640, Data> dataMap;
+    private NavigableMap<Number640, Data> dataMap;
 
-    private Map<Number160, Data> dataMapConvert;
+    private NavigableMap<Number160, Data> dataMapConvert;
 
     private boolean putIfAbsent = false;
     
@@ -128,20 +128,20 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         return data(contentKey, new Data(object));
     }
 
-    public Map<Number640, Data> dataMap() {
+    public NavigableMap<Number640, Data> dataMap() {
         return dataMap;
     }
 
-    public PutBuilder dataMap(Map<Number640, Data> dataMap) {
+    public PutBuilder dataMap(NavigableMap<Number640, Data> dataMap) {
         this.dataMap = dataMap;
         return this;
     }
 
-    public Map<Number160, Data> dataMapContent() {
+    public NavigableMap<Number160, Data> dataMapContent() {
         return dataMapConvert;
     }
 
-    public PutBuilder dataMapContent(Map<Number160, Data> dataMapConvert) {
+    public PutBuilder dataMapContent(NavigableMap<Number160, Data> dataMapConvert) {
         this.dataMapConvert = dataMapConvert;
         return this;
     }
@@ -201,7 +201,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         preBuild("put-builder");
         if (data != null) {
             if (dataMap == null) {
-                dataMap(new HashMap<Number640, Data>(1));
+                dataMap(new TreeMap<Number640, Data>());
             }
             dataMap().put(data().getKey(), data().getValue());
         }

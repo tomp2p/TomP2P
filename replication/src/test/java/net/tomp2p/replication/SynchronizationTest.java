@@ -6,13 +6,13 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -210,7 +210,7 @@ public class SynchronizationTest {
 			final Number160 contentKey = Number160.ZERO;
 			final String value = "Test";
 
-			HashMap<Number640, Data> map = new HashMap<Number640, Data>();
+			NavigableMap<Number640, Data> map = new TreeMap<Number640, Data>();
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
@@ -278,7 +278,7 @@ public class SynchronizationTest {
 			final Number160 contentKey = Number160.ZERO;
 			final String value = "Test";
 
-			HashMap<Number640, Data> map = new HashMap<Number640, Data>();
+			NavigableMap<Number640, Data> map = new TreeMap<Number640, Data>();
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
@@ -347,7 +347,7 @@ public class SynchronizationTest {
 			sender.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
 			receiver.put(locationKey).data(new Data(value1)).start().awaitUninterruptibly();
 
-			HashMap<Number640, Data> map = new HashMap<Number640, Data>();
+			NavigableMap<Number640, Data> map = new TreeMap<Number640, Data>();
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 

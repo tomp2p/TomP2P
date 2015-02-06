@@ -13,7 +13,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,7 +36,6 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.DefaultBroadcastHandler;
@@ -340,7 +338,7 @@ public class TestDHT {
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
 			RequestP2PConfiguration pc = new RequestP2PConfiguration(3, 5, 0);
 			Data data = new Data(new byte[44444]);
-			Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+			NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
 			tmp.put(new Number160(5), data);
 			FuturePut fput = peers[444].put(peers[30].peerID()).dataMapContent(tmp)
 			        .domainKey(Number160.createHash("test")).routingConfiguration(rc)

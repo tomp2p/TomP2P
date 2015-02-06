@@ -1,7 +1,8 @@
 package net.tomp2p.message;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -9,18 +10,18 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 public class DataMap {
-    private final Map<Number640, Data> dataMap;
-    private final Map<Number160, Data> dataMapConvert;
+    private final NavigableMap<Number640, Data> dataMap;
+    private final NavigableMap<Number160, Data> dataMapConvert;
     private final Number160 locationKey;
     private final Number160 domainKey;
     private final Number160 versionKey;
     private final boolean convertMeta;
     
-    public DataMap(final Map<Number640, Data> dataMap) {
+    public DataMap(final NavigableMap<Number640, Data> dataMap) {
     	this(dataMap, false);
     }
 
-    public DataMap(final Map<Number640, Data> dataMap, boolean convertMeta) {
+    public DataMap(final NavigableMap<Number640, Data> dataMap, boolean convertMeta) {
         this.dataMap = dataMap;
         this.dataMapConvert = null;
         this.locationKey = null;
@@ -30,12 +31,12 @@ public class DataMap {
     }
     
     public DataMap(final Number160 locationKey, final Number160 domainKey, final Number160 versionKey,
-            final Map<Number160, Data> dataMapConvert) {
+            final NavigableMap<Number160, Data> dataMapConvert) {
     	this(locationKey, domainKey, versionKey, dataMapConvert, false);
     }
 
     public DataMap(final Number160 locationKey, final Number160 domainKey, final Number160 versionKey,
-            final Map<Number160, Data> dataMapConvert, boolean convertMeta) {
+            final NavigableMap<Number160, Data> dataMapConvert, boolean convertMeta) {
         this.dataMap = null;
         this.dataMapConvert = dataMapConvert;
         this.locationKey = locationKey;
@@ -48,7 +49,7 @@ public class DataMap {
     	return convertMeta;
     }
 
-    public Map<Number640, Data> dataMap() {
+    public NavigableMap<Number640, Data> dataMap() {
         return convert(this);
     }
 
@@ -87,8 +88,8 @@ public class DataMap {
         return dataMapConvert != null;
     }
 
-    public Map<Number640, Number160> convertToHash() {
-        Map<Number640, Number160> retVal = new HashMap<Number640, Number160>();
+    public NavigableMap<Number640, Number160> convertToHash() {
+    	NavigableMap<Number640, Number160> retVal = new TreeMap<Number640, Number160>();
         if (dataMap != null) {
             for (Map.Entry<Number640, Data> entry : dataMap.entrySet()) {
                 retVal.put(entry.getKey(), entry.getValue().hash());
@@ -103,10 +104,10 @@ public class DataMap {
         return retVal;
     }
 
-    private static Map<Number640, Data> convert(final DataMap d) {
-        final Map<Number640, Data> dataMap3;
+    private static NavigableMap<Number640, Data> convert(final DataMap d) {
+        final NavigableMap<Number640, Data> dataMap3;
         if (d.dataMapConvert != null) {
-            dataMap3 = new HashMap<Number640, Data>(d.dataMapConvert.size());
+            dataMap3 = new TreeMap<Number640, Data>();
             for (Map.Entry<Number160, Data> entry : d.dataMapConvert.entrySet()) {
                 dataMap3.put(new Number640(d.locationKey, d.domainKey, entry.getKey(), d.versionKey),
                         entry.getValue());

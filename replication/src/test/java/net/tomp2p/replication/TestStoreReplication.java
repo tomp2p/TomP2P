@@ -9,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -94,7 +93,7 @@ public class TestStoreReplication {
             im.start();
 
             Number160 location = new Number160("0xff");
-            Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> dataMap = new TreeMap<Number160, Data>();
             dataMap.put(Number160.ZERO, new Data("string"));
 
             FutureChannelCreator fcc = master.peer().connectionBean().reservation().create(0, 1);
@@ -145,7 +144,7 @@ public class TestStoreReplication {
         ChannelCreator cc = null;
         try {
             Number160 loc = new Number160(rnd);
-            Map<Number160, Data> contentMap = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> contentMap = new TreeMap<Number160, Data>();
             contentMap.put(Number160.ZERO, new Data("string"));
             final AtomicInteger test1 = new AtomicInteger(0);
             final AtomicInteger test2 = new AtomicInteger(0);
@@ -1010,7 +1009,7 @@ public class TestStoreReplication {
 			});
 			
 			// create test data with given location key
-			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+			NavigableMap<Number160, Data> dataMap = new TreeMap<Number160, Data>();
 			dataMap.put(Number160.ZERO, new Data("string"));
 			PutBuilder putBuilder = new PutBuilder(master, lKey);
 			putBuilder.domainKey(Number160.ZERO);

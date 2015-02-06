@@ -26,8 +26,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Queue;
 import java.util.Random;
+import java.util.TreeMap;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.peers.Number160;
@@ -1171,7 +1173,7 @@ public class Message {
 	private List<DataMap> filter(DataFilter dataFilter) {
 		final List<DataMap> dataMapListCopy = new ArrayList<DataMap>(this.dataMapList().size());
 		for (DataMap dataMap : this.dataMapList()) {
-			final Map<Number640, Data> dataMapCopy = new HashMap<Number640, Data>();
+			final NavigableMap<Number640, Data> dataMapCopy = new TreeMap<Number640, Data>();
 			for (Map.Entry<Number640, Data> entry : dataMap.dataMap()
 					.entrySet()) {
 				Data filteredData = dataFilter.filter(entry.getValue(), dataMap.isConvertMeta(), !isRequest());

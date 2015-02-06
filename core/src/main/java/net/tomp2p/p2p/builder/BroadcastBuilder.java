@@ -16,7 +16,7 @@
 
 package net.tomp2p.p2p.builder;
 
-import java.util.Map;
+import java.util.NavigableMap;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.message.DataMap;
@@ -33,7 +33,7 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
     
     private final Number160 messageKey;
 
-    private Map<Number640, Data> dataMap;
+    private NavigableMap<Number640, Data> dataMap;
 
     private Boolean isUDP;
     
@@ -67,11 +67,11 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
         return messageKey;
     }
 
-    public Map<Number640, Data> dataMap() {
+    public NavigableMap<Number640, Data> dataMap() {
         return dataMap;
     }
 
-    public BroadcastBuilder dataMap(Map<Number640, Data> dataMap) {
+    public BroadcastBuilder dataMap(NavigableMap<Number640, Data> dataMap) {
         this.dataMap = dataMap;
         return this;
     }

@@ -61,7 +61,7 @@ public class StorageLayer implements DigestStorage {
 
 	// The number of PutStatus should never exceed 255.
 	public enum PutStatus {
-		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND, DELETED
+		OK, OK_PREPARED, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND, DELETED 
 	};
 
 	// Hash of public key is always preferred
@@ -137,6 +137,10 @@ public class StorageLayer implements DigestStorage {
 		return removedDomains.contains(domain);
 	}
 	
+	private RangeLock<Number640>.Range lock(Number640 min, Number640 max) { 
+		return rangeLock.lock(min, max);
+	}
+	
 	private RangeLock<Number640>.Range lock(Number640 number640) { 
 		return rangeLock.lock(number640, number640);
 	}
@@ -168,8 +172,107 @@ public class StorageLayer implements DigestStorage {
 				new Number640(Number160.ZERO, Number160.ZERO, Number160.ZERO, Number160.ZERO), 
 				new Number640(Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE));
 	}
-
+	
+	public Map<Number640, Enum<?>> putAll(final NavigableMap<Number640, Data> dataMap, PublicKey publicKey, boolean putIfAbsent,
+	        boolean domainProtection, boolean sendSelf) {
+		final Number640 min = dataMap.firstKey();
+		final Number640 max = dataMap.lastKey();
+		final Map<Number640, Enum<?>> retVal = new HashMap<Number640, Enum<?>>();
+		final HashSet<Number480> keysToCheck = new HashSet<Number480>();
+		final RangeLock<Number640>.Range lock = lock(min, max);
+		try {
+			for(Map.Entry<Number640, Data> entry: dataMap.entrySet()) {
+				Number640 key = entry.getKey();
+				keysToCheck.add(key.locationAndDomainAndContentKey());
+				Data newData = entry.getValue();
+				if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
+					retVal.put(key, PutStatus.FAILED_SECURITY);
+					continue;
+				}
+				
+				// We need this check in case we did not use the encoder/deconder,
+				// which is the case if we send the message to ourself. In that
+				// case, the public key of the data is never set to the message
+				// publick key, if the publick key of the data was null.
+				final PublicKey dataKey;
+				if(sendSelf && newData.publicKey() == null) {
+					dataKey = publicKey;
+				} else {
+					dataKey = newData.publicKey();
+				}
+				
+				if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, dataKey,
+				        newData.isProtectedEntry())) {
+					retVal.put(key, PutStatus.FAILED_SECURITY);
+					continue;
+				}
+				
+				boolean contains = backend.contains(key);
+				if (contains) {
+					if(putIfAbsent) {
+						retVal.put(key, PutStatus.FAILED_NOT_ABSENT);
+						continue;
+					}
+					final Data oldData = backend.get(key);
+					if(oldData.isDeleted()) {
+						retVal.put(key, PutStatus.DELETED);
+						continue;
+					}
+				}
+				
+				boolean putRes = backend.put(key, newData);
+				if (putRes) {
+					long expiration = newData.expirationMillis();
+					// handle timeout
+					backend.addTimeout(key, expiration);
+					if(newData.hasPrepareFlag()) {
+						retVal.put(key, PutStatus.OK_PREPARED);
+					} else {
+						retVal.put(key, PutStatus.OK);
+					}
+					continue;
+				} else {
+					retVal.put(key, PutStatus.FAILED);
+					continue;
+				}
+			}
+			//now check for forks
+			for(Number480 key:keysToCheck) {
+				Number640 minVersion = new Number640(key, Number160.ZERO);
+				Number640 maxVersion = new Number640(key, Number160.MAX_VALUE);
+				NavigableMap<Number640, Data> tmp = backend.subMap(minVersion, maxVersion, -1, true);
+				removePrepared(tmp);
+				NavigableMap<Number640, Data> heads = getLatestInternal(tmp);
+				if(heads.size() > 1) {
+					for(Number640 fork:heads.keySet()) {
+						if(retVal.containsKey(fork)) {
+							retVal.put(fork, PutStatus.VERSION_FORK);
+						}
+					}
+				}
+			}
+			return retVal;
+			
+		} finally {
+			lock.unlock();
+		}
+	}
+	
 	public Enum<?> put(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
+	        boolean domainProtection, boolean sendSelf) {
+		final NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+		dataMap.put(key, newData);
+		Map<Number640, Enum<?>> putStatus = putAll(dataMap, publicKey, putIfAbsent, domainProtection, sendSelf);
+		Enum<?> retVal = putStatus.get(key);
+		if(retVal == null) {
+			return PutStatus.FAILED;
+		} else {
+			return retVal;
+		}
+	}
+
+	@Deprecated
+	public Enum<?> putOld(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
 	        boolean domainProtection, boolean sendSelf) {
 		boolean retVal = false;
 		RangeLock<Number640>.Range lock = lock(key.locationAndDomainAndContentKey());
@@ -280,7 +383,7 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	public Map<Number640, Data> getLatestVersion(Number640 key) {
+	public NavigableMap<Number640, Data> getLatestVersion(Number640 key) {
 		RangeLock<Number640>.Range lock = lock(key.locationAndDomainAndContentKey());
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
@@ -291,9 +394,9 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	private Map<Number640, Data> getLatestInternal(NavigableMap<Number640, Data> tmp) {
+	private NavigableMap<Number640, Data> getLatestInternal(NavigableMap<Number640, Data> tmp) {
 	    // delete all predecessors
-	    Map<Number640, Data> result = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> result = new TreeMap<Number640, Data>();
 	    while (!tmp.isEmpty()) {
 	    	// first entry is a latest version
 	    	Entry<Number640, Data> latest = tmp.lastEntry();
@@ -315,6 +418,8 @@ public class StorageLayer implements DigestStorage {
 	    }
     }
 
+	//recursive version
+	@Deprecated
 	private void deletePredecessors2(Number640 key, NavigableMap<Number640, Data> sortedMap) {
 		Data version = sortedMap.remove(key);
 		// check if version has been already deleted
@@ -331,6 +436,7 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 	
+	//iterative version
 	private void deletePredecessors(Number640 key, NavigableMap<Number640, Data> sortedMap) {
 		final List<Number640> toRemove = new ArrayList<Number640>();
 		toRemove.add(key);
@@ -365,7 +471,7 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	public Map<Number640, Data> get(Number640 from, Number640 to, SimpleBloomFilter<Number160> contentBloomFilter,
+	public NavigableMap<Number640, Data> get(Number640 from, Number640 to, SimpleBloomFilter<Number160> contentBloomFilter,
 	        SimpleBloomFilter<Number160> versionBloomFilter, int limit, boolean ascending, boolean isBloomFilterAnd) {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
@@ -405,7 +511,7 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	public SortedMap<Number640, Data> removeReturnData(Number640 from, Number640 to, PublicKey publicKey) {
+	public NavigableMap<Number640, Data> removeReturnData(Number640 from, Number640 to, PublicKey publicKey) {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
@@ -420,7 +526,7 @@ public class StorageLayer implements DigestStorage {
 					return null;
 				}
 			}
-			SortedMap<Number640, Data> result = backend.remove(from, to, true);
+			NavigableMap<Number640, Data> result = backend.remove(from, to, true);
 			for (Map.Entry<Number640, Data> entry : result.entrySet()) {
 				Data data = entry.getValue();
 				if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
@@ -825,6 +931,7 @@ public class StorageLayer implements DigestStorage {
 		} finally {
 			lock.unlock();
 		}
+		//TODO: check for FORKS!
 		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
 	}
 }

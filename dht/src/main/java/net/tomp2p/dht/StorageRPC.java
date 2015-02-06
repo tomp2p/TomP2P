@@ -23,7 +23,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -368,7 +370,7 @@ public class StorageRPC extends DispatchHandler {
         }
 
         // convert the data
-        Map<Number160, Data> dataMap = new HashMap<Number160, Data>(addBuilder.dataSet().size());
+        NavigableMap<Number160, Data> dataMap = new TreeMap<Number160, Data>();
         if (addBuilder.dataSet() != null) {
             for (Data data : addBuilder.dataSet()) {
                 if (addBuilder.isList()) {
@@ -725,19 +727,33 @@ public class StorageRPC extends DispatchHandler {
         final DataMap toStore = message.dataMap(0);
         final int dataSize = toStore.size();
         final Map<Number640, Byte> result = new HashMap<Number640, Byte>(dataSize);
-        for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
+        
+        Map<Number640, Enum<?>> storeRes = 
+        		storageLayer.putAll(toStore.dataMap(), publicKey, putIfAbsent, protectDomain, message.isSendSelf());
+        
+        for (Map.Entry<Number640, Enum<?>> entry : storeRes.entrySet()) {
+        	result.put(entry.getKey(), (byte) entry.getValue().ordinal());
+        	if (entry.getValue() != PutStatus.OK_PREPARED) {
+            	if ((entry.getValue() == PutStatus.OK || entry.getValue() == PutStatus.VERSION_FORK || entry.getValue() == PutStatus.DELETED)
+            			&& replicationListener != null) {
+            		replicationListener.dataInserted(entry.getKey().locationKey(), replicaPut);
+            	}
+            }
+        }
+        
+        /*for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
             Enum<?> putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(), entry.getValue(), message.isSendSelf());
             result.put(entry.getKey(), (byte) putStatus.ordinal());
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (!entry.getValue().hasPrepareFlag()) {
             	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK || putStatus == PutStatus.DELETED)
-            			&& !replicaPut && replicationListener != null) {
+            			&& replicationListener != null) {
             		replicationListener.dataInserted(entry.getKey().locationKey(), replicaPut);
             	}
             }
            
-        }
+        }*/
 
         responseMessage.type(result.size() == dataSize ? Type.OK : Type.PARTIALLY_OK);
         responseMessage.keyMapByte(new KeyMapByte(result));
@@ -831,19 +847,19 @@ public class StorageRPC extends DispatchHandler {
         final boolean isRange = contentKeys != null && returnNr != null;
         final boolean isCollection = contentKeys != null && returnNr == null;
         final boolean isBloomFilterAnd = isBloomFilterAnd(message);
-        final Map<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
+        final NavigableMap<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
                 versionBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
         responseMessage.setDataMap(new DataMap(result));
         return responseMessage;
     }
 
-	private Map<Number640, Data> doGet(final Number160 locationKey, final Number160 domainKey,
+	private NavigableMap<Number640, Data> doGet(final Number160 locationKey, final Number160 domainKey,
             final KeyCollection contentKeys, final SimpleBloomFilter<Number160> contentBloomFilter,
             final SimpleBloomFilter<Number160> versionBloomFilter, final int limit, final boolean ascending,
             final boolean isRange, final boolean isCollection, final boolean isBloomFilterAnd) {
-	    final Map<Number640, Data> result;
+	    final NavigableMap<Number640, Data> result;
         if (isCollection) {
-            result = new HashMap<Number640, Data>();
+            result = new TreeMap<Number640, Data>();
             for (Number640 key : contentKeys.keys()) {
                 Data data = storageLayer.get(key);
                 if (data != null) {
@@ -878,7 +894,7 @@ public class StorageRPC extends DispatchHandler {
 		final Number160 contentKey = message.key(2);
 
 		Number640 key = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
-		final Map<Number640, Data> result = storageLayer.getLatestVersion(key);
+		final NavigableMap<Number640, Data> result = storageLayer.getLatestVersion(key);
 		responseMessage.setDataMap(new DataMap(result));
 
 		if (withDigest) {
@@ -905,7 +921,7 @@ public class StorageRPC extends DispatchHandler {
         final boolean isReturnBloomfilter = message.command() == RPC.Commands.DIGEST_BLOOMFILTER.getNr();
         final boolean isReturnMetaValues = message.command() == RPC.Commands.DIGEST_META_VALUES.getNr();
         if(isReturnMetaValues) {
-        	final Map<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
+        	final NavigableMap<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
                     versionBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
         	DataMap dataMap = new DataMap(result, true);
         	responseMessage.setDataMap(dataMap);
@@ -959,7 +975,7 @@ public class StorageRPC extends DispatchHandler {
         final Number160 domainKey = message.key(1);
         final KeyCollection keys = message.keyCollection(0);
         final PublicKey publicKey = message.publicKey(0);
-        Map<Number640, Data> result1 = null;
+        NavigableMap<Number640, Data> result1 = null;
         Map<Number640, Byte> result2 = null;
         final Integer returnNr = message.intAt(0);
         //used as a marker for the moment
@@ -969,7 +985,7 @@ public class StorageRPC extends DispatchHandler {
                
         if (isCollection) {
         	if(sendBackResults) {
-        		result1 = new HashMap<Number640, Data>(keys.size());
+        		result1 = new TreeMap<Number640, Data>();
         		for (Number640 key : keys.keys()) {
                     Pair<Data,Enum<?>> data = storageLayer.remove(key, publicKey, sendBackResults);
                     notifyRemoveResponsibility(key.locationKey(), data.element1());

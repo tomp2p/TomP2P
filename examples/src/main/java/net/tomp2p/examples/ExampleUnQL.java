@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.PeerDHT;
@@ -69,7 +71,7 @@ public class ExampleUnQL {
                     peer.add(locationKey).data(new Data(value)).start().awaitUninterruptibly();
                 }
             } else if (query.getValueType() == ValueType.MAP) {
-                Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+                NavigableMap<Number160, Data> dataMap = new TreeMap<Number160, Data>();
                 for (Map.Entry<String, String> entry : query.getValueMap().entrySet()) {
                     dataMap.put(Number160.createHash(entry.getKey()), new Data(entry.getValue()));
                 }

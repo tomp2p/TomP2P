@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -186,7 +188,7 @@ public class SyncRPC extends DispatchHandler {
         
         final boolean isSyncFromOldVersion = message.type() == Type.REQUEST_2;
         final KeyMap640Keys keysMap = message.keyMap640Keys(0);
-        final Map<Number640, Data> retVal = new HashMap<Number640, Data>();
+        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
         
         for (Map.Entry<Number640, Collection<Number160>> entry : keysMap.keysMap().entrySet()) {
             Data data = storageLayer.get(entry.getKey());

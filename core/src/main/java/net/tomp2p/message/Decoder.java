@@ -348,7 +348,7 @@ public class Decoder {
 					mapSize = buf.readInt();
 				}
 				if (dataMap == null) {
-					dataMap = new DataMap(new HashMap<Number640, Data>(2 * mapSize));
+					dataMap = new DataMap(new TreeMap<Number640, Data>());
 				}
 				if (data != null) {
 					if (!data.decodeBuffer(buf)) {

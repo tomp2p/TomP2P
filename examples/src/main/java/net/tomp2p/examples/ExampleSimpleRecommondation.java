@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.PeerDHT;
@@ -153,7 +155,7 @@ public final class ExampleSimpleRecommondation {
             for (Map.Entry<Number160, String> entry : friends.entrySet()) {
                 // announce it on DHT
                 Collection<String> tmp = new ArrayList<String>(friends.values());
-                Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+                NavigableMap<Number160, Data> dataMap = new TreeMap<Number160, Data>();
                 for (String friend : tmp) {
                     dataMap.put(peer.peerID().xor(Number160.createHash(friend)), new Data(friend));
                 }

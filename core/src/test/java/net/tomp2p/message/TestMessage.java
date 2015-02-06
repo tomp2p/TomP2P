@@ -39,11 +39,9 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Random;
 import java.util.Set;
@@ -201,7 +199,7 @@ public class TestMessage {
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
 
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }));
@@ -240,7 +238,7 @@ public class TestMessage {
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
 
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).signNow(pair1.getPrivate(), factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).signNow(pair1.getPrivate(), factory));
@@ -280,7 +278,7 @@ public class TestMessage {
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
 
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).signNow(pair1, factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).signNow(pair1, factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).signNow(pair1, factory));
@@ -344,7 +342,7 @@ public class TestMessage {
 		final int size = 50 * 1024 * 1024;
 		Random rnd = new Random(42);
 		Message m1 = Utils2.createDummyMessage();
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		Data data = new Data(new byte[size]);
 		dataMap.put(new Number640(rnd), data);
 		m1.setDataMap(new DataMap(dataMap));
@@ -362,7 +360,7 @@ public class TestMessage {
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
 
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		Data data = new Data(new byte[size]);
 		dataMap.put(new Number640(rnd), data);
 		m1.setDataMap(new DataMap(dataMap));
@@ -377,7 +375,7 @@ public class TestMessage {
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>(1000);
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		Random rnd = new Random(42l);
 		for (int i = 0; i < 1000; i++) {
 			dataMap.put(new Number640(new Number160(rnd), new Number160(rnd),
@@ -536,7 +534,7 @@ public class TestMessage {
 		Message message = Utils2.createDummyMessage();
 		
 		// add some data
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		Data data = new Data(new byte[101]);
 		dataMap.put(new Number640(new Random()), data);
 		message.setDataMap(new DataMap(dataMap));

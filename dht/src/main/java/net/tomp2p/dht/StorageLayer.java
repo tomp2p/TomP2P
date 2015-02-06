@@ -61,7 +61,7 @@ public class StorageLayer implements DigestStorage {
 
 	// The number of PutStatus should never exceed 255.
 	public enum PutStatus {
-		OK, OK_PREPARED, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND, DELETED 
+		OK, OK_PREPARED, OK_UNCHANGED, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND, DELETED  
 	};
 
 	// Hash of public key is always preferred
@@ -175,6 +175,9 @@ public class StorageLayer implements DigestStorage {
 	
 	public Map<Number640, Enum<?>> putAll(final NavigableMap<Number640, Data> dataMap, PublicKey publicKey, boolean putIfAbsent,
 	        boolean domainProtection, boolean sendSelf) {
+		if(dataMap.isEmpty()) {
+			return Collections.emptyMap();
+		}
 		final Number640 min = dataMap.firstKey();
 		final Number640 max = dataMap.lastKey();
 		final Map<Number640, Enum<?>> retVal = new HashMap<Number640, Enum<?>>();
@@ -220,20 +223,20 @@ public class StorageLayer implements DigestStorage {
 					}
 				}
 				
-				boolean putRes = backend.put(key, newData);
-				if (putRes) {
-					long expiration = newData.expirationMillis();
-					// handle timeout
-					backend.addTimeout(key, expiration);
-					if(newData.hasPrepareFlag()) {
-						retVal.put(key, PutStatus.OK_PREPARED);
+				Data oldData = backend.put(key, newData);
+				
+				long expiration = newData.expirationMillis();
+				// handle timeout
+				backend.addTimeout(key, expiration);
+				
+				if(newData.hasPrepareFlag()) {
+					retVal.put(key, PutStatus.OK_PREPARED);
+				} else {
+					if(newData.equals(oldData)) {
+						retVal.put(key, PutStatus.OK_UNCHANGED);
 					} else {
 						retVal.put(key, PutStatus.OK);
 					}
-					continue;
-				} else {
-					retVal.put(key, PutStatus.FAILED);
-					continue;
 				}
 			}
 			//now check for forks
@@ -274,7 +277,6 @@ public class StorageLayer implements DigestStorage {
 	@Deprecated
 	public Enum<?> putOld(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
 	        boolean domainProtection, boolean sendSelf) {
-		boolean retVal = false;
 		RangeLock<Number640>.Range lock = lock(key.locationAndDomainAndContentKey());
 		try {
 			if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
@@ -315,19 +317,21 @@ public class StorageLayer implements DigestStorage {
 			boolean versionFork = getLatestInternal(tmp).size() > 1;
 			
 
-			retVal = backend.put(key, newData);
-			if (retVal) {
-				long expiration = newData.expirationMillis();
-				// handle timeout
-				backend.addTimeout(key, expiration);
-			}
+			final Data oldData = backend.put(key, newData);
+			
+			long expiration = newData.expirationMillis();
+			// handle timeout
+			backend.addTimeout(key, expiration);
+			
 
-			if (retVal && versionFork) {
+			if (versionFork) {
 				return PutStatus.VERSION_FORK;
-			} else if (retVal) {
-				return PutStatus.OK;
 			} else {
-				return PutStatus.FAILED;
+				if(newData.equals(oldData)) {
+					return PutStatus.OK_UNCHANGED;
+				} else {
+					return PutStatus.OK;
+				}
 			}
 		} finally {
 			lock.unlock();
@@ -867,7 +871,6 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	public Enum<?> updateMeta(PublicKey publicKey, Number640 key, Data newData) {
-		boolean found = false;
 		RangeLock<Number640>.Range lock = lock(key);
 		try {
 			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, newData.publicKey(),
@@ -894,12 +897,14 @@ public class StorageLayer implements DigestStorage {
 				long expiration = data.expirationMillis();
 				// handle timeout
 				backend.addTimeout(key, expiration);
-				found = backend.put(key, data);
+				backend.put(key, data);
+				return PutStatus.OK;
+			} else {
+				return PutStatus.NOT_FOUND;
 			}
 		} finally {
 			lock.unlock();
 		}
-		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
 	}
 
 	public int storageCheckIntervalMillis() {
@@ -907,7 +912,6 @@ public class StorageLayer implements DigestStorage {
     }
 
 	public Enum<?> putConfirm(PublicKey publicKey, Number640 key, Data newData) {
-		boolean found = false;
 		RangeLock<Number640>.Range lock = lock(key);
 		try {
 			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, newData.publicKey(),
@@ -926,12 +930,14 @@ public class StorageLayer implements DigestStorage {
 				long expiration = data.expirationMillis();
 				// handle timeout
 				backend.addTimeout(key, expiration);
-				found = backend.put(key, data);
+				backend.put(key, data);
+				return PutStatus.OK;
+			} else {
+				return PutStatus.NOT_FOUND;
 			}
 		} finally {
 			lock.unlock();
 		}
 		//TODO: check for FORKS!
-		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
 	}
 }

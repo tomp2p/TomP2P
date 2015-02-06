@@ -40,7 +40,7 @@ import net.tomp2p.peers.Number640;
  */
 public interface Storage {
     // Core storage
-    public abstract boolean put(Number640 key, Data value);
+    public abstract Data put(Number640 key, Data value);
 
     public abstract Data get(Number640 key);
 

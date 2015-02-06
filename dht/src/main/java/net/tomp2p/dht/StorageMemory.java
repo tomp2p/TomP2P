@@ -82,8 +82,8 @@ public class StorageMemory implements Storage {
 
 	// Core
     @Override
-    public boolean put(Number640 key, Data value) {
-        dataMap.put(key, value);
+    public Data put(Number640 key, Data value) {
+        final Data oldData = dataMap.put(key, value);
         if (maxVersions > 0) {
         	NavigableMap<Number640, Data> versions = dataMap.subMap(
 				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.ZERO), true,
@@ -97,7 +97,7 @@ public class StorageMemory implements Storage {
 				removeTimeout(entry.getKey());
 			}
         }
-        return true;
+        return oldData;
     }
 
     @Override

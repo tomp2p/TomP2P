@@ -245,14 +245,11 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
      *            The location key.
      */
     @Override
-    public void dataInserted(final Number160 locationKey, final boolean replicationPut) {
+    public void dataInserted(final Number160 locationKey) {
         if (!isReplication()) {
             return;
         }
-        //this would cause too much traffic and trigger an endless message loop
-        if (nRootReplication && replicationPut) {
-        	return;
-        }
+
         if (!nRootReplication) {
             PeerAddress closest = closest(locationKey);
             if (closest.peerId().equals(selfAddress.peerId())) {

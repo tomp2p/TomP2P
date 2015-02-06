@@ -21,10 +21,12 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 
 import net.tomp2p.connection.ChannelCreator;
@@ -731,14 +733,19 @@ public class StorageRPC extends DispatchHandler {
         Map<Number640, Enum<?>> storeRes = 
         		storageLayer.putAll(toStore.dataMap(), publicKey, putIfAbsent, protectDomain, message.isSendSelf());
         
+        Set<Number160> affectedKeys = new HashSet<Number160>();
         for (Map.Entry<Number640, Enum<?>> entry : storeRes.entrySet()) {
         	result.put(entry.getKey(), (byte) entry.getValue().ordinal());
-        	if (entry.getValue() != PutStatus.OK_PREPARED) {
-            	if ((entry.getValue() == PutStatus.OK || entry.getValue() == PutStatus.VERSION_FORK || entry.getValue() == PutStatus.DELETED)
-            			&& replicationListener != null) {
-            		replicationListener.dataInserted(entry.getKey().locationKey(), replicaPut);
-            	}
+        	
+            if ((entry.getValue() == PutStatus.OK || entry.getValue() == PutStatus.VERSION_FORK || entry.getValue() == PutStatus.DELETED)) {
+            	affectedKeys.add(entry.getKey().locationKey());
             }
+        }
+        
+        if(replicationListener != null) {
+        	for(Number160 locationKey:affectedKeys) {
+        		replicationListener.dataInserted(locationKey);
+        	}
         }
         
         /*for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
@@ -773,7 +780,7 @@ public class StorageRPC extends DispatchHandler {
 			
 			if ((status == PutStatus.OK || status == PutStatus.VERSION_FORK)
         			&& replicationListener != null) {
-        		replicationListener.dataInserted(entry.getKey().locationKey(), false);
+        		replicationListener.dataInserted(entry.getKey().locationKey());
         	}
 		}
 		
@@ -802,18 +809,12 @@ public class StorageRPC extends DispatchHandler {
             // (notify) if we are responsible
             if (!entry.getValue().hasPrepareFlag()) {
             	if (status == PutStatus.OK && replicationListener!=null) {
-            		replicationListener.dataInserted(entry.getKey().locationKey(), false);
+            		replicationListener.dataInserted(entry.getKey().locationKey());
             	}
             }
         }
         responseMessage.keyMapByte(new KeyMapByte(result));
         return responseMessage;
-    }
-
-    private Enum<?> doPut(final boolean putIfAbsent, final boolean protectDomain, final PublicKey publicKey,
-            final Number640 key, final Data value, final boolean sendSelf) {
-        LOG.debug("put data with key {} on {} with data {}", key, peerBean().serverPeerAddress(), value);
-        return storageLayer.put(key, value, publicKey, putIfAbsent, protectDomain, sendSelf);
     }
 
     private static Enum<?> doAdd(final boolean protectDomain, final Map.Entry<Number640, Data> entry,

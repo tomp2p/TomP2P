@@ -78,10 +78,10 @@ public class StorageDisk implements Storage {
     }
     
     @Override
-    public boolean put(Number640 key, Data value) {
-		dataMap.put(key, value);
+    public Data put(Number640 key, Data value) {
+		Data oldData = dataMap.put(key, value);
 		db.commit();
-        return true;
+        return oldData;
     }
     
     @Override

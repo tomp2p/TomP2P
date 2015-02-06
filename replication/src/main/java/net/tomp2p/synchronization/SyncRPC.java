@@ -280,7 +280,7 @@ public class SyncRPC extends DispatchHandler {
                         retVal.add(entry.getKey());
                         if (replicationListener != null) {
                         	replicationListener.dataInserted(
-                                    entry.getKey().locationKey(), false);
+                                    entry.getKey().locationKey());
                         }
                     }
 
@@ -294,7 +294,7 @@ public class SyncRPC extends DispatchHandler {
                         retVal.add(entry.getKey());
                         if (replicationListener != null) {
                         	replicationListener.dataInserted(
-                                    entry.getKey().locationKey(), false);
+                                    entry.getKey().locationKey());
                         }
                     }
                 }

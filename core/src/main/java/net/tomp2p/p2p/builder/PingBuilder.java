@@ -37,7 +37,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
 
 public class PingBuilder {
-    private static final FuturePing FUTURE_PING_SHUTDOWN = new FuturePing().failed("Peer is shutting down");
+    private static final FuturePing FUTURE_PING_SHUTDOWN = new FuturePing().failed("Peer is shutting down.");
 
     private final Peer peer;
 
@@ -102,8 +102,7 @@ public class PingBuilder {
     }
 
     public PingBuilder broadcast() {
-        this.broadcast = true;
-        return this;
+        return broadcast(true);
     }
 
     public PingBuilder broadcast(boolean broadcast) {
@@ -116,8 +115,7 @@ public class PingBuilder {
     }
 
     public PingBuilder tcpPing() {
-        this.tcpPing = true;
-        return this;
+        return tcpPing(true);
     }
 
     public PingBuilder tcpPing(boolean tcpPing) {
@@ -161,7 +159,7 @@ public class PingBuilder {
             } else if (peerConnection != null) {
                 return pingPeerConnection(peerConnection);
             } else {
-                throw new IllegalArgumentException("cannot ping, need to know peer address or inet address");
+                throw new IllegalArgumentException("Cannot ping. Peer address or inet address required.");
             } 
         }
     }
@@ -287,7 +285,7 @@ public class PingBuilder {
     }
     
     private void addPingListener(final FuturePing futurePing, FutureLateJoin<FutureResponse> futureLateJoin) {
-       	//we have one successfull reply
+       	//we have one successful reply
     	futureLateJoin.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>() {
         	@Override
             public void operationComplete(FutureLateJoin<FutureResponse> future) throws Exception {

@@ -7,6 +7,8 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -57,12 +59,15 @@ public class TestSecurity {
 			// set storage to test PK
 			StorageLayer sl = new StorageLayer(new StorageMemory()) {
 				@Override
-				public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-						boolean domainProtection, boolean selfSend) {
+				public Map<Number640, Enum<?>> putAll(
+						NavigableMap<Number640, Data> dataMap,
+						PublicKey publicKey, boolean putIfAbsent,
+						boolean domainProtection, boolean sendSelf) {
 					System.err.println("P is " + publicKey);
 					gotPK.set(publicKey != null);
 					System.err.println("PK is " + gotPK);
-					return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
+					return super
+							.putAll(dataMap, publicKey, putIfAbsent, domainProtection, sendSelf);
 				}
 			};
 
@@ -105,11 +110,14 @@ public class TestSecurity {
 			// set storage to test PK
 			StorageLayer sl = new StorageLayer(new StorageMemory()) {
 				@Override
-				public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-						boolean domainProtection, boolean selfSend) {
+				public Map<Number640, Enum<?>> putAll(
+						NavigableMap<Number640, Data> dataMap,
+						PublicKey publicKey, boolean putIfAbsent,
+						boolean domainProtection, boolean sendSelf) {
 					gotPK.set(publicKey != null);
 					System.err.println("PK is " + gotPK);
-					return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
+					return super
+							.putAll(dataMap, publicKey, putIfAbsent, domainProtection, sendSelf);
 				}
 			};
 
@@ -127,9 +135,6 @@ public class TestSecurity {
 			master.put(locationKey).data(Number160.ONE, new Data("test1")).requestP2PConfiguration(rc)
 					.domainKey(Number160.ONE).start().awaitUninterruptibly();
 			Assert.assertEquals(false, gotPK.get());
-		} catch (Throwable t) {
-			Assert.fail(t.getMessage());
-			t.printStackTrace();
 		} finally {
 			master.shutdown().awaitUninterruptibly();
 		}

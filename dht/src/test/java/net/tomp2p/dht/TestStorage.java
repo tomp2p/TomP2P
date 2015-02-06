@@ -141,7 +141,7 @@ public class TestStorage {
 		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(key2, data2, null, true, false, false);
-		Assert.assertEquals(PutStatus.OK, store);
+		Assert.assertEquals(PutStatus.OK_PREPARED, store);
 		Assert.assertEquals(data1, storage.get(key1));
 		Assert.assertNull(storage.get(key2));
 	}
@@ -162,7 +162,7 @@ public class TestStorage {
 		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(key2, data2, null, true, false, false);
-		Assert.assertEquals(PutStatus.OK, store);
+		Assert.assertEquals(PutStatus.OK_PREPARED, store);
 		NavigableMap<Number640, Data> map = storage.get(new Number640(locationKey, domainKey, content1,
 				Number160.ZERO), new Number640(locationKey, domainKey, content1, Number160.MAX_VALUE), -1,
 				true);
@@ -186,7 +186,7 @@ public class TestStorage {
 		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(key2, data2, null, true, false, false);
-		Assert.assertEquals(PutStatus.OK, store);
+		Assert.assertEquals(PutStatus.OK_PREPARED, store);
 		Collection<Number640> number640 = new ArrayList<Number640>(2);
 		number640.add(key1);
 		number640.add(key2);
@@ -211,7 +211,7 @@ public class TestStorage {
 		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(key2, data2, null, true, false, false);
-		Assert.assertEquals(PutStatus.OK, store);
+		Assert.assertEquals(PutStatus.OK_PREPARED, store);
 		DigestInfo digest = storage.digest(new Number640(locationKey, domainKey, content1,
 				Number160.ZERO), new Number640(locationKey, domainKey, content1, Number160.MAX_VALUE), -1,
 				true);

@@ -55,18 +55,18 @@ public class TestStorage {
 
     private void store(StorageLayer storage, int nr) throws IOException {
         Enum<?> store = storage.put(key1, new Data("test1"), null, false, false, false);
-        Assert.assertEquals(PutStatus.OK, store);
+        Assert.assertTrue(PutStatus.OK == store || PutStatus.OK_UNCHANGED == store);
         store = storage.put(key2, new Data("test2"), null, false, false, false);
-        Assert.assertEquals(PutStatus.OK, store);
+        Assert.assertTrue(PutStatus.OK == store || PutStatus.OK_UNCHANGED == store);
     }
 
     private void store(StorageLayer storage, PublicKey publicKey, boolean protectDomain) throws IOException {
         Enum<?> store = storage.put(key1, new Data("test1"), publicKey, false,
                 protectDomain, false);
-        Assert.assertEquals(PutStatus.OK, store);
+        Assert.assertTrue(PutStatus.OK == store || PutStatus.OK_UNCHANGED == store);
         store = storage.put(key2, new Data("test2"), publicKey, false,
                 protectDomain, false);
-        Assert.assertEquals(PutStatus.OK, store);
+        Assert.assertTrue(PutStatus.OK == store || PutStatus.OK_UNCHANGED == store);
     }
 
     @Test

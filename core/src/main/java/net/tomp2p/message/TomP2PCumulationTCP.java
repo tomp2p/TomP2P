@@ -94,7 +94,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 				decoding(ctx, sender);
 			}
 		} catch (Throwable t) {
-			LOG.error("Error in TCP (inactive) decoding", t);
+			LOG.error("Error in TCP decoding. (Inactive)", t);
             throw t;
 		} finally {
 			if (cumulation != null) {

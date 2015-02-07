@@ -198,7 +198,7 @@ public class PingBuilder {
 				
             });
         } else {
-        	futurePing.failed("No broadcast address found. Cannot ping nothing");
+        	futurePing.failed("No broadcast address found. Cannot ping nothing.");
         }
         return futurePing;
     }
@@ -284,7 +284,7 @@ public class PingBuilder {
         return futurePing;
     }
     
-    private void addPingListener(final FuturePing futurePing, FutureLateJoin<FutureResponse> futureLateJoin) {
+    private static void addPingListener(final FuturePing futurePing, FutureLateJoin<FutureResponse> futureLateJoin) {
        	//we have one successful reply
     	futureLateJoin.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>() {
         	@Override
@@ -299,7 +299,7 @@ public class PingBuilder {
         });
     }
     
-    private void addPingListener(final FuturePing futurePing, FutureResponse futureResponse) {
+    private static void addPingListener(final FuturePing futurePing, FutureResponse futureResponse) {
         futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
         	@Override
             public void operationComplete(FutureResponse future) throws Exception {

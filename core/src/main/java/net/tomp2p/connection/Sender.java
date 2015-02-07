@@ -142,7 +142,6 @@ public class Sender {
 		if(message.sender().isRelayed() && !message.sender().peerSocketAddresses().isEmpty()) {
 			message.peerSocketAddresses(message.sender().peerSocketAddresses());
 		}
-
 		if (peerConnection != null && peerConnection.channelFuture() != null
 		        && peerConnection.channelFuture().channel().isActive()) {
 			ChannelFuture channelFuture = sendTCPPeerConnection(peerConnection, handler, channelCreator, futureResponse);

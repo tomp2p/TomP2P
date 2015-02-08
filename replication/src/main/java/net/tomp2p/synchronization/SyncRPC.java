@@ -23,7 +23,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -206,6 +205,8 @@ public class SyncRPC extends DispatchHandler {
                     List<Checksum> checksums = RSync.checksums(data.toBytes(), blockSize);
                     AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
                     DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().versionKey(), data.hash(), abuf);
+                    //here we can release this buffer as encodeChecksum calls retain
+                    abuf.release();
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required hash = {}", data.hash());
                 }
@@ -219,6 +220,8 @@ public class SyncRPC extends DispatchHandler {
             		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
                     DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().versionKey(), 
                     		latest.getValue().hash(), abuf);
+                    //here we can release this buffer as encodeChecksum calls retain
+                    //abuf.release();
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required for version");
             	} else {

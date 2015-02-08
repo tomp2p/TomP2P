@@ -474,6 +474,14 @@ public class Data {
 		}
 	}
 
+	/**
+	 * If you use this, make sure you are aware of Nettys reference counting.
+	 * 
+	 * http://netty.io/wiki/reference-counted-objects.html
+	 *  
+	 * Once this object is destroyed, the ByteBuf cannot be accessed anymore .
+	 * @return
+	 */
 	public ByteBuf buffer() {
 		return buffer.toByteBuf();
 	}

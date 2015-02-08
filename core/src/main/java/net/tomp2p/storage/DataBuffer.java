@@ -113,7 +113,8 @@ public class DataBuffer {
 	
 	/**
 	 * @return The ByteBuf arrays backed by the buffers stored in here. The buffer is
-	 *         not deep copied here.
+	 *         not deep copied here. That means the reference counting is done by this class. 
+	 *         If you want to use it longer than this object, call ByteBuf.retain().
 	 */
 	public ByteBuf[] toByteBufs() {
 		final DataBuffer copy = shallowCopy();

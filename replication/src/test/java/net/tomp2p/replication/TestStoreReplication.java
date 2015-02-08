@@ -1103,7 +1103,7 @@ public class TestStoreReplication {
 
 			String content = "";
 			for (int i = 0; i < 500; i++) {
-				System.err.println("round: "+i);
+				System.err.print("round: "+i);
 				content += "a";
 				Number160 vKey = generateVersionKey(i, content);
 				Data data = new Data(content);
@@ -1154,6 +1154,7 @@ public class TestStoreReplication {
 						Assert.assertTrue(digestResult.keyDigest().get(digestKey).contains(bKey));
 					}
 				}
+				System.err.println("..");
 			}
 		} finally {
 			if (master != null) {

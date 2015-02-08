@@ -88,11 +88,10 @@ public class RSASignatureFactory implements SignatureFactory {
 	}
 
 	@Override
-	public SignatureCodec sign(PrivateKey privateKey, ByteBuf buf) throws InvalidKeyException,
+	public SignatureCodec sign(PrivateKey privateKey, ByteBuffer[] byteBuffers) throws InvalidKeyException,
 			SignatureException, IOException {
 		Signature signature = signatureInstance();
 		signature.initSign(privateKey);
-		ByteBuffer[] byteBuffers = buf.nioBuffers();
 		int len = byteBuffers.length;
 		for (int i = 0; i < len; i++) {
 			ByteBuffer buffer = byteBuffers[i];
@@ -104,11 +103,10 @@ public class RSASignatureFactory implements SignatureFactory {
 	}
 
 	@Override
-	public boolean verify(PublicKey publicKey, ByteBuf buf, SignatureCodec signatureEncoded)
+	public boolean verify(PublicKey publicKey, ByteBuffer[] byteBuffers, SignatureCodec signatureEncoded)
 			throws SignatureException, InvalidKeyException {
 		Signature signature = signatureInstance();
 		signature.initVerify(publicKey);
-		ByteBuffer[] byteBuffers = buf.nioBuffers();
 		int len = byteBuffers.length;
 		for (int i = 0; i < len; i++) {
 			ByteBuffer buffer = byteBuffers[i];

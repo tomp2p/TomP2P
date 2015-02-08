@@ -66,7 +66,7 @@ public class Encoder {
             if (message.isSign()) {
             	//we sign if we did not provide a signature already
             	if(signatureCodec == null) {
-            		signatureCodec = signatureFactory.sign(message.privateKey(), buf);
+            		signatureCodec = signatureFactory.sign(message.privateKey(), buf.nioBuffers());
             	}
             	//in case of relay, we have a signature, so we need to reuse this
             	signatureCodec.write(buf);

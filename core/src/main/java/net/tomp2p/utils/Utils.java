@@ -149,29 +149,6 @@ public class Utils {
         }
     }
 
-    /**
-     * Calculates the SHA-1 hash of the Netty byte buffer.
-     * 
-     * @param buffer
-     *            The buffer that stores data
-     * @return The 160bit hash number
-     */
-    public static Number160 makeSHAHash(final ByteBuf buf) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-1");
-            final ByteBuffer[] byteBuffers = buf.nioBuffers();
-            final int len = byteBuffers.length;
-            for (int i = 0; i < len; i++) {
-                md.update(byteBuffers[i]);
-            }
-            byte[] digest = md.digest();
-            return new Number160(digest);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return new Number160();
-        }
-    }
-
     public static Number160 makeSHAHash(DataBuffer buffer) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");

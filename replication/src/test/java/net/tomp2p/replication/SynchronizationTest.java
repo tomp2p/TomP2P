@@ -321,6 +321,13 @@ public class SynchronizationTest {
 			}
 		}
 	}
+	
+	@Test
+	public void testInfoMessageNOTSAMELoop() throws IOException, InterruptedException {
+		for (int i=0;i<100;i++) {
+			testInfoMessageNOTSAME();
+		}
+	}
 
 	@Test
 	public void testInfoMessageNOTSAME() throws IOException, InterruptedException {

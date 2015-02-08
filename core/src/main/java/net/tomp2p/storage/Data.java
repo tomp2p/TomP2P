@@ -373,7 +373,7 @@ public class Data {
 	}
 
 	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException {
-		return signatureFactory.verify(publicKey, buffer.toByteBuf(), signature);
+		return signatureFactory.verify(publicKey, toByteBuffers(), signature);
 	}
 
 	/**
@@ -464,9 +464,9 @@ public class Data {
 	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory, PrivateKey messagePrivateKey) throws InvalidKeyException, SignatureException, IOException {
 		if (signed) {
 			if(signature == null && privateKey != null) {
-				signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
+				signature = signatureFactory.sign(privateKey, toByteBuffers());
 			} else if (signature == null && messagePrivateKey != null) {
-				signature = signatureFactory.sign(messagePrivateKey, buffer.toByteBuf());
+				signature = signatureFactory.sign(messagePrivateKey, toByteBuffers());
 			} else if (signature == null) {
 				throw new IllegalArgumentException("you need a private key from somewhere");
 			}
@@ -479,7 +479,7 @@ public class Data {
 	 * 
 	 * http://netty.io/wiki/reference-counted-objects.html
 	 *  
-	 * Once this object is destroyed, the ByteBuf cannot be accessed anymore .
+	 * Once this object is destroyed, the ByteBuf cannot be accessed anymore (unless you use retain/release).
 	 * @return
 	 */
 	public ByteBuf buffer() {
@@ -510,7 +510,7 @@ public class Data {
 	private Data signNow(KeyPair keyPair, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory.sign(keyPair.getPrivate(), buffer.toByteBuf());
+			this.signature = signatureFactory.sign(keyPair.getPrivate(), toByteBuffers());
 			this.publicKey = keyPair.getPublic();
 			this.publicKeyFlag = true;
 			this.protectedEntry = protectedEntry;
@@ -529,7 +529,7 @@ public class Data {
 	private Data signNow(PrivateKey privateKey, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
+			this.signature = signatureFactory.sign(privateKey, toByteBuffers());
 			this.publicKeyFlag = true;
 			this.protectedEntry = protectedEntry;
 		}
@@ -827,18 +827,14 @@ public class Data {
 	 * @return The byte array that is the payload. Here we copy the buffer
 	 */
 	public byte[] toBytes() {
-		// we do copy the buffer here
-		ByteBuf buf = buffer.toByteBuf();
-		byte[] me = new byte[buf.readableBytes()];
-		buf.readBytes(me);
-		return me;
+		return buffer.bytes();
 	}
 
 	/**
 	 * @return The ByteBuffers that is the payload. We do not make a copy here
 	 */
 	public ByteBuffer[] toByteBuffers() {
-		return buffer.toByteBuffer();
+		return buffer.bufferList().toArray(new ByteBuffer[0]);
 	}
 
 	public PublicKey publicKey() {
@@ -912,7 +908,7 @@ public class Data {
 
 	public Number160 hash() {
 		if (hash == null) {
-			hash = Utils.makeSHAHash(buffer.toByteBuf());
+			hash = Utils.makeSHAHash(buffer);
 		}
 		return hash;
 	}

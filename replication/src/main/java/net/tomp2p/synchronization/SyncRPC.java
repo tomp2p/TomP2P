@@ -221,7 +221,7 @@ public class SyncRPC extends DispatchHandler {
                     DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().versionKey(), 
                     		latest.getValue().hash(), abuf);
                     //here we can release this buffer as encodeChecksum calls retain
-                    //abuf.release();
+                    abuf.release();
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required for version");
             	} else {

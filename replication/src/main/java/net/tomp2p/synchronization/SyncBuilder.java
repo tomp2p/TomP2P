@@ -263,6 +263,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		
                         		dataCopy += SyncUtils.encodeInstructions(instructions, versionKey, hash, abuf);
                         		DataBuffer dataBuffer = new DataBuffer(abuf);
+                        		abuf.release();
                         		//diff
                         		Data data1 = new Data(dataBuffer).flag1();
                                 retVal.put(entry.getKey(), data1);                    		

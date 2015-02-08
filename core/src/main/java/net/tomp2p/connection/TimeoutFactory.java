@@ -120,7 +120,7 @@ public class TimeoutFactory {
 		@Override
 		public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
 			if (evt instanceof IdleStateHandlerTomP2P) {
-				LOG.warn("channel timeout for channel {} {}", name, ctx.channel());
+				LOG.warn("Channel timeout for channel {} {}.", name, ctx.channel());
 				final PeerAddress recipient;
 				if (futureResponse != null) {
 					LOG.warn("Request status is {}", futureResponse.request());
@@ -136,8 +136,8 @@ public class TimeoutFactory {
 					ctx.close();
 					// check if we have set an attribute at least (if we have
 					// already decoded the header)
-					final Attribute<PeerAddress> pa = ctx.attr(Decoder.PEER_ADDRESS_KEY);
-					recipient = pa.get();
+					final Attribute<PeerAddress> attrPeerAddr = ctx.attr(Decoder.PEER_ADDRESS_KEY);
+					recipient = attrPeerAddr.get();
 				}
 
 				if (peerStatusListeners == null) {
@@ -147,12 +147,12 @@ public class TimeoutFactory {
 
 					for (PeerStatusListener peerStatusListener : peerStatusListeners) {
 						if (recipient != null) {
-							peerStatusListener.peerFailed(recipient, new PeerException(AbortCause.TIMEOUT, "timeout!"));
+							peerStatusListener.peerFailed(recipient, new PeerException(AbortCause.TIMEOUT, "Timeout!"));
 						} else {
 							InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
 							if (inetSocketAddress == null) {
-								final Attribute<InetSocketAddress> pa = ctx.attr(Decoder.INET_ADDRESS_KEY);
-								inetSocketAddress = pa.get();
+								final Attribute<InetSocketAddress> attrInetAddr = ctx.attr(Decoder.INET_ADDRESS_KEY);
+								inetSocketAddress = attrInetAddr.get();
 							}
 							if (inetSocketAddress != null) {
 								peerStatusListener.peerFailed(

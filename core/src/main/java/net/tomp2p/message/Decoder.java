@@ -99,15 +99,15 @@ public class Decoder {
 		try {
 			final int readerBefore = buf.readerIndex();
 			// set the sender of this message for handling timeout
-			final Attribute<InetSocketAddress> attributeInet = ctx.attr(INET_ADDRESS_KEY);
-			attributeInet.set(sender);
+			final Attribute<InetSocketAddress> attrInetAddr = ctx.attr(INET_ADDRESS_KEY);
+			attrInetAddr.set(sender);
 
 			if (message == null) {
 				boolean doneHeader = decodeHeader(buf, recipient, sender);
 				if (doneHeader) {
 					// store the sender as an attribute
-					final Attribute<PeerAddress> attributePeerAddress = ctx.attr(PEER_ADDRESS_KEY);
-					attributePeerAddress.set(message.sender());
+					final Attribute<PeerAddress> attrPeerAddr = ctx.attr(PEER_ADDRESS_KEY);
+					attrPeerAddr.set(message.sender());
 					message.udp(ctx.channel() instanceof DatagramChannel);
 					if (message.isFireAndForget() && message.isUdp()) {
 						TimeoutFactory.removeTimeout(ctx);

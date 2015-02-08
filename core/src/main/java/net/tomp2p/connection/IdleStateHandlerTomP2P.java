@@ -11,7 +11,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Striped down version of the IdleStateHandler.
+ * Stripped-down version of the IdleStateHandler.
  */
 public class IdleStateHandlerTomP2P extends ChannelDuplexHandler {
 

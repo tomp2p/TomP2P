@@ -84,20 +84,16 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
             this.directHits = directHits;
             this.routingPath = routingPath;
             if (isBootstrap && isRoutingToOther) {
-                // we need to fail if we only find ourself. This means that we
-                // did not connect to any peer and we did
-                // not
-                // wanted connect to ourself.
+            	// We need to fail if we only find ourself. This means that we did 
+                // not connect to any peer and we did not want to connect to ourself.
                 this.type = ((potentialHits.size() <= 1) && (directHits.size() == 0)) ? BaseFuture.FutureType.FAILED
                         : BaseFuture.FutureType.OK;
             } else {
-                // for DHT or bootstraping to ourself, we set to success, since
-                // we may want to store
-                // data on our peer rather than failing completely if we dont
-                // find other peers
+            	// For DHT or bootstrapping to ourself, we set to success since we may
+                // want to store data on our peer rather than failing completely if
+                // we don't find other peers.
                 this.type = BaseFuture.FutureType.OK;
             }
-
         }
         notifyListeners();
     }
@@ -105,8 +101,8 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
     /**
      * The potential hits set contains those peers that are in the direct hit
      * and that did report to *not* have the key (Number160) we were looking
-     * for. We already check for the content during routing, since we send the
-     * information what we are looking for anyway, so a reply if the content
+     * for. We already checked for the content during routing, since we sent the
+     * information what we are looking for anyway. So a reply if the content
      * exists or not is not very expensive. However, a peer may lie about this.
      * 
      * @see #directHits()
@@ -123,8 +119,8 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
 
     /**
      * The direct hits set contains those peers that reported to have the key
-     * (Number160) we were looking for. We already check for the content during
-     * routing, since we send the information what we are looking for anyway, so
+     * (Number160) we were looking for. We already checked for the content during
+     * routing, since we sent the information what we are looking for anyway. So
      * a reply if the content exists or not is not very expensive. However, a
      * peer may lie about this.
      * 

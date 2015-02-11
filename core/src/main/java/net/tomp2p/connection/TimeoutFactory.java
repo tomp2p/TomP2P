@@ -157,9 +157,9 @@ public class TimeoutFactory {
 							if (inetSocketAddress != null) {
 								peerStatusListener.peerFailed(
 								        new PeerAddress(Number160.ZERO, inetSocketAddress.getAddress()),
-								        new PeerException(AbortCause.TIMEOUT, "timeout!"));
+								        new PeerException(AbortCause.TIMEOUT, "Timeout!"));
 							} else {
-								LOG.warn("Cannot determine the address!");
+								LOG.warn("Cannot determine the sender's address!");
 							}
 						}
 					}

@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This Quit RPC is used to send friendly shutdown messages by peers that are
- * shutdown regularly.
+ * shut down regularly.
  * 
  * @author Thomas Bocek
  * 
@@ -67,7 +67,7 @@ public class QuitRPC extends DispatchHandler {
 	 * Add a peer status listener that gets notified when a peer is offline.
 	 * 
 	 * @param listener
-	 *            The listener
+	 *            The listener to be added
 	 * @return This class
 	 */
 	public QuitRPC addPeerStatusListener(final PeerStatusListener listener) {
@@ -86,8 +86,6 @@ public class QuitRPC extends DispatchHandler {
 	 *            be signed
 	 * @param channelCreator
 	 *            The channel creator that creates connections
-	 * @param configuration
-	 *            The client side connection configuration
 	 * @return The future response to keep track of future events
 	 */
 	public FutureResponse quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder,

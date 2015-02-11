@@ -46,7 +46,7 @@ public class DigestInfo {
     }
 
     /**
-     * Create a digest with the size only.
+     * Creates a digest with the size only.
      * 
      * @param size
      *            The number of items
@@ -195,7 +195,7 @@ public class DigestInfo {
     }
 
     /**
-     * @return True is the digest information has not been provided.
+     * @return True, if the digest information has not been provided.
      */
     public boolean isEmpty() {
         return size <= 0;
@@ -210,7 +210,8 @@ public class DigestInfo {
             return true;
         }
         DigestInfo other = (DigestInfo) obj;
-        return keyDigest().equals(other.keyDigest()) && size() == other.size()
+        return keyDigest().equals(other.keyDigest()) 
+        		&& size() == other.size()
                 && contentDigest().equals(other.contentDigest());
     }
 

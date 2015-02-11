@@ -5,32 +5,38 @@ import java.security.KeyPair;
 public interface SignatureBuilder<K extends SignatureBuilder<K>> {
 
     /**
-     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+     * Indicates whether a message should be signed or not.
+     * @return
      */
-    public abstract boolean isSign();
+	public abstract boolean isSign();
 
     /**
+     * Sets whether a message should be signed or not.
+     * For protecting an entry, this needs to be set to true.
      * @param signMessage
-     *            Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
-     * @return This class
+     *            True, if the message should be signed.
+     * @return This instance
      */
     public abstract K sign(boolean signMessage);
 
     /**
-     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+     * Sets the message to be signed.
+     * @return This instance
      */
     public abstract K sign();
 
     /**
+     * Sets the key pair to sing the message. The key will be attached to the message and stored
+     * potentially with a data object (if there is such an object in the message).
      * @param keyPair
-     *            The keyPair to sing the complete message. The key will be attached to the message and stored
-     *            potentially with a data object (if there is such an object in the message).
-     * @return This class
+     *            The key pair to be used for signing.
+     * @return This instance
      */
     public abstract K keyPair(KeyPair keyPair);
 
     /**
-     * @return The current keypair to sign the message. If null, no signature is applied.
+     * Gets the current key pair used to sign the message. If null, no signature is applied.
+     * @return
      */
     public abstract KeyPair keyPair();
 

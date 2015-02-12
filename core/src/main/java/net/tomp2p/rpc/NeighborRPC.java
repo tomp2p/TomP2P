@@ -296,9 +296,9 @@ public class NeighborRPC extends DispatchHandler {
         public SearchValues(final Number160 locationKey, final Number160 domainKey) {
             this.locationKey = locationKey;
             this.domainKey = domainKey;
+            this.contentKey = null;
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
-            this.contentKey = null;
             this.from = null;
             this.to = null;
         }
@@ -311,15 +311,15 @@ public class NeighborRPC extends DispatchHandler {
          * @param domainKey
          *            The domain key
          * @param contentKey
-         *            For get() and remove() one can provide the a content key and the remote peer indicates if this key
+         *            For get() and remove() one can provide a content key and the remote peer indicates if this key
          *            is on that peer.
          */
         public SearchValues(final Number160 locationKey, final Number160 domainKey, final Number160 contentKey) {
             this.locationKey = locationKey;
             this.domainKey = domainKey;
+            this.contentKey = contentKey;
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
-            this.contentKey = contentKey;
             this.from = null;
             this.to = null;
         }
@@ -327,9 +327,9 @@ public class NeighborRPC extends DispatchHandler {
         public SearchValues(Number160 locationKey, Number160 domainKey, Number640 from, Number640 to) {
             this.locationKey = locationKey;
             this.domainKey = domainKey;
+            this.contentKey = null;
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
-            this.contentKey = null;
             this.from = from;
             this.to = to;
         }
@@ -349,9 +349,9 @@ public class NeighborRPC extends DispatchHandler {
                 final SimpleBloomFilter<Number160> keyBloomFilter) {
             this.locationKey = locationKey;
             this.domainKey = domainKey;
+            this.contentKey = null;
             this.keyBloomFilter = keyBloomFilter;
             this.contentBloomFilter = null;
-            this.contentKey = null;
             this.from = null;
             this.to = null;
         }
@@ -375,9 +375,9 @@ public class NeighborRPC extends DispatchHandler {
                 final SimpleBloomFilter<Number160> contentBloomFilter) {
             this.locationKey = locationKey;
             this.domainKey = domainKey;
+            this.contentKey = null;
             this.keyBloomFilter = keyBloomFilter;
             this.contentBloomFilter = contentBloomFilter;
-            this.contentKey = null;
             this.from = null;
             this.to = null;
         }

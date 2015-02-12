@@ -53,7 +53,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return maxDirectHits;
     }
 
-    public void maxDirectHits(int maxDirectHits) {
+    public void setMaxDirectHits(int maxDirectHits) {
         this.maxDirectHits = maxDirectHits;
     }
 
@@ -69,7 +69,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return maxFailures;
     }
 
-    public void maxFailures(int maxFailures) {
+    public void setMaxFailures(int maxFailures) {
         this.maxFailures = maxFailures;
     }
 
@@ -77,7 +77,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return maxSuccess;
     }
 
-    public void maxSuccess(int maxSuccess) {
+    public void setMaxSuccess(int maxSuccess) {
         this.maxSuccess = maxSuccess;
     }
 
@@ -85,7 +85,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return parallel;
     }
 
-    public void parallel(int parallel) {
+    public void setParallel(int parallel) {
         this.parallel = parallel;
     }
 
@@ -93,7 +93,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return isBootstrap;
     }
 
-    public void bootstrap(boolean isBootstrap) {
+    public void setBootstrap(boolean isBootstrap) {
         this.isBootstrap = isBootstrap;
     }
 
@@ -101,15 +101,15 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return isForceRoutingOnlyToSelf;
     }
 
-    public void forceRoutingOnlyToSelf(boolean isForceRoutingOnlyToSelf) {
+    public void setIsForceRoutingOnlyToSelf(boolean isForceRoutingOnlyToSelf) {
         this.isForceRoutingOnlyToSelf = isForceRoutingOnlyToSelf;
     }
 
-    public void locationKey(Number160 locationKey) {
+    public void setLocationKey(Number160 locationKey) {
         this.locationKey = locationKey;
     }
     
-    public void domainKey(Number160 domainKey) {
+    public void setDomainKey(Number160 domainKey) {
         this.domainKey = domainKey;
     }
     
@@ -152,7 +152,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return contentKey;
     }
 
-    public void contentKey(Number160 contentKey) {
+    public void setContentKey(Number160 contentKey) {
         this.contentKey = contentKey;
     }
 
@@ -160,7 +160,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return contentBloomFilter;
     }
 
-    public void contentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
+    public void setContentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
         this.contentBloomFilter = contentBloomFilter;
     }
 
@@ -168,7 +168,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return keyBloomFilter;
     }
 
-    public void keyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
+    public void setKeyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
         this.keyBloomFilter = keyBloomFilter;
     }
 
@@ -183,7 +183,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return routingMechanism;
     }
 
-	public void range(Number640 from, Number640 to) {
+	public void setRange(Number640 from, Number640 to) {
 	    this.from = from;
 	    this.to = to;
     }

@@ -13,8 +13,7 @@ public class TestStorageMemoryReplication {
 		Number160 testLoc = Number160.createHash("test1");
 		Number160 testPer = Number160.createHash("test2");
 		storageMemoryReplication.updateResponsibilities(testLoc, testPer);
-		Assert.assertEquals(testPer, storageMemoryReplication.findPeerIDsForResponsibleContent(testLoc)
-				.iterator().next());
+		Assert.assertEquals(testPer, storageMemoryReplication.findPeerIDsForResponsibleContent(testLoc));
 	}
 
 	@Test
@@ -60,8 +59,7 @@ public class TestStorageMemoryReplication {
 		Number160 testPer = Number160.createHash("test2");
 		storageMemoryReplication.updateResponsibilities(testLoc, testPer);
 		storageMemoryReplication.updateResponsibilities(testLoc, testPer);
-		Assert.assertEquals(testPer, storageMemoryReplication.findPeerIDsForResponsibleContent(testLoc)
-				.iterator().next());
+		Assert.assertEquals(testPer, storageMemoryReplication.findPeerIDsForResponsibleContent(testLoc));
 		Assert.assertEquals(testLoc, storageMemoryReplication.findContentForResponsiblePeerID(testPer)
 				.iterator().next());
 	}

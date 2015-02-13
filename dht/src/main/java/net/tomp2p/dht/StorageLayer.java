@@ -792,15 +792,10 @@ public class StorageLayer implements DigestStorage {
         }
 	}
 	
-	public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
+	public Number160 findPeerIDsForResponsibleContent(Number160 locationKey) {
 		RangeLock<Number640>.Range lockResp = lockResponsibility(locationKey);
 		try {
-			Collection<Number160> peerIDs = backend.findPeerIDsForResponsibleContent(locationKey);
-			if (peerIDs == null) {
-				return Collections.<Number160> emptyList();
-			} else {
-			    return new ArrayList<Number160>(peerIDs);
-			}
+			return backend.findPeerIDsForResponsibleContent(locationKey);
 		} finally {
 			lockResp.unlock();
         }
@@ -811,17 +806,6 @@ public class StorageLayer implements DigestStorage {
 		RangeLock<Number640>.Range lockResp2 = lockResponsibility(locationKey);
         try {
             return backend.updateResponsibilities(locationKey, peerId);
-        } finally {
-        	lockResp1.unlock();
-        	lockResp2.unlock();
-        }
-	}
-	
-	public void removeResponsibility(Number160 locationKey, Number160 peerId) {
-		RangeLock<Number640>.Range lockResp1 = lockResponsibility(peerId);
-		RangeLock<Number640>.Range lockResp2 = lockResponsibility(locationKey);
-        try {
-        	backend.removeResponsibility(locationKey, peerId);
         } finally {
         	lockResp1.unlock();
         	lockResp2.unlock();

@@ -50,7 +50,7 @@ public class StorageDisk implements Storage {
     final private Map<Number320, PublicKey> protectedDomainMap;
     final private Map<Number480, PublicKey> protectedEntryMap;
     // Responsibility
-    final private Map<Number160, Set<Number160>> responsibilityMap;
+    final private Map<Number160, Number160> responsibilityMap;
     final private Map<Number160, Set<Number160>> responsibilityMapRev;
     
     final private DB db;
@@ -271,7 +271,7 @@ public class StorageDisk implements Storage {
     
  	// Responsibility
  	@Override
-    public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
+    public Number160 findPeerIDsForResponsibleContent(Number160 locationKey) {
  		return responsibilityMap.get(locationKey);
     }
 
@@ -282,42 +282,31 @@ public class StorageDisk implements Storage {
 
 	@Override
     public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
-		boolean isNew1 = putIfAbsent0(locationKey, peerId);
-		boolean isNew2 = putIfAbsent1(peerId, locationKey);
-		db.commit();
-		return isNew1 && isNew2;
-        
-    }
-	
-	private boolean putIfAbsent0(Number160 locationKey, Number160 peerId) {
-		Set<Number160> peerIDs = responsibilityMap.get(locationKey);
-        if(peerIDs == null) {
-        	peerIDs = new HashSet<Number160>();
-        }
-        boolean isNew = peerIDs.add(peerId);
-        responsibilityMap.put(locationKey, peerIDs);
-        return isNew;
-    }
-	
-	private boolean putIfAbsent1(Number160 peerId, Number160 locationKey) {
+		final Number160 oldPeerID = responsibilityMap.put(locationKey, peerId);
+		final boolean isNew;
+		if(oldPeerID != null) {
+			removeRevResponsibility(oldPeerID, locationKey);
+			isNew = false;
+		} else {
+			isNew = true;
+		}
 		Set<Number160> contentIDs = responsibilityMapRev.get(peerId);
-        if(contentIDs == null) {
-        	contentIDs = new HashSet<Number160>();
-        }
-        boolean isNew = contentIDs.add(locationKey);
-        responsibilityMapRev.put(peerId, contentIDs);
-        return isNew;
+		if(contentIDs == null) {
+			contentIDs = new HashSet<Number160>();
+		}
+		contentIDs.add(locationKey);
+		responsibilityMapRev.put(peerId, contentIDs);
+		db.commit();
+		return isNew;
     }
 
 	@Override
     public void removeResponsibility(Number160 locationKey) {
-		Set<Number160> peerIds = responsibilityMap.remove(locationKey);
-		if(peerIds != null) {
-			for (Number160 peerId : peerIds) {
-				removeRevResponsibility(peerId, locationKey);
-			}
-			db.commit();
-    	 }
+		final Number160 peerId = responsibilityMap.remove(locationKey);
+    	if(peerId != null) {
+    		removeRevResponsibility(peerId, locationKey);
+    	}
+    	db.commit();
     }
 	
 	private void removeRevResponsibility(Number160 peerId, Number160 locationKey) {
@@ -330,16 +319,6 @@ public class StorageDisk implements Storage {
             	responsibilityMapRev.put(peerId, contentIDs);
             }
         }
-    }
-	
-	@Override
-    public void removeResponsibility(Number160 locationKey, Number160 peerId) {
-		Set<Number160> peerIds = responsibilityMap.get(locationKey);
-		if (peerIds != null && peerIds.remove(peerId)) {
-			responsibilityMap.put(locationKey, peerIds);
-			removeRevResponsibility(peerId, locationKey);
-			db.commit();
-		}
     }
 	
 	// Misc

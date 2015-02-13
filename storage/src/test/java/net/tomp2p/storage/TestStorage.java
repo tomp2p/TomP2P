@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.SortedMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CountDownLatch;
 
 import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.dht.StorageLayer.PutStatus;
@@ -361,23 +361,23 @@ public class TestStorage {
         final Storage sM = createStorage();
         final StorageLayer storageGeneric = new StorageLayer(sM);
         store(storageGeneric);
-        final AtomicInteger counter = new AtomicInteger();
+        final CountDownLatch cdl = new CountDownLatch(10);
         final Data result1 = storageGeneric.get(key1);
         for (int i = 0; i < 10; i++) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        Assert.assertEquals("test1", result1.object());    
+                        Assert.assertEquals("test1", result1.object());
+                        cdl.countDown();
                     } catch (Throwable t) {
                         t.printStackTrace();
-                        counter.incrementAndGet();
+                        
                     }
                 }
             }).start();
         }
-        Thread.sleep(500);
-        Assert.assertEquals(0, counter.get());
+        cdl.await();
         sM.close();
     }
 
@@ -386,7 +386,8 @@ public class TestStorage {
         final Storage sM = createStorage();
         final StorageLayer storageGeneric = new StorageLayer(sM);
         store(storageGeneric);
-        final AtomicInteger counter = new AtomicInteger();
+        final CountDownLatch cdl = new CountDownLatch(200);
+        //final AtomicInteger counter = new AtomicInteger();
         for (int i = 0; i < 100; i++) {
             new Thread(new Runnable() {
                 @Override
@@ -400,9 +401,9 @@ public class TestStorage {
                         result3 = storageGeneric.get(key3);
                         Assert.assertEquals(null, result3);
                         store(storageGeneric, 1);
+                        cdl.countDown();
                     } catch (Throwable t) {
                         t.printStackTrace();
-                        counter.incrementAndGet();
                     }
                     try {
                         result2 = storageGeneric.get(key2);
@@ -410,15 +411,14 @@ public class TestStorage {
                         result3 = storageGeneric.get(key3);
                         Assert.assertEquals(null, result3);
                         store(storageGeneric, 1);
+                        cdl.countDown();
                     } catch (Throwable t) {
                         t.printStackTrace();
-                        counter.incrementAndGet();
                     }
                 }
             }).start();
         }
-        Thread.sleep(500);
-        Assert.assertEquals(0, counter.get());
+        cdl.await();
         sM.close();
     }
 }

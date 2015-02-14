@@ -241,12 +241,12 @@ public class BootstrapBuilder {
 
     static RoutingBuilder createBuilder(RoutingConfiguration routingConfiguration, boolean forceRoutingOnlyToSelf) {
         RoutingBuilder routingBuilder = new RoutingBuilder();
-        routingBuilder.parallel(routingConfiguration.parallel());
+        routingBuilder.setParallel(routingConfiguration.parallel());
         routingBuilder.setMaxNoNewInfo(routingConfiguration.maxNoNewInfoDiff());
-        routingBuilder.maxDirectHits(Integer.MAX_VALUE);
-        routingBuilder.maxFailures(routingConfiguration.maxFailures());
-        routingBuilder.maxSuccess(routingConfiguration.maxSuccess());
-        routingBuilder.forceRoutingOnlyToSelf(forceRoutingOnlyToSelf);
+        routingBuilder.setMaxDirectHits(Integer.MAX_VALUE);
+        routingBuilder.setMaxFailures(routingConfiguration.maxFailures());
+        routingBuilder.setMaxSuccess(routingConfiguration.maxSuccess());
+        routingBuilder.setIsForceRoutingOnlyToSelf(forceRoutingOnlyToSelf);
         return routingBuilder;
     }
 

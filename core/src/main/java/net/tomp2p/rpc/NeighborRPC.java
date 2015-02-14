@@ -342,7 +342,7 @@ public class NeighborRPC extends DispatchHandler {
          * @param domainKey
          *            The domain key
          * @param keyBloomFilter
-         *            For get() and remove() one can provide the a bloom filter of content keys and the remote peer
+         *            For get() and remove() one can provide a bloom filter of content keys and the remote peer
          *            indicates if those keys are on that peer.
          */
         public SearchValues(final Number160 locationKey, final Number160 domainKey,
@@ -364,10 +364,10 @@ public class NeighborRPC extends DispatchHandler {
          * @param domainKey
          *            The domain key
          * @param keyBloomFilter
-         *            For get() and remove() one can provide the a bloom filter of content keys and the remote peer
+         *            For get() and remove() one can provide a bloom filter of content keys and the remote peer
          *            indicates if those keys are on that peer.
          * @param contentBloomFilter
-         *            contentBloomFilter For get() and remove() one can provide the a bloom filter of content values and
+         *            contentBloomFilter For get() and remove() one can provide a bloom filter of content values and
          *            the remote peer indicates if those values are on that peer.
          */
         public SearchValues(final Number160 locationKey, final Number160 domainKey,

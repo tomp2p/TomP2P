@@ -83,7 +83,7 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
             	if (futureChannelCreator.isSuccess()) {
             		ChannelCreator cc = futureChannelCreator.channelCreator();
             		RoutingBuilder routingBuilder = BootstrapBuilder.createBuilder(routingConfiguration, forceRoutingOnlyToSelf);
-            		routingBuilder.locationKey(peer.peerID());
+            		routingBuilder.setLocationKey(peer.peerID());
             		FutureRouting futureRouting = peer.distributedRouting().quit(routingBuilder, cc);
             		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
 						@Override

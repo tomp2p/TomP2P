@@ -146,12 +146,12 @@ public class TestRouting {
             if (tcp) {
                 routingBuilder.forceTCP(true);
             }
-            routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.setLocationKey(peers[6].peerID());
+            routingBuilder.setMaxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.maxFailures(0);
-            routingBuilder.maxSuccess(100);
-            routingBuilder.parallel(2);
+            routingBuilder.setMaxFailures(0);
+            routingBuilder.setMaxSuccess(100);
+            routingBuilder.setParallel(2);
 
             FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
@@ -220,12 +220,12 @@ public class TestRouting {
             if (tcp) {
                 routingBuilder.forceTCP(true);
             }
-            routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.setLocationKey(peers[6].peerID());
+            routingBuilder.setMaxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.maxFailures(0);
-            routingBuilder.maxSuccess(100);
-            routingBuilder.parallel(2);
+            routingBuilder.setMaxFailures(0);
+            routingBuilder.setMaxSuccess(100);
+            routingBuilder.setParallel(2);
 
             FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
@@ -288,12 +288,12 @@ public class TestRouting {
             if (tcp) {
                 routingBuilder.forceTCP(true);
             }
-            routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.setLocationKey(peers[6].peerID());
+            routingBuilder.setMaxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.maxFailures(0);
-            routingBuilder.maxSuccess(100);
-            routingBuilder.parallel(1);
+            routingBuilder.setMaxFailures(0);
+            routingBuilder.setMaxSuccess(100);
+            routingBuilder.setParallel(1);
 
             FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
@@ -355,12 +355,12 @@ public class TestRouting {
             if (tcp) {
                 routingBuilder.forceTCP(true);
             }
-            routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.setLocationKey(peers[6].peerID());
+            routingBuilder.setMaxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.maxFailures(0);
-            routingBuilder.maxSuccess(100);
-            routingBuilder.parallel(2);
+            routingBuilder.setMaxFailures(0);
+            routingBuilder.setMaxSuccess(100);
+            routingBuilder.setParallel(2);
 
             FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
@@ -425,12 +425,12 @@ public class TestRouting {
             if (tcp) {
                 routingBuilder.forceTCP(true);
             }
-            routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.setLocationKey(peers[6].peerID());
+            routingBuilder.setMaxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.maxFailures(0);
-            routingBuilder.maxSuccess(100);
-            routingBuilder.parallel(3);
+            routingBuilder.setMaxFailures(0);
+            routingBuilder.setMaxSuccess(100);
+            routingBuilder.setParallel(3);
 
             FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
@@ -529,12 +529,12 @@ public class TestRouting {
             if (tcp) {
                 routingBuilder.forceTCP(true);
             }
-            routingBuilder.locationKey(peers[20].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.setLocationKey(peers[20].peerID());
+            routingBuilder.setMaxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.maxFailures(0);
-            routingBuilder.maxSuccess(100);
-            routingBuilder.parallel(1);
+            routingBuilder.setMaxFailures(0);
+            routingBuilder.setMaxSuccess(100);
+            routingBuilder.setParallel(1);
 
             FutureRouting fr = peers[500].distributedRouting().route(routingBuilder, request, cc);
 
@@ -597,12 +597,12 @@ public class TestRouting {
                 if (tcp) {
                     routingBuilder.forceTCP(true);
                 }
-                routingBuilder.locationKey(peers[rnd1.nextInt(peers.length)].peerID());
-                routingBuilder.maxDirectHits(0);
+                routingBuilder.setLocationKey(peers[rnd1.nextInt(peers.length)].peerID());
+                routingBuilder.setMaxDirectHits(0);
                 routingBuilder.setMaxNoNewInfo(0);
-                routingBuilder.maxFailures(0);
-                routingBuilder.maxSuccess(100);
-                routingBuilder.parallel(res);
+                routingBuilder.setMaxFailures(0);
+                routingBuilder.setMaxSuccess(100);
+                routingBuilder.setParallel(res);
 
                 FutureRouting frr = peers[rnd2.nextInt(peers.length)].distributedRouting().route(
                         routingBuilder, request, cc);
@@ -662,11 +662,11 @@ public class TestRouting {
                 if (tcp) {
                     routingBuilder.forceTCP(true);
                 }
-                routingBuilder.maxDirectHits(0);
+                routingBuilder.setMaxDirectHits(0);
                 routingBuilder.setMaxNoNewInfo(5);
-                routingBuilder.maxFailures(100);
-                routingBuilder.maxSuccess(100);
-                routingBuilder.parallel(1);
+                routingBuilder.setMaxFailures(100);
+                routingBuilder.setMaxSuccess(100);
+                routingBuilder.setParallel(1);
 
                 FutureDone<Pair<FutureRouting,FutureRouting>> fm = peers[i].distributedRouting().bootstrap(
                         peerAddresses, routingBuilder, cc);
@@ -771,12 +771,12 @@ public class TestRouting {
                 if (tcp) {
                     routingBuilder.forceTCP(true);
                 }
-                routingBuilder.locationKey(find);
-                routingBuilder.maxDirectHits(Integer.MAX_VALUE);
+                routingBuilder.setLocationKey(find);
+                routingBuilder.setMaxDirectHits(Integer.MAX_VALUE);
                 routingBuilder.setMaxNoNewInfo(5);
-                routingBuilder.maxFailures(10);
-                routingBuilder.maxSuccess(20);
-                routingBuilder.parallel(2);
+                routingBuilder.setMaxFailures(10);
+                routingBuilder.setMaxSuccess(20);
+                routingBuilder.setParallel(2);
 
                 FutureRouting frr = peers[50].distributedRouting().route(routingBuilder, Type.REQUEST_1,
                         cc);

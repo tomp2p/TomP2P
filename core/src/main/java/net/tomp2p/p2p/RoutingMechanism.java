@@ -61,7 +61,7 @@ public class RoutingMechanism {
      * Creates the routing mechanism. Make sure to set the max* fields.
      * 
      * @param futureResponses
-     *            The current future responeses that are running
+     *            The current future responses that are running
      * @param futureRoutingResponse
      *            The reponse future from this routing request
      */
@@ -131,7 +131,7 @@ public class RoutingMechanism {
 
     /**
      * @param alreadyAsked
-     *            The peer we have already queried, we need to store them to not ask the same peers again
+     *            The peers we have already queried, we need to store them to not ask the same peers again
      * @return This class
      */
     public RoutingMechanism alreadyAsked(final SortedSet<PeerAddress> alreadyAsked) {
@@ -282,17 +282,17 @@ public class RoutingMechanism {
         	filterPeers(newNeighbors, alreadyAsked, queueToAsk, locationkey);
             if (evaluateDirectHits(remotePeer, directHits, digestBean, getMaxDirectHits())) {
                 // stop immediately
-                LOG.debug("we have enough direct hits {}", directHits);
+                LOG.debug("Enough direct hits found: {}.", directHits);
                 finished = true;
                 stopCreatingNewFutures = true;
             } else if ((++nrSuccess) > maxSucess()) {
                 // wait until pending futures are finished
-                LOG.debug("we have reached max success {}", nrSuccess);
+                LOG.debug("Max success reached: {}.", nrSuccess);
                 finished = last;
                 stopCreatingNewFutures = true;
             } else if (evaluateInformation(newNeighbors, queueToAsk, alreadyAsked, maxNoNewInfo())) {
                 // wait until pending futures are finished
-                LOG.debug("we have no new information for the {} time", maxNoNewInfo());
+                LOG.debug("No new information for the {} time.", maxNoNewInfo());
                 finished = last;
                 stopCreatingNewFutures = true;
             } else {
@@ -304,8 +304,8 @@ public class RoutingMechanism {
         return finished;
     }
 
-	private void filterPeers(Collection<PeerAddress> newNeighbors, SortedSet<PeerAddress> alreadyAsked,
-	        NavigableSet<PeerAddress> queueToAsk, Number160 locationkey) {
+	private void filterPeers(Collection<PeerAddress> newNeighbors, Collection<PeerAddress> alreadyAsked,
+			Collection<PeerAddress> queueToAsk, Number160 locationkey) {
 		if (peerFilters == null || peerFilters.size() == 0) {
 			return;
 		}
@@ -327,7 +327,7 @@ public class RoutingMechanism {
      * end of our search.
      * 
      * @param remotePeer
-     *            The remote peer that gave us thi digest information
+     *            The remote peer that gave us this digest information
      * @param directHits
      *            The result map that will store how many peers reported that data is there
      * @param digestBean
@@ -357,8 +357,6 @@ public class RoutingMechanism {
      *            The peers that are in the queue to be asked
      * @param alreadyAsked
      *            The peers we have already asked
-     * @param noNewInfo
-     *            counter how many times we did not find any peer that is closer to the target
      * @param maxNoNewInfo
      *            The maximum number of replies from neighbors that do not give us closer peers
      * @return True if we should stop, false if we should continue with the routing
@@ -370,9 +368,8 @@ public class RoutingMechanism {
         if (newInformation) {
             nrNoNewInfo = 0;
             return false;
-        } else {
-            return (++nrNoNewInfo) >= maxNoNewInfo;
         }
+        return (++nrNoNewInfo) >= maxNoNewInfo;
     }
 
     /**

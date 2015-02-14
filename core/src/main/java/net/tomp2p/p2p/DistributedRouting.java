@@ -94,7 +94,7 @@ public class DistributedRouting {
         final FutureDone<Pair<FutureRouting,FutureRouting>> futureDone = new FutureDone<Pair<FutureRouting,FutureRouting>>();
 
         // first we find close peers to us
-        routingBuilder.bootstrap(true);
+        routingBuilder.setBootstrap(true);
 
         final FutureRouting futureRouting0 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
         // to not become a Fachidiot (expert idiot), we need to know other peers
@@ -104,7 +104,7 @@ public class DistributedRouting {
             public void operationComplete(final FutureRouting future) throws Exception {
                 // setting this to null causes to search for a random number
             	if(future.isSuccess()) {
-            		routingBuilder.locationKey(null);
+            		routingBuilder.setLocationKey(null);
             		final FutureRouting futureRouting1 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
             		futureRouting1.addListener(new BaseFutureAdapter<FutureRouting>() {
             			@Override
@@ -313,7 +313,7 @@ public class DistributedRouting {
                     // return the address farest away.
                     final Number160 locationKey2 = randomSearch ? next.peerId().xor(Number160.MAX_VALUE)
                             : routingBuilder.locationKey();
-                    routingBuilder.locationKey(locationKey2);
+                    routingBuilder.setLocationKey(locationKey2);
                      
                     if(LOG.isWarnEnabled() ) {
                     	//routing is per default UDP, don't show warning if the other TCP/UDP is used

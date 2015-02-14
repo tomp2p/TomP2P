@@ -76,7 +76,7 @@
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-nat</artifactId>
-			<version>5.0-Beta3-SNAPSHOT</version>
+			<version>${project.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>

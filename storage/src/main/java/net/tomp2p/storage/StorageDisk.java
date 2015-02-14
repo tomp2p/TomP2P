@@ -283,12 +283,16 @@ public class StorageDisk implements Storage {
 	@Override
     public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
 		final Number160 oldPeerID = responsibilityMap.put(locationKey, peerId);
-		final boolean isNew;
+		final boolean hasChanged;
 		if(oldPeerID != null) {
-			removeRevResponsibility(oldPeerID, locationKey);
-			isNew = false;
+			if(oldPeerID.equals(peerId)) {
+				hasChanged = false;
+			} else {
+				removeRevResponsibility(oldPeerID, locationKey);
+				hasChanged = true;
+			}
 		} else {
-			isNew = true;
+			hasChanged = true;
 		}
 		Set<Number160> contentIDs = responsibilityMapRev.get(peerId);
 		if(contentIDs == null) {
@@ -297,7 +301,7 @@ public class StorageDisk implements Storage {
 		contentIDs.add(locationKey);
 		responsibilityMapRev.put(peerId, contentIDs);
 		db.commit();
-		return isNew;
+		return hasChanged;
     }
 
 	@Override

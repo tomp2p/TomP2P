@@ -170,6 +170,7 @@ public class TestStoreReplication {
                 @Override
                 public FutureDone<?> meResponsible(Number160 locationKey, PeerAddress newPeer) {
 	                System.err.println("I sync for " + locationKey + " / ");
+	                test2.incrementAndGet();
 	                return new FutureDone<Void>().done();
                 }
             };
@@ -423,7 +424,7 @@ public class TestStoreReplication {
 		// in replica set anymore, node a has to notify node c
 		// replica set: c, d
 		// responsible: c
-		{ 0, 0, 1 }};
+		{ 0, 0, 0 }};
 		int[][] leaveC =
 		// leaving node b doesn't affect replica set or node a
 		// replica set: c, d
@@ -434,13 +435,13 @@ public class TestStoreReplication {
 		// nobody (meanwhile node d should notify node a, not tested here)
 		// replica set: a, d
 		// responsible: d
-		{ 0, 0, 0 },
+		{ 0, 0, 1 },
 		// node d leaves, node a becomes responsible for key c, but in
 		// this test node a doesn't get notified by node d and therefore
 		// node a doesn't know about it's responsibility
 		// replica set: a
 		// responsible: a
-		{ 0, 0, 0 }};
+		{ 1, 0, 0 }};
 		testReplication(keyC, replicationFactor, false, expectedC, leaveC);
 
 		Number160 keyD = new Number160("0xd");
@@ -458,7 +459,7 @@ public class TestStoreReplication {
 		// replica set of key d, node a has to notify node c
 		// replica set: b, c
 		// responsible: c
-		{ 0, 0, 1 },
+		{ 0, 0, 0 },
 		// node d joins, closer nodes c and d are in replica set of key
 		// d, closer node d becomes responsible, node a notifies nobody
 		// replica set: c, d
@@ -468,7 +469,7 @@ public class TestStoreReplication {
 		// node b leaves and doesn't affects replica set of key d
 		// replica set: c, d
 		// responsible: d
-		{ { 0, 0, 0 },
+		{ { 0, 0, 1 },
 		// node c leaves and node a joins replica set of key d, node d
 		// would be responsible to notify node a
 		// replica set: a, d
@@ -478,7 +479,7 @@ public class TestStoreReplication {
 		// node a wasn't previously notified by node d
 		// replica set: a
 		// responsible: a
-		{ 0, 0, 0 }};
+		{ 1, 0, 0 }};
 		testReplication(keyD, replicationFactor, false, expectedD, leaveD);
 	}
 
@@ -613,19 +614,19 @@ public class TestStoreReplication {
 		// becomes responsible, node a notifies node c
 		// replica set: a, b, c
 		// responsible: c
-		{ 0, 0, 1 },
+		{ 0, 0, 0 },
 		// node d joins, node d is in replica set of key d, node d
 		// becomes responsible, node a notifies node d
 		// replica set: b, c, d
 		// responsible: d
-		{ 0, 0, 1 }};
+		{ 0, 0, 0 }};
 		int[][] leaveD =
 		// node a has no responsibilities to check
-		{{ 0, 0, 0},
+		{{ 0, 0, 1},
 		// node a has no responsibilities to check
 		{ 0, 0, 0 },
 		// node a has no responsibilities to check
-		{ 0, 0, 0 }};
+		{ 1, 0, 0 }};
 		testReplication(key, replicationFactor, false, expectedD, leaveD);
 	}
 	
@@ -1059,6 +1060,7 @@ public class TestStoreReplication {
 			
 			for (int i = 0; i < leaves.length; i++) {
 				// remove a peer
+				System.out.println("leave" +i);
 				master.peerBean().peerMap().peerFailed(peers.get(i+1).peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 				// verify replication notifications
 				Assert.assertEquals(leaves[i][0], replicateI.get());

@@ -261,9 +261,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
 
     @Override
     public FutureDone<?> otherResponsible(final Number160 locationKey, final PeerAddress other) {
-    	if(!nRoot) {
-    		return null;
-    	}
+
         LOG.debug("Other peer {} is responsible for {}. I'm {}", other, locationKey, peer.peerAddress());
         
         Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);

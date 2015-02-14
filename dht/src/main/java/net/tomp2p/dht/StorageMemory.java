@@ -304,12 +304,16 @@ public class StorageMemory implements Storage {
 	@Override
 	public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
 		final Number160 oldPeerID =  responsibilityMap.put(locationKey, peerId);
-		final boolean isNew;
+		final boolean hasChanged;
 		if(oldPeerID != null) {
-			removeRevResponsibility(oldPeerID, locationKey);
-			isNew = false;
+			if(oldPeerID.equals(peerId)) {
+				hasChanged = false;
+			} else {
+				removeRevResponsibility(oldPeerID, locationKey);
+				hasChanged = true;
+			}
 		} else {
-			isNew = true;
+			hasChanged = true;
 		}
 		Set<Number160> contentIDs = responsibilityMapRev.get(peerId);
 		if(contentIDs == null) {
@@ -318,7 +322,7 @@ public class StorageMemory implements Storage {
 		}
 		contentIDs.add(locationKey);
 		LOG.debug("Update {} is responsible for key {}.", peerId, locationKey);
-		return isNew;
+		return hasChanged;
 	}
 
     @Override

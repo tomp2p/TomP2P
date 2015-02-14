@@ -7,6 +7,4 @@ public interface DigestTracker {
 
 	DigestInfo digest(Number160 locationKey, Number160 domainKey, Number160 contentKey);
 
-	
-
 }

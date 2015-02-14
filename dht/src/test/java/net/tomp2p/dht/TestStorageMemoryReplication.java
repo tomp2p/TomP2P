@@ -24,8 +24,8 @@ public class TestStorageMemoryReplication {
 		Number160 testPer2 = Number160.createHash("peer2");
 		storageMemoryReplication.updateResponsibilities(testLoc, testPer1);
 		storageMemoryReplication.updateResponsibilities(testLoc, testPer2);
-		Assert.assertFalse(storageMemoryReplication.updateResponsibilities(testLoc, testPer1));
 		Assert.assertFalse(storageMemoryReplication.updateResponsibilities(testLoc, testPer2));
+		Assert.assertTrue(storageMemoryReplication.updateResponsibilities(testLoc, testPer1));
 	}
 
 	@Test

@@ -16,7 +16,7 @@ import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.TestRelay;
+//import net.tomp2p.relay.TestRelay;
 import net.tomp2p.relay.UtilsNAT;
 import net.tomp2p.relay.buffer.MessageBufferConfiguration;
 import net.tomp2p.storage.Data;

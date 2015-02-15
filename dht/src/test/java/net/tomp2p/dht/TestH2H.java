@@ -1,5 +1,6 @@
 package net.tomp2p.dht;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -425,7 +426,7 @@ public class TestH2H {
 					.start();
 			future.awaitUninterruptibly();
 
-			Assert.assertEquals(
+			assertEquals(
 					content.get(content.size() - 1).getTestString(),
 					((H2HTestData) future.data().object()).getTestString());
 
@@ -464,6 +465,10 @@ public class TestH2H {
 		FuturePut putB = p1.put(locationKey).data(contentKey, versionB, Number160.ONE).keyPair(keyPair1).start()
 				.awaitUninterruptibly();
 		assertTrue(hasVersionFork(putB));
+		
+		FutureGet get = p2.get(locationKey).contentKey(contentKey).versionKey(Number160.ONE).keyPair(keyPair1).start()
+				.awaitUninterruptibly();
+		assertEquals("versionA", get.data().object().toString());
 	}
 
 	private static boolean hasVersionFork(FuturePut future) throws Exception {

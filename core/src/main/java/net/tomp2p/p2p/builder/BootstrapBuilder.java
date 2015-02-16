@@ -206,15 +206,16 @@ public class BootstrapBuilder {
             peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
             return bootstrapPing(peerAddress);
 
-        } else if (peerAddress != null && bootstrapTo == null) {
+        }
+        if (peerAddress != null && bootstrapTo == null) {
             bootstrapTo = new ArrayList<PeerAddress>(1);
             bootstrapTo.add(peerAddress);
             return bootstrap();
-        } else if (bootstrapTo != null) {
-            return bootstrap();
-        } else {
-            return FUTURE_BOOTSTRAP_NO_ADDRESS;
         }
+        if (bootstrapTo != null) {
+            return bootstrap();
+        }
+        return FUTURE_BOOTSTRAP_NO_ADDRESS;
     }
 
     private FutureBootstrap bootstrap() {
@@ -263,7 +264,7 @@ public class BootstrapBuilder {
                     result.bootstrapTo(bootstrapTo);
                     result.waitFor(bootstrap());
                 } else {
-                    result.failed("could not reach anyone with bootstrap");
+                    result.failed("Could not reach anyone with bootstrap.");
                 }
             }
         });
@@ -286,13 +287,10 @@ public class BootstrapBuilder {
                     result.bootstrapTo(bootstrapTo);
                     result.waitFor(bootstrap());
                 } else {
-                    result.failed("could not reach anyone with the broadcast", future);
+                    result.failed("Could not reach anyone with the broadcast.", future);
                 }
             }
         });
         return result;
     }
-
-	
-
 }

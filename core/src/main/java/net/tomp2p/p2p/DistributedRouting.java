@@ -102,8 +102,8 @@ public class DistributedRouting {
         futureRouting0.addListener(new BaseFutureAdapter<FutureRouting>() {
             @Override
             public void operationComplete(final FutureRouting future) throws Exception {
-                // setting this to null causes to search for a random number
             	if(future.isSuccess()) {
+            		// setting this to null causes to search for a random number
             		routingBuilder.setLocationKey(null);
             		final FutureRouting futureRouting1 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
             		futureRouting1.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -128,7 +128,7 @@ public class DistributedRouting {
     }
 
     /**
-     * Looks for a route to the given locationKey.
+     * Looks for a route to the location key given in the routing builder.
      * 
      * @param routingBuilder
      *            All relevant information for the routing process
@@ -258,7 +258,7 @@ public class DistributedRouting {
                 if (next != null) {
                     routingMechanism.addToAlreadyAsked(next);
                     active++;
-                    // if we search for a random peer, then the peer should
+                    // If we search for a random peer, then the peer should
                     // return the address farest away.
                     final Number160 locationKey2 = randomSearch ? next.peerId().xor(Number160.MAX_VALUE)
                             : routingBuilder.locationKey();
@@ -267,9 +267,9 @@ public class DistributedRouting {
                     if(LOG.isWarnEnabled() ) {
                     	//routing is per default UDP, don't show warning if the other TCP/UDP is used
                     	if(channelCreator.availableUDPPermits()==0 && !routingBuilder.isForceTCP()) {
-                    		LOG.warn("sanity check faild UDP: {}, {}",i,Thread.currentThread().getName());
+                    		LOG.warn("Sanity check failed UDP: {}, {}.",i,Thread.currentThread().getName());
                     	} else if(channelCreator.availableTCPPermits()==0 && routingBuilder.isForceTCP()) {
-                    		LOG.warn("sanity check faild TCP: {}, {}",i,Thread.currentThread().getName());
+                    		LOG.warn("Sanity check failed TCP: {}, {}.",i,Thread.currentThread().getName());
                     	}
                     }
                     routingMechanism.futureResponse(i, neighbors.closeNeighbors(next,
@@ -277,12 +277,12 @@ public class DistributedRouting {
                     LOG.debug("get close neighbors: {} on {}", next, i);
                 }
             } else if (routingMechanism.futureResponse(i) != null) {
-                LOG.debug("activity on {}", i);
+                LOG.debug("Activity on {}.", i);
                 active++;
             }
         }
         if (active == 0) {
-            LOG.debug("no activity, closing");
+            LOG.debug("No activity, closing.");
 
             routingMechanism.neighbors(routingBuilder);
             routingMechanism.cancel();
@@ -306,20 +306,20 @@ public class DistributedRouting {
                     Number160 contentDigest = lastResponse.key(1);
                     DigestInfo digestBean = new DigestInfo(keyDigest, contentDigest, resultSize == null ? 0
                             : resultSize);
-                    LOG.debug("Peer ({}) {} reported {} in message {}", (digestBean.size() > 0 ? "direct" : "none"),
+                    LOG.debug("Peer ({}) {} reported {} in message {}.", (digestBean.size() > 0 ? "direct" : "none"),
                             remotePeer, newNeighbors, lastResponse);
                     finished = routingMechanism.evaluateSuccess(remotePeer, digestBean, newNeighbors, last, routingBuilder.locationKey());
-                    LOG.debug("Routing finished {} / {}", finished,
+                    LOG.debug("Routing finished {} / {}.", finished,
                             routingMechanism.isStopCreatingNewFutures());
                 } else {
                     // if it failed but the failed is the closest one, its good to try again, since the peer might just
                     // be busy
-                    LOG.debug("routing error {}", future.failedReason());
+                    LOG.debug("Routing error {}.", future.failedReason());
                     finished = routingMechanism.evaluateFailed();
                     routingMechanism.stopCreatingNewFutures(finished);
                 }
                 if (finished) {
-                    LOG.debug("finished routing, direct hits: {} potential: {}",
+                    LOG.debug("Routing finished. Direct hits: {}. Potential hits: {}.",
                             routingMechanism.directHits(), routingMechanism.potentialHits());
 
                     routingMechanism.neighbors(routingBuilder);

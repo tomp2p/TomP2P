@@ -104,17 +104,14 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
     }
 
     /**
-	 * @return Set to true if the message should be signed. For protecting an
-	 *         entry, this needs to be set to true.
+     * Gets whether the message should be signed.
 	 */
 	public boolean isSign() {
 		return keyPair != null;
 	}
 
 	/**
-	 * @param signMessage
-	 *            Set to true if the message should be signed. For protecting an
-	 *            entry, this needs to be set to true.
+	 * Sets whether a message should be signed. For entry protection, set this to true.
 	 * @return This class
 	 */
 	public ShutdownBuilder sign(final boolean signMessage) {
@@ -127,8 +124,7 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
 	}
 
 	/**
-	 * @return Set to true if the message should be signed. For protecting an
-	 *         entry, this needs to be set to true.
+	 * Sets a message to be signed.
 	 */
 	public ShutdownBuilder sign() {
 		this.keyPair = peer.peerBean().keyPair();
@@ -169,8 +165,7 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
     }
 
     public ShutdownBuilder forceRoutingOnlyToSelf() {
-        this.forceRoutingOnlyToSelf = true;
-        return this;
+        return forceRoutingOnlyToSelf(true);
     }
 
     public ShutdownBuilder forceRoutingOnlyToSelf(boolean forceRoutingOnlyToSelf) {

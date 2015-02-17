@@ -69,7 +69,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
     private final AtomicInteger removedCounter = new AtomicInteger();
 
     /**
-     * Creates a new instance of ConcurrentCacheMap using the supplied values and a {@link CacheMap} for the internal
+     * Creates a new instance of ConcurrentCacheMap using the default values and a {@link CacheMap} for the internal
      * data structure.
      */
     public ConcurrentCacheMap() {
@@ -83,7 +83,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
      * @param timeToLive
      *            The time-to-live value (seconds)
      * @param maxEntries
-     *            Set the maximum number of entries until items gets replaced with LRU
+     *            The maximum number of entries until items gets replaced with LRU
      */
     public ConcurrentCacheMap(final int timeToLiveSeconds, final int maxEntries) {
         this(timeToLiveSeconds, maxEntries, true);
@@ -96,7 +96,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
      * @param timeToLiveSeconds
      *            The time-to-live value (seconds)
      * @param maxEntries
-     *            The maximum entries to keep in cache, default is 1024
+     *            The maximum number of entries until items gets replaced with LRU
      * @param refreshTimeout
      *            If set to true, timeout will be reset in case of {@link #putIfAbsent(Object, Object)}
      */

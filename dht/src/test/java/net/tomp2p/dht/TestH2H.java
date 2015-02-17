@@ -507,21 +507,24 @@ public class TestH2H {
 	// copied from Hive2Hive
 	public void testMaxVersionLimit() throws IOException, ClassNotFoundException, NoSuchAlgorithmException,
 	        InvalidKeyException, SignatureException, InterruptedException {
-		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
-		// create peers which accept only two versions
-		KeyPair keyPairPeer1 = gen.generateKeyPair();
-		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).keyPair(keyPairPeer1)
-		        .start()).storage(new StorageMemory(1000, 2)).start();
-		KeyPair keyPairPeer2 = gen.generateKeyPair();
-		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-		        .keyPair(keyPairPeer2).start()).storage(new StorageMemory(1000, 2)).start();
-		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
-		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
-		KeyPair keyPair1 = gen.generateKeyPair();
-		Number160 lKey = Number160.createHash("location");
-		Number160 dKey = Number160.createHash("domain");
-		Number160 cKey = Number160.createHash("content");
+		PeerDHT p1 = null;
+		PeerDHT p2 = null;
 		try {
+			KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+			// create peers which accept only two versions
+			KeyPair keyPairPeer1 = gen.generateKeyPair();
+			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).keyPair(keyPairPeer1).start())
+			        .storage(new StorageMemory(1000, 2)).start();
+			KeyPair keyPairPeer2 = gen.generateKeyPair();
+			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
+			        .keyPair(keyPairPeer2).start()).storage(new StorageMemory(1000, 2)).start();
+			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
+			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
+			KeyPair keyPair1 = gen.generateKeyPair();
+			Number160 lKey = Number160.createHash("location");
+			Number160 dKey = Number160.createHash("domain");
+			Number160 cKey = Number160.createHash("content");
+
 			// put first version
 			FuturePut futurePut = p1.put(lKey).domainKey(dKey).data(cKey, new Data("version1").protectEntry(keyPair1))
 			        .versionKey(new Number160(0, new Number160(0))).keyPair(keyPair1).start();
@@ -549,9 +552,6 @@ public class TestH2H {
 			p2.shutdown().awaitUninterruptibly();
 		}
 	}
-	
-	
-
 }
 
 class H2HTestData extends NetworkContent {

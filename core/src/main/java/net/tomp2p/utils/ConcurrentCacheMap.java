@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *            the type of the value
  */
 public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrentCacheMap.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConcurrentCacheMap.class);
 
     /**
      * Number of segments that can be accessed concurrently.
@@ -125,8 +125,8 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
 
     @Override
     public V put(final K key, final V value) {
+    	final CacheMap<K, ExpiringObject> segment = segment(key);
         final ExpiringObject newValue = new ExpiringObject(value, System.currentTimeMillis());
-        final CacheMap<K, ExpiringObject> segment = segment(key);
         ExpiringObject oldValue;
         synchronized (segment) {
             oldValue = segment.put(key, newValue);
@@ -144,7 +144,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
     public V putIfAbsent(final K key, final V value) {
         final CacheMap<K, ExpiringObject> segment = segment(key);
         final ExpiringObject newValue = new ExpiringObject(value, System.currentTimeMillis());
-        ExpiringObject oldValue = null;
+        ExpiringObject oldValue;
         synchronized (segment) {
             if (!segment.containsKey(key)) {
                 oldValue = segment.put(key, newValue);
@@ -176,14 +176,14 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
             if (expire(segment, (K) key, oldValue)) {
                 return null;
             } else {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("get: " + key + ";" + oldValue.getValue());
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Get found. Key: {}. Value: {}.", key, oldValue.getValue());
                 }
                 return oldValue.getValue();
             }
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("get not found: " + key);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Get not found. Key: {}.", key);
         }
         return null;
     }
@@ -347,8 +347,8 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                     final ExpiringObject expiringObject = iterator.next();
                     if (expiringObject.isExpired()) {
                         iterator.remove();
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("remove in entrySet " + expiringObject.getValue());
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("remove in entrySet " + expiringObject.getValue());
                         }
                         removedCounter.incrementAndGet();
                     } else {
@@ -401,8 +401,8 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                     final Map.Entry<K, ExpiringObject> entry = iterator.next();
                     if (entry.getValue().isExpired()) {
                         iterator.remove();
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("remove in entrySet " + entry.getValue().getValue());
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("remove in entrySet " + entry.getValue().getValue());
                         }
                         removedCounter.incrementAndGet();
                     } else {
@@ -486,8 +486,8 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                 final ExpiringObject tmp = segment.get(key);
                 if (tmp != null && tmp.equals(value)) {
                     segment.remove(key);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("remove in expire " + value.getValue());
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("remove in expire " + value.getValue());
                     }
                     removedCounter.incrementAndGet();
                 }
@@ -509,8 +509,8 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
             final ExpiringObject expiringObject = iterator.next();
             if (expiringObject.isExpired()) {
                 iterator.remove();
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("remove in expireAll " + expiringObject.getValue());
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("remove in expireAll " + expiringObject.getValue());
                 }
                 removedCounter.incrementAndGet();
             } else {

@@ -98,7 +98,7 @@ public class QuitRPC extends DispatchHandler {
 		FutureResponse futureResponse = new FutureResponse(message);
 		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse,
 		        peerBean(), connectionBean(), shutdownBuilder);
-		LOG.debug("send QUIT message {}", message);
+		LOG.debug("send QUIT message {}.", message);
 		if (!shutdownBuilder.isForceTCP()) {
 			return requestHandler.fireAndForgetUDP(channelCreator);
 		} else {
@@ -110,7 +110,7 @@ public class QuitRPC extends DispatchHandler {
 	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
 	        Responder responder) throws Exception {
 		if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.QUIT.getNr())) {
-			throw new IllegalArgumentException("Message content is wrong");
+			throw new IllegalArgumentException("Message content is wrong for this handler.");
 		}
 		LOG.debug("received QUIT message {}", message);
 		synchronized (peerBean().peerStatusListeners()) {

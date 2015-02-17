@@ -105,7 +105,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
         this.segments = new CacheMap[SEGMENT_NR];
         final int maxEntriesPerSegment = maxEntries / SEGMENT_NR;
         for (int i = 0; i < SEGMENT_NR; i++) {
-            // set the cachemap to true, since it should behave as a regular map
+        	// set updateOnInsert to true, since it should behave as a regular map
             segments[i] = new CacheMap<K, ExpiringObject>(maxEntriesPerSegment, true);
         }
         this.timeToLiveSeconds = timeToLiveSeconds;
@@ -527,7 +527,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
     }
 
     /**
-     * An object that also holds expriation information.
+     * An object that also holds expiration information.
      */
     private class ExpiringObject {
         private final V value;
@@ -538,16 +538,16 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
          * Creates a new expiring object with the given time of access.
          * 
          * @param value
-         *            The value that is wrapped in this class
-         * @param lastAccessTime
-         *            The time of access
+         *            The value that is wrapped in this instance
+         * @param lastAccessTimeMillis
+         *            The time of access in milliseconds.
          */
-        ExpiringObject(final V value, final long lastAccessTime) {
+        ExpiringObject(final V value, final long lastAccessTimeMillis) {
             if (value == null) {
                 throw new IllegalArgumentException("An expiring object cannot be null.");
             }
             this.value = value;
-            this.lastAccessTime = lastAccessTime;
+            this.lastAccessTime = lastAccessTimeMillis;
         }
 
         /**

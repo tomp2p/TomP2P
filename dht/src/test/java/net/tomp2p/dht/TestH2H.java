@@ -458,8 +458,7 @@ public class TestH2H {
 			        .awaitUninterruptibly();
 			Assert.assertTrue(putA.isSuccess());
 			Assert.assertFalse(hasVersionFork(putA));
-			// put version B where a version conflict should be detected because
-			// it
+			// put version B where a version conflict should be detected because it
 			// is not based on version A
 			FuturePut putB = p1.put(locationKey).data(contentKey, versionB, Number160.ONE).keyPair(keyPair1).start()
 			        .awaitUninterruptibly();

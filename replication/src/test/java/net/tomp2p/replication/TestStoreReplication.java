@@ -1082,7 +1082,7 @@ public class TestStoreReplication {
 	}
 	
 	
-
+    //-Dio.netty.leakDetectionLevel=paranoid
 	@Test
 	public void testHeavyLoadNRootReplication() throws Exception {
 		PeerDHT master = null;

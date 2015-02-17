@@ -15,7 +15,6 @@
  */
 package net.tomp2p.peers;
 
-import java.io.Serializable;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,11 +27,9 @@ import net.tomp2p.utils.FIFOCache;
  * @author Thomas Bocek
  * 
  */
-public class PeerStatistic implements Serializable {
+public class PeerStatistic {
 
     public static final int RTT_CACHE_SIZE = 5;
-
-    private static final long serialVersionUID = -6225586345726672194L;
 
     private final AtomicLong lastSeenOnline = new AtomicLong(0);
 

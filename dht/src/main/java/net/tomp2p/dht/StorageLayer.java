@@ -221,6 +221,10 @@ public class StorageLayer implements DigestStorage {
 						retVal.put(key, PutStatus.DELETED);
 						continue;
 					}
+					if(!oldData.basedOnSet().equals(newData.basedOnSet())) {
+						retVal.put(key, PutStatus.VERSION_FORK);
+						continue;
+					}
 				}
 				
 				Data oldData = backend.put(key, newData);

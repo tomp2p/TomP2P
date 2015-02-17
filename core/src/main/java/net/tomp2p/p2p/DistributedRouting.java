@@ -198,11 +198,6 @@ public class DistributedRouting {
             if (routingBuilder.from()!=null && routingBuilder.to()!=null) {
             	from = routingBuilder.from();
             	to = routingBuilder.to();
-            } else if (routingBuilder.domainKey() == null) {
-                from = new Number640(routingBuilder.locationKey(), Number160.ZERO, Number160.ZERO,
-                        Number160.ZERO);
-                to = new Number640(routingBuilder.locationKey(), Number160.MAX_VALUE, Number160.MAX_VALUE,
-                        Number160.MAX_VALUE);
             } else if (routingBuilder.contentKey() == null) {
                 from = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
                         Number160.ZERO, Number160.ZERO);

@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  * 
  */
+//TODO: check sync
 public class RoutingMechanism {
     
     private static final Logger LOG = LoggerFactory.getLogger(RoutingMechanism.class);

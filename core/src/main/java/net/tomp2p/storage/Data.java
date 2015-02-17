@@ -24,9 +24,9 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
-import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
@@ -73,7 +73,7 @@ public class Data {
 	// can be added later
 	private SignatureCodec signature;
 	private int ttlSeconds = -1;
-	private Collection<Number160> basedOnSet = new ArrayList<Number160>(0);
+	private Set<Number160> basedOnSet = new HashSet<Number160>(0);
 	private PublicKey publicKey;
 	//this goes never over the network! If this is set, we have to sign lazy
 	private transient PrivateKey privateKey;
@@ -258,7 +258,7 @@ public class Data {
 		final int numBasedOn;
 		final int indexPublicKeySize;
 		final int indexBasedOn;
-		final Collection<Number160> basedOn = new ArrayList<Number160>();
+		final Set<Number160> basedOn = new HashSet<Number160>();
 		if (hasBasedOn(header)) {
 			// get # of based on keys
 			indexBasedOn = indexBasedOnNr + Utils.BYTE_BYTE_SIZE;
@@ -601,7 +601,7 @@ public class Data {
 		return this;
 	}
 
-	public Collection<Number160> basedOnSet() {
+	public Set<Number160> basedOnSet() {
 		return basedOnSet;
 	}
 

@@ -11,7 +11,9 @@ import java.util.TreeSet;
  */
 public class UpdatableTreeSet<E> extends TreeSet<E> {
 
-    /**
+    private static final long serialVersionUID = 5532491647323982466L;
+
+	/**
      * Creates a new empty PriorityQueueSet with the given comparator
      * @param comparator
      */

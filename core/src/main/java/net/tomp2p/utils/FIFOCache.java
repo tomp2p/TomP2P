@@ -11,7 +11,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Created by Sebastian Stephan on 03.12.14.
  */
 public class FIFOCache<E> extends ConcurrentLinkedQueue<E> {
-    private final int max_size;
+
+    private static final long serialVersionUID = -5606903694547209363L;
+	private final int max_size;
 
     public FIFOCache(int max_size) {
         this.max_size = max_size;

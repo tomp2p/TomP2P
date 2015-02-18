@@ -76,16 +76,16 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     /**
      * Creates the bag for the peers. This peer knows a lot about close peers and the further away the peers are, the
      * less known they are. Distance is measured with XOR of the peer ID. The distance of peer with ID 0x12 and peer
-     * with Id 0x28 is 0x3a.
+     * with ID 0x28 is 0x3a.
      * 
      * @param peerMapConfiguration
-     *            The configuration values of this map
+     *            The configuration values for this map
      * 
      */
 	public PeerMap(final PeerMapConfiguration peerMapConfiguration) {
         this.self = peerMapConfiguration.self();
         if (self == null || self.isZero()) {
-            throw new IllegalArgumentException("Zero or null are not a valid IDs");
+            throw new IllegalArgumentException("Zero or null are not valid peer IDs.");
         }
         this.bagSizeVerified = peerMapConfiguration.bagSizeVerified();
         this.bagSizeOverflow = peerMapConfiguration.bagSizeOverflow();
@@ -114,7 +114,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            If a caching map should be created
      * @return The list of bags containing an unmodifiable map
      */
-    private List<Map<Number160, PeerStatistic>> initFixedMap(final int bagSize, final boolean caching) {
+    private static List<Map<Number160, PeerStatistic>> initFixedMap(final int bagSize, final boolean caching) {
         List<Map<Number160, PeerStatistic>> tmp = new ArrayList<Map<Number160, PeerStatistic>>();
         for (int i = 0; i < Number160.BITS; i++) {
             // I made some experiments here and concurrent sets are not
@@ -156,7 +156,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     public void removePeerMapChangeListener(final PeerMapChangeListener peerMapChangeListener) {
         synchronized (peerMapChangeListeners) {
-            peerMapChangeListeners.add(peerMapChangeListener);
+            peerMapChangeListeners.remove(peerMapChangeListener);
         }
     }
 

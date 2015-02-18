@@ -53,6 +53,7 @@ public class PeerBean {
     private DigestTracker digestTracker;
     private HolePunchInitiator holePunchInitiator;
     private LocalMap localMap;
+    private NATTypeDetection natTypeDetection;
     
 	/**
 	 * This map is used for all open peerConnections which are meant to stay
@@ -210,6 +211,15 @@ public class PeerBean {
     
     public HolePunchInitiator holePunchInitiator() {
     	return holePunchInitiator;
+    }
+    
+    public PeerBean natTypeDetection(NATTypeDetection natTypeDetection) {
+    	this.natTypeDetection = natTypeDetection;
+    	return this;
+    }
+    
+    public NATTypeDetection natTypeDetection() {
+    	return natTypeDetection;
     }
 
 	/**

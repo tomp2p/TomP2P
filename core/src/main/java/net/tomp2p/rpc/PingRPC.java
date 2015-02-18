@@ -440,7 +440,6 @@ public class PingRPC extends DispatchHandler {
 					}
 				}
 			}
-			// TODO jwa test dat shit
 		} else if (message.type() == Message.Type.REQUEST_5) {
 			LOG.debug("reply to natTypePing {}");
 			// simply sends back the sourceport on which the peer sent the ping

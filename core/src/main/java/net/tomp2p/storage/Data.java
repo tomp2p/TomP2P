@@ -536,44 +536,48 @@ public class Data {
 		return this;
 	}
 	
-	public Data sign(KeyPair keyPair) {
-		return sign(keyPair, false);
+	public Data protectEntry() {
+		this.signed = true;
+		this.publicKeyFlag = true;
+		this.protectedEntry = true;
+		return this;
+	}
+		
+	public Data protectEntry(PrivateKey privateKey) {
+		this.signed = true;
+		this.publicKeyFlag = true;
+		this.protectedEntry = true;
+		this.privateKey = privateKey;
+		return this;
 	}
 	
 	public Data protectEntry(KeyPair keyPair) {
-		return sign(keyPair, true);
-	}
-	
-	private Data sign(KeyPair keyPair, boolean protectedEntry) {
 		this.signed = true;
+		this.publicKeyFlag = true;
+		this.protectedEntry = true;
 		this.privateKey = keyPair.getPrivate();
 		this.publicKey = keyPair.getPublic();
-		this.publicKeyFlag = true;
-		this.protectedEntry = protectedEntry;
 		return this;
 	}
 	
 	public Data sign() {
-		return sign((PrivateKey)null, false);
+		this.signed = true;
+		this.publicKeyFlag = true;
+		return this;
 	}
 	
 	public Data sign(PrivateKey privateKey) {
-		return sign(privateKey, false);
-	}
-	
-	public Data protectEntry() {
-		return sign((PrivateKey)null, true);
-	}
-		
-	public Data protectEntry(PrivateKey privateKey) {
-		return sign(privateKey, true);
-	}	
-	
-	private Data sign(PrivateKey privateKey, boolean protectedEntry) {
 		this.signed = true;
-		this.privateKey = privateKey;
 		this.publicKeyFlag = true;
-		this.protectedEntry = protectedEntry;
+		this.privateKey = privateKey;
+		return this;
+	}
+	
+	public Data sign(KeyPair keyPair) {
+		this.signed = true;
+		this.publicKeyFlag = true;
+		this.privateKey = keyPair.getPrivate();
+		this.publicKey = keyPair.getPublic();
 		return this;
 	}
 

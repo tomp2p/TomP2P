@@ -55,9 +55,8 @@ public class CacheMap<K, V> extends LinkedHashMap<K, V> {
     public V put(final K key, final V value) {
         if (updateEntryOnInsert) {
             return super.put(key, value);
-        } else {
-            return putIfAbsent(key, value);
         }
+        return putIfAbsent(key, value);
     }
 
     /**
@@ -72,17 +71,16 @@ public class CacheMap<K, V> extends LinkedHashMap<K, V> {
      * </pre>
      * 
      * @param key
-     *            key with which the value is to be associated.
+     *            The key with which the value is to be associated.
      * @param value
-     *            value to be associated with the key.
-     * @return previous value associated with key, or null if there was no mapping for this key.
+     *            The value to be associated with the key.
+     * @return The value previously associated with the key, or null if there was no mapping for this key.
      */
-    public V putIfAbsent(final K key, final V value) {
+    private V putIfAbsent(final K key, final V value) {
         if (!containsKey(key)) {
             return super.put(key, value);
-        } else {
-            return super.get(key);
         }
+        return super.get(key);
     };
 
     @Override

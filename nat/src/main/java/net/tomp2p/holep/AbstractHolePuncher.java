@@ -1,4 +1,4 @@
-package net.tomp2p.nat;
+package net.tomp2p.holep;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.HolePunchInitiator;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -101,25 +100,12 @@ public abstract class AbstractHolePuncher {
 	}
 	
 	/**
-	 * This method does two things. If the initiating peer calls it, he gets
-	 * back a {@link List} of new {@link SimpleInboundHandler} to deal with the
-	 * replies of the replying peer. If a replying peer is calling this method
-	 * it will return a {@link List} of default {@link SimpleInboundHandler}s
-	 * from the {@link Dispatcher}.
-	 * 
-	 * @param originalFutureResponse
-	 * @return handlerList
-	 */
-	protected abstract List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(
-			final FutureResponse originalFutureResponse, final boolean initiator);
-	
-	/**
 	 * This method creates the inboundHandler for the replyMessage of the peer
 	 * that we want to send a message to.
 	 * 
 	 * @return inboundHandler
 	 */
-	protected abstract SimpleChannelInboundHandler<Message> createAfterHolePHandler();
+	protected abstract SimpleChannelInboundHandler<Message> createAfterHolePHandler(FutureDone<Message> futureDone);
 	
 	protected void handleFail(final String failMessage, final FutureDone<Message> futureDone) {
 		futureDone.failed(failMessage);

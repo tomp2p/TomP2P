@@ -1,4 +1,4 @@
-package net.tomp2p.nat;
+package net.tomp2p.holep;
 
 import java.util.List;
 
@@ -9,8 +9,6 @@ import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.holep.HolePunchInitiatorImpl;
-import net.tomp2p.holep.NATType;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;

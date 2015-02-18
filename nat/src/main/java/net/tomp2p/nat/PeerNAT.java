@@ -48,6 +48,7 @@ public class PeerNAT {
 	private final RelayRPC relayRPC;
 	private final boolean manualPorts;
 	private final ConnectionConfiguration config;
+	private NATType natType;
 
 	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, boolean manualPorts, ConnectionConfiguration config) {
 		this.peer = peer;

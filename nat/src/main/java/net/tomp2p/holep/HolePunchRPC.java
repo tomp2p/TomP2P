@@ -152,6 +152,10 @@ public class HolePunchRPC extends DispatchHandler {
 		final NeighborSet ns = new NeighborSet(1, new ArrayList<PeerAddress>(1));
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
+		
+		if (message.longAt(0).intValue() == NATType.NON_PRESERVING_SEQUENTIAL.ordinal()) {
+			
+		}
 
 		return forwardMessage;
 	}

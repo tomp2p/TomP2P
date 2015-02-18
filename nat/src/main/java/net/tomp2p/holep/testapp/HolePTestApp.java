@@ -13,7 +13,7 @@ import net.tomp2p.futures.FutureShutdown;
 import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.nat.FutureRelayNAT;
-import net.tomp2p.nat.NATTypeDetectionImpl;
+import net.tomp2p.nat.NATTypeDetection;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
@@ -113,7 +113,6 @@ public class HolePTestApp {
 		// setup relay
 		pNAT = new PeerBuilderNAT(peer).start();
 //		FutureDone<NATType> fDone = pNAT.checkNATType(bootstrapPeerAddress);
-		new NATTypeDetectionImpl(peer, bootstrapPeerAddress);
 //		fDone.awaitUninterruptibly();
 //		if (fDone.isSuccess()) {
 //			System.err.println(fDone.object().toString());

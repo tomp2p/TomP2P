@@ -3,7 +3,6 @@ package net.tomp2p.holep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.internal.logging.Log4JLoggerFactory;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.HolePunchInitiator;
 import net.tomp2p.futures.FutureDone;

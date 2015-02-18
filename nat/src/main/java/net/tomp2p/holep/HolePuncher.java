@@ -23,6 +23,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.nat.NATTypeDetection;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
@@ -107,7 +108,8 @@ public class HolePuncher {
 				@Override
 				public void operationComplete(FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
-						ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers, originalFutureResponse);
+						ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers,
+								originalFutureResponse);
 						cF.addListener(new GenericFutureListener<ChannelFuture>() {
 							@Override
 							public void operationComplete(ChannelFuture future) throws Exception {
@@ -142,7 +144,8 @@ public class HolePuncher {
 	 * @param originalFutureResponse
 	 * @return handlerList
 	 */
-	private List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(final FutureResponse originalFutureResponse) {
+	private List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(
+			final FutureResponse originalFutureResponse) {
 		List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
 				numberOfHoles);
 		SimpleChannelInboundHandler<Message> inboundHandler;
@@ -151,13 +154,15 @@ public class HolePuncher {
 		if (initiator) {
 			for (int i = 0; i < numberOfHoles; i++) {
 				inboundHandler = createAfterHolePHandler();
-				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
+				handlers = peer.connectionBean().sender()
+						.configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
 				handlerList.add(handlers);
 			}
 		} else {
 			inboundHandler = new DuplicatesHandler(peer.connectionBean().dispatcher());
 			for (int i = 0; i < numberOfHoles; i++) {
-				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
+				handlers = peer.connectionBean().sender()
+						.configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
 				handlerList.add(handlers);
 			}
 		}
@@ -173,8 +178,9 @@ public class HolePuncher {
 	 * ================ methods on initiating nat peer ================
 	 */
 
-	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone, final ChannelCreator originalChannelCreator,
-			final FutureResponse originalFutureResponse, final NATType natType) {
+	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone,
+			final ChannelCreator originalChannelCreator, final FutureResponse originalFutureResponse,
+			final NATType natType) {
 		this.initiator = true;
 		this.mainFutureDone = mainFutureDone;
 
@@ -186,22 +192,17 @@ public class HolePuncher {
 			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
 				if (future.isSuccess()) {
 					final List<ChannelFuture> futures = future.object();
-					if (natType != NATType.NON_PRESERVING_SEQUENTIAL) {
-						peer.connectionBean()
-								.sender()
-								.sendUDP(createHolePunchInboundHandler(futures, originalFutureResponse), originalFutureResponse,
-										createHolePunchInitMessage(futures, -1), originalChannelCreator, idleUDPSeconds, BROADCAST_VALUE);
-						LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
-					} else {
-						
-
-					}
+					peer.connectionBean()
+							.sender()
+							.sendUDP(createHolePunchInboundHandler(futures, originalFutureResponse),
+									originalFutureResponse, createHolePunchInitMessage(futures, -1),
+									originalChannelCreator, idleUDPSeconds, BROADCAST_VALUE);
+					LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
 
 				} else {
 					mainFutureDone.failed("No ChannelFuture could be created!");
 				}
 			}
-
 		});
 		return mainFutureDone;
 	}
@@ -220,9 +221,7 @@ public class HolePuncher {
 
 			@Override
 			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-				if (msg.command() == Commands.PING.getNr()) {
-					
-				} else if (checkReplyValues(msg)) {
+				if (checkReplyValues(msg)) {
 					for (int i = 0; i < msg.intList().size(); i++) {
 						ChannelFuture channelFuture = extractChannelFuture(futures, msg.intList().get(i));
 						if (channelFuture == null) {
@@ -230,13 +229,14 @@ public class HolePuncher {
 						}
 						i++;
 						Message sendMessage = createSendOriginalMessage(msg.intList().get(i - 1), msg.intList().get(i));
-						peer.connectionBean().sender().afterConnect(originalFutureResponse, sendMessage, channelFuture, false);
+						peer.connectionBean().sender()
+								.afterConnect(originalFutureResponse, sendMessage, channelFuture, false);
 						LOG.warn("originalMessage has been sent to the other peer! {}", sendMessage);
 					}
 				}
 			}
 		};
-		
+
 		LOG.debug("new HolePunchHandler created, waiting now for answer from rendez-vous peer.");
 		return holePunchInboundHandler;
 	}
@@ -280,11 +280,11 @@ public class HolePuncher {
 					// TODO jwa does this work?
 					ctx.close();
 				} else if (Message.Type.REQUEST_3 == msg.type() && Commands.HOLEP.getNr() == msg.command()) {
-					LOG.debug("Holes successfully punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
-							+ msg.sender().udpPort() + "}!");
+					LOG.debug("Holes successfully punched with ports = {localPort = " + msg.recipient().udpPort()
+							+ " , remotePort = " + msg.sender().udpPort() + "}!");
 				} else {
-					LOG.debug("Holes punche not punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
-							+ msg.sender().udpPort() + "} yet!");
+					LOG.debug("Holes punche not punched with ports = {localPort = " + msg.recipient().udpPort()
+							+ " , remotePort = " + msg.sender().udpPort() + "} yet!");
 				}
 			}
 		};
@@ -331,8 +331,8 @@ public class HolePuncher {
 	 */
 	private Message createSendOriginalMessage(final int localPort, final int remotePort) {
 		Message sendMessage = new Message();
-		PeerAddress sender = originalMessage.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false)
-				.changeRelayed(false);
+		PeerAddress sender = originalMessage.sender().changePorts(-1, localPort).changeFirewalledTCP(false)
+				.changeFirewalledUDP(false).changeRelayed(false);
 		PeerAddress recipient = originalMessage.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false)
 				.changeFirewalledUDP(false).changeRelayed(false);
 		sendMessage.recipient(recipient);
@@ -374,24 +374,15 @@ public class HolePuncher {
 		holePMessage.command(RPC.Commands.HOLEP.getNr());
 		holePMessage.type(Message.Type.REQUEST_1);
 
-		// check the NATType
-		if (startingPort != -1) {
-			// TODO jwa --> create something like a configClass or file where
-			// the
-			// number of holes in the firewall can be specified.
-			for (int i = 0; i < channelFutures.size(); i++) {
-				InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
-				holePMessage.intValue(inetSocketAddress.getPort());
-			}
-		} else {
-			// the number of hole must be bigger since it is assumed, that other
-			// peers create traffic and connections too.
-			for (int j = 0; j < HolePunchInitiator.NUMBER_OF_HOLES * 2; j++) {
-				// +2 because it first creates a connection to the relay peer
-				holePMessage.intValue(j + 2);
-			}
+		// TODO jwa --> create something like a configClass or file where the
+		// number of holes in the firewall can be specified.
+		for (int i = 1; i < channelFutures.size(); i++) {
+			InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
+			holePMessage.intValue(inetSocketAddress.getPort());
 		}
-
+		
+		
+		
 		LOG.debug("Hole punch initMessage created {}", holePMessage.toString());
 		return holePMessage;
 	}
@@ -406,7 +397,8 @@ public class HolePuncher {
 		frResponse = new FutureResponse(originalMessage);
 		final HolePuncher thisInstance = this;
 
-		FutureDone<List<ChannelFuture>> rmfChannelFutures = createChannelFutures(frResponse, prepareHandlers(frResponse));
+		FutureDone<List<ChannelFuture>> rmfChannelFutures = createChannelFutures(frResponse,
+				prepareHandlers(frResponse));
 		rmfChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 
 			@Override
@@ -439,7 +431,8 @@ public class HolePuncher {
 		Message dummyMessage = new Message();
 		final int remotePort = portMappings.get(i).element0();
 		final int localPort = portMappings.get(i).element1();
-		PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false).changePorts(-1, remotePort);
+		PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false)
+				.changePorts(-1, remotePort);
 		PeerAddress sender = peer.peerBean().serverPeerAddress().changePorts(-1, localPort);
 		dummyMessage.recipient(recipient);
 		dummyMessage.command(Commands.HOLEP.getNr());
@@ -482,8 +475,10 @@ public class HolePuncher {
 		for (int i = 0; i < channelFutures.size(); i++) {
 			Message dummyMessage = createDummyMessage(i);
 			FutureResponse futureResponse = new FutureResponse(dummyMessage);
-			LOG.trace("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
-			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
+			LOG.trace("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: "
+					+ dummyMessage.sender().udpPort());
+			peer.connectionBean().sender()
+					.afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 			// this is a workaround to avoid adding a nat peer to the offline
 			// list of a peer!
 			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null);

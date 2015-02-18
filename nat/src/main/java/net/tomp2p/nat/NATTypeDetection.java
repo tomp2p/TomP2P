@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
-import net.tomp2p.connection.NATTypeDetection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -17,24 +16,19 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 
 
-public class NATTypeDetectionImpl implements NATTypeDetection{
+public class NATTypeDetection {
 	
 	private NATType natType = null;
-	private static final Logger LOG = LoggerFactory.getLogger(NATTypeDetectionImpl.class);
+	private static final Logger LOG = LoggerFactory.getLogger(NATTypeDetection.class);
 	private Peer peer;
 	
 	
-	public NATTypeDetectionImpl(Peer peer) {
+	public NATTypeDetection(Peer peer) {
 		this.peer = peer;
 	}
 	
 	public NATType natType() {
 		return natType;
-	}
-	
-	@Override
-	public FutureDone<NATType> refreshNATType(PeerAddress relayPeerAddress) {
-		return checkNATType(relayPeerAddress);
 	}
 	
 	/**

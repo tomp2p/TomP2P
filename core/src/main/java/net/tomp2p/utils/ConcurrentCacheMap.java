@@ -348,7 +348,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                     if (expiringObject.isExpired()) {
                         iterator.remove();
                         if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("remove in entrySet " + expiringObject.getValue());
+                            LOGGER.debug("Removed fom entry set: {}." + expiringObject.getValue());
                         }
                         removedCounter.incrementAndGet();
                     } else {
@@ -402,7 +402,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                     if (entry.getValue().isExpired()) {
                         iterator.remove();
                         if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("remove in entrySet " + entry.getValue().getValue());
+                            LOGGER.debug("Removed fom entry set: {}.", entry.getValue().getValue());
                         }
                         removedCounter.incrementAndGet();
                     } else {
@@ -478,7 +478,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
      *            The key
      * @param value
      *            The value
-     * @return True if expired, otherwise false.
+     * @return True, if expired. False, otherwise.
      */
     private boolean expire(final CacheMap<K, ExpiringObject> segment, final K key, final ExpiringObject value) {
         if (value.isExpired()) {
@@ -487,7 +487,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                 if (tmp != null && tmp.equals(value)) {
                     segment.remove(key);
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("remove in expire " + value.getValue());
+                        LOGGER.debug("Remove in expire: {}.", value.getValue());
                     }
                     removedCounter.incrementAndGet();
                 }
@@ -498,7 +498,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
     }
 
     /**
-     * Fast expiration. Since the ExpiringObject is ordered the for loop can break early if a object is not expired.
+     * Fast expiration. Since the ExpiringObject is ordered, the for-loop can break eaely if an object is not expired.
      * 
      * @param segment
      *            The segment
@@ -510,7 +510,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
             if (expiringObject.isExpired()) {
                 iterator.remove();
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("remove in expireAll " + expiringObject.getValue());
+                    LOGGER.debug("Removed in expire segment: {}.", expiringObject.getValue());
                 }
                 removedCounter.incrementAndGet();
             } else {

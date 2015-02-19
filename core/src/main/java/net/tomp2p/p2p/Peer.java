@@ -55,7 +55,7 @@ import net.tomp2p.rpc.RawDataReply;
  * a builder class is returned. The main operations can be initiated with {@link #put(Number160)},
  * {@link #get(Number160)}, {@link #add(Number160)}, {@link #addTracker(Number160)}, {@link #getTracker(Number160)},
  * {@link #remove(Number160)}, {@link #submit(Number160, Worker)}, {@link #send(Number160)}, {@link #sendDirect()},
- * {@link #broadcast(Number160)}. Each of those operations return a builder that offers more options. One of the main
+ * {@link #broadcast(Number160)}. Each of those operations returns a builder that offers more options. One of the main
  * difference to a "regular" DHT is that TomP2P can store a map (key-values) instead of just values. To distinguish 
  * those, the keys are termed location key (for finding the right peer in the network), and content key (to store more 
  * than one value on a peer). For the put builder e.g. the following options can be set: 

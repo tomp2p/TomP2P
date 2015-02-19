@@ -1,5 +1,7 @@
 package net.tomp2p.holep.strategy;
 
+import io.netty.channel.ChannelFuture;
+
 import java.util.List;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -14,7 +16,7 @@ import net.tomp2p.peers.PeerSocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NonPreservingSequentialStrategy extends AbstractHolePuncher {
+public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy {
 
 	private static final NATType NAT_TYPE = NATType.NON_PRESERVING_SEQUENTIAL;
 	private static final Logger LOG = LoggerFactory.getLogger(PortPreservingStrategy.class);
@@ -24,16 +26,16 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncher {
 	}
 
 	@Override
-	protected void prepareInitiatingPeerPorts(final Message holePMessage, final FutureDone<Message> initMessageFutureDone) {
+	protected void prepareInitiatingPeerPorts(final Message initMessage, final FutureDone<Message> initMessageFutureDone, final List<ChannelFuture> channelFutures) {
 		// signal the other peer what type of NAT we are using
-		holePMessage.longValue(NAT_TYPE.ordinal());
+		initMessage.longValue(NAT_TYPE.ordinal());
 
 		FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(1, 0);
 		fcc1.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(holePMessage.recipient(),
+					FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(initMessage.recipient(),
 							future.channelCreator(), new DefaultConnectionConfiguration(), peer);
 					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
 						@Override
@@ -43,39 +45,61 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncher {
 								// TODO jwa is this a good thing?
 								int startingPort = addresses.get(0).udpPort() + 1; 
 								for (int i = 0; i < channelFutures.size(); i++) {
-									holePMessage.intValue(startingPort + i);
+									initMessage.intValue(startingPort + i);
 								}
-								initMessageFutureDone.done(holePMessage);
+								initMessageFutureDone.done(initMessage);
 							} else {
 								initMessageFutureDone.failed("Ping failed!");
 							}
 						}
-
 					});
 				} else {
 					initMessageFutureDone.failed("No ChannelFuture could be created!");
 				}
 			}
-
 		});
 	}
 
 	@Override
-	protected boolean checkReplyValues(Message msg, FutureDone<Message> futureDone) {
+	protected boolean checkReplyValues(final Message msg, final FutureDone<Message> futureDone) {
 		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	@Override
-	public FutureDone<Message> replyHolePunch() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	protected void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
+		FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
+		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 
-	@Override
-	protected void doPortMappings() {
-		// TODO Auto-generated method stub
-
+			@Override
+			public void operationComplete(FutureChannelCreator future) throws Exception {
+				if (future.isSuccess()) {
+					FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(replyMessage.recipient(),
+							future.channelCreator(), new DefaultConnectionConfiguration(), peer);
+					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
+						@Override
+						public void operationComplete(FutureDone<List<PeerSocketAddress>> future) throws Exception {
+							if (future.isSuccess()) {
+								List<PeerSocketAddress> addresses = future.object();
+								// TODO jwa is this a good thing?
+								int startingPort = addresses.get(0).udpPort() + 1; 
+								for (int i = 0; i < channelFutures.size(); i++) {
+									replyMessage.intValue(startingPort + i);
+								}
+								replyMessageFuture2.done(replyMessage);
+							} else {
+								replyMessageFuture2.failed("Ping failed!");
+							}
+						}
+						
+					});
+				} else {
+					replyMessageFuture2.failed("Could not create ChannelFuture!");
+				}
+			}
+			
+		});
+		
 	}
 
 }

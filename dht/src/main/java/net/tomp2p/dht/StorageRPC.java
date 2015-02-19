@@ -667,29 +667,25 @@ public class StorageRPC extends DispatchHandler {
     }
 
 	private boolean isDomainProtected(final Message message) {
-        boolean protectDomain = message.publicKey(0) != null
-                && (message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_4);
-        return protectDomain;
+		return message.publicKey(0) != null
+                && (message.type() == Type.REQUEST_2 
+                || message.type() == Type.REQUEST_4);
     }
 
     private boolean isStoreIfAbsent(final Message message) {
-        boolean absent = message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
-        return absent;
+    	return message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
     }
 
     private boolean isList(final Message message) {
-        boolean partial = message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
-        return partial;
+    	return message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
     }
 
     private boolean isAscending(final Message message) {
-        boolean partial = message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_3;
-        return partial;
+    	return message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_3;
     }
 
     private boolean isBloomFilterAnd(final Message message) {
-        boolean partial = message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2;
-        return partial;
+    	return message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2;
     }
     
     private void handlePutMeta(Message message, Message responseMessage, boolean isDomain) {

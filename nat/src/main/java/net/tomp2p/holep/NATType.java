@@ -16,43 +16,50 @@ import net.tomp2p.p2p.Peer;
 public enum NATType {
 	UNKNOWN {
 		@Override
-		public HolePuncherStrategy getHolePuncher(Peer peer, int numberOfHoles, int idleUDPSeconds,
-				Message originalMessage) {
+		public HolePuncherStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds,
+				final Message originalMessage) {
 			// TODO Auto-generated method stub
 			return new PortPreservingStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	},
 	NO_NAT {
 		@Override
-		public HolePuncherStrategy getHolePuncher(Peer peer, int numberOfHoles, int idleUDPSeconds,
-				Message originalMessage) {
+		public HolePuncherStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds,
+				final Message originalMessage) {
 			// TODO Auto-generated method stub
 			return new PortPreservingStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	},
 	PORT_PRESERVING {
 		@Override
-		public HolePuncherStrategy getHolePuncher(Peer peer, int numberOfHoles, int idleUDPSeconds,
-				Message originalMessage) {
+		public HolePuncherStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds,
+				final Message originalMessage) {
 			return new PortPreservingStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	}, // NAT takes the same port as source port on peer
 	NON_PRESERVING_SEQUENTIAL {
 		@Override
-		public HolePuncherStrategy getHolePuncher(Peer peer, int numberOfHoles, int idleUDPSeconds,
-				Message originalMessage) {
+		public HolePuncherStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds,
+				final Message originalMessage) {
+			
+			//TODO jwa remove this bad practise
+			// this scenario needs more reliablility
+			if (numberOfHoles > 10) {
+				numberOfHoles = 10;
+			}
+			
 			return new NonPreservingSequentialStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	}, // NAT assigns new port for each mapping starting at a defined number,
 		// and increasing by one (e.g. 1234).
 	NON_PRESERVING_OTHER {
 		@Override
-		public HolePuncherStrategy getHolePuncher(Peer peer, int numberOfHoles, int idleUDPSeconds,
-				Message originalMessage) {
+		public HolePuncherStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds,
+				final Message originalMessage) {
 			return null;
 		}
 	};
 
-	public abstract HolePuncherStrategy getHolePuncher(final Peer peer, final int numberOfHoles,
+	public abstract HolePuncherStrategy getHolePuncher(final Peer peer, int numberOfHoles,
 			final int idleUDPSeconds, final Message originalMessage);
 }

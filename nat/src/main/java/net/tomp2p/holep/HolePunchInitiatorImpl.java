@@ -9,6 +9,7 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.peers.PeerAddress;
 
 /**
  * @author Jonas Wagner
@@ -19,12 +20,12 @@ import net.tomp2p.p2p.Peer;
 public class HolePunchInitiatorImpl implements HolePunchInitiator {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePunchInitiatorImpl.class);
+	private final NATTypeDetection natTypeDetection;
 	private Peer peer;
-	private NATType natType;
 
 	public HolePunchInitiatorImpl(Peer peer) {
 		this.peer = peer;
-		this.natType = NATType.UNKNOWN;
+		this.natTypeDetection = new NATTypeDetection(peer);
 	}
 
 	@Override
@@ -32,24 +33,16 @@ public class HolePunchInitiatorImpl implements HolePunchInitiator {
 			Message originalMessage) {
 		FutureDone<Message> futureDone = new FutureDone<Message>();
 		
-		if (natType == NATType.NON_PRESERVING_OTHER) {
+		if (natTypeDetection.natType() == NATType.NON_PRESERVING_OTHER) {
 			LOG.error("A symmetric NAT can't be traversed. No HolePunching possible!");
 			return futureDone.failed("A symmetric NAT can't be traversed. No HolePunching possible!");
 		}
 		
-		HolePuncherStrategy holePuncher = natType.getHolePuncher(peer, HolePunchInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
+		HolePuncherStrategy holePuncher = natTypeDetection.natType().getHolePuncher(peer, HolePunchInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
 		return holePuncher.initiateHolePunch(futureDone, channelCreator, futureResponse);
 	}
 	
-	public void natType(Object natType) {
-		if (natType instanceof NATType) {
-			this.natType = (NATType) natType;
-		} else {
-			this.natType = null;
-		}
-	}
-	
-	public NATType natType() {
-		return this.natType;
+	public void checkNatType(PeerAddress peerAddress) {
+		natTypeDetection.checkNATType(peerAddress);
 	}
 }

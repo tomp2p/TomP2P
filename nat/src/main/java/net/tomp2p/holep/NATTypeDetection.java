@@ -23,6 +23,7 @@ public class NATTypeDetection {
 	
 	public NATTypeDetection(Peer peer) {
 		this.peer = peer;
+		this.natType = NATType.UNKNOWN;
 	}
 	
 	public NATType natType() {
@@ -45,7 +46,7 @@ public class NATTypeDetection {
 	 *            The {@link PeerAddress} of a relay peer.
 	 * @return futureDone A FutureDone to check if the method succeded.
 	 */
-	private FutureDone<NATType> checkNATType(final PeerAddress relayPeer) {
+	public FutureDone<NATType> checkNATType(final PeerAddress relayPeer) {
 		final FutureDone<NATType> futureDone = new FutureDone<NATType>();
 		pingRelayNATTest(futureDone, relayPeer, null, null);
 		return futureDone;

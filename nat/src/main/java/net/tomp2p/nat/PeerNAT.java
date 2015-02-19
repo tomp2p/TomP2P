@@ -48,7 +48,6 @@ public class PeerNAT {
 	private final RelayRPC relayRPC;
 	private final boolean manualPorts;
 	private final ConnectionConfiguration config;
-	private NATType natType;
 
 	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, boolean manualPorts, ConnectionConfiguration config) {
 		this.peer = peer;
@@ -253,6 +252,10 @@ public class PeerNAT {
 
 	public FutureRelayNAT startRelay(final RelayConfig relayConfig, final PeerAddress peerAddress) {
 		final BootstrapBuilder bootstrapBuilder = peer.bootstrap().peerAddress(peerAddress);
+		
+		//TODO jwa discuss this with Thomas Bocek
+		((HolePunchInitiatorImpl) peer.peerBean().holePunchInitiator()).checkNatType(peerAddress);
+		
 		return startRelay(relayConfig, bootstrapBuilder);
 	}
 

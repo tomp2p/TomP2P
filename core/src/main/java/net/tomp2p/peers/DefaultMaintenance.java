@@ -114,12 +114,12 @@ public class DefaultMaintenance implements Maintenance {
      * ones in the verified peer map. If a certain threshold in a bag is not reached, the unverified becomes important
      * too.
      * 
-     * @return The next most important peer to check if its still alive.
+     * @return The next most important peer to check if it is still alive.
      */
     public PeerStatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
         if (peerMapVerified == null || peerMapNonVerified == null || offlineMap == null 
                 || shutdownMap == null || exceptionMap == null) {
-            throw new IllegalArgumentException("did not initialize this maintenance class");
+            throw new IllegalArgumentException("Did not initialize some of the maintenance maps.");
         }
         int peersBefore = 0;
         for (int i = 0; i < Number160.BITS; i++) {
@@ -135,7 +135,7 @@ public class DefaultMaintenance implements Maintenance {
                 final PeerStatistic readyForMaintenance = next(mapNonVerified);
                 if (readyForMaintenance != null
                         && !notInterestedAddresses.contains(readyForMaintenance.peerAddress())) {
-                    LOG.debug("check peer {} from the non verified map",readyForMaintenance.peerAddress());
+                    LOG.debug("check peer {} from the non-verified map.", readyForMaintenance.peerAddress());
                     return readyForMaintenance;
                 }
             }
@@ -157,9 +157,9 @@ public class DefaultMaintenance implements Maintenance {
      */
     private PeerStatistic next(final Map<Number160, PeerStatistic> map) {
         synchronized (map) {
-            for (PeerStatistic peerStatatistic : map.values()) {
-                if (needMaintenance(peerStatatistic, intervalSeconds)) {
-                    return peerStatatistic;
+            for (PeerStatistic peerStatistic : map.values()) {
+                if (needMaintenance(peerStatistic, intervalSeconds)) {
+                    return peerStatistic;
                 }
             }
         }
@@ -171,7 +171,7 @@ public class DefaultMaintenance implements Maintenance {
      * we need to get one from the non-verified map.
      * 
      * @param bagIndex
-     *            The number of the bagindex. The smaller the index, the more important the peer
+     *            The number of the bag index. The smaller the index, the more important the peer
      * @param bagSize
      *            The size of the current bag
      * @param peersBefore
@@ -189,8 +189,8 @@ public class DefaultMaintenance implements Maintenance {
      *            The peer with its statistics
      * @return True if the peer needs a maintenance check
      */
-    public static boolean needMaintenance(final PeerStatistic peerStatatistic, final int[] intervalSeconds) {
-        final int onlineSec = peerStatatistic.onlineTime() / 1000;
+    public static boolean needMaintenance(final PeerStatistic peerStatistic, final int[] intervalSeconds) {
+        final int onlineSec = peerStatistic.onlineTime() / 1000;
         int index;
         if (onlineSec <= 0) {
             index = 0;
@@ -210,22 +210,7 @@ public class DefaultMaintenance implements Maintenance {
         	}
         }
         final int time = intervalSeconds[index];
-        final long lastTimeWhenChecked = System.currentTimeMillis() - peerStatatistic.lastSeenOnline();
+        final long lastTimeWhenChecked = System.currentTimeMillis() - peerStatistic.lastSeenOnline();
         return lastTimeWhenChecked > TimeUnit.SECONDS.toMillis(time);
     }
-
-    /**
-     * As seen in: http://stackoverflow.com/questions/3305059/how-do-you-calculate-log-base-2-in-java-for-integers.
-     * 
-     * @param n
-     *            The number
-     * @return the logarithm base 2
-     */
-    public static int log2(final int n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException();
-        }
-        return (Integer.SIZE - 1) - Integer.numberOfLeadingZeros(n);
-    }
-
 }

@@ -13,7 +13,7 @@
 	<parent>
 		<groupId>net.tomp2p</groupId>
 		<artifactId>tomp2p-parent</artifactId>
-		<version>5.0-Beta4</version>
+		<version>5.0-Beta5-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>tomp2p-all</artifactId>

@@ -136,7 +136,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Add a map change listener. This is thread-safe
+     * Adds a map change listener. This is thread-safe
      * 
      * @param peerMapChangeListener
      *            The listener
@@ -149,7 +149,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Remove a map change listener. This is thread-safe
+     * Removes a map change listener. This is thread-safe
      * 
      * @param peerMapChangeListener
      *            The listener
@@ -164,9 +164,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * Notifies on insert. This is called after the peer has been added to the map.
      * 
      * @param peerAddress
-     *            The address of the inserted peers
+     *            The address of the inserted peer
      * @param verified
-     *            True if the peer was inserted in the verified map
+     *            True if the peer was inserted into the verified map
      */
     private void notifyInsert(final PeerAddress peerAddress, final boolean verified) {
         synchronized (peerMapChangeListeners) {
@@ -177,12 +177,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Notifies on remove. Since listeners are never changed, this is thread safe.
+     * Notifies on remove. This method is thread safe.
      * 
      * @param peerAddress
-     *            The address of the removed peers
+     *            The address of the removed peer
      * @param storedPeerAddress
-     *            Contains information statistical information
+     *            Contains statistical information
      */
     private void notifyRemove(final PeerAddress peerAddress, final PeerStatistic storedPeerAddress) {
         synchronized (peerMapChangeListeners) {
@@ -196,9 +196,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * Notifies on update. This method is thread safe.
      * 
      * @param peerAddress
-     *            The address of the updated peers.
+     *            The address of the updated peer.
      * @param storedPeerAddress
-     *            Contains information statistical information
+     *            Contains statistical information
      */
     private void notifyUpdate(final PeerAddress peerAddress, final PeerStatistic storedPeerAddress) {
         synchronized (peerMapChangeListeners) {
@@ -251,15 +251,15 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * added. This method is tread-safe
      * 
      * @param remotePeer
-     *            The node that should be added
+     *            The node to be added
      * @param referrer
-     *            If we had direct contact and we know for sure that this node is online, we set firsthand to true.
+     *            If we had direct contact and we know for sure that this node is online, we set first hand to true.
      *            Information from 3rd party peers are always second hand and treated as such
      * @return True if the neighbor could be added or updated, otherwise false.
      */
     @Override
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection) {    	
-    	LOG.debug("peer {} is online reporter was {}", remotePeer, referrer);
+    	LOG.debug("Peer {} is online. Reporter was {}.", remotePeer, referrer);
         boolean firstHand = referrer == null;
         //if we got contacted by this peer, but we did not initiate the connection
         boolean secondHand = remotePeer.equals(referrer);
@@ -286,7 +286,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         	return false;
         }
         
-        //if a peer is relayed but cannot provide any relays, its useless
+        //if a peer is relayed but cannot provide any relays, it is useless
         if (remotePeer.isRelayed() && remotePeer.peerSocketAddresses().isEmpty()) {
         	return false;
         }
@@ -296,7 +296,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         		exceptionMap.containsKey(remotePeer.peerId());
         
         if(thirdHand && probablyDead) {
-        	LOG.debug("don't add {}", remotePeer.peerId());
+        	LOG.debug("Don't add {}.", remotePeer.peerId());
         	return false;
         }
         
@@ -320,9 +320,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                         return peerFound(remotePeer, referrer, peerConnection);
                     }
                     if (map.size() < bagSizeVerified) {
-                        final PeerStatistic peerStatatistic = new PeerStatistic(remotePeer);
-                        peerStatatistic.successfullyChecked();
-                        map.put(remotePeer.peerId(), peerStatatistic);
+                        final PeerStatistic peerStatistic = new PeerStatistic(remotePeer);
+                        peerStatistic.successfullyChecked();
+                        map.put(remotePeer.peerId(), peerStatistic);
                         insterted = true;
                     }
                 }
@@ -342,14 +342,14 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // check if we have it stored in the non verified map.
         final Map<Number160, PeerStatistic> mapOverflow = peerMapOverflow.get(classMember);
         synchronized (mapOverflow) {
-            PeerStatistic peerStatatistic = mapOverflow.get(remotePeer.peerId());
-            if (peerStatatistic == null) {
-                peerStatatistic = new PeerStatistic(remotePeer);
+            PeerStatistic peerStatistic = mapOverflow.get(remotePeer.peerId());
+            if (peerStatistic == null) {
+            	peerStatistic = new PeerStatistic(remotePeer);
             }
             if (firstHand) {
-                peerStatatistic.successfullyChecked();
+            	peerStatistic.successfullyChecked();
             }
-            mapOverflow.put(remotePeer.peerId(), peerStatatistic);
+            mapOverflow.put(remotePeer.peerId(), peerStatistic);
         }
 
         notifyInsert(remotePeer, false);
@@ -357,19 +357,17 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Remove a peer from the list. In order to not reappear, the node is put for a certain time in a cache list to keep
+     * Removes a peer from the list. In order to not reappear, the node is put for a certain time in a cache list to keep
      * the node removed. This method is thread-safe.
      * 
      * @param remotePeer
-     *            The node that should be removed
-     * @param force
-     *            A flag that removes a peer immediately.
-     * @return True if the neighbor was removed and added to a cache list. False if peer has not been removed or is
-     *         already in the peer removed temporarily list.
+     *            The node to be removed
+     * @return True if the neighbor was removed and added to a cache list. False if it has not been removed or is
+     *         already in the temporarily removed list.
      */
     @Override
     public boolean peerFailed(final PeerAddress remotePeer, final PeerException peerException) {
-        LOG.debug("peer {} is offline with reason {}", remotePeer, peerException);
+        LOG.debug("Peer {} is offline with reason {}.", remotePeer, peerException);
         
         // TB: ignore ZERO peer Id for the moment, but we should filter for the IP address
         if (remotePeer.peerId().isZero() || self().equals(remotePeer.peerId())) {
@@ -394,15 +392,15 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             tmp = peerMapVerified.get(classMember);
             if (tmp != null) {
                 boolean removed = false;
-                final PeerStatistic peerStatatistic;
+                final PeerStatistic peerStatistic;
                 synchronized (tmp) {
-                    peerStatatistic = tmp.remove(remotePeer.peerId());
-                    if (peerStatatistic != null) {
+                	peerStatistic = tmp.remove(remotePeer.peerId());
+                    if (peerStatistic != null) {
                         removed = true;
                     }
                 }
                 if (removed) {
-                    notifyRemove(remotePeer, peerStatatistic);
+                    notifyRemove(remotePeer, peerStatistic);
                     return true;
                 }
             }
@@ -410,20 +408,20 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         // not forced
         if (updatePeerStatistic(remotePeer, peerMapVerified.get(classMember), offlineCount)) {
-            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "peer failed in verified map"));
+            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "Peer failed in verified map."));
         }
         if (updatePeerStatistic(remotePeer, peerMapOverflow.get(classMember), offlineCount)) {
-            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "peer failed in overflow map"));
+            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "Peer failed in overflow map."));
         }
         return false;
     }
 
     /**
-     * Checks if a peer address in either in the verified map.
+     * Checks if a peer address is in the verified map.
      * 
      * @param peerAddress
      *            The peer address to check
-     * @return True, if the peer address is either in the verified map
+     * @return True, if the peer address is in the verified map
      */
     public boolean contains(final PeerAddress peerAddress) {
         final int classMember = classMember(peerAddress.peerId());
@@ -438,7 +436,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Checks if a peer address in either in the overflow / non-verified map.
+     * Checks if a peer address is in the overflow / non-verified map.
      * 
      * @param peerAddress
      *            The peer address to check
@@ -654,19 +652,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * @see PeerMap.routing.Routing#isCloser(java.math.BigInteger, PeerAddress.routing.NodeAddress,
-     *      PeerAddress.routing.NodeAddress)
-     * @param key
-     *            The key to search for
-     * @param rn2
-     *            The remote node on the routing path to node close to key
-     * @param rn
-     *            An other remote node on the routing path to node close to key
-     * @return True if rn2 is closer or has the same distance to key as rn
-     */
-    /**
-     * Returns -1 if the first remote node is closer to the key, if the secondBITS is closer, then 1 is returned. If
-     * both are equal, 0 is returned
+     * Returns -1 if the first remote node is closer to the key.
+     * If the second node is closer, then 1 is returned.
+     * If both are equal, 0 is returned.
      * 
      * @param id
      *            The id as a distance reference
@@ -695,14 +683,6 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         };
     }
     
-    public static Comparator<Number160> createComparator2(final Number160 id) {
-        return new Comparator<Number160>() {
-            public int compare(final Number160 remotePeer, final Number160 remotePeer2) {
-                return isCloser(id, remotePeer, remotePeer2);
-            }
-        };
-    }
-
     /**
      * Returns the difference in terms of bit counts of two ids, minus 1. So two IDs with one bit difference are in the
      * class 0.

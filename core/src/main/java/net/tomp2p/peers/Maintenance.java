@@ -40,9 +40,9 @@ public interface Maintenance {
      *            The map with the bags of non verified peers
      * @param offlineMap
      *            The map with the offline peers
+     * @param shutdownMap The map with the peers that quit friendly
      * @param exceptionMap The map with the peers that caused an exception
-     * @param shutdownMap The map with the peers that friendly quit
-     * @return A new or the same maintenance class
+     * @return The same or a new maintenance class
      */
     Maintenance init(List<Map<Number160, PeerStatistic>> peerMapVerified,
             List<Map<Number160, PeerStatistic>> peerMapNonVerified,

@@ -550,8 +550,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         List<PeerAddress> all = new ArrayList<PeerAddress>();
         for (Map<Number160, PeerStatistic> map : peerMapVerified) {
             synchronized (map) {
-                for (PeerStatistic peerStatatistic : map.values()) {
-                    all.add(peerStatatistic.peerAddress());
+                for (PeerStatistic peerStatistic : map.values()) {
+                    all.add(peerStatistic.peerAddress());
                 }
             }
         }
@@ -572,22 +572,22 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return All neighbors
      */
     public List<PeerAddress> allOverflow() {
-        List<PeerAddress> all = new ArrayList<PeerAddress>();
+        List<PeerAddress> allOverflow = new ArrayList<PeerAddress>();
         for (Map<Number160, PeerStatistic> map : peerMapOverflow) {
             synchronized (map) {
-                for (PeerStatistic peerStatatistic : map.values()) {
-                    all.add(peerStatatistic.peerAddress());
+                for (PeerStatistic peerStatistic : map.values()) {
+                	allOverflow.add(peerStatistic.peerAddress());
                 }
             }
         }
-        return all;
+        return allOverflow;
     }
 
     /**
      * Checks if a peer is in the offline map.
      * 
      * @param peerAddress
-     *            The address to look for
+     *            The peer address to look for
      * @return True if the peer is in the offline map, meaning that we consider this peer offline.
      */
     public boolean isPeerRemovedTemporarly(final PeerAddress peerAddress) {
@@ -602,7 +602,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * ones in the verified peer map. If a certain threshold in a bag is not reached, the unverified becomes important
      * too.
      * 
-     * @return The next most important peer to check if its still alive.
+     * @return The next most important peer to check if it is still alive.
      */
     public PeerStatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
         return maintenance.nextForMaintenance(notInterestedAddresses);
@@ -691,7 +691,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The first id
      * @param id2
      *            The second id
-     * @return returns the bit difference and -1 if they are equal
+     * @return The bit difference and -1 if they are equal
      */
     static int classMember(final Number160 id1, final Number160 id2) {
         return distance(id1, id2).bitLength() - 1;
@@ -704,7 +704,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The first id
      * @param id2
      *            The second id
-     * @return The distance
+     * @return The XOR distance
      */
     static Number160 distance(final Number160 id1, final Number160 id2) {
         return id1.xor(id2);
@@ -725,9 +725,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             final Map<Number160, PeerStatistic> tmp, final int maxFail) {
         if (tmp != null) {
             synchronized (tmp) {
-                PeerStatistic peerStatatistic = tmp.get(remotePeer.peerId());
-                if (peerStatatistic != null) {
-                    if (peerStatatistic.failed() >= maxFail) {
+                PeerStatistic peerStatistic = tmp.get(remotePeer.peerId());
+                if (peerStatistic != null) {
+                    if (peerStatistic.failed() >= maxFail) {
                         return true;
                     }
                 }
@@ -745,7 +745,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @param peerAddress
      *            The address of the peer that may have been changed
      * @param firstHand
-     *            True if this peer send and received a message from the remote peer
+     *            True if this peer sent and received a message from the remote peer
      * @return The old peer address if we have updated the peer, null otherwise
      */
     private static PeerStatistic updateExistingVerifiedPeerAddress(
@@ -765,11 +765,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Fills the set with peer addresses. Fills it until a limit is reach. However, this is a soft limit, as the bag may
+     * Fills the set with peer addresses. Fills it until a limit is reached. However, this is a soft limit, as the bag may
      * contain close peers in a random manner.
      * 
      * @param atLeast
-     *            The number of addresses we want at least. It does not matter if its more.
+     *            The number of addresses we want at least. It does not matter if it is more.
      * @param set
      *            The set where to store the results
      * @param tmp
@@ -779,8 +779,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     private static boolean fillSet(final int atLeast, final SortedSet<PeerAddress> set,
             final Map<Number160, PeerStatistic> tmp) {
         synchronized (tmp) {
-            for (final PeerStatistic peerStatatistic : tmp.values()) {
-                set.add(peerStatatistic.peerAddress());
+            for (final PeerStatistic peerStatistic : tmp.values()) {
+                set.add(peerStatistic.peerAddress());
             }
         }
         return set.size() >= atLeast;
@@ -800,9 +800,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 			return null;
 		}
 		Map<Number160, PeerStatistic> tmp = peerMapVerified.get(classMember);
-		PeerStatistic peerStatatistic = tmp.get(peerId);
-		if(peerStatatistic!=null) {
-			return peerStatatistic.peerAddress();
+		PeerStatistic peerStatistic = tmp.get(peerId);
+		if(peerStatistic!=null) {
+			return peerStatistic.peerAddress();
 		}
 	    return null;
     }

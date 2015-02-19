@@ -32,7 +32,6 @@ import net.tomp2p.rpc.RPC.Commands;
 public class HolePunchRPC extends DispatchHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePunchRPC.class);
-	private static final ConcurrentHashMap<Number160, List<Integer>> PORTLIST = new ConcurrentHashMap<Number160, List<Integer>>();
 	private final Peer peer;
 
 	public HolePunchRPC(Peer peer) {
@@ -74,7 +73,9 @@ public class HolePunchRPC extends DispatchHandler {
 	 * @param responder
 	 */
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
-		HolePuncher holePuncher = new HolePuncher(peer, message.intList().size(), HolePunchInitiator.IDLE_UDP_SECONDS, message);
+		//TODO jwa clear out because this is just a test
+		NATType type = NATType.PORT_PRESERVING;
+		HolePuncherStrategy holePuncher = type.getHolePuncher(peer, message.intList().size(), HolePunchInitiator.IDLE_UDP_SECONDS, message);
 		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
@@ -153,9 +154,8 @@ public class HolePunchRPC extends DispatchHandler {
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
 		
-		if (message.longAt(0).intValue() == NATType.NON_PRESERVING_SEQUENTIAL.ordinal()) {
-			
-		}
+		// forward the NATType to the unreachable peer2
+		forwardMessage.longValue(message.longAt(0));
 
 		return forwardMessage;
 	}

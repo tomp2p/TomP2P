@@ -1,5 +1,7 @@
 package net.tomp2p.holep;
 
+import net.tomp2p.holep.strategy.NonPreservingSequentialStrategy;
+import net.tomp2p.holep.strategy.PortPreservingStrategy;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 

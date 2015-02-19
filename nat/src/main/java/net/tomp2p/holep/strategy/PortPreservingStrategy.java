@@ -1,4 +1,4 @@
-package net.tomp2p.holep;
+package net.tomp2p.holep.strategy;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -19,6 +19,9 @@ import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.holep.DuplicatesHandler;
+import net.tomp2p.holep.HolePunchScheduler;
+import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
@@ -34,49 +37,13 @@ public class PortPreservingStrategy extends AbstractHolePuncher {
 	private static final NATType NAT_TYPE = NATType.PORT_PRESERVING;
 	private static final Logger LOG = LoggerFactory.getLogger(PortPreservingStrategy.class);
 	
-	public PortPreservingStrategy(Peer peer, int numberOfHoles, int idleUDPSeconds, Message originalMessage) {
+	public PortPreservingStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 		super(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 	}
 	
 	/*
 	 * ===================== shared methods =====================
 	 */
-
-	/**
-	 * This method does two things. If the initiating peer calls it, he gets
-	 * back a {@link List} of new {@link SimpleInboundHandler} to deal with the
-	 * replies of the replying peer. If a replying peer is calling this method
-	 * it will return a {@link List} of default {@link SimpleInboundHandler}s
-	 * from the {@link Dispatcher}.
-	 * 
-	 * @param originalFutureResponse
-	 * @return handlerList
-	 */
-	private List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(
-			FutureResponse originalFutureResponse, final boolean initiator, final FutureDone<Message> futureDone) {
-		List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
-				numberOfHoles);
-		SimpleChannelInboundHandler<Message> inboundHandler;
-		Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
-
-		if (initiator) {
-			for (int i = 0; i < numberOfHoles; i++) {
-				inboundHandler = createAfterHolePHandler(futureDone);
-				handlers = peer.connectionBean().sender()
-						.configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
-				handlerList.add(handlers);
-			}
-		} else {
-			inboundHandler = new DuplicatesHandler(peer.connectionBean().dispatcher());
-			for (int i = 0; i < numberOfHoles; i++) {
-				handlers = peer.connectionBean().sender()
-						.configureHandlers(inboundHandler, originalFutureResponse, idleUDPSeconds, false);
-				handlerList.add(handlers);
-			}
-		}
-
-		return handlerList;
-	}
 
 	@Override
 	protected SimpleChannelInboundHandler<Message> createAfterHolePHandler(final FutureDone<Message> futureDone) {
@@ -106,33 +73,6 @@ public class PortPreservingStrategy extends AbstractHolePuncher {
 	 * ================ methods on initiating nat peer ================
 	 */
 
-	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone,
-			final ChannelCreator originalChannelCreator, final FutureResponse originalFutureResponse,
-			final NATType natType) {
-
-		FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(originalFutureResponse,
-				prepareHandlers(originalFutureResponse, true, mainFutureDone), mainFutureDone);
-		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
-
-			@Override
-			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
-				if (future.isSuccess()) {
-					final List<ChannelFuture> futures = future.object();
-					peer.connectionBean()
-							.sender()
-							.sendUDP(createHolePunchInboundHandler(futures, originalFutureResponse, mainFutureDone),
-									originalFutureResponse, createHolePunchInitMessage(futures, -1),
-									originalChannelCreator, idleUDPSeconds, BROADCAST_VALUE);
-					LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
-
-				} else {
-					mainFutureDone.failed("No ChannelFuture could be created!");
-				}
-			}
-		});
-		return mainFutureDone;
-	}
-	
 	protected boolean checkReplyValues(Message msg, FutureDone<Message> futureDone) {
 		boolean ok = false;
 		if (msg.command() == Commands.HOLEP.getNr() && msg.type() == Type.OK) {
@@ -188,13 +128,13 @@ public class PortPreservingStrategy extends AbstractHolePuncher {
 	 */
 	
 	public FutureDone<Message> replyHolePunch() {
-		this.originalSender = (PeerAddress) originalMessage.neighborsSetList().get(0).neighbors().toArray()[0];
+		originalSender = (PeerAddress) originalMessage.neighborsSetList().get(0).neighbors().toArray()[0];
 		final FutureDone<Message> replyMessageFuture = new FutureDone<Message>();
-		frResponse = new FutureResponse(originalMessage);
-		final HolePuncher thisInstance = this;
+		FutureResponse frResponse = new FutureResponse(originalMessage);
+		final PortPreservingStrategy thisInstance = this;
 
 		FutureDone<List<ChannelFuture>> rmfChannelFutures = createChannelFutures(frResponse,
-				prepareHandlers(frResponse));
+				prepareHandlers(frResponse, false, replyMessageFuture), replyMessageFuture);
 		rmfChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 
 			@Override
@@ -215,4 +155,12 @@ public class PortPreservingStrategy extends AbstractHolePuncher {
 		});
 		return replyMessageFuture;
 	}
+	
+	protected void doPortMappings() {
+		for (int i = 0; i < channelFutures.size(); i++) {
+			InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
+			portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), socket.getPort()));
+		}
+	}
+	
 }

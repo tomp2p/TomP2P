@@ -1,76 +1,76 @@
-//package net.tomp2p.holep;
-//
-//import io.netty.channel.ChannelFuture;
-//import io.netty.channel.ChannelHandler;
-//import io.netty.channel.ChannelHandlerContext;
-//import io.netty.channel.SimpleChannelInboundHandler;
-//import io.netty.util.concurrent.EventExecutorGroup;
-//import io.netty.util.concurrent.GenericFutureListener;
-//
-//import java.net.InetSocketAddress;
-//import java.util.ArrayList;
-//import java.util.List;
-//import java.util.Map;
-//import java.util.concurrent.atomic.AtomicInteger;
-//
-//import net.tomp2p.connection.ChannelCreator;
-//import net.tomp2p.connection.Dispatcher;
-//import net.tomp2p.connection.HolePunchInitiator;
-//import net.tomp2p.futures.BaseFutureAdapter;
-//import net.tomp2p.futures.FutureChannelCreator;
-//import net.tomp2p.futures.FutureDone;
-//import net.tomp2p.futures.FutureResponse;
-//import net.tomp2p.message.Buffer;
-//import net.tomp2p.message.Message;
-//import net.tomp2p.message.Message.Type;
-//import net.tomp2p.p2p.Peer;
-//import net.tomp2p.peers.PeerAddress;
-//import net.tomp2p.peers.PeerSocketAddress;
-//import net.tomp2p.rpc.RPC;
-//import net.tomp2p.rpc.RPC.Commands;
-//import net.tomp2p.utils.Pair;
-//import net.tomp2p.utils.Utils;
-//
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-//
-///**
-// * This is a generic class which is supposed to handle any hole punching
-// * procedure possible on a {@link Peer}.
-// * 
-// * @author Jonas Wagner
-// * 
-// */
-//public class HolePuncher {
-//
-//	private static final Logger LOG = LoggerFactory.getLogger(HolePuncher.class);
-//
-//	// these fields are needed from both procedures: initiation and reply
-//	private static final boolean BROADCAST_VALUE = HolePunchInitiator.BROADCAST;
-//	private static final boolean FIRE_AND_FORGET_VALUE = false;
-//	private final Peer peer;
-//	private final int numberOfHoles;
-//	private final int idleUDPSeconds;
-//	private boolean initiator = false;
-//	private final Message originalMessage;
-//	private List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>();
-//
-//	// these fields are needed for the reply procedure
-//	private FutureResponse frResponse;
-//	private PeerAddress originalSender;
-//	private List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
-//
-//	// these fields are needed for the initiation procedure
-//	private FutureDone<Message> mainFutureDone;
-//
-//	public HolePuncher(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
-//		this.peer = peer;
-//		this.numberOfHoles = numberOfHoles;
-//		this.idleUDPSeconds = idleUDPSeconds;
-//		this.originalMessage = originalMessage;
-//
-//		LOG.trace("new HolePuncher created, originalMessage {}", originalMessage.toString());
-//	}
+package net.tomp2p.holep;
+
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.GenericFutureListener;
+
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.Dispatcher;
+import net.tomp2p.connection.HolePunchInitiator;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Buffer;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
+import net.tomp2p.p2p.Peer;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.rpc.RPC;
+import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Utils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * This is a generic class which is supposed to handle any hole punching
+ * procedure possible on a {@link Peer}.
+ * 
+ * @author Jonas Wagner
+ * 
+ */
+public class HolePuncher {
+
+	private static final Logger LOG = LoggerFactory.getLogger(HolePuncher.class);
+
+	// these fields are needed from both procedures: initiation and reply
+	private static final boolean BROADCAST_VALUE = HolePunchInitiator.BROADCAST;
+	private static final boolean FIRE_AND_FORGET_VALUE = false;
+	private final Peer peer;
+	private final int numberOfHoles;
+	private final int idleUDPSeconds;
+	private boolean initiator = false;
+	private final Message originalMessage;
+	private List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>();
+
+	// these fields are needed for the reply procedure
+	private FutureResponse frResponse;
+	private PeerAddress originalSender;
+	private List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
+
+	// these fields are needed for the initiation procedure
+	private FutureDone<Message> mainFutureDone;
+
+	public HolePuncher(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
+		this.peer = peer;
+		this.numberOfHoles = numberOfHoles;
+		this.idleUDPSeconds = idleUDPSeconds;
+		this.originalMessage = originalMessage;
+
+		LOG.trace("new HolePuncher created, originalMessage {}", originalMessage.toString());
+	}
 //
 //	@SuppressWarnings("unused")
 //	private HolePuncher() {
@@ -483,4 +483,4 @@
 //			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null);
 //		}
 //	}
-//}
+}

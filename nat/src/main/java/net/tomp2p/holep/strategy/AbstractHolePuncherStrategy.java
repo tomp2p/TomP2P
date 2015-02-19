@@ -43,9 +43,9 @@ import net.tomp2p.utils.Utils;
  * @author Jonas Wagner
  * 
  */
-public abstract class AbstractHolePuncher implements HolePuncherStrategy {
+public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy {
 
-	private static final Logger LOG = LoggerFactory.getLogger(AbstractHolePuncher.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AbstractHolePuncherStrategy.class);
 	protected static final boolean BROADCAST_VALUE = HolePunchInitiator.BROADCAST;
 	protected static final boolean FIRE_AND_FORGET_VALUE = false;
 	protected final Peer peer;
@@ -56,7 +56,7 @@ public abstract class AbstractHolePuncher implements HolePuncherStrategy {
 	protected List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>();
 	protected List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
 
-	public AbstractHolePuncher(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
+	public AbstractHolePuncherStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 		this.peer = peer;
 		this.numberOfHoles = numberOfHoles;
 		this.idleUDPSeconds = idleUDPSeconds;
@@ -209,29 +209,29 @@ public abstract class AbstractHolePuncher implements HolePuncherStrategy {
 	 * @param channelCreator
 	 * @return holePMessage
 	 */
-	private FutureDone<Message> createHolePunchInitMessage(final List<ChannelFuture> channelFutures) {
+	private FutureDone<Message> createInitMessage(final List<ChannelFuture> channelFutures) {
 		FutureDone<Message> initMessageFutureDone = new FutureDone<Message>();
 		PeerSocketAddress socketAddress = Utils.extractRandomRelay(originalMessage);
 
 		// we need to make a copy of the original Message
-		Message holePMessage = new Message();
+		Message initMessage = new Message();
 
 		// socketInfoMessage.messageId(message.messageId());
 		PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
 				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
-		holePMessage.recipient(recipient);
-		holePMessage.sender(originalMessage.sender());
-		holePMessage.version(originalMessage.version());
-		holePMessage.udp(true);
-		holePMessage.command(RPC.Commands.HOLEP.getNr());
-		holePMessage.type(Message.Type.REQUEST_1);
+		initMessage.recipient(recipient);
+		initMessage.sender(originalMessage.sender());
+		initMessage.version(originalMessage.version());
+		initMessage.udp(true);
+		initMessage.command(RPC.Commands.HOLEP.getNr());
+		initMessage.type(Message.Type.REQUEST_1);
 
-		prepareInitiatingPeerPorts(holePMessage, initMessageFutureDone);
+		prepareInitiatingPeerPorts(initMessage, initMessageFutureDone, channelFutures);
 
-		LOG.debug("Hole punch initMessage created {}", holePMessage.toString());
+		LOG.debug("Hole punch initMessage created {}", initMessage.toString());
 		return initMessageFutureDone;
 	}
-	
+
 	private Message createDummyMessage(int i) {
 		Message dummyMessage = new Message();
 		final int remotePort = portMappings.get(i).element0();
@@ -246,7 +246,8 @@ public abstract class AbstractHolePuncher implements HolePuncherStrategy {
 		return dummyMessage;
 	}
 
-	protected Message createReplyMessage() {
+	private FutureDone<Message> createReplyMessage() {
+		FutureDone<Message> replyMessageFuture2 = new FutureDone<Message>();
 		Message replyMessage = new Message();
 		replyMessage.messageId(originalMessage.messageId());
 		replyMessage.recipient(originalMessage.sender());
@@ -254,13 +255,11 @@ public abstract class AbstractHolePuncher implements HolePuncherStrategy {
 		replyMessage.command(Commands.HOLEP.getNr());
 		replyMessage.type(Message.Type.OK);
 		replyMessage.messageId(originalMessage.messageId());
-		for (Pair<Integer, Integer> pair : portMappings) {
-			if (!(pair == null || pair.isEmpty() || pair.element0() == null || pair.element1() == null)) {
-				replyMessage.intValue(pair.element0());
-				replyMessage.intValue(pair.element1());
-			}
-		}
-		return replyMessage;
+
+		// TODO jwa map all ports
+		prepareTargetPeerPorts(replyMessage, replyMessageFuture2);
+
+		return replyMessageFuture2;
 	}
 
 	/**
@@ -308,12 +307,11 @@ public abstract class AbstractHolePuncher implements HolePuncherStrategy {
 		FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(originalFutureResponse,
 				prepareHandlers(originalFutureResponse, true, mainFutureDone), mainFutureDone);
 		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
-
 			@Override
 			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
 				if (future.isSuccess()) {
 					final List<ChannelFuture> futures = future.object();
-					FutureDone<Message> initMessage = createHolePunchInitMessage(futures);
+					FutureDone<Message> initMessage = createInitMessage(futures);
 					initMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 						@Override
 						public void operationComplete(FutureDone<Message> future) throws Exception {
@@ -372,35 +370,49 @@ public abstract class AbstractHolePuncher implements HolePuncherStrategy {
 	}
 
 	/**
-	 * this method checks if the returned values from the replying nat peer are
-	 * valid.
-	 * 
-	 * @param msg
-	 * @return ok
-	 */
-	protected abstract boolean checkReplyValues(Message msg, FutureDone<Message> futureDone);
-
-	/**
 	 * This method initiates the hole punch procedure on the target peer side.
 	 * 
 	 * @return
 	 */
-	public abstract FutureDone<Message> replyHolePunch();
+	public FutureDone<Message> replyHolePunch() {
+		originalSender = (PeerAddress) originalMessage.neighborsSetList().get(0).neighbors().toArray()[0];
+		final FutureDone<Message> replyMessageFuture = new FutureDone<Message>();
+		FutureResponse frResponse = new FutureResponse(originalMessage);
+		final HolePuncherStrategy thisInstance = this;
 
-	/**
-	 * This method cares about which socket contacts which socket on the NATs
-	 * which are needed to be traversed.
-	 */
-	protected abstract void doPortMappings();
+		FutureDone<List<ChannelFuture>> rmfChannelFutures = createChannelFutures(frResponse,
+				prepareHandlers(frResponse, false, replyMessageFuture), replyMessageFuture);
+		rmfChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 
-	/**
-	 * This method needs to be overwritten by each strategy in order to let the
-	 * other peer know which ports it need to contact.
-	 * 
-	 * @param holePMessage
-	 * @param initMessageFutureDone
-	 */
-	protected abstract void prepareInitiatingPeerPorts(final Message holePMessage, final FutureDone<Message> initMessageFutureDone);
+			@Override
+			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
+				if (future.isSuccess()) {
+					channelFutures = future.object();
+					final FutureDone<Message> replyMessageFuture2 = createReplyMessage();
+					replyMessageFuture2.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+
+						@Override
+						public void operationComplete(FutureDone<Message> future) throws Exception {
+							if (future.isSuccess()) {
+								Message replyMessage = future.object();
+								// TODO jwa create some config class to specify
+								// the number
+								// of trials
+								Thread holePunchScheduler = new Thread(new HolePunchScheduler(10, thisInstance));
+								holePunchScheduler.start();
+								replyMessageFuture2.done(replyMessage);
+							} else {
+								replyMessageFuture.failed("No ReplyMessage could be created!");
+							}
+						}
+					});
+				} else {
+					replyMessageFuture.failed("No ChannelFuture could be created!");
+				}
+			}
+		});
+		return replyMessageFuture;
+	}
 
 	/**
 	 * This methods is only called by a {@link HolePunchScheduler}. It simply
@@ -425,4 +437,34 @@ public abstract class AbstractHolePuncher implements HolePuncherStrategy {
 			peer.peerBean().peerMap().peerFound(originalSender, originalSender, null);
 		}
 	}
+
+	/**
+	 * this method checks if the returned values from the replying nat peer are
+	 * valid.
+	 * 
+	 * @param msg
+	 * @return ok
+	 */
+	protected abstract boolean checkReplyValues(final Message msg, final FutureDone<Message> futureDone);
+
+	/**
+	 * This method cares about which socket contacts which socket on the NATs
+	 * which are needed to be traversed.
+	 * 
+	 * @param replyMessageFuture2
+	 * @param replyMessage
+	 */
+	protected abstract void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2);
+
+	/**
+	 * This method needs to be overwritten by each strategy in order to let the
+	 * other peer know which ports it need to contact.
+	 * 
+	 * @param holePMessage
+	 * @param initMessageFutureDone
+	 * @param channelFutures2
+	 */
+	protected abstract void prepareInitiatingPeerPorts(final Message holePMessage, final FutureDone<Message> initMessageFutureDone,
+			final List<ChannelFuture> channelFutures2);
+
 }

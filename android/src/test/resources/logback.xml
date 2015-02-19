@@ -9,8 +9,8 @@
 
     <logger name="net.tomp2p" level="ERROR"/>
     
-    <logger name="net.tomp2p.relay" level="DEBUG"/>
-    <logger name="net.tomp2p.relay.android" level="DEBUG"/>
+    <!-- <logger name="net.tomp2p.relay" level="DEBUG"/>
+    <logger name="net.tomp2p.relay.android" level="DEBUG"/> -->
     
     <!-- Disable Netty Warning that I'm aware of -->
     <logger name="io.netty.util.concurrent.SingleThreadEventExecutor" level="OFF"/>

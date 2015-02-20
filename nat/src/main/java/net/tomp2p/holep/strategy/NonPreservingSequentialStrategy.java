@@ -76,8 +76,6 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 						public void operationComplete(FutureDone<List<PeerSocketAddress>> future) throws Exception {
 							if (future.isSuccess()) {
 								List<PeerSocketAddress> addresses = future.object();
-								replyMessage.presetContentTypes(true);
-								replyMessage.contentType(Content.INTEGER);
 								// TODO jwa is this a good thing?
 								int startingPort = addresses.get(0).udpPort() + 1; 
 								for (int i = 0; i < channelFutures.size(); i++) {

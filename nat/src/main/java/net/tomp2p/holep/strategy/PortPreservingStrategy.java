@@ -36,8 +36,6 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 
 	@Override
 	protected void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
-		replyMessage.presetContentTypes(true);
-		replyMessage.contentType(Content.INTEGER);
 		for (int i = 0; i < channelFutures.size(); i++) {
 			InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
 			portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), socket.getPort()));

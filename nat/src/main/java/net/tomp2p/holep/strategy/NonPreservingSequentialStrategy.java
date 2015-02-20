@@ -12,6 +12,7 @@ import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.utils.Pair;
 
 public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy {
 
@@ -74,6 +75,8 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 								// TODO jwa is this a good thing?
 								int startingPort = addresses.get(0).udpPort() + 1; 
 								for (int i = 0; i < channelFutures.size(); i++) {
+									portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), startingPort + i));
+									replyMessage.intValue((int) originalMessage.intList().get(i));
 									replyMessage.intValue(startingPort + i);
 								}
 								replyMessageFuture2.done(replyMessage);

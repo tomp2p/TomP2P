@@ -94,7 +94,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @return fDoneChannelFutures
 	 */
 	private final FutureDone<List<ChannelFuture>> createChannelFutures(final FutureResponse originalFutureResponse,
-			final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlersList, final FutureDone<Message> mainFutureDone) {
+			final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlersList, final FutureDone<Message> mainFutureDone, final int numberOfHoles) {
 
 		final FutureDone<List<ChannelFuture>> fDoneChannelFutures = new FutureDone<List<ChannelFuture>>();
 		final AtomicInteger countDown = new AtomicInteger(numberOfHoles);
@@ -303,7 +303,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone, final ChannelCreator originalChannelCreator,
 			final FutureResponse originalFutureResponse) {
 		final FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(originalFutureResponse,
-				prepareHandlers(originalFutureResponse, true, mainFutureDone), mainFutureDone);
+				prepareHandlers(originalFutureResponse, true, mainFutureDone), mainFutureDone, numberOfHoles);
 		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 			@Override
 			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
@@ -379,7 +379,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 		final HolePuncherStrategy thisInstance = this;
 
 		final FutureDone<List<ChannelFuture>> rmfChannelFutures = createChannelFutures(frResponse,
-				prepareHandlers(frResponse, false, replyMessageFuture), replyMessageFuture);
+				prepareHandlers(frResponse, false, replyMessageFuture), replyMessageFuture, originalMessage.intList().size());
 		rmfChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 			@Override
 			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {

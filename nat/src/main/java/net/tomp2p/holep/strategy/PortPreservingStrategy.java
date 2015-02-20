@@ -19,12 +19,6 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 		super(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 	}
 
-	/*
-	 * ================ methods on initiating nat peer ================
-	 */
-
-	
-
 	@Override
 	protected void prepareInitiatingPeerPorts(final Message holePMessage, final FutureDone<Message> initMessageFutureDone, final List<ChannelFuture> channelFutures) {
 		// TODO jwa --> create something like a configClass or file where the
@@ -39,16 +33,11 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 		initMessageFutureDone.done(holePMessage);
 	}
 
-	/*
-	 * ================ methods on target nat peer ================
-	 */
-
 	@Override
 	protected void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
 		for (int i = 0; i < channelFutures.size(); i++) {
 			InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
 			portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), socket.getPort()));
-			
 			replyMessage.intValue((int) originalMessage.intList().get(i));
 			replyMessage.intValue(socket.getPort());
 		}

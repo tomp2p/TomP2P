@@ -395,7 +395,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 								holePunchScheduler.start();
 								replyMessageFuture.done(replyMessage);
 							} else {
-								replyMessageFuture.failed("No ReplyMessage could be created!");
+								replyMessageFuture2.failed("No ReplyMessage could be created!");
 							}
 						}
 					});

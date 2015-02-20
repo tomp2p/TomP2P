@@ -10,6 +10,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Content;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.utils.Pair;
@@ -72,6 +73,8 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 						public void operationComplete(FutureDone<List<PeerSocketAddress>> future) throws Exception {
 							if (future.isSuccess()) {
 								List<PeerSocketAddress> addresses = future.object();
+								replyMessage.presetContentTypes(true);
+								replyMessage.contentType(Content.INTEGER);
 								// TODO jwa is this a good thing?
 								int startingPort = addresses.get(0).udpPort() + 1; 
 								for (int i = 0; i < channelFutures.size(); i++) {

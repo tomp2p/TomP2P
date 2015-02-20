@@ -83,7 +83,6 @@ public class HolePunchRPC extends DispatchHandler {
 				} else {
 					handleFail(message, responder, "Fail while initiating the hole punching");
 				}
-
 			}
 		});
 	}

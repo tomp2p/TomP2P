@@ -226,7 +226,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 		// we need to make a copy of the original Message
 		PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
 				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
-		Message initMessage = createHolePMessage(recipient, originalMessage.sender(), RPC.Commands.HOLEP.getNr(), Message.Type.OK);
+		Message initMessage = createHolePMessage(recipient, originalMessage.sender(), RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
 		initMessage.version(originalMessage.version());
 		initMessage.udp(true);
 		prepareInitiatingPeerPorts(initMessage, initMessageFutureDone, channelFutures);

@@ -29,28 +29,7 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 	 * ================ methods on initiating nat peer ================
 	 */
 
-	protected boolean checkReplyValues(Message msg, FutureDone<Message> futureDone) {
-		boolean ok = false;
-		if (msg.command() == Commands.HOLEP.getNr() && msg.type() == Type.OK) {
-			// the list with the ports should never be null or Empty
-			if (!(msg.intList() == null || msg.intList().isEmpty())) {
-				final int rawNumberOfHoles = msg.intList().size();
-				// the number of the pairs of port must be even!
-				if ((rawNumberOfHoles % 2) == 0) {
-					ok = true;
-				} else {
-					handleFail("The number of ports in IntList was odd! This should never happen", futureDone);
-				}
-			} else {
-				handleFail("IntList in replyMessage was null or Empty! No ports available!!!!", futureDone);
-			}
-		} else {
-			handleFail("Could not acquire a connection via hole punching, got: " + msg, futureDone);
-		}
-		LOG.debug("ReplyValues of answerMessage from rendez-vous peer are: " + ok, futureDone);
-
-		return ok;
-	}
+	
 
 	@Override
 	protected void prepareInitiatingPeerPorts(final Message holePMessage, final FutureDone<Message> initMessageFutureDone, final List<ChannelFuture> channelFutures) {
@@ -70,6 +49,7 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 	 * ================ methods on target nat peer ================
 	 */
 
+	@Override
 	protected void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
 		for (int i = 0; i < channelFutures.size(); i++) {
 			InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();

@@ -116,6 +116,9 @@ public class HolePunchRPC extends DispatchHandler {
 							answerMessage.intValue(i);
 						}
 						answerMessage.command(Commands.HOLEP.getNr());
+						
+						// forward the NATType to the unreachable peer2
+						forwardMessage.longValue(message.longAt(0));
 
 						LOG.debug("Returing from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);

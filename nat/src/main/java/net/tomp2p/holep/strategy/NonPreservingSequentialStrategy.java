@@ -61,12 +61,6 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 	}
 
 	@Override
-	protected boolean checkReplyValues(final Message msg, final FutureDone<Message> futureDone) {
-		// TODO Auto-generated method stub
-		return true;
-	}
-
-	@Override
 	protected void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
 		FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
 		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {

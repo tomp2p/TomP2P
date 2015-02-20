@@ -46,6 +46,7 @@ import net.tomp2p.utils.Utils;
 public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractHolePuncherStrategy.class);
+	protected static final int NUMBER_OF_TRIALS = HolePunchInitiator.NUMBER_OF_TRIALS;
 	protected static final boolean BROADCAST_VALUE = HolePunchInitiator.BROADCAST;
 	protected static final boolean FIRE_AND_FORGET_VALUE = false;
 	protected final Peer peer;
@@ -73,7 +74,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param handlersList
 	 * @return fDoneChannelFutures
 	 */
-	protected final FutureDone<List<ChannelFuture>> createChannelFutures(final FutureResponse originalFutureResponse,
+	private final FutureDone<List<ChannelFuture>> createChannelFutures(final FutureResponse originalFutureResponse,
 			final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlersList, final FutureDone<Message> mainFutureDone) {
 
 		final FutureDone<List<ChannelFuture>> fDoneChannelFutures = new FutureDone<List<ChannelFuture>>();
@@ -95,7 +96,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 								if (future.isSuccess()) {
 									channelFutures.add(future);
 								} else {
-									handleFail("Error while creating the ChannelFutures!", mainFutureDone);
+									mainFutureDone.failed("Error while creating the ChannelFutures!");
 								}
 								countDown.decrementAndGet();
 								if (countDown.get() == 0) {
@@ -105,16 +106,12 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 						});
 					} else {
 						countDown.decrementAndGet();
-						handleFail("Error while creating the ChannelFutures!", mainFutureDone);
+						mainFutureDone.failed("Error while creating the ChannelFutures!");
 					}
 				}
 			});
 		}
 		return fDoneChannelFutures;
-	}
-
-	protected void handleFail(final String failMessage, final FutureDone<Message> futureDone) {
-		futureDone.failed(failMessage);
 	}
 
 	/**
@@ -125,7 +122,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param originalFutureResponse
 	 * @return holePhandler
 	 */
-	protected SimpleChannelInboundHandler<Message> createHolePunchInboundHandler(final List<ChannelFuture> futures,
+	private SimpleChannelInboundHandler<Message> createHolePunchInboundHandler(final List<ChannelFuture> futures,
 			final FutureResponse originalFutureResponse, final FutureDone<Message> futureDone) {
 		SimpleChannelInboundHandler<Message> holePunchInboundHandler = new SimpleChannelInboundHandler<Message>() {
 
@@ -135,7 +132,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 					for (int i = 0; i < msg.intList().size(); i++) {
 						ChannelFuture channelFuture = extractChannelFuture(futures, msg.intList().get(i));
 						if (channelFuture == null) {
-							handleFail("Something went wrong with the portmappings!", futureDone);
+							futureDone.failed("Something went wrong with the portmappings!");
 						}
 						i++;
 						Message sendMessage = createSendOriginalMessage(msg.intList().get(i - 1), msg.intList().get(i));
@@ -159,7 +156,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param localPort
 	 * @return
 	 */
-	protected ChannelFuture extractChannelFuture(List<ChannelFuture> futures, int localPort) {
+	private ChannelFuture extractChannelFuture(List<ChannelFuture> futures, int localPort) {
 		for (ChannelFuture future : futures) {
 			if (future.channel().localAddress() != null) {
 				InetSocketAddress inetSocketAddress = (InetSocketAddress) future.channel().localAddress();
@@ -248,18 +245,24 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 
 	private FutureDone<Message> createReplyMessage() {
 		FutureDone<Message> replyMessageFuture2 = new FutureDone<Message>();
-		Message replyMessage = new Message();
-		replyMessage.messageId(originalMessage.messageId());
-		replyMessage.recipient(originalMessage.sender());
-		replyMessage.sender(peer.peerBean().serverPeerAddress());
-		replyMessage.command(Commands.HOLEP.getNr());
-		replyMessage.type(Message.Type.OK);
-		replyMessage.messageId(originalMessage.messageId());
+		Message replyMessage = createHolePMessage(originalMessage.messageId(), originalMessage.sender(), peer.peerBean()
+				.serverPeerAddress(), Commands.HOLEP.getNr(), Type.OK);
 
 		// TODO jwa map all ports
 		prepareTargetPeerPorts(replyMessage, replyMessageFuture2);
 
 		return replyMessageFuture2;
+	}
+
+	private Message createHolePMessage(final int messageId, final PeerAddress recipient, final PeerAddress sender, final byte command,
+			final Message.Type type) {
+		Message message = new Message();
+		message.messageId(messageId);
+		message.recipient(recipient);
+		message.sender(sender);
+		message.command(command);
+		message.type(type);
+		return message;
 	}
 
 	/**
@@ -268,7 +271,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * 
 	 * @return inboundHandler
 	 */
-	protected SimpleChannelInboundHandler<Message> createAfterHolePHandler(final FutureDone<Message> futureDone) {
+	private SimpleChannelInboundHandler<Message> createAfterHolePHandler(final FutureDone<Message> futureDone) {
 		final SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
 
 			@Override
@@ -345,7 +348,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param originalFutureResponse
 	 * @return handlerList
 	 */
-	protected List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(FutureResponse originalFutureResponse,
+	private List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(FutureResponse originalFutureResponse,
 			final boolean initiator, final FutureDone<Message> futureDone) {
 		List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
 				numberOfHoles);
@@ -398,7 +401,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 								// TODO jwa create some config class to specify
 								// the number
 								// of trials
-								Thread holePunchScheduler = new Thread(new HolePunchScheduler(10, thisInstance));
+								Thread holePunchScheduler = new Thread(new HolePunchScheduler(NUMBER_OF_TRIALS, thisInstance));
 								holePunchScheduler.start();
 								replyMessageFuture2.done(replyMessage);
 							} else {
@@ -445,7 +448,28 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param msg
 	 * @return ok
 	 */
-	protected abstract boolean checkReplyValues(final Message msg, final FutureDone<Message> futureDone);
+	private boolean checkReplyValues(Message msg, FutureDone<Message> futureDone) {
+		boolean ok = false;
+		if (msg.command() == Commands.HOLEP.getNr() && msg.type() == Type.OK) {
+			// the list with the ports should never be null or Empty
+			if (!(msg.intList() == null || msg.intList().isEmpty())) {
+				final int rawNumberOfHoles = msg.intList().size();
+				// the number of the pairs of port must be even!
+				if ((rawNumberOfHoles % 2) == 0) {
+					ok = true;
+				} else {
+					futureDone.failed("The number of ports in IntList was odd! This should never happen");
+				}
+			} else {
+				futureDone.failed("IntList in replyMessage was null or Empty! No ports available!!!!");
+			}
+		} else {
+			futureDone.failed("Could not acquire a connection via hole punching, got: " + msg);
+		}
+		LOG.debug("ReplyValues of answerMessage from rendez-vous peer are: " + ok, futureDone);
+
+		return ok;
+	}
 
 	/**
 	 * This method cares about which socket contacts which socket on the NATs

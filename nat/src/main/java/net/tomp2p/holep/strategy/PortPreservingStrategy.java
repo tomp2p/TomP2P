@@ -8,7 +8,6 @@ import java.util.List;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Message;
-import net.tomp2p.message.Message.Content;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.utils.Pair;
 

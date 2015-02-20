@@ -16,11 +16,11 @@ public class HolePTestDriver {
 		// set Logger Level
 		ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
 				.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-		root.setLevel(Level.TRACE);
-		LOG.warn("Logger with Level " + Level.TRACE.toString() + " initialized");
+		root.setLevel(Level.WARN);
+		LOG.warn("Logger with Level " + Level.WARN.toString() + " initialized");
 
 		HolePTestApp testApp = new HolePTestApp();
-		HolePTestController controller = new HolePTestController("DaView", testApp);
+		new HolePTestController("DaView", testApp);
 
 		switch (args.length) {
 		case 0:

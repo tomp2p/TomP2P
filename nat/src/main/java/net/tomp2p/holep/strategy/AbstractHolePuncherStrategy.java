@@ -163,7 +163,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 
 			private int extractLocalPort(final FutureDone<Message> futureDone, Message msg, int index) {
 				int localport = -1;
-				if (!portMappings.isEmpty()) {
+				if (portMappings.isEmpty()) {
 					localport = msg.intList().get(index);
 				} else {
 					for (Pair<Integer, Integer> entry : portMappings) {

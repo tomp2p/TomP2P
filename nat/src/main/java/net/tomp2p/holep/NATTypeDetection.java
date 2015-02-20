@@ -125,7 +125,7 @@ public class NATTypeDetection {
 			signalNAT("there is no NAT to be traversed!", NATType.NO_NAT, fd);
 		} else if (senderPsa.udpPort() == recipientPsa.udpPort() && senderPsa2.udpPort() == recipientPsa2.udpPort()) {
 			signalNAT("Port preserving NAT detected. UDP hole punching is possible", NATType.PORT_PRESERVING, fd);
-		} else if (recipientPsa2.udpPort() - recipientPsa.udpPort() < 10) {
+		} else if (recipientPsa2.udpPort() - recipientPsa.udpPort() < 15) {
 			signalNAT("NAT with sequential port multiplexing detected. UDP hole punching is still possible",
 					NATType.NON_PRESERVING_SEQUENTIAL, fd);
 		} else {

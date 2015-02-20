@@ -8,6 +8,7 @@ import java.util.List;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Content;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.utils.Pair;
 
@@ -35,6 +36,8 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 
 	@Override
 	protected void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
+		replyMessage.presetContentTypes(true);
+		replyMessage.contentType(Content.INTEGER);
 		for (int i = 0; i < channelFutures.size(); i++) {
 			InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
 			portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), socket.getPort()));

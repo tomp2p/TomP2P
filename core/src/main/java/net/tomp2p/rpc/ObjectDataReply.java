@@ -21,19 +21,20 @@ import net.tomp2p.peers.PeerAddress;
 /**
  * Similar to {@link RawDataReply}, but we convert the raw byte buffer to an object.
  * 
- * @author Thomas
+ * @author Thomas Bocek
  * 
  */
 public interface ObjectDataReply {
+	
     /**
-     * Replies to a direct message from a peer. This reply is based on Objects.
+     * Replies to a direct message from a peer. This reply is based on objects.
      * 
      * @param sender
      *            The sender of this message
      * @param request
      *            The request that the sender sent.
      * @return A new object that is the reply.
-     * @throws Exception .
+     * @throws Exception
      */
     Object reply(PeerAddress sender, Object request) throws Exception;
 }

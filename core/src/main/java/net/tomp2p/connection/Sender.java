@@ -627,9 +627,6 @@ public class Sender {
 			final int idleUDPSeconds) {
 		FutureDone<Message> fDone = peerBean.holePunchInitiator()
 				.handleHolePunch(channelCreator, idleUDPSeconds, futureResponse, message);
-//		if (fDone.isFailed()) {
-//			futureResponse.failed(fDone.failedReason());
-//		}
 		fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
 			@Override
@@ -639,12 +636,14 @@ public class Sender {
 				} else {
 					LOG.error("Message could not be sent with hole punching!");
 					futureResponse.failed(future.failedReason());
+					throw new Exception(future.failedReason());
 				}
 			}
 
 			@Override
 			public void exceptionCaught(Throwable t) throws Exception {
 				futureResponse.failed(t);
+				throw new Exception(t);
 			}
 		});
 	}

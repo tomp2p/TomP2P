@@ -71,7 +71,7 @@ public class HolePunchRPC extends DispatchHandler {
 	 */
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
 		//TODO jwa clear out because this is just a test
-		NATType type = NATType.PORT_PRESERVING;
+		NATType type = ((HolePunchInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
 		HolePuncherStrategy holePuncher = type.getHolePuncher(peer, message.intList().size(), HolePunchInitiator.IDLE_UDP_SECONDS, message);
 		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {

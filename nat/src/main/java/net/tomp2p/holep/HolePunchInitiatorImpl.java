@@ -45,4 +45,8 @@ public class HolePunchInitiatorImpl implements HolePunchInitiator {
 	public void checkNatType(PeerAddress peerAddress) {
 		natTypeDetection.checkNATType(peerAddress);
 	}
+	
+	public NATType natType() {
+		return natTypeDetection.natType();
+	}
 }

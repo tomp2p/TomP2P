@@ -398,12 +398,9 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 						public void operationComplete(FutureDone<Message> future) throws Exception {
 							if (future.isSuccess()) {
 								Message replyMessage = future.object();
-								// TODO jwa create some config class to specify
-								// the number
-								// of trials
 								Thread holePunchScheduler = new Thread(new HolePunchScheduler(NUMBER_OF_TRIALS, thisInstance));
 								holePunchScheduler.start();
-								replyMessageFuture2.done(replyMessage);
+								replyMessageFuture.done(replyMessage);
 							} else {
 								replyMessageFuture.failed("No ReplyMessage could be created!");
 							}

@@ -9,7 +9,7 @@ import net.tomp2p.message.Message;
 
 public interface HolePunchInitiator {
 	
-	public static final int NUMBER_OF_HOLES = 7;
+	public static final int NUMBER_OF_HOLES = 4;
 	public static final boolean BROADCAST = false;
 	public static final int IDLE_UDP_SECONDS = 30;
 	public static final int NUMBER_OF_TRIALS = 3;

@@ -13,13 +13,9 @@ import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerSocketAddress;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy {
 
 	private static final NATType NAT_TYPE = NATType.NON_PRESERVING_SEQUENTIAL;
-	private static final Logger LOG = LoggerFactory.getLogger(PortPreservingStrategy.class);
 
 	public NonPreservingSequentialStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 		super(peer, numberOfHoles, idleUDPSeconds, originalMessage);

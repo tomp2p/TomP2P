@@ -18,7 +18,6 @@ public enum NATType {
 		@Override
 		public HolePuncherStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds,
 				final Message originalMessage) {
-			// TODO Auto-generated method stub
 			return new PortPreservingStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	},
@@ -26,7 +25,6 @@ public enum NATType {
 		@Override
 		public HolePuncherStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds,
 				final Message originalMessage) {
-			// TODO Auto-generated method stub
 			return new PortPreservingStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	},
@@ -41,13 +39,6 @@ public enum NATType {
 		@Override
 		public HolePuncherStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds,
 				final Message originalMessage) {
-			
-			//TODO jwa remove this bad practise
-			// this scenario needs more reliablility
-			if (numberOfHoles > 10) {
-				numberOfHoles = 10;
-			}
-			
 			return new NonPreservingSequentialStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	}, // NAT assigns new port for each mapping starting at a defined number,

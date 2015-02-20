@@ -2,6 +2,7 @@ package net.tomp2p.holep.strategy;
 
 import io.netty.channel.ChannelFuture;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -44,6 +45,8 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 								int startingPort = addresses.get(0).udpPort() + 1; 
 								for (int i = 0; i < channelFutures.size(); i++) {
 									initMessage.intValue(startingPort + i);
+									InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
+									portMappings.add(new Pair<Integer, Integer>(startingPort + 1, inetSocketAddress.getPort()));
 								}
 								initMessageFutureDone.done(initMessage);
 							} else {

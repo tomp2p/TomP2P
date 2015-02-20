@@ -64,7 +64,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 		this.originalMessage = originalMessage;
 		LOG.trace("new HolePuncher created, originalMessage {}", originalMessage.toString());
 	}
-	
+
 	/**
 	 * This method cares about which socket contacts which socket on the NATs
 	 * which are needed to be traversed.
@@ -94,7 +94,8 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @return fDoneChannelFutures
 	 */
 	private final FutureDone<List<ChannelFuture>> createChannelFutures(final FutureResponse originalFutureResponse,
-			final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlersList, final FutureDone<Message> mainFutureDone, final int numberOfHoles) {
+			final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlersList, final FutureDone<Message> mainFutureDone,
+			final int numberOfHoles) {
 
 		final FutureDone<List<ChannelFuture>> fDoneChannelFutures = new FutureDone<List<ChannelFuture>>();
 		final AtomicInteger countDown = new AtomicInteger(numberOfHoles);
@@ -147,7 +148,8 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
 				if (checkReplyValues(msg, futureDone)) {
 					for (int i = 0; i < msg.intList().size(); i++) {
-						ChannelFuture channelFuture = extractChannelFuture(futures, msg.intList().get(i));
+						int localport = extractLocalPort(futureDone, msg, i);
+						ChannelFuture channelFuture = extractChannelFuture(futures, localport);
 						if (channelFuture == null) {
 							futureDone.failed("Something went wrong with the portmappings!");
 						}
@@ -157,6 +159,23 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 						LOG.warn("originalMessage has been sent to the other peer! {}", sendMessage);
 					}
 				}
+			}
+
+			private int extractLocalPort(final FutureDone<Message> futureDone, Message msg, int index) {
+				int localport = -1;
+				if (!portMappings.isEmpty()) {
+					localport = msg.intList().get(index);
+				} else {
+					for (Pair<Integer, Integer> entry : portMappings) {
+						if ((int) entry.element0() == msg.intList().get(index)) {
+							localport = (int) entry.element1();
+						}
+					}
+				}
+				if (localport < 1) {
+					futureDone.failed("No mapping available for port " + msg.intList().get(index) + "!");
+				}
+				return localport;
 			}
 		};
 

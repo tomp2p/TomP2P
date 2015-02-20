@@ -2,17 +2,10 @@ package net.tomp2p.holep.testapp;
 
 import java.io.IOException;
 import java.net.Inet4Address;
-import java.util.Scanner;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.FutureShutdown;
-import net.tomp2p.holep.NATType;
-import net.tomp2p.holep.NATTypeDetection;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;

@@ -6,7 +6,6 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.holep.HolePunchInitiatorImpl;
 import net.tomp2p.holep.HolePunchRPC;
-import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.relay.RconRPC;

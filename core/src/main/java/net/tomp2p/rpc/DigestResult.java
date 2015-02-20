@@ -27,31 +27,31 @@ import net.tomp2p.utils.Utils;
 
 public class DigestResult {
     final private SimpleBloomFilter<Number160> contentBloomFilter;
-    final private SimpleBloomFilter<Number160> versoinBloomFilter;
+    final private SimpleBloomFilter<Number160> versionBloomFilter;
 
     final private NavigableMap<Number640, Collection<Number160>> keyDigest;
     
     final private Map<Number640, Data> dataMap;
 
-    public DigestResult(SimpleBloomFilter<Number160> contentBloomFilter, SimpleBloomFilter<Number160> versoinBloomFilter) {
+    public DigestResult(SimpleBloomFilter<Number160> contentBloomFilter, SimpleBloomFilter<Number160> versionBloomfilter) {
         this.contentBloomFilter = contentBloomFilter;
-        this.versoinBloomFilter = versoinBloomFilter;
+        this.versionBloomFilter = versionBloomfilter;
         this.keyDigest = null;
         this.dataMap = null;
     }
 
     public DigestResult(NavigableMap<Number640, Collection<Number160>> keyDigest) {
-        this.keyDigest = keyDigest;
         this.contentBloomFilter = null;
-        this.versoinBloomFilter = null;
+        this.versionBloomFilter = null;
+        this.keyDigest = keyDigest;
         this.dataMap = null;
     }
 
     public DigestResult(Map<Number640, Data> dataMap) {
-	    this.dataMap = dataMap;
-	    this.keyDigest = null;
 	    this.contentBloomFilter = null;
-        this.versoinBloomFilter = null;
+        this.versionBloomFilter = null;
+        this.keyDigest = null;
+        this.dataMap = dataMap;
     }
 
 	public SimpleBloomFilter<Number160> contentBloomFilter() {
@@ -59,7 +59,7 @@ public class DigestResult {
     }
 
     public SimpleBloomFilter<Number160> versoinBloomFilter() {
-        return versoinBloomFilter;
+        return versionBloomFilter;
     }
 
     public NavigableMap<Number640, Collection<Number160>> keyDigest() {
@@ -80,8 +80,8 @@ public class DigestResult {
         if (contentBloomFilter != null) {
             hashCode ^= contentBloomFilter.hashCode();
         }
-        if (versoinBloomFilter != null) {
-            hashCode ^= versoinBloomFilter.hashCode();
+        if (versionBloomFilter != null) {
+            hashCode ^= versionBloomFilter.hashCode();
         }
         if	(dataMap!=null) {
         	hashCode ^= dataMap.hashCode();
@@ -101,7 +101,7 @@ public class DigestResult {
         
         return 	Utils.equals(keyDigest, o.keyDigest) &&
         		Utils.equals(contentBloomFilter, o.contentBloomFilter) &&
-        		Utils.equals(versoinBloomFilter, o.versoinBloomFilter) &&
+        		Utils.equals(versionBloomFilter, o.versionBloomFilter) &&
         		Utils.equals(dataMap, o.dataMap);
     }
 }

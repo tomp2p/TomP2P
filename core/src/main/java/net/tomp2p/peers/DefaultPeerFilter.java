@@ -19,7 +19,7 @@ package net.tomp2p.peers;
 import java.util.Collection;
 
 /**
- * The default filter accepts all peers.
+ * The default peer filter accepts all peers.
  * 
  * @author Thomas Bocek
  * 

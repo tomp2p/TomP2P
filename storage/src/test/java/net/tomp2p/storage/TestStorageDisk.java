@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 import net.tomp2p.connection.DSASignatureFactory;
+import net.tomp2p.dht.Storage;
 import net.tomp2p.peers.Number160;
 
 import org.junit.After;

@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.p2p;
+package net.tomp2p.dht;
 
 import io.netty.buffer.ByteBuf;
 

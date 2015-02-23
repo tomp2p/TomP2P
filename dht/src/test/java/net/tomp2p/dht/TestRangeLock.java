@@ -1,8 +1,9 @@
-package net.tomp2p.storage;
+package net.tomp2p.dht;
 
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
+
 
 import org.junit.Assert;
 import org.junit.Test;

@@ -35,7 +35,6 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.Storage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -209,19 +209,4 @@ public class DefaultMaintenance implements Maintenance {
         	return timeSinceLastCheckMillis > TimeUnit.SECONDS.toMillis(intervalSeconds[intervalSeconds.length - 1]);
         }
     }
-
-    /**
-     * As seen in: http://stackoverflow.com/questions/3305059/how-do-you-calculate-log-base-2-in-java-for-integers.
-     * 
-     * @param n
-     *            The number
-     * @return the logarithm base 2
-     */
-    public static int log2(final int n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException();
-        }
-        return (Integer.SIZE - 1) - Integer.numberOfLeadingZeros(n);
-    }
-
 }

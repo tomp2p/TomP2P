@@ -18,7 +18,6 @@ package net.tomp2p.tracker;
 
 import java.util.Set;
 
-import net.tomp2p.p2p.EvaluatingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SimpleBloomFilter;
 

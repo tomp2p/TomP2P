@@ -25,7 +25,7 @@ import net.tomp2p.peers.PeerAddress;
 
 /**
  * The future that keeps track of network discovery such as discovery if its behind a NAT, the status if UPNP or NAT-PMP
- * could be established, if there is portforwarding.
+ * could be established, if there is port forwarding.
  * 
  * @author Thomas Bocek
  */
@@ -64,17 +64,18 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     public void timeout(final PeerAddress serverPeerAddress, final ScheduledExecutorService timer, final int delaySec) {
         final DiscoverTimeoutTask task = new DiscoverTimeoutTask(serverPeerAddress);
         final ScheduledFuture<?> scheduledFuture = timer.schedule(task, TimeUnit.SECONDS.toMillis(delaySec), TimeUnit.MILLISECONDS);
+        
+        // cancel timeout if we are done
         addListener(new BaseFutureAdapter<FutureDiscover>() {
             @Override
             public void operationComplete(final FutureDiscover future) throws Exception {
-                // cancel timeout if we are done.
             	scheduledFuture.cancel(false);
             }
         });
     }
 
     /**
-     * Gets called if the discovery was a success and an other peer could ping us with TCP and UDP.
+     * Gets called if the discovery was a success and another peer could ping us with TCP and UDP.
      * 
      * @param ourPeerAddress
      *            The peerAddress of our server
@@ -123,7 +124,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     	synchronized (lock) {
     		if(this.reporter != null) {
     			if(!this.reporter.equals(reporter)) {
-    				throw new IllegalArgumentException("cannot change reporter once its set");
+    				throw new IllegalArgumentException("Cannot change reporter once it is set.");
     			}
     		}
     		this.reporter = reporter;
@@ -191,17 +192,16 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         }
     }
     
-    public FutureDiscover failed(PeerAddress serverPeerAddress, final String failed) {
+    private void failed(PeerAddress serverPeerAddress, final String failed) {
         synchronized (lock) {
             if (!completedAndNotify()) {
-                return this;
+                return;
             }
             this.reason = failed;
             this.ourPeerAddress = serverPeerAddress;
             this.type = FutureType.FAILED;
         }
         notifyListeners();
-        return this;
     }
 
 	public FutureDiscover externalHost(String failed, InetAddress internalAddress, InetAddress externalAddress) {
@@ -217,7 +217,6 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         }
         notifyListeners();
         return this;
-	    
     }
 	
 	public InetAddress internalAddress() {

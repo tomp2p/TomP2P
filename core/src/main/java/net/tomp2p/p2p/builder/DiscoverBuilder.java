@@ -42,7 +42,7 @@ public class DiscoverBuilder {
     final private static Logger LOG = LoggerFactory.getLogger(DiscoverBuilder.class);
 
     final private static FutureDiscover FUTURE_DISCOVER_SHUTDOWN = new FutureDiscover()
-            .failed("Peer is shutting down");
+            .failed("Peer is shutting down.");
 
     final private Peer peer;
 
@@ -147,7 +147,7 @@ public class DiscoverBuilder {
             peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
         }
         if (peerAddress == null) {
-            throw new IllegalArgumentException("need peeraddress or inetaddress");
+            throw new IllegalArgumentException("Peer address or inet address required.");
         }
         if (configuration == null) {
             configuration = new DefaultConnectionConfiguration();
@@ -227,19 +227,18 @@ public class DiscoverBuilder {
                     futureDiscover.reporter(futureResponseTCP.responseMessage().sender());
                     if (tmp.size() == 1) {
                         PeerAddress seenAs = tmp.iterator().next();
-                        LOG.info("I'm seen as {} by peer {}. I see myself as {}",
+                        LOG.info("This peer is seen as {} by peer {}. This peer sees itself as {}.",
                                 seenAs, peerAddress, peer.peerAddress().inetAddress());
                         if (!peer.peerAddress().inetAddress().equals(seenAs.inetAddress())) {
-                            // check if we have this interface in that we can
-                            // listen to
-                            Bindings bindings2 = new Bindings().addAddress(seenAs.inetAddress());
-                            String status = DiscoverNetworks.discoverInterfaces(bindings2);
-                            LOG.info("2nd interface discovery: {}", status);
-                            if (bindings2.foundAddresses().size() > 0
-                                    && bindings2.foundAddresses().contains(seenAs.inetAddress())) {
+                            // check if we have this interface on that we can listen to
+                            Bindings bindings = new Bindings().addAddress(seenAs.inetAddress());
+                            String status = DiscoverNetworks.discoverInterfaces(bindings);
+                            LOG.info("2nd interface discovery: {}.", status);
+                            if (bindings.foundAddresses().size() > 0
+                                    && bindings.foundAddresses().contains(seenAs.inetAddress())) {
                                 serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
                                 peer.peerBean().serverPeerAddress(serverAddress);
-                                LOG.info("we were having the wrong interface, change it to: {}", serverAddress);
+                                LOG.info("This peer had the wrong interface. Changed it to {}.", serverAddress);
                             } else {
                                 // now we know our internal IP, where we receive
                                 // packets
@@ -249,11 +248,11 @@ public class DiscoverBuilder {
                                             ports.udpPort());
                                     serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
                                     peer.peerBean().serverPeerAddress(serverAddress);
-                                    LOG.info("manual ports, change it to: {}", serverAddress);
+                                    LOG.info("This peer had manual ports. Changed it to {}.", serverAddress);
                                 } else {
                                     // we need to find a relay, because there is a NAT in the way.
                                     futureDiscover
-                                            .externalHost("We are most likely behind NAT, try to UPNP, NATPMP or relay {}, {}" + peerAddress, futureResponseTCP.responseMessage()
+                                            .externalHost( "We are most likely behind a NAT. Try to UPNP, NAT-PMP or relay " + peerAddress, futureResponseTCP.responseMessage()
                                                     .recipient().inetAddress(), seenAs.inetAddress());
                                     return;
                                 }
@@ -269,11 +268,11 @@ public class DiscoverBuilder {
                         futureDiscover.timeout(serverAddress, peer.connectionBean().timer(), discoverTimeoutSec);
                         return;
                     } else {
-                        futureDiscover.failed("Peer " + peerAddress + " did not report our IP address");
+                        futureDiscover.failed("Peer " + peerAddress + " did not report our IP address.");
                         return;
                     }
                 } else {
-                    futureDiscover.failed("FutureDiscover: We need at least the TCP connection",
+                    futureDiscover.failed("For discovery, we need at least the TCP connection.",
                             futureResponseTCP);
                     return;
                 }

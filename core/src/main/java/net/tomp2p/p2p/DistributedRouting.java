@@ -172,8 +172,7 @@ public class DistributedRouting {
         // As presented by Kazuyuki Shudo at AIMS 2009, it is better to ask random
         // peers with the data than ask peers that are ordered by distance.
         // -> this balances load
-        final SortedMap<PeerAddress, DigestInfo> directHits = new TreeMap<PeerAddress, DigestInfo>(peerBean
-                .peerMap().createComparator());
+        final SortedMap<PeerAddress, DigestInfo> directHits = new TreeMap<PeerAddress, DigestInfo>(comparator);
         final NavigableSet<PeerAddress> potentialHits = new TreeSet<PeerAddress>(comparator);
         // fill initially
         queueToAsk.addAll(peerAddresses);
@@ -186,11 +185,6 @@ public class DistributedRouting {
             if (routingBuilder.from()!=null && routingBuilder.to()!=null) {
             	from = routingBuilder.from();
             	to = routingBuilder.to();
-            } else if (routingBuilder.domainKey() == null) {
-                from = new Number640(routingBuilder.locationKey(), Number160.ZERO, Number160.ZERO,
-                        Number160.ZERO);
-                to = new Number640(routingBuilder.locationKey(), Number160.MAX_VALUE, Number160.MAX_VALUE,
-                        Number160.MAX_VALUE);
             } else if (routingBuilder.contentKey() == null) {
                 from = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
                         Number160.ZERO, Number160.ZERO);

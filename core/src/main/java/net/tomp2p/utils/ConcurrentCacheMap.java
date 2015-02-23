@@ -438,7 +438,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
         boolean replaced = false;
         synchronized (segment) {
             oldValue3 = segment.get(key);
-            if (oldValue3 != null && !oldValue3.isExpired() && oldValue2.equals(oldValue3.getValue())) {
+            if (oldValue3 != null && !oldValue3.isExpired() && oldValue2.getValue().equals(oldValue3.getValue())) {
                 segment.put(key, newValue2);
                 replaced = true;
             }

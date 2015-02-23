@@ -143,17 +143,18 @@ public class TimeoutFactory {
 				if (peerStatusListeners == null) {
 					return;
 				}
-				synchronized (peerStatusListeners) {
 
+				InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
+				if (inetSocketAddress == null) {
+					final Attribute<InetSocketAddress> attrInetAddr = ctx.attr(Decoder.INET_ADDRESS_KEY);
+					inetSocketAddress = attrInetAddr.get();
+				}
+				
+				synchronized (peerStatusListeners) {
 					for (PeerStatusListener peerStatusListener : peerStatusListeners) {
 						if (recipient != null) {
 							peerStatusListener.peerFailed(recipient, new PeerException(AbortCause.TIMEOUT, "Timeout!"));
 						} else {
-							InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-							if (inetSocketAddress == null) {
-								final Attribute<InetSocketAddress> attrInetAddr = ctx.attr(Decoder.INET_ADDRESS_KEY);
-								inetSocketAddress = attrInetAddr.get();
-							}
 							if (inetSocketAddress != null) {
 								peerStatusListener.peerFailed(
 								        new PeerAddress(Number160.ZERO, inetSocketAddress.getAddress()),

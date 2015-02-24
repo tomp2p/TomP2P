@@ -187,7 +187,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         
         @Override
         public void run() {
-        	failed(serverPeerAddress, "Timeout in Discover: " + 
+        	failed(serverPeerAddress, "Timeout in discover: " + 
         			(System.currentTimeMillis() - start) + "ms. However, I think my peer address is " + serverPeerAddress);
         }
     }

@@ -29,9 +29,9 @@ public class MaintenanceTask implements Runnable {
 
     private int intervalMillis = 1000;
 
-    private List<Maintainable> maintainables = new ArrayList<Maintainable>();
+    private final List<Maintainable> maintainables = new ArrayList<Maintainable>();
 
-    private Map<BaseFuture, PeerAddress> runningFutures = new HashMap<BaseFuture, PeerAddress>();
+    private final Map<BaseFuture, PeerAddress> runningFutures = new HashMap<BaseFuture, PeerAddress>();
 
     private boolean shutdown = false;
 
@@ -47,20 +47,20 @@ public class MaintenanceTask implements Runnable {
     @Override
     public void run() {
         synchronized (lock) {
-            //make sure we only have 5 ping in parallel
+            //make sure we only have 5 pings in parallel
             if (shutdown || COUNTER.get() > MAX_PING) {
                 return;
             }
             for (Maintainable maintainable : maintainables) {
-                PeerStatistic peerStatatistic = maintainable.nextForMaintenance(runningFutures.values());
-                if(peerStatatistic == null) {
+                PeerStatistic peerStatistic = maintainable.nextForMaintenance(runningFutures.values());
+                if(peerStatistic == null) {
                     continue;
                 }
-                BaseFuture future = peer.ping().peerAddress(peerStatatistic.peerAddress()).start();
-                LOG.debug("maintenance ping from {} to {}", peer.peerAddress(), peerStatatistic.peerAddress());
+                BaseFuture future = peer.ping().peerAddress(peerStatistic.peerAddress()).start();
+                LOG.debug("Maintenance ping from {} to {}.", peer.peerAddress(), peerStatistic.peerAddress());
                 
                 peer.notifyAutomaticFutures(future);
-                runningFutures.put(future, peerStatatistic.peerAddress());
+                runningFutures.put(future, peerStatistic.peerAddress());
                 COUNTER.incrementAndGet();
                 future.addListener(new BaseFutureAdapter<BaseFuture>() {
                     @Override

@@ -62,7 +62,7 @@ public class PeerCreator {
 
 	private final boolean master;
 
-	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
+	private final FutureDone<Void> futureShutdown = new FutureDone<Void>();
 
 	/**
 	 * Creates a master peer and starts UDP and TCP channels.
@@ -200,7 +200,7 @@ public class PeerCreator {
 	 * @return The shutdown future that is used when calling {@link #shutdown()}
 	 */
 	public FutureDone<Void> shutdownFuture() {
-		return futureServerDone;
+		return futureShutdown;
 	}
 
 	/**

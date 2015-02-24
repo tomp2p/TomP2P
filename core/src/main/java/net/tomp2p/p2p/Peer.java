@@ -90,8 +90,8 @@ public class Peer {
 
     private volatile boolean shutdown = false;
     
-    private List<AutomaticFuture> automaticFutures = Collections.synchronizedList(new ArrayList<AutomaticFuture>(1)); 
-    private List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>(5)); 
+    private final List<AutomaticFuture> automaticFutures = Collections.synchronizedList(new ArrayList<AutomaticFuture>(1)); 
+    private final List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>(5)); 
 
     /**
      * Creates a peer. Please use {@link PeerBuilder} to create a {@link Peer} instance.
@@ -239,14 +239,11 @@ public class Peer {
     /**
      * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the connection
      * gets closed after that time of inactivity. If the other peer goes offline or closes the connection (due to
-     * inactivity), further requests with this connections reopens the connection. This methods blocks until a
-     * connection can be reserver.
+     * inactivity), further requests with this connections re-opens the connection. This methods blocks until a
+     * connection can be reserved.
      * 
      * @param destination
      *            The end-point to connect to
-     * @param idleTCPMillis
-     *            time in milliseconds after a connection gets closed if idle, -1 if it should remain always open until
-     *            the user closes the connection manually.
      * @return A class that needs to be passed to those methods that should use the already open connection. If the
      *         connection could not be reserved, maybe due to a shutdown, null is returned.
      */

@@ -108,7 +108,7 @@ public class PeerBuilder {
 	private ScheduledExecutorService scheduledExecutorService = null;
 	private MaintenanceTask maintenanceTask = null;
 	private Random random = null;
-	private List<PeerInit> toInitialize = new ArrayList<PeerInit>(1);
+	private final List<PeerInit> toInitialize = new ArrayList<PeerInit>(1);
 
 	// enable/disable RPC/P2P/other
 	private boolean enableHandshakeRPC = true;

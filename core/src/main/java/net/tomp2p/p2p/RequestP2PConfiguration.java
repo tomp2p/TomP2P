@@ -29,7 +29,7 @@ public class RequestP2PConfiguration implements RequestConfiguration {
     final private int parallelDiff;
 
     // set to force either UDP or TCP
-    final private boolean forceUPD;
+    final private boolean forceUDP;
 
     final private boolean forceTCP;
 
@@ -46,28 +46,26 @@ public class RequestP2PConfiguration implements RequestConfiguration {
      *            Stops the direct calls if f peers have failed
      * @param parallelDiff
      *            Use parallelDiff + minimumResults parallel connections for the P2P/DHT operation
-     * @param forceUPD
+     * @param forceUDP
      *            Flag to indicate that routing should be done with UDP instead of TCP
      * @param forceTCP
      *            Flag to indicate that routing should be done with TCP instead of UDP
-     * @param senderCacheStrategy
-     *            Merge DHT/P2P messages to reuse existing connections
      */
     public RequestP2PConfiguration(final int minimumResults, final int maxFailure, final int parallelDiff,
-            final boolean forceUPD, final boolean forceTCP) {
+            final boolean forceUDP, final boolean forceTCP) {
         if (minimumResults < 0 || maxFailure < 0 || parallelDiff < 0) {
-            throw new IllegalArgumentException("need to be larger or equals zero");
+            throw new IllegalArgumentException("Some values need to be larger or equal to zero.");
         }
         this.minimumResults = minimumResults;
         this.maxFailure = maxFailure;
         this.parallelDiff = parallelDiff;
-        this.forceUPD = forceUPD;
+        this.forceUDP = forceUDP;
         this.forceTCP = forceTCP;
     }
 
     public RequestP2PConfiguration adjustMinimumResult(int minimumResultsLow) {
         return new RequestP2PConfiguration(Math.min(minimumResultsLow, minimumResults), maxFailure, parallelDiff,
-                forceUPD, forceTCP);
+                forceUDP, forceTCP);
     }
 
     public int minimumResults() {
@@ -95,7 +93,7 @@ public class RequestP2PConfiguration implements RequestConfiguration {
 	 */
     @Override
     public boolean isForceUPD() {
-        return forceUPD;
+        return forceUDP;
     }
 
     /* (non-Javadoc)

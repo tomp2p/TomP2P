@@ -109,25 +109,25 @@ public class Reservation {
 	 * 
 	 * @param routingConfiguration
 	 *            Contains the number of routing requests in parallel
-	 * @param requestP2PConfiguration
+	 * @param requestConfiguration
 	 *            Contains the number of requests for P2P operations in parallel
 	 * @param builder
-	 *            The builder that tells us if we should use TCP or UPD
+	 *            The builder that tells us if we should use TCP or UDP
 	 * @return The future channel creator
 	 */
 	public FutureChannelCreator create(final RoutingConfiguration routingConfiguration,
-	        final RequestConfiguration requestP2PConfiguration, final DefaultConnectionConfiguration builder) {
-		if (routingConfiguration == null && requestP2PConfiguration == null) {
-			throw new IllegalArgumentException("Both routingConfiguration and requestP2PConfiguration cannot be null");
+	        final RequestConfiguration requestConfiguration, final DefaultConnectionConfiguration builder) {
+		if (routingConfiguration == null && requestConfiguration == null) {
+			throw new IllegalArgumentException("Both routing configuration and request configuration must be set.");
 		}
 
-		int nrConnectionsTCP = 0;
 		int nrConnectionsUDP = 0;
-		if (requestP2PConfiguration != null) {
+		int nrConnectionsTCP = 0;
+		if (requestConfiguration != null) {
 			if (builder.isForceUDP()) {
-				nrConnectionsUDP = requestP2PConfiguration.parallel();
+				nrConnectionsUDP = requestConfiguration.parallel();
 			} else {
-				nrConnectionsTCP = requestP2PConfiguration.parallel();
+				nrConnectionsTCP = requestConfiguration.parallel();
 			}
 		}
 		if (routingConfiguration != null) {

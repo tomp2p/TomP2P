@@ -61,6 +61,13 @@
 			<artifactId>tomp2p-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>tomp2p-replication</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
 
 		<!-- For Android relays -->
 		<dependency>

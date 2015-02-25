@@ -90,14 +90,15 @@ public class BufferedMessageHandler {
 		}
 		
 		@Override
-		public void response(final Message responseMessage) {
+		public FutureDone<Void> response(final Message responseMessage) {
+			final FutureDone<Void> futureDone = new FutureDone<Void>();
 			// piggyback the late response. It will be unwrapped by the RelayRPC
 			Message envelope = dispatchHandler.createMessage(responseMessage.recipient(), Commands.RELAY.getNr(), Type.REQUEST_5);
 			try {
 				envelope.buffer(RelayUtils.encodeMessage(responseMessage, peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
 			} catch (Exception e) {
 				LOG.error("Cannot wrap the late response into an envelope", e);
-				return;
+				return futureDone.failed("Cannot wrap the late response into an envelope");
 			}
 			
 			LOG.debug("Sending late response {} in an envelope {}", responseMessage, envelope);
@@ -107,11 +108,14 @@ public class BufferedMessageHandler {
 				public void operationComplete(FutureResponse future) throws Exception {
 					if(future.isSuccess()) {
 						LOG.debug("Successfully sent late response to requester");
+						futureDone.done();
 					} else {
 						LOG.error("Late response could not be sent to requester. Reason: {}", future.failedReason());
+						futureDone.failed("Late response could not be sent to requester.");
 					}
 				}
 			});
+			return futureDone;
 		}
 		
 		@Override

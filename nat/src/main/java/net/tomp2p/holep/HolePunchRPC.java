@@ -190,7 +190,16 @@ public class HolePunchRPC extends DispatchHandler {
 		return null;
 	}
 	
-	public void duplicateBuffer(final Message originalMessage, Message copyMessage) {
+	private void duplicateBuffer(final Message originalMessage, Message copyMessage) {
+		try {
+			List<Integer> list = (List<Integer>) originalMessage.buffer(0).object();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		for (Buffer buf : originalMessage.bufferList()) {
 			copyMessage.buffer(new Buffer(buf.buffer().duplicate()));
 		}

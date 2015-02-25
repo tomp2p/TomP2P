@@ -75,7 +75,7 @@ public class HolePunchRPC extends DispatchHandler {
 		//TODO jwa clear out because this is just a test
 		NATType type = ((HolePunchInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
 		try {
-			List<Integer> portList = (List<Integer>) message.buffer(0).object();
+			List<Integer> portList = (List<Integer>) Utils.decodeJavaObject(message.buffer(0).buffer());
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -191,15 +191,6 @@ public class HolePunchRPC extends DispatchHandler {
 	}
 	
 	private void duplicateBuffer(final Message originalMessage, Message copyMessage) {
-		try {
-			List<Integer> list = (List<Integer>) originalMessage.buffer(0).object();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		for (Buffer buf : originalMessage.bufferList()) {
 			copyMessage.buffer(new Buffer(buf.buffer().duplicate()));
 		}

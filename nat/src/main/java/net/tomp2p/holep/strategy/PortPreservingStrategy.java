@@ -45,8 +45,7 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 		}
 
 		byte[] bytes = Utils.encodeJavaObject(portList);
-		ByteBuf buffer = Unpooled.wrappedBuffer(bytes);
-		Buffer byteBuf = new Buffer(buffer, 1);
+		Buffer byteBuf = new Buffer(Unpooled.wrappedBuffer(bytes));
 		holePMessage.buffer(byteBuf);
 
 		// signal the other peer what type of NAT we are using

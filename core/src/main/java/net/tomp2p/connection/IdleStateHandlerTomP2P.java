@@ -134,12 +134,10 @@ public class IdleStateHandlerTomP2P extends ChannelDuplexHandler {
 
         state = 1;
 
-        EventExecutor loop = ctx.executor();
-
         lastReadTime = lastWriteTime = System.currentTimeMillis();
 
         if (allIdleTimeMillis > 0) {
-            allIdleTimeout = loop.schedule(new AllIdleTimeoutTask(ctx), allIdleTimeMillis,
+            allIdleTimeout = ctx.executor().schedule(new AllIdleTimeoutTask(ctx), allIdleTimeMillis,
                     TimeUnit.MILLISECONDS);
         }
     }
@@ -175,7 +173,7 @@ public class IdleStateHandlerTomP2P extends ChannelDuplexHandler {
                 // notify the callback.
                 allIdleTimeout = ctx.executor().schedule(this, allIdleTimeMillis, TimeUnit.MILLISECONDS);
                 try {
-                    channelIdle(ctx);
+                	ctx.fireUserEventTriggered(this);
                 } catch (Throwable t) {
                     ctx.fireExceptionCaught(t);
                 }
@@ -185,9 +183,5 @@ public class IdleStateHandlerTomP2P extends ChannelDuplexHandler {
                 allIdleTimeout = ctx.executor().schedule(this, nextDelay, TimeUnit.MILLISECONDS);
             }
         }
-    }
-
-    private void channelIdle(ChannelHandlerContext ctx) throws Exception {
-        ctx.fireUserEventTriggered(this);
     }
 }

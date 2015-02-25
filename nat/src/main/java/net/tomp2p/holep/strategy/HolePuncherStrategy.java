@@ -1,4 +1,4 @@
-package net.tomp2p.holep;
+package net.tomp2p.holep.strategy;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureDone;

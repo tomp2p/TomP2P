@@ -9,6 +9,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.holep.strategy.HolePuncherStrategy;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
@@ -49,9 +50,6 @@ public class HolePunchRPC extends DispatchHandler {
 		else if (message.type() == Message.Type.REQUEST_2) {
 			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
 			handleHolePunch(message, peerConnection, responder);
-		} else if (message.type() == Message.Type.REQUEST_4){
-			LOG.debug("Port prediction running with peer: " + message.sender().peerId());
-			predictPorts(message, peerConnection, responder);
 		} else {
 			throw new IllegalArgumentException("Message Content is wrong!");
 		}
@@ -177,16 +175,6 @@ public class HolePunchRPC extends DispatchHandler {
 			}
 		}
 		return null;
-	}
-
-	private void predictPorts(Message message, PeerConnection peerConnection, Responder responder) {
-		if (message.intList() != null && !message.intList().isEmpty()) {
-			
-			
-			
-		} else {
-			handleFail(message, responder, "Intlist on Message was empty!");
-		}
 	}
 	
 	/**

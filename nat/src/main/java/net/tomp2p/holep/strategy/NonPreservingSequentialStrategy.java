@@ -87,15 +87,11 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 								replyMessageFuture2.failed("Ping failed!");
 							}
 						}
-						
 					});
 				} else {
 					replyMessageFuture2.failed("Could not create ChannelFuture!");
 				}
 			}
-			
 		});
-		
 	}
-
 }

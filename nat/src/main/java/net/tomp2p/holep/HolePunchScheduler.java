@@ -1,5 +1,7 @@
 package net.tomp2p.holep;
 
+import net.tomp2p.holep.strategy.HolePuncherStrategy;
+
 /**
  * This class is used as a {@link Thread} specifically for the
  * {@link HolePuncherStrategy}. It calls the tryConnect() method on the

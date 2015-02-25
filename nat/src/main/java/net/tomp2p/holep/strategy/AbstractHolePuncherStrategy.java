@@ -22,7 +22,6 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.holep.DuplicatesHandler;
 import net.tomp2p.holep.HolePunchScheduler;
-import net.tomp2p.holep.HolePuncherStrategy;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -57,7 +56,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	protected List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>();
 	protected List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
 
-	public AbstractHolePuncherStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
+	protected AbstractHolePuncherStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 		this.peer = peer;
 		this.numberOfHoles = numberOfHoles;
 		this.idleUDPSeconds = idleUDPSeconds;
@@ -93,7 +92,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param handlersList
 	 * @return fDoneChannelFutures
 	 */
-	private final FutureDone<List<ChannelFuture>> createChannelFutures(final FutureResponse originalFutureResponse,
+	protected FutureDone<List<ChannelFuture>> createChannelFutures(final FutureResponse originalFutureResponse,
 			final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlersList, final FutureDone<Message> mainFutureDone,
 			final int numberOfHoles) {
 
@@ -362,7 +361,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param originalFutureResponse
 	 * @return handlerList
 	 */
-	private List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(FutureResponse originalFutureResponse,
+	protected List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(FutureResponse originalFutureResponse,
 			final boolean initiator, final FutureDone<Message> futureDone) {
 		List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
 				numberOfHoles);

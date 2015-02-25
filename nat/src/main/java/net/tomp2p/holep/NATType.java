@@ -1,5 +1,6 @@
 package net.tomp2p.holep;
 
+import net.tomp2p.holep.strategy.HolePuncherStrategy;
 import net.tomp2p.holep.strategy.NonPreservingSequentialStrategy;
 import net.tomp2p.holep.strategy.PortPreservingStrategy;
 import net.tomp2p.message.Message;

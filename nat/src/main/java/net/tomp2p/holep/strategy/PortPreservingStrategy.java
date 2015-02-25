@@ -1,11 +1,15 @@
 package net.tomp2p.holep.strategy;
 
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Map;
 
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
@@ -42,6 +46,25 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 			replyMessage.intValue(socket.getPort());
 		}
 		replyMessageFuture2.done(replyMessage);
+	}
+	
+	/**
+	 * This method is just for testing causes.
+	 */
+	@Override
+	protected FutureDone<List<ChannelFuture>> createChannelFutures(final FutureResponse originalFutureResponse,
+			final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlersList, final FutureDone<Message> mainFutureDone,
+			final int numberOfHoles) {
+		return super.createChannelFutures(originalFutureResponse, handlersList, mainFutureDone, numberOfHoles);
+	}
+	
+	/**
+	 * This method is just for testing causes.
+	 */
+	@Override
+	protected List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(FutureResponse originalFutureResponse,
+			final boolean initiator, final FutureDone<Message> futureDone) {
+		return super.prepareHandlers(originalFutureResponse, initiator, futureDone);
 	}
 
 }

@@ -34,9 +34,9 @@ public class TestHolePuncher2 {
 	Class noparams[] = {};
 	Class[] paramInt = new Class[1];
 	Class[] paramString = new Class[1];
-	Class[] paramCCF = new Class[2];
+	Class[] paramCCF = new Class[4];
 	Class[] paramHPC = new Class[4];
-	Class[] paramPH = new Class[1];
+	Class[] paramPH = new Class[3];
 
 	Peer peer;
 	Peer peer2;
@@ -49,6 +49,8 @@ public class TestHolePuncher2 {
 		// createChannelFutures parameter
 		paramCCF[0] = FutureResponse.class;
 		paramCCF[1] = List.class;
+		paramCCF[2] = FutureDone.class;
+		paramCCF[3] = Integer.TYPE;
 
 		// int parameter
 		paramInt[0] = Integer.TYPE;
@@ -61,6 +63,8 @@ public class TestHolePuncher2 {
 
 		// prepareHandlers parameter
 		paramPH[0] = FutureResponse.class;
+		paramPH[1] = Boolean.TYPE;
+		paramPH[2] = FutureDone.class;
 
 		try {
 			peer = new PeerBuilder(Number160.createHash(RND.nextInt())).ports(
@@ -85,10 +89,11 @@ public class TestHolePuncher2 {
 		AtomicInteger atomic = new AtomicInteger(1);
 
 		try {
-			Class cls = Class.forName("net.tomp2p.holep.HolePuncher");
+			Class cls = Class.forName("net.tomp2p.holep.strategy.PortPreservingStrategy");
 			Constructor constructor = cls.getConstructor(paramHPC);
+			constructor.setAccessible(true);
 			Object obj = constructor.newInstance(peer, NUMBER_OF_HOLES, IDLE_UDP_SECONDS, msg);
-
+			
 			Method methodCreateChannelFutures = cls.getDeclaredMethod(
 					"createChannelFutures", paramCCF);
 			methodCreateChannelFutures.setAccessible(true);
@@ -98,7 +103,7 @@ public class TestHolePuncher2 {
 			methodPrepareHandlers.setAccessible(true);
 
 			try {
-				methodCreateChannelFutures.invoke(obj, null, null);
+				methodCreateChannelFutures.invoke(obj, null, null, -1);
 			} catch (Exception e) {
 				System.err.println(atomic.decrementAndGet());
 			}
@@ -106,9 +111,10 @@ public class TestHolePuncher2 {
 			FutureDone<List<ChannelFuture>> fDone;
 			try {
 				FutureResponse fr = new FutureResponse(msg);
-
+				FutureDone<Message> mainFutureDone = new FutureDone<Message>();
+				
 				fDone = (FutureDone<List<ChannelFuture>>) methodCreateChannelFutures.invoke(obj, fr,
-						methodPrepareHandlers.invoke(obj, fr));
+						methodPrepareHandlers.invoke(obj, fr, true, mainFutureDone), mainFutureDone, NUMBER_OF_HOLES);
 				
 				fDone.awaitUninterruptibly();
 				Assert.assertTrue(fDone.isCompleted());
@@ -123,7 +129,7 @@ public class TestHolePuncher2 {
 			e.printStackTrace();
 		}
 
-		Assert.assertEquals(atomic.get(), 0);
+		Assert.assertEquals(0, atomic.get());
 	}
 	
 	@After

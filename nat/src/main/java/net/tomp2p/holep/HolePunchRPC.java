@@ -75,7 +75,7 @@ public class HolePunchRPC extends DispatchHandler {
 		//TODO jwa clear out because this is just a test
 		NATType type = ((HolePunchInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
 		try {
-			List<Integer> portList = (List<Integer>) Utils.decodeJavaObject(message.buffer(0).buffer());
+			List<Integer> portList = (List<Integer>) message.buffer(0).object();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {

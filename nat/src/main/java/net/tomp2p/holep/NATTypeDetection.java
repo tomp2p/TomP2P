@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class NATTypeDetection {
 	
+	private static final int SEQ_PORT_TOLERANCE = 5;
 	private NATType natType = null;
 	private static final Logger LOG = LoggerFactory.getLogger(NATTypeDetection.class);
 	private Peer peer;
@@ -125,7 +126,7 @@ public class NATTypeDetection {
 			signalNAT("there is no NAT to be traversed!", NATType.NO_NAT, fd);
 		} else if (senderPsa.udpPort() == recipientPsa.udpPort() && senderPsa2.udpPort() == recipientPsa2.udpPort()) {
 			signalNAT("Port preserving NAT detected. UDP hole punching is possible", NATType.PORT_PRESERVING, fd);
-		} else if (recipientPsa2.udpPort() - recipientPsa.udpPort() < 15) {
+		} else if (recipientPsa2.udpPort() - recipientPsa.udpPort() < SEQ_PORT_TOLERANCE) {
 			signalNAT("NAT with sequential port multiplexing detected. UDP hole punching is still possible",
 					NATType.NON_PRESERVING_SEQUENTIAL, fd);
 		} else {

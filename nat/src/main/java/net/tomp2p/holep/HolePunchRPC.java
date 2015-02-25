@@ -1,6 +1,8 @@
 package net.tomp2p.holep;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.connection.Dispatcher;
@@ -10,6 +12,7 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.holep.strategy.HolePuncherStrategy;
+import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
@@ -19,6 +22,7 @@ import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +74,13 @@ public class HolePunchRPC extends DispatchHandler {
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
 		//TODO jwa clear out because this is just a test
 		NATType type = ((HolePunchInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
+		try {
+			List<Integer> portList = (List<Integer>) Utils.decodeJavaObject(message.buffer(0).buffer());
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		HolePuncherStrategy holePuncher = type.getHolePuncher(peer, message.intList().size(), HolePunchInitiator.IDLE_UDP_SECONDS, message);
 		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
@@ -109,6 +120,7 @@ public class HolePunchRPC extends DispatchHandler {
 						for (Integer i : future.object().intList()) {
 							answerMessage.intValue(i);
 						}
+						duplicateBuffer(message, answerMessage);
 						answerMessage.command(Commands.HOLEP.getNr());
 						
 						// forward the NATType to the unreachable peer2
@@ -145,6 +157,7 @@ public class HolePunchRPC extends DispatchHandler {
 		for (Integer port : message.intList()) {
 			forwardMessage.intValue(port);
 		}
+		duplicateBuffer(message, forwardMessage);
 
 		// transmit PeerAddress of unreachable Peer1
 		final NeighborSet ns = new NeighborSet(1, new ArrayList<PeerAddress>(1));
@@ -175,6 +188,12 @@ public class HolePunchRPC extends DispatchHandler {
 			}
 		}
 		return null;
+	}
+	
+	public void duplicateBuffer(final Message originalMessage, Message copyMessage) {
+		for (Buffer buf : originalMessage.bufferList()) {
+			copyMessage.buffer(new Buffer(buf.buffer().duplicate()));
+		}
 	}
 	
 	/**

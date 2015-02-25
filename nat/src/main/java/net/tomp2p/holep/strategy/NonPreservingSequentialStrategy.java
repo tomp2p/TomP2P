@@ -24,7 +24,7 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 	}
 
 	@Override
-	protected void prepareInitiatingPeerPorts(final Message initMessage, final FutureDone<Message> initMessageFutureDone, final List<ChannelFuture> channelFutures) {
+	protected void doPortGuessingInitiatingPeer(final Message initMessage, final FutureDone<Message> initMessageFutureDone, final List<ChannelFuture> channelFutures) {
 		// signal the other peer what type of NAT we are using
 		initMessage.longValue(NAT_TYPE.ordinal());
 
@@ -61,7 +61,7 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 	}
 
 	@Override
-	protected void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
+	protected void doPortGuessingTargetPeer(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
 		FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
 		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 
@@ -77,7 +77,7 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 								List<PeerSocketAddress> addresses = future.object();
 								// TODO jwa is this a good thing?
 								int startingPort = addresses.get(0).udpPort() + 1; 
-								for (int i = 0; i < channelFutures.size(); i++) {
+								for (int i = 0; i < channelFutures.size(); i++) 	{
 									portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), startingPort + i));
 									replyMessage.intValue((int) originalMessage.intList().get(i));
 									replyMessage.intValue(startingPort + i);

@@ -71,7 +71,8 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param replyMessageFuture2
 	 * @param replyMessage
 	 */
-	protected abstract void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2);
+	protected abstract void doPortGuessingTargetPeer(final Message replyMessage, final FutureDone<Message> replyMessageFuture2)
+			throws Exception;
 
 	/**
 	 * This method needs to be overwritten by each strategy in order to let the
@@ -81,8 +82,8 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param initMessageFutureDone
 	 * @param channelFutures2
 	 */
-	protected abstract void prepareInitiatingPeerPorts(final Message holePMessage, final FutureDone<Message> initMessageFutureDone,
-			final List<ChannelFuture> channelFutures2);
+	protected abstract void doPortGuessingInitiatingPeer(final Message holePMessage, final FutureDone<Message> initMessageFutureDone,
+			final List<ChannelFuture> channelFutures2) throws Exception;
 
 	/**
 	 * This is a generic method which creates a number of {@link ChannelFuture}s
@@ -238,7 +239,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param channelCreator
 	 * @return holePMessage
 	 */
-	private FutureDone<Message> createInitMessage(final List<ChannelFuture> channelFutures) {
+	private FutureDone<Message> createInitMessage(final List<ChannelFuture> channelFutures) throws Exception {
 		FutureDone<Message> initMessageFutureDone = new FutureDone<Message>();
 		PeerSocketAddress socketAddress = Utils.extractRandomRelay(originalMessage);
 		// we need to make a copy of the original Message
@@ -247,7 +248,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 		Message initMessage = createHolePMessage(recipient, originalMessage.sender(), RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
 		initMessage.version(originalMessage.version());
 		initMessage.udp(true);
-		prepareInitiatingPeerPorts(initMessage, initMessageFutureDone, channelFutures);
+		doPortGuessingInitiatingPeer(initMessage, initMessageFutureDone, channelFutures);
 		LOG.debug("Hole punch initMessage created {}", initMessage.toString());
 		return initMessageFutureDone;
 	}
@@ -262,12 +263,12 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 		return dummyMessage;
 	}
 
-	private FutureDone<Message> createReplyMessage() {
+	private FutureDone<Message> createReplyMessage() throws Exception{
 		FutureDone<Message> replyMessageFuture2 = new FutureDone<Message>();
 		Message replyMessage = createHolePMessage(originalMessage.sender(), peer.peerBean().serverPeerAddress(), Commands.HOLEP.getNr(),
 				Type.OK);
 		replyMessage.messageId(originalMessage.messageId());
-		prepareTargetPeerPorts(replyMessage, replyMessageFuture2);
+		doPortGuessingTargetPeer(replyMessage, replyMessageFuture2);
 		return replyMessageFuture2;
 	}
 

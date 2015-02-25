@@ -1,19 +1,28 @@
 package net.tomp2p.holep.strategy;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.holep.NATType;
+import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Utils;
 
 public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 
@@ -24,13 +33,21 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 	}
 
 	@Override
-	protected void prepareInitiatingPeerPorts(final Message holePMessage, final FutureDone<Message> initMessageFutureDone, final List<ChannelFuture> channelFutures) {
+	protected void doPortGuessingInitiatingPeer(final Message holePMessage, final FutureDone<Message> initMessageFutureDone,
+			final List<ChannelFuture> channelFutures) throws Exception {
 		// TODO jwa --> create something like a configClass or file where the
 		// number of holes in the firewall can be specified.
-		for (int i = 1; i < channelFutures.size(); i++) {
+		List<Integer> portList = new ArrayList<Integer>(numberOfHoles);
+		for (int i = 0; i < channelFutures.size(); i++) {
 			InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
 			holePMessage.intValue(inetSocketAddress.getPort());
+			portList.add(inetSocketAddress.getPort());
 		}
+
+		byte[] bytes = Utils.encodeJavaObject(portList);
+		ByteBuf buffer = Unpooled.wrappedBuffer(bytes);
+		Buffer byteBuf = new Buffer(buffer, 1);
+		holePMessage.buffer(byteBuf);
 
 		// signal the other peer what type of NAT we are using
 		holePMessage.longValue(NAT_TYPE.ordinal());
@@ -38,7 +55,7 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 	}
 
 	@Override
-	protected void prepareTargetPeerPorts(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
+	protected void doPortGuessingTargetPeer(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) throws Exception {
 		for (int i = 0; i < channelFutures.size(); i++) {
 			InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
 			portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), socket.getPort()));
@@ -47,7 +64,7 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 		}
 		replyMessageFuture2.done(replyMessage);
 	}
-	
+
 	/**
 	 * This method is just for testing causes.
 	 */
@@ -57,7 +74,7 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 			final int numberOfHoles) {
 		return super.createChannelFutures(originalFutureResponse, handlersList, mainFutureDone, numberOfHoles);
 	}
-	
+
 	/**
 	 * This method is just for testing causes.
 	 */

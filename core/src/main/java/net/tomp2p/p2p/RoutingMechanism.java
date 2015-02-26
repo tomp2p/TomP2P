@@ -245,28 +245,7 @@ public class RoutingMechanism {
 
     public void neighbors(RoutingBuilder builder) {
         synchronized (this) {
-        	
-        	// filter routing results using the configured post-routing filters
-            if(builder.postRoutingFilters() != null) {
-            	for (PostRoutingFilter filter : builder.postRoutingFilters()) {
-            		// filter the potential hits
-    				Iterator<PeerAddress> potentialIter = potentialHits.iterator();
-    				while(potentialIter.hasNext()) {
-    					if(filter.rejectPotentialHit(potentialIter.next())) {
-    						potentialIter.remove();
-    					}
-    				}
-    				
-            		// filter the direct hits
-    				Iterator<PeerAddress> directIter = directHits.keySet().iterator();
-    				while(directIter.hasNext()) {
-    					if(filter.rejectDirectHit(directIter.next())) {
-    						directIter.remove();
-    					}
-    				}
-    			}
-            }
-            
+        	DistributedRouting.applyPostRouting(builder, directHits, potentialHits);
             futureRoutingResponse.neighbors(directHits, potentialHits, alreadyAsked,
                     builder.isBootstrap(), builder.isRoutingToOthers());
         }

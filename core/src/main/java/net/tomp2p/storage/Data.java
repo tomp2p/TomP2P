@@ -479,8 +479,10 @@ public class Data {
 	 * 
 	 * http://netty.io/wiki/reference-counted-objects.html
 	 *  
-	 * Once this object is destroyed, the ByteBuf cannot be accessed anymore (unless you use retain/release).
-	 * @return
+	 * Once this object is destroyed, the ByteBuf cannot be accessed anymore (unless you use retain/release). 
+	 * If you don't release it, you may run into java.lang.OufOfMemoryError: Direct Buffer Memory exceptions
+	 * 
+	 * @return 
 	 */
 	public ByteBuf buffer() {
 		return buffer.toByteBuf();

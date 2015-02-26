@@ -1,13 +1,13 @@
 package net.tomp2p.relay.android;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.android.gcm.FutureGCM;
 import net.tomp2p.relay.android.gcm.GCMSenderRPC;
 import net.tomp2p.relay.android.gcm.IGCMSender;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MockedGCMSender extends GCMSenderRPC implements IGCMSender {
 

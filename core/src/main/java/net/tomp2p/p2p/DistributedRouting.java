@@ -17,7 +17,6 @@ package net.tomp2p.p2p;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.Random;
 import java.util.SortedMap;
@@ -222,29 +221,9 @@ public class DistributedRouting {
                 directHits.put(peerBean.serverPeerAddress(), digestInfo);
             }
         }
-
-        if(routingBuilder.postRoutingFilters() != null) {
-        	for (PostRoutingFilter filter : routingBuilder.postRoutingFilters()) {
-        		// filter the potential hits
-				Iterator<PeerAddress> potentialIter = potentialHits.iterator();
-				while(potentialIter.hasNext()) {
-					if(filter.rejectPotentialHit(potentialIter.next())) {
-						potentialIter.remove();
-					}
-				}
-				
-        		// filter the direct hits
-				Iterator<PeerAddress> directIter = directHits.keySet().iterator();
-				while(directIter.hasNext()) {
-					if(filter.rejectDirectHit(directIter.next())) {
-						directIter.remove();
-					}
-				}
-			}
-        }
         
         final FutureRouting futureRouting = new FutureRouting();
-        if (peerAddresses.size() == 0) {
+        if (peerAddresses.isEmpty()) {
             futureRouting.neighbors(directHits, potentialHits, alreadyAsked, routingBuilder.isBootstrap(),
                     false);
         } else {

@@ -187,8 +187,7 @@ public class TestAndroidRelay {
 			}
 
 			// Test setting up relay peers
-			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start())
-					.start();
+			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
 			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).start();
 			
 			FutureRelayNAT fbn = uNat.startRelay(clientConfig, master.peerAddress()).awaitUninterruptibly();
@@ -197,6 +196,9 @@ public class TestAndroidRelay {
 			Number160 contentKey = Number160.createHash(142);
 			Number160 domainKey = Number160.createHash(921);
 			AssertingSlowPeerFilter filter = new AssertingSlowPeerFilter(unreachablePeer.peerID());
+			
+			// double-check that the address is slow
+			Assert.assertTrue(unreachablePeer.peerAddress().isSlow());
 			
 			System.err.println("Start put----");
 			FuturePut futurePut = peers[0].put(unreachablePeer.peerID()).data(contentKey, new Data("hello"), Number160.ZERO).domainKey(domainKey).addPostRoutingFilter(filter).start().awaitUninterruptibly();

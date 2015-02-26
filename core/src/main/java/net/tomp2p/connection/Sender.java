@@ -97,7 +97,7 @@ public class Sender {
 	 * @param concurrentHashMap
 	 */
 	public Sender(final Number160 peerId, final List<PeerStatusListener> peerStatusListeners,
-	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior, PeerBean peerBean) {
+			final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior, PeerBean peerBean) {
 		this.peerStatusListeners = peerStatusListeners;
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.dispatcher = dispatcher;
@@ -142,15 +142,16 @@ public class Sender {
 		if (futureResponse.isCompleted()) {
 			return;
 		}
-		// NAT reflection - rewrite recipient if we found a local address for the recipient
+		// NAT reflection - rewrite recipient if we found a local address for
+		// the recipient
 		LocalMap localMap = peerBean.localMap();
-		if(localMap != null) {
+		if (localMap != null) {
 			PeerStatistic peerStatistic = localMap.translate(message.recipient());
-			if(peerStatistic != null) {
+			if (peerStatistic != null) {
 				message.recipient(peerStatistic.peerAddress());
 			}
 		}
-		
+
 		removePeerIfFailed(futureResponse, message);
 
 		final ChannelFuture channelFuture;
@@ -161,21 +162,21 @@ public class Sender {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
 
 			switch (sendBehavior.tcpSendBehavior(message)) {
-				case DIRECT:
-					connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
-					break;
-				case RCON:
-					handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler);
-					break;
-				case RELAY:
-					handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection, 
-							timeoutHandler);
-					break;
-				case SELF:
-					sendSelf(futureResponse, message);
-					break;
-				default:
-					throw new IllegalArgumentException("Illegal sending behavior");
+			case DIRECT:
+				connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
+				break;
+			case RCON:
+				handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler);
+				break;
+			case RELAY:
+				handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection,
+						timeoutHandler);
+				break;
+			case SELF:
+				sendSelf(futureResponse, message);
+				break;
+			default:
+				throw new IllegalArgumentException("Illegal sending behavior");
 			}
 		}
 	}
@@ -275,7 +276,6 @@ public class Sender {
 		newMessage.command(RPCCommand);
 		newMessage.type(messageType);
 	}
-
 
 	/**
 	 * This method is extracted by @author jonaswagner to ensure that no
@@ -394,8 +394,10 @@ public class Sender {
 	/**
 	 * In case a message is sent to the sender itself, this is the cutoff.
 	 * 
-	 * @param futureResponse the future to respond as soon as the proper handler returns it
-	 * @param message the request
+	 * @param futureResponse
+	 *            the future to respond as soon as the proper handler returns it
+	 * @param message
+	 *            the request
 	 */
 	public void sendSelf(final FutureResponse futureResponse, final Message message) {
 		LOG.debug("Handle message that is intended for the sender itself {}", message);
@@ -419,10 +421,9 @@ public class Sender {
 
 		});
 	}
-	
-	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator,
-	        PeerConnection peerConnection, ChannelHandler handler, TimeoutFactory timeoutHandler,
-	        int connectTimeoutMillis, FutureResponse futureResponse) {
+
+	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator, PeerConnection peerConnection,
+			ChannelHandler handler, TimeoutFactory timeoutHandler, int connectTimeoutMillis, FutureResponse futureResponse) {
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 
@@ -542,16 +543,17 @@ public class Sender {
 		if (futureResponse.isCompleted()) {
 			return;
 		}
-		
-		// NAT reflection - rewrite recipient if we found a local address for the recipient
+
+		// NAT reflection - rewrite recipient if we found a local address for
+		// the recipient
 		LocalMap localMap = peerBean.localMap();
-		if(localMap != null) {
+		if (localMap != null) {
 			PeerStatistic peerStatistic = localMap.translate(message.recipient());
-			if(peerStatistic != null) {
+			if (peerStatistic != null) {
 				message.recipient(peerStatistic.peerAddress());
 			}
 		}
-		
+
 		removePeerIfFailed(futureResponse, message);
 
 		if (message.sender().isRelayed()) {
@@ -562,40 +564,36 @@ public class Sender {
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPSeconds,
 				isFireAndForget);
-
 		try {
-			final ChannelFuture channelFuture;
+			ChannelFuture channelFuture = null;
 			switch (sendBehavior.udpSendBehavior(message)) {
-				case DIRECT:
-					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
-					break;
-				case HOLEP:
-						if (peerBean.holePunchInitiator() != null) {
-							handleHolePunch(futureResponse, message, channelCreator, idleUDPSeconds, handler, broadcast);
-							// all the send mechanics are done in a AbstractHolePuncherStrategy class.
-							// Therefore we must execute this return statement.
-							return;
-						} else {
-							LOG.debug("No hole punching possible, because There is no PeerNAT. New Attempt with Relaying");
-						}
-				case RELAY:
-					List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
-					LOG.debug("send neighbor request to random relay peer {}", psa);
-					if (psa.size() > 0) {
-						PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-						message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
-						channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
-					} else {
-						futureResponse.failed("Peer is relayed, but no relay given");
-						return;
-					}
-					break;
-				case SELF:
-					sendSelf(futureResponse, message);
-					channelFuture = null;
-					break;
-				default:
-					throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");
+			case DIRECT:
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+				break;
+			case HOLEP:
+				if (peerBean.holePunchInitiator() != null) {
+					handleHolePunch(futureResponse, message, channelCreator, idleUDPSeconds, handler, broadcast, handlers, channelFuture);
+					// all the send mechanics are done in a
+					// AbstractHolePuncherStrategy class.
+					// Therefore we must execute this return statement.
+					return;
+				} else {
+					LOG.debug("No hole punching possible, because There is no PeerNAT. New Attempt with Relaying");
+				}
+			case RELAY:
+				try {
+					channelFuture = prepareRelaySendUDP(futureResponse, message, channelCreator, broadcast, handlers, channelFuture);
+				} catch (Exception e) {
+					e.printStackTrace();
+					return;
+				}
+				break;
+			case SELF:
+				sendSelf(futureResponse, message);
+				channelFuture = null;
+				break;
+			default:
+				throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");
 			}
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		} catch (UnsupportedOperationException e) {
@@ -605,10 +603,40 @@ public class Sender {
 		}
 	}
 
-	private FutureDone<Message> handleHolePunch(final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
-			final int idleUDPSeconds, final SimpleChannelInboundHandler<Message> handler, final boolean broadcast) {
-		FutureDone<Message> fDone = peerBean.holePunchInitiator()
-				.handleHolePunch(idleUDPSeconds, futureResponse, message);
+	/**
+	 * This method needed to be extracted from sendUDP(...), because it is also
+	 * needed by the method handleHolePunch(...).
+	 * 
+	 * @param futureResponse
+	 * @param message
+	 * @param channelCreator
+	 * @param broadcast
+	 * @param handlers
+	 * @param channelFuture
+	 * @return
+	 * @throws Exception
+	 */
+	private ChannelFuture prepareRelaySendUDP(final FutureResponse futureResponse, final Message message,
+			final ChannelCreator channelCreator, final boolean broadcast,
+			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, ChannelFuture channelFuture) throws Exception {
+		List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
+		LOG.debug("send neighbor request to random relay peer {}", psa);
+		if (psa.size() > 0) {
+			PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
+			message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+			channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+		} else {
+			String failMessage = "Peer is relayed, but no relay given";
+			futureResponse.failed(failMessage);
+			throw new Exception(failMessage);
+		}
+		return channelFuture;
+	}
+
+	private FutureDone<Message> handleHolePunch(final FutureResponse futureResponse, final Message message,
+			final ChannelCreator channelCreator, final int idleUDPSeconds, final SimpleChannelInboundHandler<Message> handler,
+			final boolean broadcast, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, final ChannelFuture channelFuture) {
+		FutureDone<Message> fDone = peerBean.holePunchInitiator().handleHolePunch(idleUDPSeconds, futureResponse, message);
 		fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
 			@Override
@@ -618,25 +646,31 @@ public class Sender {
 				} else {
 					LOG.error(future.failedReason());
 					LOG.error("Message could not be sent with hole punching! New send attempt with relaying.");
-//					futureResponse.failed(future.failedReason());
-//					throw new Exception(future.failedReason());
-					doRelayFallback(futureResponse, message, idleUDPSeconds, handler, broadcast);
+					// futureResponse.failed(future.failedReason());
+					// throw new Exception(future.failedReason());
+					doRelayFallback(futureResponse, message, broadcast, handlers, channelFuture);
 				}
 			}
 
 			@Override
 			public void exceptionCaught(Throwable t) throws Exception {
-//				futureResponse.failed(t);
-//				throw new Exception(t);
+				// futureResponse.failed(t);
+				// throw new Exception(t);
 				LOG.error("The setup of a connection via has been canceled, because an error was thrown");
 				t.printStackTrace();
-				doRelayFallback(futureResponse, message, idleUDPSeconds, handler, broadcast);
+				doRelayFallback(futureResponse, message, broadcast, handlers, channelFuture);
 			}
-			
-			private void doRelayFallback(final FutureResponse futureResponse, final Message message,
-					final int idleUDPSeconds, final SimpleChannelInboundHandler<Message> handler, final boolean broadcast) {
+
+			private void doRelayFallback(final FutureResponse futureResponse, final Message message, final boolean broadcast,
+					final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, ChannelFuture channelFuture) {
 				message.sender().changeRelayed(false);
-				sendUDP(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
+				try {
+					channelFuture = prepareRelaySendUDP(futureResponse, message, channelCreator, broadcast, handlers, channelFuture);
+					afterConnect(futureResponse, message, channelFuture, handler == null);
+				} catch (Exception e) {
+					e.printStackTrace();
+					return;
+				}
 			}
 		});
 		return fDone;

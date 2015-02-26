@@ -143,46 +143,78 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @return holePhandler
 	 */
 	private SimpleChannelInboundHandler<Message> createHolePunchInboundHandler(final List<ChannelFuture> futures,
-			final FutureResponse originalFutureResponse, final FutureDone<Message> futureDone) {
+			final FutureResponse originalFutureResponse, final FutureDone<Message> mainFutureDone) {
 		SimpleChannelInboundHandler<Message> holePunchInboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
 			protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) throws Exception {
-				final List<Integer> portList = checkReplyValues(msg, futureDone);
+				final List<Integer> portList = checkReplyValues(msg, mainFutureDone);
 				if (portList != null) {
-					for (int i = 0; i < portList.size(); i++) {
-						int localport = extractLocalPort(futureDone, portList, i);
-						final ChannelFuture channelFuture = extractChannelFuture(futures, localport);
-						if (channelFuture == null) {
-							futureDone.failed("Something went wrong with the portmappings!");
+					FutureDone<FutureResponse> reply = trySendOriginalMessage(futures, originalFutureResponse, mainFutureDone, portList);
+					reply.addListener(new BaseFutureAdapter<FutureDone<FutureResponse>>() {
+						@Override
+						public void operationComplete(FutureDone<FutureResponse> future) throws Exception {
+							if (future.isSuccess()) {
+								originalFutureResponse.response(future.object().responseMessage());
+							}
 						}
-						i++;
-						final Message sendMessage = createSendOriginalMessage(portList.get(i - 1), portList.get(i));
-						peer.connectionBean().sender().afterConnect(originalFutureResponse, sendMessage, channelFuture, false);
-						LOG.warn("originalMessage has been sent to the other peer! {}", sendMessage);
-					}
+					});
 				}
 			}
 
-			private int extractLocalPort(final FutureDone<Message> futureDone, final List<Integer> portList, final int index) {
-				int localport = -1;
-				if (portMappings.isEmpty()) {
-					localport = portList.get(index);
-				} else {
-					for (Pair<Integer, Integer> entry : portMappings) {
-						if ((int) entry.element0() == portList.get(index)) {
-							localport = (int) entry.element1();
-						}
+			private FutureDone<FutureResponse> trySendOriginalMessage(final List<ChannelFuture> futures,
+					final FutureResponse originalFutureResponse, final FutureDone<Message> mainFutureDone, final List<Integer> portList) {
+				FutureDone<FutureResponse> fDone = new FutureDone<FutureResponse>();
+				final AtomicInteger countDown = new AtomicInteger((portList.size() / 2));
+				for (int i = 0; i < portList.size(); i++) {
+					int localport = extractLocalPort(mainFutureDone, portList, i);
+					final ChannelFuture channelFuture = extractChannelFuture(futures, localport);
+					if (channelFuture == null) {
+						mainFutureDone.failed("Something went wrong with the portmappings!");
 					}
+					i++;
+					final Message sendMessage = createSendOriginalMessage(portList.get(i - 1), portList.get(i));
+					FutureResponse sendMessageResponse = new FutureResponse(sendMessage);
+					sendMessageResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+						@Override
+						public void operationComplete(FutureResponse future) throws Exception {
+							if (!future.isSuccess()) {
+								if (countDown.decrementAndGet() == 0) {
+									mainFutureDone.failed("All " + portList.size() / 2
+											+ "connection attempts failed. Try relaying instead!");
+								}
+							} else {
+								if (!originalFutureResponse.isCompleted()) {
+									originalFutureResponse.response(future.responseMessage());
+								}
+							}
+						}
+					});
+					peer.connectionBean().sender().afterConnect(originalFutureResponse, sendMessage, channelFuture, false);
+					LOG.warn("originalMessage has been sent to the other peer! {}", sendMessage);
 				}
-				if (localport < 1) {
-					futureDone.failed("No mapping available for port " + portList.get(index) + "!");
-				}
-				return localport;
+				return fDone;
 			}
 		};
 
 		LOG.debug("new HolePunchHandler created, waiting now for answer from rendez-vous peer.");
 		return holePunchInboundHandler;
+	}
+
+	private int extractLocalPort(final FutureDone<Message> futureDone, final List<Integer> portList, final int index) {
+		int localport = -1;
+		if (portMappings.isEmpty()) {
+			localport = portList.get(index);
+		} else {
+			for (Pair<Integer, Integer> entry : portMappings) {
+				if ((int) entry.element0() == portList.get(index)) {
+					localport = (int) entry.element1();
+				}
+			}
+		}
+		if (localport < 1) {
+			futureDone.failed("No mapping available for port " + portList.get(index) + "!");
+		}
+		return localport;
 	}
 
 	/**
@@ -265,7 +297,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		return dummyMessage;
 	}
 
-	private FutureDone<Message> createReplyMessage() throws Exception{
+	private FutureDone<Message> createReplyMessage() throws Exception {
 		FutureDone<Message> replyMessageFuture2 = new FutureDone<Message>();
 		Message replyMessage = createHolePMessage(originalMessage.sender(), peer.peerBean().serverPeerAddress(), Commands.HOLEP.getNr(),
 				Type.OK);
@@ -321,8 +353,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @return mainFutureDone A FutureDone<Message> which if successful contains
 	 *         the response Message from the peer we want to contact
 	 */
-	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone,
-			final FutureResponse originalFutureResponse) {
+	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone, final FutureResponse originalFutureResponse) {
 		final FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(originalFutureResponse,
 				prepareHandlers(originalFutureResponse, true, mainFutureDone), mainFutureDone, numberOfHoles);
 		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
@@ -341,12 +372,13 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 									@Override
 									public void operationComplete(FutureChannelCreator future) throws Exception {
 										if (future.isSuccess()) {
-//											youShallNotPass(mainFutureDone);
+											// youShallNotPass(mainFutureDone);
 											peer.connectionBean()
-											.sender()
-											.sendUDP(createHolePunchInboundHandler(futures, originalFutureResponse, mainFutureDone),
-													originalFutureResponse, initMessage, future.channelCreator(), idleUDPSeconds,
-													BROADCAST_VALUE);
+													.sender()
+													.sendUDP(
+															createHolePunchInboundHandler(futures, originalFutureResponse, mainFutureDone),
+															originalFutureResponse, initMessage, future.channelCreator(), idleUDPSeconds,
+															BROADCAST_VALUE);
 											LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
 										} else {
 											mainFutureDone.failed("The creation of the channelCreator for to send the initMessage failed!");
@@ -504,7 +536,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * This method avoids duplicate code.
 	 * 

@@ -3,6 +3,7 @@ package net.tomp2p.holep.strategy;
 import io.netty.channel.ChannelFuture;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -14,6 +15,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Utils;
 
 public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy {
 
@@ -41,12 +43,19 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 							if (future2.isSuccess()) {
 								List<PeerSocketAddress> addresses = future2.object();
 								// TODO jwa is this a good thing?
-								int startingPort = addresses.get(1).udpPort() + 1; 
+								int startingPort = addresses.get(1).udpPort() + 2;
+								List<Integer> portList = new ArrayList<Integer>(channelFutures.size());
 								for (int i = 0; i < channelFutures.size(); i++) {
-									initMessage.intValue(startingPort + i);
+									int guessedPort = startingPort + (2*i);
 									InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
-									portMappings.add(new Pair<Integer, Integer>(startingPort + i, inetSocketAddress.getPort()));
+									portMappings.add(new Pair<Integer, Integer>(guessedPort, inetSocketAddress.getPort()));
+									portList.add(guessedPort);
 								}
+								initMessage.intValue(portList.size());
+								
+								// send all ports via Buffer
+								initMessage.buffer(encodePortList(portList));
+								
 								initMessageFutureDone.done(initMessage);
 							} else {
 								initMessageFutureDone.failed("Ping failed!");
@@ -76,12 +85,20 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 							if (future.isSuccess()) {
 								List<PeerSocketAddress> addresses = future.object();
 								// TODO jwa is this a good thing?
-								int startingPort = addresses.get(0).udpPort() + 1; 
-								for (int i = 0; i < channelFutures.size(); i++) 	{
+								int startingPort = addresses.get(0).udpPort() + 2; 
+								List<Integer> remotePorts = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());
+								List<Integer> replyPorts = new ArrayList<Integer>(channelFutures.size()*2);
+								for (int i = 0; i < channelFutures.size(); i++) {
+									int guessedPort = startingPort + (2*i);
 									portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), startingPort + i));
-									replyMessage.intValue((int) originalMessage.intList().get(i));
-									replyMessage.intValue(startingPort + i);
+									replyPorts.add(remotePorts.get(i));
+									replyPorts.add(guessedPort);
 								}
+								replyMessage.intValue(replyPorts.size());
+								
+								// send all ports via Buffer
+								replyMessage.buffer(encodePortList(replyPorts));
+								
 								replyMessageFuture2.done(replyMessage);
 							} else {
 								replyMessageFuture2.failed("Ping failed!");

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author Jonas Wagner
- *
+ * 
  */
 public class HolePunchRPC extends DispatchHandler {
 
@@ -72,16 +72,9 @@ public class HolePunchRPC extends DispatchHandler {
 	 * @param responder
 	 */
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
-		//TODO jwa clear out because this is just a test
+		// TODO jwa clear out because this is just a test
 		NATType type = ((HolePunchInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
-		try {
-			List<Integer> portList = (List<Integer>) Utils.decodeJavaObject(message.buffer(0).buffer());
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		HolePuncherStrategy holePuncher = type.getHolePuncher(peer, message.intList().size(), HolePunchInitiator.IDLE_UDP_SECONDS, message);
+		HolePuncherStrategy holePuncher = type.getHolePuncher(peer, message.intAt(0), HolePunchInitiator.IDLE_UDP_SECONDS, message);
 		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
@@ -116,16 +109,7 @@ public class HolePunchRPC extends DispatchHandler {
 				@Override
 				public void operationComplete(FutureDone<Message> future) throws Exception {
 					if (future.isSuccess()) {
-						Message answerMessage = createResponseMessage(message, Message.Type.OK);
-						for (Integer i : future.object().intList()) {
-							answerMessage.intValue(i);
-						}
-						duplicateBuffer(message, answerMessage);
-						answerMessage.command(Commands.HOLEP.getNr());
-						
-						// forward the NATType to the unreachable peer2
-						forwardMessage.longValue(message.longAt(0));
-
+						Message answerMessage = createAnswerMessage(message, future);
 						LOG.debug("Returing from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);
 					} else {
@@ -139,10 +123,8 @@ public class HolePunchRPC extends DispatchHandler {
 	}
 
 	/**
-	 * This method simply forwards the initiating hole punch message from the
-	 * initiating nat peer to the nat peer that needs to be contacted.
-	 * Afterwards it waits for an answer and forwards this answer to the initiating
-	 * nat peer.
+	 * This method creates a the setUpMessage which needs to be forwarded to the
+	 * unreachable peer.
 	 * 
 	 * @param message
 	 * @param recipient
@@ -154,20 +136,39 @@ public class HolePunchRPC extends DispatchHandler {
 		forwardMessage.messageId(message.messageId());
 
 		// forward all ports to the unreachable peer2
-		for (Integer port : message.intList()) {
-			forwardMessage.intValue(port);
-		}
+		forwardMessage.intValue(message.intAt(0));
 		duplicateBuffer(message, forwardMessage);
 
 		// transmit PeerAddress of unreachable Peer1
 		final NeighborSet ns = new NeighborSet(1, new ArrayList<PeerAddress>(1));
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
-		
+
 		// forward the NATType to the unreachable peer2
 		forwardMessage.longValue(message.longAt(0));
 
 		return forwardMessage;
+	}
+
+	/**
+	 * This method creates the message which is sent back from the relay to the
+	 * initiating peer.
+	 * 
+	 * @param message
+	 * @param future
+	 * @return
+	 */
+	private Message createAnswerMessage(final Message message, FutureDone<Message> future) {
+		Message answerMessage = createResponseMessage(message, Message.Type.OK);
+		answerMessage.command(Commands.HOLEP.getNr());
+
+		// forward port information of unreachable peer2
+		answerMessage.intValue(future.object().intAt(0));
+		duplicateBuffer(message, answerMessage);
+
+		// forward the NATType to the unreachable peer2
+		answerMessage.longValue(message.longAt(0));
+		return answerMessage;
 	}
 
 	/**
@@ -189,13 +190,19 @@ public class HolePunchRPC extends DispatchHandler {
 		}
 		return null;
 	}
-	
+
+	/**
+	 * This method simply duplicates the Buffer of a message.
+	 * 
+	 * @param originalMessage
+	 * @param copyMessage
+	 */
 	private void duplicateBuffer(final Message originalMessage, Message copyMessage) {
 		for (Buffer buf : originalMessage.bufferList()) {
 			copyMessage.buffer(new Buffer(buf.buffer().duplicate()));
 		}
 	}
-	
+
 	/**
 	 * This method is called if something went wrong while the hole punching
 	 * procedure. It responds then with a {@link Type}.EXCEPTION message.

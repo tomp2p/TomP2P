@@ -51,7 +51,7 @@ public class DefaultSendBehavior implements SendBehavior {
 
 		if (message.recipient().isRelayed() && message.sender().isRelayed()
 				&& !(message.command() == RPC.Commands.NEIGHBOR.getNr() || message.command() == RPC.Commands.PING.getNr())) {
-			return SendMethod.HOLEPUNCH;
+			return SendMethod.HOLEP;
 		} else if (message.recipient().isRelayed()) {
 			if (message.command() == RPC.Commands.NEIGHBOR.getNr() || message.command() == RPC.Commands.PING.getNr()) {
 				return SendMethod.RELAY;

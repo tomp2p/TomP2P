@@ -1,5 +1,6 @@
 package net.tomp2p.holep.strategy;
 
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -7,6 +8,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -398,7 +400,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 		final HolePuncherStrategy thisInstance = this;
 
 		final FutureDone<List<ChannelFuture>> rmfChannelFutures = createChannelFutures(frResponse,
-				prepareHandlers(frResponse, false, replyMessageFuture), replyMessageFuture, originalMessage.intList().size());
+				prepareHandlers(frResponse, false, replyMessageFuture), replyMessageFuture, numberOfHoles);
 		rmfChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 			@Override
 			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
@@ -478,5 +480,18 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 		LOG.debug("ReplyValues of answerMessage from rendez-vous peer are: " + ok, futureDone);
 
 		return ok;
+	}
+	
+	/**
+	 * This method avoids duplicate code.
+	 * 
+	 * @param portList
+	 * @return
+	 * @throws IOException
+	 */
+	protected Buffer encodePortList(List<Integer> portList) throws IOException {
+		byte[] bytes = Utils.encodeJavaObject(portList);
+		Buffer byteBuf = new Buffer(Unpooled.wrappedBuffer(bytes));
+		return byteBuf;
 	}
 }

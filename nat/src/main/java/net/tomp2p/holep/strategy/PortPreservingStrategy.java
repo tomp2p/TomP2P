@@ -1,16 +1,10 @@
 package net.tomp2p.holep.strategy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +12,6 @@ import java.util.Map;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.holep.NATType;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.utils.Pair;
@@ -37,16 +30,15 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 			final List<ChannelFuture> channelFutures) throws Exception {
 		// TODO jwa --> create something like a configClass or file where the
 		// number of holes in the firewall can be specified.
-		List<Integer> portList = new ArrayList<Integer>(numberOfHoles);
+		List<Integer> portList = new ArrayList<Integer>(channelFutures.size());
 		for (int i = 0; i < channelFutures.size(); i++) {
 			InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
-			holePMessage.intValue(inetSocketAddress.getPort());
 			portList.add(inetSocketAddress.getPort());
 		}
-
-		byte[] bytes = Utils.encodeJavaObject(portList);
-		Buffer byteBuf = new Buffer(Unpooled.wrappedBuffer(bytes));
-		holePMessage.buffer(byteBuf);
+		holePMessage.intValue(portList.size());
+		
+		// send all ports via Buffer
+		holePMessage.buffer(encodePortList(portList));
 
 		// signal the other peer what type of NAT we are using
 		holePMessage.longValue(NAT_TYPE.ordinal());
@@ -55,12 +47,19 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 
 	@Override
 	protected void doPortGuessingTargetPeer(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) throws Exception {
+		List<Integer> remotePorts = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());
+		List<Integer> replyPorts = new ArrayList<Integer>(channelFutures.size()*2);
 		for (int i = 0; i < channelFutures.size(); i++) {
 			InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
-			portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), socket.getPort()));
-			replyMessage.intValue((int) originalMessage.intList().get(i));
-			replyMessage.intValue(socket.getPort());
+			portMappings.add(new Pair<Integer, Integer>(remotePorts.get(i), socket.getPort()));
+			replyPorts.add(remotePorts.get(i));
+			replyPorts.add(socket.getPort());
 		}
+		replyMessage.intValue(replyPorts.size());
+		
+		// send all ports via Buffer
+		replyMessage.buffer(encodePortList(replyPorts));
+		
 		replyMessageFuture2.done(replyMessage);
 	}
 

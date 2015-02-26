@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 @SuppressWarnings("rawtypes")
-public class TestHolePuncher2 {
+public class TestHolePuncher {
 
 	static final int IDLE_UDP_SECONDS = 30;
 	static final int NUMBER_OF_HOLES = 3;

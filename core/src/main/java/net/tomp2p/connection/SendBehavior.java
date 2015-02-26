@@ -37,7 +37,7 @@ public interface SendBehavior {
 		 * Send the message after a direct connection via hole punching is
 		 * established. The connection is closed afterwards. This is not possible via TCP.
 		 */
-		HOLEPUNCH
+		HOLEP
 	}
 
 	/**

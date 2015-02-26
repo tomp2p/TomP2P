@@ -563,20 +563,20 @@ public class Sender {
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPSeconds,
 				isFireAndForget);
 
-		if (!(message.command() == RPC.Commands.PING.getNr() || message.command() == RPC.Commands.NEIGHBOR.getNr())
-				&& message.recipient().isRelayed() && message.sender().isRelayed()) {
-
-			// initiate the holepunching process
-			if (peerBean.holePunchInitiator() != null) {
-				handleHolePunch(futureResponse, message, channelCreator, idleUDPSeconds);
-
-				// the sendMechanics are done in the HolePuncher class.
-				// Therefore we must execute this return statement.
-				return;
-			} else {
-				LOG.debug("No hole punching possible, because There is no PeerNAT.");
-			}
-		}
+//		if (!(message.command() == RPC.Commands.PING.getNr() || message.command() == RPC.Commands.NEIGHBOR.getNr())
+//				&& message.recipient().isRelayed() && message.sender().isRelayed()) {
+//
+//			// initiate the holepunching process
+//			if (peerBean.holePunchInitiator() != null) {
+//				handleHolePunch(futureResponse, message, channelCreator, idleUDPSeconds);
+//
+//				// the sendMechanics are done in the HolePuncher class.
+//				// Therefore we must execute this return statement.
+//				return;
+//			} else {
+//				LOG.debug("No hole punching possible, because There is no PeerNAT.");
+//			}
+//		}
 
 		try {
 			final ChannelFuture channelFuture;
@@ -584,16 +584,13 @@ public class Sender {
 				case DIRECT:
 					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
 					break;
-				case HOLEPUNCH:
-						// initiate the holepunching process
+				case HOLEP:
 						if (peerBean.holePunchInitiator() != null) {
-							handleHolePunch(futureResponse, message, channelCreator, idleUDPSeconds);
-
-							// all the send mechanics are done in the HolePuncher class.
+							handleHolePunch(futureResponse, message, channelCreator, idleUDPSeconds, handler, broadcast);
+							// all the send mechanics are done in a AbstractHolePuncherStrategy class.
 							// Therefore we must execute this return statement.
 							return;
 						} else {
-							//TODO jwa implement relay as a fallback scenario
 							LOG.debug("No hole punching possible, because There is no PeerNAT. New Attempt with Relaying");
 						}
 				case RELAY:
@@ -623,8 +620,8 @@ public class Sender {
 		}
 	}
 
-	public void handleHolePunch(final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
-			final int idleUDPSeconds) {
+	public FutureDone<Message> handleHolePunch(final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
+			final int idleUDPSeconds, final SimpleChannelInboundHandler<Message> handler, final boolean broadcast) {
 		FutureDone<Message> fDone = peerBean.holePunchInitiator()
 				.handleHolePunch(channelCreator, idleUDPSeconds, futureResponse, message);
 		fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
@@ -634,18 +631,29 @@ public class Sender {
 				if (future.isSuccess()) {
 					futureResponse.response(future.object());
 				} else {
-					LOG.error("Message could not be sent with hole punching!");
-					futureResponse.failed(future.failedReason());
-					throw new Exception(future.failedReason());
+					LOG.error("Message could not be sent with hole punching! New send attempt with relaying.");
+//					futureResponse.failed(future.failedReason());
+//					throw new Exception(future.failedReason());
+					doRelayFallback(futureResponse, message, channelCreator, idleUDPSeconds, handler, broadcast);
 				}
 			}
 
 			@Override
 			public void exceptionCaught(Throwable t) throws Exception {
-				futureResponse.failed(t);
-				throw new Exception(t);
+//				futureResponse.failed(t);
+//				throw new Exception(t);
+				LOG.error("The setup of a connection via has been canceled, because an error was thrown");
+				t.printStackTrace();
+				doRelayFallback(futureResponse, message, channelCreator, idleUDPSeconds, handler, broadcast);
+			}
+			
+			private void doRelayFallback(final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
+					final int idleUDPSeconds, final SimpleChannelInboundHandler<Message> handler, final boolean broadcast) {
+				message.sender().changeRelayed(false);
+				sendUDP(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
 			}
 		});
+		return fDone;
 	}
 
 	/**

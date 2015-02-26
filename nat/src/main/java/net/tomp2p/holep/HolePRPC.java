@@ -1,8 +1,6 @@
 package net.tomp2p.holep;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.connection.Dispatcher;
@@ -11,6 +9,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.holep.strategy.AbstractHolePStrategy;
 import net.tomp2p.holep.strategy.HolePStrategy;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -22,7 +21,6 @@ import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
-import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

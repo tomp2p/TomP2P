@@ -341,6 +341,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 									@Override
 									public void operationComplete(FutureChannelCreator future) throws Exception {
 										if (future.isSuccess()) {
+//											youShallNotPass(mainFutureDone);
 											peer.connectionBean()
 											.sender()
 											.sendUDP(createHolePunchInboundHandler(futures, originalFutureResponse, mainFutureDone),
@@ -350,6 +351,11 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 										} else {
 											mainFutureDone.failed("The creation of the channelCreator for to send the initMessage failed!");
 										}
+									}
+
+									private void youShallNotPass(FutureDone<Message> mainFutureDone) {
+										mainFutureDone.failed("TEST CASE!");
+										return;
 									}
 								});
 							} else {

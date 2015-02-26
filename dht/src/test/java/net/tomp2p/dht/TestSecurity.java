@@ -1076,9 +1076,9 @@ public class TestSecurity {
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
 		KeyPair protectionKey = gen.generateKeyPair();
 
-		SignatureCodec signature = signatureFactory.sign(protectionKey.getPrivate(), testData.buffer().nioBuffers());
+		SignatureCodec signature = signatureFactory.sign(protectionKey.getPrivate(), testData.toByteBuffers());
 
-		boolean isVerified = signatureFactory.verify(protectionKey.getPublic(), testData.buffer().nioBuffers(), signature);
+		boolean isVerified = signatureFactory.verify(protectionKey.getPublic(), testData.toByteBuffers(), signature);
 
 		Assert.assertTrue(isVerified);
 	}
@@ -1200,7 +1200,7 @@ public class TestSecurity {
 			Assert.assertTrue(futurePut.isSuccess());
 
 			// create signature with old key pair having the data object
-			byte[] signature1 = factory.sign(keyPairOld.getPrivate(), data.buffer().nioBuffers()).encode();
+			byte[] signature1 = factory.sign(keyPairOld.getPrivate(), data.toByteBuffers()).encode();
 
 			// decrypt signature to get hash of the object
 			Cipher rsa = Cipher.getInstance("RSA");

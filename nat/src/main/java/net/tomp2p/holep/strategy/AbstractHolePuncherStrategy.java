@@ -322,7 +322,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @return mainFutureDone A FutureDone<Message> which if successful contains
 	 *         the response Message from the peer we want to contact
 	 */
-	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone, final ChannelCreator originalChannelCreator,
+	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone,
 			final FutureResponse originalFutureResponse) {
 		final FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(originalFutureResponse,
 				prepareHandlers(originalFutureResponse, true, mainFutureDone), mainFutureDone, numberOfHoles);
@@ -336,12 +336,23 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 						@Override
 						public void operationComplete(FutureDone<Message> future) throws Exception {
 							if (future.isSuccess()) {
-								peer.connectionBean()
-										.sender()
-										.sendUDP(createHolePunchInboundHandler(futures, originalFutureResponse, mainFutureDone),
-												originalFutureResponse, future.object(), originalChannelCreator, idleUDPSeconds,
-												BROADCAST_VALUE);
-								LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
+								final Message initMessage = future.object();
+								FutureChannelCreator fChannelCreator = peer.connectionBean().reservation().create(1, 0);
+								fChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+									@Override
+									public void operationComplete(FutureChannelCreator future) throws Exception {
+										if (future.isSuccess()) {
+											peer.connectionBean()
+											.sender()
+											.sendUDP(createHolePunchInboundHandler(futures, originalFutureResponse, mainFutureDone),
+													originalFutureResponse, initMessage, future.channelCreator(), idleUDPSeconds,
+													BROADCAST_VALUE);
+											LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
+										} else {
+											mainFutureDone.failed("The creation of the channelCreator for to send the initMessage failed!");
+										}
+									}
+								});
 							} else {
 								mainFutureDone.failed("The creation of the initMessage failed!");
 							}

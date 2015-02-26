@@ -30,7 +30,7 @@ public class HolePunchInitiatorImpl implements HolePunchInitiator {
 	}
 
 	@Override
-	public FutureDone<Message> handleHolePunch(ChannelCreator channelCreator, int idleUDPSeconds, FutureResponse futureResponse,
+	public FutureDone<Message> handleHolePunch(int idleUDPSeconds, FutureResponse futureResponse,
 			Message originalMessage) {
 		FutureDone<Message> futureDone = new FutureDone<Message>();
 		
@@ -40,7 +40,7 @@ public class HolePunchInitiatorImpl implements HolePunchInitiator {
 		}
 		
 		HolePuncherStrategy holePuncher = natTypeDetection.natType().getHolePuncher(peer, HolePunchInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
-		return holePuncher.initiateHolePunch(futureDone, channelCreator, futureResponse);
+		return holePuncher.initiateHolePunch(futureDone, futureResponse);
 	}
 	
 	public void checkNatType(PeerAddress peerAddress) {

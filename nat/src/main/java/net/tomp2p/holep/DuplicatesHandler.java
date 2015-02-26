@@ -25,10 +25,8 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message>{
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
 		if (msg.isExpectDuplicate()) {
-			System.err.println("passed, " + msg.intAt(POSITION_ZERO));
 			if (first) {
 				first = false;
-				System.err.println("passed first");
 				messageId = msg.intAt(POSITION_ZERO);
 				dispatcher.channelRead(ctx, msg);
 				LOG.debug("message with original messageId = " + messageId + " has been received!");

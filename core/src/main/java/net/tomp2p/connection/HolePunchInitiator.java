@@ -17,7 +17,7 @@ public interface HolePunchInitiator {
 	public static final int IDLE_UDP_SECONDS = 30;
 	public static final int NUMBER_OF_TRIALS = 3;
 
-	public FutureDone<Message> handleHolePunch(final ChannelCreator channelCreator, final int idleUDPSeconds,
+	public FutureDone<Message> handleHolePunch(final int idleUDPSeconds,
 			final FutureResponse futureResponse, final Message originalMessage);
 
 }

@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DO NOT INSTANCIATE THIS CLASS!
+ * DO NOT INSTANCIATE THIS CLASS! <br>
  * 
  * @author Jonas Wagner
  * 

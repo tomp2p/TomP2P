@@ -109,7 +109,7 @@ public class HolePunchRPC extends DispatchHandler {
 				@Override
 				public void operationComplete(FutureDone<Message> future) throws Exception {
 					if (future.isSuccess()) {
-						Message answerMessage = createAnswerMessage(message, future);
+						Message answerMessage = createAnswerMessage(future.object());
 						LOG.debug("Returing from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);
 					} else {
@@ -154,20 +154,20 @@ public class HolePunchRPC extends DispatchHandler {
 	 * This method creates the message which is sent back from the relay to the
 	 * initiating peer.
 	 * 
-	 * @param message
+	 * @param replyMessage
 	 * @param future
 	 * @return
 	 */
-	private Message createAnswerMessage(final Message message, FutureDone<Message> future) {
-		Message answerMessage = createResponseMessage(message, Message.Type.OK);
+	private Message createAnswerMessage(final Message replyMessage) {
+		Message answerMessage = createResponseMessage(replyMessage, Message.Type.OK);
 		answerMessage.command(Commands.HOLEP.getNr());
 
 		// forward port information of unreachable peer2
-		answerMessage.intValue(future.object().intAt(0));
-		duplicateBuffer(message, answerMessage);
+		answerMessage.intValue(replyMessage.intAt(0));
+		duplicateBuffer(replyMessage, answerMessage);
 
 		// forward the NATType to the unreachable peer2
-		answerMessage.longValue(message.longAt(0));
+		answerMessage.longValue(replyMessage.longAt(0));
 		return answerMessage;
 	}
 

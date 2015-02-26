@@ -147,35 +147,36 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 			final FutureResponse originalFutureResponse, final FutureDone<Message> futureDone) {
 		SimpleChannelInboundHandler<Message> holePunchInboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
-			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-				if (checkReplyValues(msg, futureDone)) {
-					for (int i = 0; i < msg.intList().size(); i++) {
-						int localport = extractLocalPort(futureDone, msg, i);
-						ChannelFuture channelFuture = extractChannelFuture(futures, localport);
+			protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) throws Exception {
+				final List<Integer> portList = checkReplyValues(msg, futureDone);
+				if (portList != null) {
+					for (int i = 0; i < portList.size(); i++) {
+						int localport = extractLocalPort(futureDone, portList, i);
+						final ChannelFuture channelFuture = extractChannelFuture(futures, localport);
 						if (channelFuture == null) {
 							futureDone.failed("Something went wrong with the portmappings!");
 						}
 						i++;
-						Message sendMessage = createSendOriginalMessage(msg.intList().get(i - 1), msg.intList().get(i));
+						final Message sendMessage = createSendOriginalMessage(portList.get(i - 1), portList.get(i));
 						peer.connectionBean().sender().afterConnect(originalFutureResponse, sendMessage, channelFuture, false);
 						LOG.warn("originalMessage has been sent to the other peer! {}", sendMessage);
 					}
 				}
 			}
 
-			private int extractLocalPort(final FutureDone<Message> futureDone, Message msg, int index) {
+			private int extractLocalPort(final FutureDone<Message> futureDone, final List<Integer> portList, final int index) {
 				int localport = -1;
 				if (portMappings.isEmpty()) {
-					localport = msg.intList().get(index);
+					localport = portList.get(index);
 				} else {
 					for (Pair<Integer, Integer> entry : portMappings) {
-						if ((int) entry.element0() == msg.intList().get(index)) {
+						if ((int) entry.element0() == portList.get(index)) {
 							localport = (int) entry.element1();
 						}
 					}
 				}
 				if (localport < 1) {
-					futureDone.failed("No mapping available for port " + msg.intList().get(index) + "!");
+					futureDone.failed("No mapping available for port " + portList.get(index) + "!");
 				}
 				return localport;
 			}
@@ -459,17 +460,25 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	 * @param msg
 	 * @return ok
 	 */
-	private boolean checkReplyValues(Message msg, FutureDone<Message> futureDone) {
-		boolean ok = false;
+	@SuppressWarnings("unchecked")
+	private List<Integer> checkReplyValues(final Message msg, final FutureDone<Message> futureDone) {
 		if (msg.command() == Commands.HOLEP.getNr() && msg.type() == Type.OK) {
-			// the list with the ports should never be null or Empty
-			if (!(msg.intList() == null || msg.intList().isEmpty())) {
-				final int rawNumberOfHoles = msg.intList().size();
+			List<Integer> portList = null;
+			try {
+				portList = (List<Integer>) Utils.decodeJavaObject(msg.buffer(0).buffer());
+			} catch (Exception e) {
+				futureDone.failed("The decoding of the buffer threw an exception!");
+				e.printStackTrace();
+				return null;
+			}
+			// the list with the ports should never be Empty
+			if (!portList.isEmpty()) {
+				final int rawNumberOfHoles = portList.size();
 				// the number of the pairs of port must be even!
 				if ((rawNumberOfHoles % 2) == 0) {
-					ok = true;
+					return portList;
 				} else {
-					futureDone.failed("The number of ports in IntList was odd! This should never happen");
+					futureDone.failed("The number of ports in the Buffer was odd! This should never happen");
 				}
 			} else {
 				futureDone.failed("IntList in replyMessage was null or Empty! No ports available!!!!");
@@ -477,9 +486,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 		} else {
 			futureDone.failed("Could not acquire a connection via hole punching, got: " + msg);
 		}
-		LOG.debug("ReplyValues of answerMessage from rendez-vous peer are: " + ok, futureDone);
-
-		return ok;
+		return null;
 	}
 	
 	/**

@@ -631,6 +631,7 @@ public class Sender {
 				if (future.isSuccess()) {
 					futureResponse.response(future.object());
 				} else {
+					LOG.error(future.failedReason());
 					LOG.error("Message could not be sent with hole punching! New send attempt with relaying.");
 //					futureResponse.failed(future.failedReason());
 //					throw new Exception(future.failedReason());

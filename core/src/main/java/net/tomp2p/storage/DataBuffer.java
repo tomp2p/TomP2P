@@ -28,9 +28,11 @@ public class DataBuffer {
 
 	public DataBuffer(final byte[] buffer, final int offset, final int length) {
 		buffers = new ArrayList<ByteBuf>(1);
-		final ByteBuf buf = Unpooled.wrappedBuffer(buffer, offset, length);
-		buffers.add(buf);
-		// no need to retain, as we initialized here and ref counter is set to 1
+		if(length > 0) {
+			final ByteBuf buf = Unpooled.wrappedBuffer(buffer, offset, length);
+			buffers.add(buf);
+			// no need to retain, as we initialized here and ref counter is set to 1
+		}
 	}
 
 	/**
@@ -41,23 +43,29 @@ public class DataBuffer {
 	 */
 	public DataBuffer(final ByteBuf buf) {
 		buffers = new ArrayList<ByteBuf>(1);
-		buffers.add(buf.slice());
-		buf.retain();
+		if(buf.isReadable()) {
+			buffers.add(buf.slice());
+			buf.retain();
+		}
 	}
 
 	private DataBuffer(final List<ByteBuf> buffers) {
 		this.buffers = new ArrayList<ByteBuf>(buffers.size());
 		for (final ByteBuf buf : buffers) {
-			this.buffers.add(buf.duplicate());
-			buf.retain();
+			if(buf.isReadable()) {
+				this.buffers.add(buf.duplicate());
+				buf.retain();
+			}
 		}
 	}
 	
 	public DataBuffer add(DataBuffer dataBuffer) {
 		synchronized (dataBuffer.buffers) {
 			for (final ByteBuf buf : dataBuffer.buffers) {
-				this.buffers.add(buf.duplicate());
-				buf.retain();
+				if(buf.isReadable()) {
+					this.buffers.add(buf.duplicate());
+					buf.retain();
+				}
 			}
 		}
 		return this;
@@ -150,18 +158,23 @@ public class DataBuffer {
 					.decompose(index, length);
 
 			for (final ByteBuf decom : decoms) {
-				synchronized (buffers) {
-					// this is already a slice
-					buffers.add(decom);
+				if(decom.isReadable()) {
+					synchronized (buffers) {
+						// this is already a slice
+						buffers.add(decom);
+					}
+					decom.retain();
 				}
-				decom.retain();
 			}
 
 		} else {
-			synchronized (buffers) {
-				buffers.add(buf.slice(index, length));
+			final ByteBuf slice = buf.slice(index, length);
+			if(slice.isReadable()) {
+				synchronized (buffers) {
+					buffers.add(slice);
+				}
+				slice.retain();
 			}
-			buf.retain();
 		}
 
 		alreadyTransferred += length;

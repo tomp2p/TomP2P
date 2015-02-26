@@ -3,4 +3,6 @@ language: java
 jdk:
  - openjdk7
 
+#env: MAVEN_OPTS="-Dio.netty.leakDetectionLevel=paranoid"
+
 #script: mvn -Dtest=net.tomp2p.p2p.TestAnnounce test && exit 1

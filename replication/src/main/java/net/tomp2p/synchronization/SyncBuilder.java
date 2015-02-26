@@ -255,6 +255,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		Number160 hash = SyncUtils.decodeHeader(buffer);
              
                         		List<Checksum> checksums = SyncUtils.decodeChecksums(buffer);
+                        		buffer.release();
                         		// TODO: don't copy data, toBytes does a copy!
                         		List<Instruction> instructions = RSync.instructions(
                                          data2.toBytes(), checksums, blockSize);

@@ -41,15 +41,19 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 /**
- * Example how to do range queries.
+ * Example how to do range queries. The range queries is inspired by DST. 
+ * More on DST can be found here: http://www.cs.columbia.edu/~cxz/publications/TR-2007-30.pdf
  * 
  * @author Thomas Bocek
  * 
  */
 public final class ExampleDST {
 	
+	//The number of values per peer stored
 	private final static int n = 2;
-	private final static int m = 8; //1024*1024; // 2 items per peer
+	
+	//The range of the values
+	private final static int m = 8; //1024*1024; // m is th
 
     /**
      * Empty constructor.

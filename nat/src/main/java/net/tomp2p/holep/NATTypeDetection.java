@@ -137,7 +137,7 @@ public class NATTypeDetection {
 
 	/**
 	 * This method sets the {@link NATType} on the
-	 * {@link HolePunchInitiatorImpl} object.
+	 * {@link HolePInitiatorImpl} object.
 	 * 
 	 * @param debugMsg
 	 * @param natType

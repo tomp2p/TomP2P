@@ -17,7 +17,7 @@ import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
-public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy {
+public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 
 	private static final NATType NAT_TYPE = NATType.NON_PRESERVING_SEQUENTIAL;
 

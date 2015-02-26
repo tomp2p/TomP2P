@@ -7,7 +7,7 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 
-public interface HolePunchInitiator {
+public interface HolePInitiator {
 
 	// TODO jwa create some config class to specify
 	// the number

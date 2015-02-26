@@ -17,7 +17,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
-public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
+public class PortPreservingStrategy extends AbstractHolePStrategy {
 
 	private static final NATType NAT_TYPE = NATType.PORT_PRESERVING;
 

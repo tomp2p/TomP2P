@@ -1,23 +1,23 @@
 package net.tomp2p.holep;
 
-import net.tomp2p.holep.strategy.HolePuncherStrategy;
+import net.tomp2p.holep.strategy.HolePStrategy;
 
 /**
  * This class is used as a {@link Thread} specifically for the
- * {@link HolePuncherStrategy}. It calls the tryConnect() method on the
- * {@link HolePuncherStrategy} every second until it reached the given numberOfTrials.
+ * {@link HolePStrategy}. It calls the tryConnect() method on the
+ * {@link HolePStrategy} every second until it reached the given numberOfTrials.
  * 
  * @author Jonas Wagner
  * 
  */
-public class HolePunchScheduler implements Runnable {
+public class HolePScheduler implements Runnable {
 
 	private static final int FIVE_MINUTES = 300;
 	private static final int ONE_SECOND_MILLIS = 1000;
 	private int numberOfTrials;
-	private HolePuncherStrategy holePuncher;
+	private HolePStrategy holePuncher;
 
-	public HolePunchScheduler(int numberOfTrials, HolePuncherStrategy holePuncher) {
+	public HolePScheduler(int numberOfTrials, HolePStrategy holePuncher) {
 		// 300 -> 5min
 		if (numberOfTrials > FIVE_MINUTES) {
 			throw new IllegalArgumentException("numberOfTrials can't be higher than 300 (5min)!");

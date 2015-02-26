@@ -663,7 +663,6 @@ public class Sender {
 
 			private void doRelayFallback(final FutureResponse futureResponse, final Message message, final boolean broadcast,
 					final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, ChannelFuture channelFuture) {
-				message.sender().changeRelayed(false);
 				try {
 					channelFuture = prepareRelaySendUDP(futureResponse, message, channelCreator, broadcast, handlers, channelFuture);
 					afterConnect(futureResponse, message, channelFuture, handler == null);
@@ -678,7 +677,7 @@ public class Sender {
 
 	/**
 	 * This method was extracted in order to avoid duplicate code in the
-	 * {@link HolePunchInitiator} and in the initHolePunch(...) method.
+	 * {@link HolePInitiator} and in the initHolePunch(...) method.
 	 * 
 	 * @param handler
 	 * @param futureResponse

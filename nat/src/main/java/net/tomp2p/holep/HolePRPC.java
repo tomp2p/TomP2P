@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.connection.Dispatcher;
-import net.tomp2p.connection.HolePunchInitiator;
+import net.tomp2p.connection.HolePInitiator;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.holep.strategy.HolePuncherStrategy;
+import net.tomp2p.holep.strategy.HolePStrategy;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -31,12 +31,12 @@ import org.slf4j.LoggerFactory;
  * @author Jonas Wagner
  * 
  */
-public class HolePunchRPC extends DispatchHandler {
+public class HolePRPC extends DispatchHandler {
 
-	private static final Logger LOG = LoggerFactory.getLogger(HolePunchRPC.class);
+	private static final Logger LOG = LoggerFactory.getLogger(HolePRPC.class);
 	private final Peer peer;
 
-	public HolePunchRPC(Peer peer) {
+	public HolePRPC(Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.HOLEP.getNr());
 		this.peer = peer;
@@ -62,7 +62,7 @@ public class HolePunchRPC extends DispatchHandler {
 	/**
 	 * This method is called by handleResponse(...) and initiates the hole
 	 * punching procedure on the nat peer that needs to be contacted. It creates
-	 * an {@link AbstractHolePuncherStrategy} and waits then for the reply{@link Message} which
+	 * an {@link AbstractHolePStrategy} and waits then for the reply{@link Message} which
 	 * the peer that needs to be contacted sends back to the initiating peer.
 	 * The reply{@link Message} contains information about the holes which are
 	 * punched currently.
@@ -73,8 +73,8 @@ public class HolePunchRPC extends DispatchHandler {
 	 */
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
 		// TODO jwa clear out because this is just a test
-		NATType type = ((HolePunchInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
-		HolePuncherStrategy holePuncher = type.getHolePuncher(peer, message.intAt(0), HolePunchInitiator.IDLE_UDP_SECONDS, message);
+		NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
+		HolePStrategy holePuncher = type.getHolePuncher(peer, message.intAt(0), HolePInitiator.IDLE_UDP_SECONDS, message);
 		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 

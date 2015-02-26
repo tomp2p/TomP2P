@@ -2,7 +2,7 @@ package net.tomp2p.holep;
 
 import java.io.IOException;
 
-import net.tomp2p.connection.HolePunchInitiator;
+import net.tomp2p.connection.HolePInitiator;
 import net.tomp2p.holep.strategy.NonPreservingSequentialStrategy;
 import net.tomp2p.holep.strategy.PortPreservingStrategy;
 import net.tomp2p.message.Message;
@@ -18,8 +18,8 @@ public class TestNATType {
 
 	private Peer peer;
 	private Message msg;
-	private static final int NUMBER_OF_HOLES = HolePunchInitiator.NUMBER_OF_HOLES;
-	private static final int IDLE_UDP_SECONDS = HolePunchInitiator.IDLE_UDP_SECONDS;
+	private static final int NUMBER_OF_HOLES = HolePInitiator.NUMBER_OF_HOLES;
+	private static final int IDLE_UDP_SECONDS = HolePInitiator.IDLE_UDP_SECONDS;
 
 	@Before
 	public void setUp() throws IOException {

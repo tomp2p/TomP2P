@@ -13,7 +13,7 @@ import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.holep.HolePunchInitiatorImpl;
+import net.tomp2p.holep.HolePInitiatorImpl;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.natpmp.NatPmpException;
@@ -249,7 +249,7 @@ public class PeerNAT {
 		final BootstrapBuilder bootstrapBuilder = peer.bootstrap().peerAddress(peerAddress);
 		
 		//TODO jwa discuss this with Thomas Bocek
-		((HolePunchInitiatorImpl) peer.peerBean().holePunchInitiator()).checkNatType(peerAddress);
+		((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).checkNatType(peerAddress);
 		
 		return startRelay(relayConfig, bootstrapBuilder);
 	}

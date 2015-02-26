@@ -13,7 +13,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.holep.HolePunchRPC;
+import net.tomp2p.holep.HolePRPC;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -61,12 +61,12 @@ public class RelayRPC extends DispatchHandler {
 	 * This variable is needed, because a relay overwrites every RPC of an
 	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. This
 	 * variable is forwarded to the {@link RelayForwarderRPC} in order to
-	 * guarantee the existence of a {@link HolePunchRPC}. Without this variable, no
+	 * guarantee the existence of a {@link HolePRPC}. Without this variable, no
 	 * hole punch connections would be possible.
 	 * 
 	 * @author jonaswagner
 	 */
-	private final HolePunchRPC holePunchRPC;
+	private final HolePRPC holePunchRPC;
 
 	/**
 	 * In case this relay handles Android devices and is capable of sending GCM messages, this variable is
@@ -89,7 +89,7 @@ public class RelayRPC extends DispatchHandler {
 	 * @param gcmAuthToken the authentication key for Google cloud messaging
 	 * @return
 	 */
-	public RelayRPC(Peer peer, RconRPC rconRPC, HolePunchRPC holePunchRPC, IGCMSender gcmSenderRPC, MessageBufferConfiguration bufferConfig,
+	public RelayRPC(Peer peer, RconRPC rconRPC, HolePRPC holePunchRPC, IGCMSender gcmSenderRPC, MessageBufferConfiguration bufferConfig,
 			ConnectionConfiguration config) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peer = peer;

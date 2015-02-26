@@ -1,6 +1,6 @@
 package net.tomp2p.holep;
 
-import static org.junit.Assert.*;
+//import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.Random;
@@ -29,6 +29,7 @@ public class TestSender {
 		//TODO insert Mockito
 		Sender sender = peer.connectionBean().sender();
 //		sender.sendUDP(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
+		
 	}
 
 }

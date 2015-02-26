@@ -51,7 +51,7 @@ public class PeerBean {
     private MaintenanceTask maintenanceTask;
     private DigestStorage digestStorage;
     private DigestTracker digestTracker;
-    private HolePunchInitiator holePunchInitiator;
+    private HolePInitiator holePunchInitiator;
     private LocalMap localMap;
     
 	/**
@@ -203,12 +203,12 @@ public class PeerBean {
     }
     
     
-    public PeerBean holePunchInitiator(HolePunchInitiator holePunchInitiator) {
+    public PeerBean holePunchInitiator(HolePInitiator holePunchInitiator) {
     	this.holePunchInitiator = holePunchInitiator;
     	return this;
     }
     
-    public HolePunchInitiator holePunchInitiator() {
+    public HolePInitiator holePunchInitiator() {
     	return holePunchInitiator;
     }
     

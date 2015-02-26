@@ -15,15 +15,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.Dispatcher;
-import net.tomp2p.connection.HolePunchInitiator;
+import net.tomp2p.connection.HolePInitiator;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.holep.DuplicatesHandler;
-import net.tomp2p.holep.HolePunchScheduler;
+import net.tomp2p.holep.HolePScheduler;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -44,11 +43,11 @@ import org.slf4j.LoggerFactory;
  * @author Jonas Wagner
  * 
  */
-public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy {
+public abstract class AbstractHolePStrategy implements HolePStrategy {
 
-	private static final Logger LOG = LoggerFactory.getLogger(AbstractHolePuncherStrategy.class);
-	protected static final int NUMBER_OF_TRIALS = HolePunchInitiator.NUMBER_OF_TRIALS;
-	protected static final boolean BROADCAST_VALUE = HolePunchInitiator.BROADCAST;
+	private static final Logger LOG = LoggerFactory.getLogger(AbstractHolePStrategy.class);
+	protected static final int NUMBER_OF_TRIALS = HolePInitiator.NUMBER_OF_TRIALS;
+	protected static final boolean BROADCAST_VALUE = HolePInitiator.BROADCAST;
 	protected static final boolean FIRE_AND_FORGET_VALUE = false;
 	protected final Peer peer;
 	protected final int numberOfHoles;
@@ -58,7 +57,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	protected List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>();
 	protected List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
 
-	protected AbstractHolePuncherStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
+	protected AbstractHolePStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 		this.peer = peer;
 		this.numberOfHoles = numberOfHoles;
 		this.idleUDPSeconds = idleUDPSeconds;
@@ -409,7 +408,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 		originalSender = (PeerAddress) originalMessage.neighborsSetList().get(0).neighbors().toArray()[0];
 		final FutureDone<Message> replyMessageFuture = new FutureDone<Message>();
 		final FutureResponse frResponse = new FutureResponse(originalMessage);
-		final HolePuncherStrategy thisInstance = this;
+		final HolePStrategy thisInstance = this;
 
 		final FutureDone<List<ChannelFuture>> rmfChannelFutures = createChannelFutures(frResponse,
 				prepareHandlers(frResponse, false, replyMessageFuture), replyMessageFuture, numberOfHoles);
@@ -424,7 +423,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 						public void operationComplete(FutureDone<Message> future) throws Exception {
 							if (future.isSuccess()) {
 								Message replyMessage = future.object();
-								Thread holePunchScheduler = new Thread(new HolePunchScheduler(NUMBER_OF_TRIALS, thisInstance));
+								Thread holePunchScheduler = new Thread(new HolePScheduler(NUMBER_OF_TRIALS, thisInstance));
 								holePunchScheduler.start();
 								replyMessageFuture.done(replyMessage);
 							} else {
@@ -441,7 +440,7 @@ public abstract class AbstractHolePuncherStrategy implements HolePuncherStrategy
 	}
 
 	/**
-	 * This methods is only called by a {@link HolePunchScheduler}. It simply
+	 * This methods is only called by a {@link HolePScheduler}. It simply
 	 * creates a dummyMessage and sends it from a given localPort (
 	 * {@link ChannelFuture}) to a given remotePort. This procedure then punches
 	 * the holes needed by the initiating {@link Peer}.

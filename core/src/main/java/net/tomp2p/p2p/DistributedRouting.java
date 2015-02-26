@@ -17,7 +17,6 @@ package net.tomp2p.p2p;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.Random;
 import java.util.SortedMap;
@@ -223,13 +222,16 @@ public class DistributedRouting {
             }
         }
         
-        // would probably be not necessary, but filter for consistency
-        applyPostRouting(routingBuilder, directHits, potentialHits);
-        
         final FutureRouting futureRouting = new FutureRouting();
+        final RoutingMechanism routingMechanism = routingBuilder.createRoutingMechanism(futureRouting);
+        routingMechanism.queueToAsk(queueToAsk);
+        routingMechanism.potentialHits(potentialHits);
+        routingMechanism.directHits(directHits);
+        routingMechanism.alreadyAsked(alreadyAsked);
+        
         if (peerAddresses.isEmpty()) {
-            futureRouting.neighbors(directHits, potentialHits, alreadyAsked, routingBuilder.isBootstrap(),
-                    false);
+        	routingBuilder.routingOnlyToSelf(false);
+        	routingMechanism.neighbors(routingBuilder);
         } else {
             // if a peer bootstraps to itself, then the size of peerAddresses
             // is 1 and it contains itself. Check for that because we need to
@@ -237,14 +239,6 @@ public class DistributedRouting {
             // ourselfs, to return the correct status for the future
             boolean isRoutingOnlyToSelf = (peerAddresses.size() == 1 && peerAddresses.iterator().next()
                     .peerAddress().equals(peerBean.serverPeerAddress()));
-
-            RoutingMechanism routingMechanism = routingBuilder.createRoutingMechanism(futureRouting);
-
-            routingMechanism.queueToAsk(queueToAsk);
-            routingMechanism.potentialHits(potentialHits);
-            routingMechanism.directHits(directHits);
-            routingMechanism.alreadyAsked(alreadyAsked);
-
             routingBuilder.routingOnlyToSelf(isRoutingOnlyToSelf);
             routingRec(routingBuilder, routingMechanism, type, cc);
         }
@@ -367,35 +361,5 @@ public class DistributedRouting {
      * futureResponses.length(); for (int i = 0; i < len; i++) { BaseFuture baseFuture = futureResponses.get(i); if
      * (baseFuture != null) { baseFuture.cancel(); } } }
      */
-    
-	/**
-	 * Apply the post routing filters if necessary
-	 * 
-	 * @param routingBuilder
-	 * @param directHits
-	 * @param potentialHits
-	 */
-	public static void applyPostRouting(RoutingBuilder routingBuilder, SortedMap<PeerAddress, DigestInfo> directHits,
-			NavigableSet<PeerAddress> potentialHits) {
-		// filter routing results using the configured post-routing filters
-		if (routingBuilder.postRoutingFilters() != null) {
-			for (PostRoutingFilter filter : routingBuilder.postRoutingFilters()) {
-				// filter the potential hits
-				Iterator<PeerAddress> potentialIter = potentialHits.iterator();
-				while (potentialIter.hasNext()) {
-					if (filter.rejectPotentialHit(potentialIter.next())) {
-						potentialIter.remove();
-					}
-				}
 
-				// filter the direct hits
-				Iterator<PeerAddress> directIter = directHits.keySet().iterator();
-				while (directIter.hasNext()) {
-					if (filter.rejectDirectHit(directIter.next())) {
-						directIter.remove();
-					}
-				}
-			}
-		}
-    }
 }

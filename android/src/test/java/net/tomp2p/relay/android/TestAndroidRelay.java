@@ -15,6 +15,7 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.buffer.MessageBufferConfiguration;
 import net.tomp2p.storage.Data;
@@ -27,6 +28,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class TestAndroidRelay {
 
+	private final Random rnd = new Random(42);
 	private final TestRelay testRelay;
 	
 	private final MockedAndroidRelayClientConfig clientConfig;
@@ -126,7 +128,6 @@ public class TestAndroidRelay {
 		// make the timeout very small, such that the mobile device is too slow to answer the request
 		int slowResponseTimeoutS = 2;
 		
-		final Random rnd = new Random(42);
 		PeerDHT master = null;
 		PeerDHT unreachablePeer = null;
 		try {
@@ -161,6 +162,53 @@ public class TestAndroidRelay {
 			System.err.println(futurePut.failedReason());
 			// should be run into a timeout
 			Assert.assertFalse(futurePut.isSuccess());
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+			if (unreachablePeer != null) {
+				unreachablePeer.shutdown().await();
+			}
+		}
+	}
+	
+	
+	@Test
+	public void testSlowPeerFilter() throws Exception {
+		PeerDHT master = null;
+		PeerDHT unreachablePeer = null;
+		try {
+			PeerDHT[] peers = UtilsNAT.createNodesDHT(10, rnd, 4000);
+			master = peers[0]; // the relay peer
+			
+			UtilsNAT.perfectRouting(peers);
+			for (PeerDHT peer : peers) {
+				new PeerBuilderNAT(peer.peer()).addRelayServerConfiguration(RelayType.ANDROID, serverConfig).start();
+			}
+
+			// Test setting up relay peers
+			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).start();
+			
+			FutureRelayNAT fbn = uNat.startRelay(clientConfig, master.peerAddress()).awaitUninterruptibly();
+			Assert.assertTrue(fbn.isSuccess());
+
+			Number160 contentKey = Number160.createHash(142);
+			Number160 domainKey = Number160.createHash(921);
+			AssertingSlowPeerFilter filter = new AssertingSlowPeerFilter(unreachablePeer.peerID());
+			
+			// double-check that the address is slow
+			Assert.assertTrue(unreachablePeer.peerAddress().isSlow());
+			
+			System.err.println("Start put----");
+			FuturePut futurePut = peers[0].put(unreachablePeer.peerID()).data(contentKey, new Data("hello"), Number160.ZERO).domainKey(domainKey).addPostRoutingFilter(filter).start().awaitUninterruptibly();
+			futurePut.futureRequests().awaitUninterruptibly();
+			Assert.assertTrue(futurePut.isSuccess());
+			System.err.println("End put----");
+
+			// The relayed peer should not be asked to store the content
+			Assert.assertFalse(unreachablePeer.storageLayer().contains(
+					new Number640(unreachablePeer.peerID(), domainKey, contentKey, Number160.ZERO)));
 		} finally {
 			if (master != null) {
 				master.shutdown().await();

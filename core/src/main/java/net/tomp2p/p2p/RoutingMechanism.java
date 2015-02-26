@@ -245,7 +245,7 @@ public class RoutingMechanism {
 
     public void neighbors(RoutingBuilder builder) {
         synchronized (this) {
-
+        	DistributedRouting.applyPostRouting(builder, directHits, potentialHits);
             futureRoutingResponse.neighbors(directHits, potentialHits, alreadyAsked,
                     builder.isBootstrap(), builder.isRoutingToOthers());
         }

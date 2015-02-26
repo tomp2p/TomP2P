@@ -49,6 +49,9 @@
     <logger name="io.netty.util.concurrent.SingleThreadEventExecutor"
             level="OFF"/>
 
+	<!-- Used to see the output in TestRelayReplication -->
+    <logger name="net.tomp2p.replication" level="DEBUG"/>
+
     <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF.
          See http://logback.qos.ch/manual/architecture.html for more
   information-->

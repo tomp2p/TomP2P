@@ -1,5 +1,7 @@
 package net.tomp2p.dht;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.InvalidKeyException;
@@ -422,7 +424,7 @@ public class TestH2H {
 					.start();
 			future.awaitUninterruptibly();
 
-			Assert.assertEquals(
+			assertEquals(
 					content.get(content.size() - 1).getTestString(),
 					((H2HTestData) future.data().object()).getTestString());
 
@@ -438,7 +440,6 @@ public class TestH2H {
 	
 	@Test
 	public void testVersionFork() throws Exception {
-
 		PeerDHT p1 = null;
 		PeerDHT p2 = null;
 		try {
@@ -457,8 +458,7 @@ public class TestH2H {
 			        .awaitUninterruptibly();
 			Assert.assertTrue(putA.isSuccess());
 			Assert.assertFalse(hasVersionFork(putA));
-			// put version B where a version conflict should be detected because
-			// it
+			// put version B where a version conflict should be detected because it
 			// is not based on version A
 			FuturePut putB = p1.put(locationKey).data(contentKey, versionB, Number160.ONE).keyPair(keyPair1).start()
 			        .awaitUninterruptibly();

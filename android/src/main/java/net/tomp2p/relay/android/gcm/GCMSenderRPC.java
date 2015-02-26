@@ -3,8 +3,6 @@ package net.tomp2p.relay.android.gcm;
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.google.android.gcm.server.Result;
-import com.google.android.gcm.server.Sender;
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
@@ -20,6 +18,9 @@ import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.android.gcm.server.Result;
+import com.google.android.gcm.server.Sender;
 
 /**
  * This RPC is dedicated to send messages over Google Cloud Messaging. It's only used if

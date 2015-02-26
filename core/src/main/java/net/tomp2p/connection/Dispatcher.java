@@ -440,7 +440,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 			public void run() {
 				FutureResponse response = pendingRequests.remove(messageId);
 				if(response != null) {
-					LOG.warn("A slow response did not arrive within {}s. Answer it as failed.", timeout);
+					LOG.warn("A slow response did not arrive within {}s. Answer as failed: {}", timeout, response.request());
 					response.failed("Slow peer did not answer within " + timeout + "s.");
 				}
 			}

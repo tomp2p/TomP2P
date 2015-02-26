@@ -222,29 +222,12 @@ public class DistributedRouting {
                 directHits.put(peerBean.serverPeerAddress(), digestInfo);
             }
         }
-
-        if(routingBuilder.postRoutingFilters() != null) {
-        	for (PostRoutingFilter filter : routingBuilder.postRoutingFilters()) {
-        		// filter the potential hits
-				Iterator<PeerAddress> potentialIter = potentialHits.iterator();
-				while(potentialIter.hasNext()) {
-					if(filter.rejectPotentialHit(potentialIter.next())) {
-						potentialIter.remove();
-					}
-				}
-				
-        		// filter the direct hits
-				Iterator<PeerAddress> directIter = directHits.keySet().iterator();
-				while(directIter.hasNext()) {
-					if(filter.rejectDirectHit(directIter.next())) {
-						directIter.remove();
-					}
-				}
-			}
-        }
+        
+        // would probably be not necessary, but filter for consistency
+        applyPostRouting(routingBuilder, directHits, potentialHits);
         
         final FutureRouting futureRouting = new FutureRouting();
-        if (peerAddresses.size() == 0) {
+        if (peerAddresses.isEmpty()) {
             futureRouting.neighbors(directHits, potentialHits, alreadyAsked, routingBuilder.isBootstrap(),
                     false);
         } else {
@@ -384,4 +367,35 @@ public class DistributedRouting {
      * futureResponses.length(); for (int i = 0; i < len; i++) { BaseFuture baseFuture = futureResponses.get(i); if
      * (baseFuture != null) { baseFuture.cancel(); } } }
      */
+    
+	/**
+	 * Apply the post routing filters if necessary
+	 * 
+	 * @param routingBuilder
+	 * @param directHits
+	 * @param potentialHits
+	 */
+	public static void applyPostRouting(RoutingBuilder routingBuilder, SortedMap<PeerAddress, DigestInfo> directHits,
+			NavigableSet<PeerAddress> potentialHits) {
+		// filter routing results using the configured post-routing filters
+		if (routingBuilder.postRoutingFilters() != null) {
+			for (PostRoutingFilter filter : routingBuilder.postRoutingFilters()) {
+				// filter the potential hits
+				Iterator<PeerAddress> potentialIter = potentialHits.iterator();
+				while (potentialIter.hasNext()) {
+					if (filter.rejectPotentialHit(potentialIter.next())) {
+						potentialIter.remove();
+					}
+				}
+
+				// filter the direct hits
+				Iterator<PeerAddress> directIter = directHits.keySet().iterator();
+				while (directIter.hasNext()) {
+					if (filter.rejectDirectHit(directIter.next())) {
+						directIter.remove();
+					}
+				}
+			}
+		}
+    }
 }

@@ -16,7 +16,7 @@ public class DefaultSendBehavior implements SendBehavior {
 	
 	@Override
 	public SendMethod tcpSendBehavior(Message message) {
-		if(message.recipient().equals(message.sender())) {
+		if(message.recipient().peerId().equals(message.sender().peerId())) {
 			// shortcut, just send to yourself
 			return SendMethod.SELF;
 		}
@@ -46,7 +46,7 @@ public class DefaultSendBehavior implements SendBehavior {
 
 	@Override
 	public SendMethod udpSendBehavior(Message message) throws UnsupportedOperationException {
-		if(message.recipient().equals(message.sender())) {
+		if(message.recipient().peerId().equals(message.sender().peerId())) {
 			// shortcut, just send to yourself
 			return SendMethod.SELF;
 		}

@@ -196,6 +196,7 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 		servers.remove(unreachablePeer);
 		peerBean().removePeerStatusListener(server);
 		connectionBean().dispatcher().removeIoHandler(peer.peerID(), unreachablePeer.peerId());
+		LOG.info("Removed {} from relay because it is offline", unreachablePeer);
 	}
 
 	private void registerRelayServer(BaseRelayServer server) {

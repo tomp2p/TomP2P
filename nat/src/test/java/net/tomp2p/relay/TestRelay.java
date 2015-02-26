@@ -48,6 +48,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class TestRelay {
 
+	private static final Random rnd = new Random(42);
 	private final RelayType relayType;
 	private final RelayServerConfig serverConfig;
 	private final RelayClientConfig clientConfig;
@@ -76,7 +77,6 @@ public class TestRelay {
 
 	@Test
 	public void testSetupRelayPeers() throws Exception {
-		final Random rnd = new Random(42);
 		final int nrOfNodes = 200;
 		Peer master = null;
 		Peer unreachablePeer = null;
@@ -118,7 +118,6 @@ public class TestRelay {
 
 	@Test
 	public void testBoostrap() throws Exception {
-		final Random rnd = new Random(42);
 		final int nrOfNodes = 10;
 		Peer master = null;
 		Peer unreachablePeer = null;
@@ -197,7 +196,6 @@ public class TestRelay {
 	 */
 	@Test
 	public void testRelaySendDirect() throws Exception {
-		final Random rnd = new Random(42);
 		final int nrOfNodes = 100;
 		Peer master = null;
 		Peer unreachablePeer1 = null;
@@ -296,7 +294,6 @@ public class TestRelay {
 	 */
 	@Test
 	public void testRelaySendDirect2() throws Exception {
-		final Random rnd = new Random(42);
 		final int nrOfNodes = 100;
 		Peer master = null;
 		Peer unreachablePeer = null;
@@ -348,7 +345,6 @@ public class TestRelay {
 	 */
 	@Test
 	public void testRelaySendDirect3() throws Exception {
-		final Random rnd = new Random(42);
 		final int nrOfNodes = 100;
 		Peer master = null;
 		Peer unreachablePeer = null;
@@ -397,7 +393,6 @@ public class TestRelay {
 
 	@Test
 	public void testRelayRouting() throws Exception {
-		final Random rnd = new Random(42);
 		final int nrOfNodes = 8; // test only works if total nr of nodes is < 8
 		Peer master = null;
 		Peer unreachablePeer = null;
@@ -477,7 +472,6 @@ public class TestRelay {
 
 	@Test
 	public void testNoRelayDHT() throws Exception {
-		final Random rnd = new Random(42);
 		PeerDHT master = null;
 		PeerDHT slave = null;
 		try {
@@ -523,7 +517,6 @@ public class TestRelay {
 
 	@Test
 	public void testRelayDHTSimple() throws Exception {
-		final Random rnd = new Random(42);
 		PeerDHT master = null;
 		PeerDHT unreachablePeer = null;
 		try {
@@ -554,7 +547,6 @@ public class TestRelay {
 
 	@Test
 	public void testRelayDHT() throws Exception {
-		final Random rnd = new Random(42);
 		PeerDHT master = null;
 		PeerDHT unreachablePeer = null;
 		try {
@@ -603,7 +595,6 @@ public class TestRelay {
 
 	@Test
 	public void testRelayDHTPutGet() throws Exception {
-		final Random rnd = new Random(42);
 		PeerDHT master = null;
 		PeerDHT unreachablePeer = null;
 		try {
@@ -662,7 +653,6 @@ public class TestRelay {
 
 	@Test
 	public void testRelayDHTPutGet2() throws Exception {
-		final Random rnd = new Random(42);
 		PeerDHT master = null;
 		PeerDHT unreachablePeer1 = null;
 		PeerDHT unreachablePeer2 = null;
@@ -742,7 +732,6 @@ public class TestRelay {
 
 	@Test
 	public void testRelayDHTPutGetSigned() throws Exception {
-		final Random rnd = new Random(42);
 		PeerDHT master = null;
 		PeerDHT unreachablePeer1 = null;
 		PeerDHT unreachablePeer2 = null;
@@ -824,7 +813,6 @@ public class TestRelay {
 
 	@Test
 	public void testVeryFewPeers() throws Exception {
-		final Random rnd = new Random(42);
 		Peer master = null;
 		Peer unreachablePeer = null;
 		try {

@@ -28,8 +28,6 @@ public class NonPreservingSequentialStrategy extends AbstractHolePuncherStrategy
 	@Override
 	protected void doPortGuessingInitiatingPeer(final Message initMessage, final FutureDone<Message> initMessageFutureDone, final List<ChannelFuture> channelFutures) {
 		// signal the other peer what type of NAT we are using
-		initMessage.longValue(NAT_TYPE.ordinal());
-
 		FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(1, 0);
 		fcc1.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override

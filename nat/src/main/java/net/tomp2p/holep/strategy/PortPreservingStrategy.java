@@ -40,8 +40,6 @@ public class PortPreservingStrategy extends AbstractHolePuncherStrategy {
 		// send all ports via Buffer
 		holePMessage.buffer(encodePortList(portList));
 
-		// signal the other peer what type of NAT we are using
-		holePMessage.longValue(NAT_TYPE.ordinal());
 		initMessageFutureDone.done(holePMessage);
 	}
 

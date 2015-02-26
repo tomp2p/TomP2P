@@ -62,7 +62,7 @@ public class HolePunchRPC extends DispatchHandler {
 	/**
 	 * This method is called by handleResponse(...) and initiates the hole
 	 * punching procedure on the nat peer that needs to be contacted. It creates
-	 * a {@link HolePuncher} and waits then for the reply{@link Message} which
+	 * an {@link AbstractHolePuncherStrategy} and waits then for the reply{@link Message} which
 	 * the peer that needs to be contacted sends back to the initiating peer.
 	 * The reply{@link Message} contains information about the holes which are
 	 * punched currently.
@@ -144,9 +144,6 @@ public class HolePunchRPC extends DispatchHandler {
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
 
-		// forward the NATType to the unreachable peer2
-		forwardMessage.longValue(message.longAt(0));
-
 		return forwardMessage;
 	}
 
@@ -166,8 +163,6 @@ public class HolePunchRPC extends DispatchHandler {
 		answerMessage.intValue(replyMessage.intAt(0));
 		duplicateBuffer(replyMessage, answerMessage);
 
-		// forward the NATType to the unreachable peer2
-		answerMessage.longValue(replyMessage.longAt(0));
 		return answerMessage;
 	}
 

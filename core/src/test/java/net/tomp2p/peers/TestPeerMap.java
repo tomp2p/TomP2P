@@ -174,14 +174,14 @@ public class TestPeerMap {
         PeerAddress rn1 = new PeerAddress(new Number160("0x7f"));
         PeerAddress rn2 = new PeerAddress(new Number160("0x40"));
         Number160 key = new Number160("0xff");
-        Assert.assertEquals(-1, PeerMap.isCloser(key, rn1, rn2));
+        Assert.assertEquals(-1, PeerMap.isKadCloser(key, rn1, rn2));
         //
         rn1 = new PeerAddress(new Number160("0x10"));
         rn2 = new PeerAddress(new Number160("0x11"));
         key = new Number160("0xff");
         System.err.println("0x7f xor 0xff " + rn1.peerId().xor(key));
         System.err.println("0x40 xor 0xff " + rn2.peerId().xor(key));
-        Assert.assertEquals(1, PeerMap.isCloser(key, rn1, rn2));
+        Assert.assertEquals(1, PeerMap.isKadCloser(key, rn1, rn2));
     }
 
     @Test

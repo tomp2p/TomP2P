@@ -10,6 +10,7 @@ import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.concurrent.CountDownLatch;
 
+import net.tomp2p.dht.Storage;
 import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.dht.StorageLayer.PutStatus;
 import net.tomp2p.dht.StorageMemory;

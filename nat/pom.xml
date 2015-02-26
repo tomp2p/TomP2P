@@ -20,7 +20,7 @@
 	<parent>
 		<groupId>net.tomp2p</groupId>
 		<artifactId>tomp2p-parent</artifactId>
-		<version>5.0-Beta4-SNAPSHOT</version>
+		<version>5.0-Beta5-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>tomp2p-nat</artifactId>
@@ -60,6 +60,13 @@
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-core</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>tomp2p-replication</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
 		</dependency>
 
 		<!-- For Android relays -->

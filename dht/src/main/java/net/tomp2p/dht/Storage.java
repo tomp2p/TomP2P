@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.storage;
+package net.tomp2p.dht;
 
 import java.security.PublicKey;
 import java.util.Collection;
@@ -24,6 +24,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.storage.Data;
 
 /**
  * The storage is typically backed by multiple Java collections (HashMap, TreeMap, etc.). This map returns the map that

@@ -33,7 +33,6 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.PeerBuilder;
-import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;

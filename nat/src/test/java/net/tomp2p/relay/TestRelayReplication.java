@@ -101,6 +101,7 @@ public class TestRelayReplication {
 			
 			// Wait for the replication to calm down. Compare logs to see that many messages are sent forth and back over the relay peer
 			Thread.sleep(5000);
+			System.err.println("DONE");
 		} finally {
 			if (master != null) {
 				master.shutdown().await();

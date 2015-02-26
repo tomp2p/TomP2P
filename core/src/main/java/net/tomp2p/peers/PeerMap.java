@@ -171,7 +171,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     public void removePeerMapChangeListener(final PeerMapChangeListener peerMapChangeListener) {
         synchronized (peerMapChangeListeners) {
-            peerMapChangeListeners.add(peerMapChangeListener);
+            peerMapChangeListeners.remove(peerMapChangeListener);
         }
     }
 
@@ -674,38 +674,6 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Returns -1 if the first remote node is closer to the key, if the second is closer, then 1 is returned. If both
-     * are equal, 0 is returned
-     * 
-     * @param id
-     *            The key to search for
-     * @param rn
-     *            The remote node on the routing path to node close to key
-     * @param rn2
-     *            An other remote node on the routing path to node close to key
-     * @return -1 if nodeAddress1 is closer to the key than nodeAddress2, otherwise 1. 0 is returned if both are equal.
-     */
-    public static int isCloser(final Number160 id, final PeerAddress rn, final PeerAddress rn2) {
-        return isKadCloser(id, rn, rn2);
-    }
-
-    /**
-     * Returns -1 if the first key is closer to the key, if the second is closer, then 1 is returned. If both are equal,
-     * 0 is returned
-     * 
-     * @param id
-     *            The key to search for
-     * @param rn
-     *            The first key
-     * @param rn2
-     *            The second key
-     * @return -1 if key1 is closer to key, otherwise 1. 0 is returned if both are equal.
-     */
-    public static int isCloser(final Number160 id, final Number160 rn, final Number160 rn2) {
-        return distance(id, rn).compareTo(distance(id, rn2));
-    }
-
-    /**
      * Returns -1 if the first remote node is closer to the key, if the secondBITS is closer, then 1 is returned. If
      * both are equal, 0 is returned
      * 
@@ -786,13 +754,6 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             result.add(peerStatistic);
         }
         return result;
-    }
-    
-    public static Comparator<Number160> createComparator2(final Number160 id) { return new Comparator<Number160>() {
-            public int compare(final Number160 remotePeer, final Number160 remotePeer2) {
-                return isCloser(id, remotePeer, remotePeer2);
-            }
-        };
     }
 
     /**
@@ -907,18 +868,5 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 	
 	public int bagSizeOverflow(int bag) {
 	    return bagSizesOverflow[bag];
-    }
-
-	public PeerAddress find(Number160 peerId) {
-		final int classMember = classMember(self, peerId);
-		if(classMember < 0) {
-			return null;
-		}
-		Map<Number160, PeerStatistic> tmp = peerMapVerified.get(classMember);
-		PeerStatistic peerStatistic = tmp.get(peerId);
-		if(peerStatistic!=null) {
-			return peerStatistic.peerAddress();
-		}
-	    return null;
     }
 }

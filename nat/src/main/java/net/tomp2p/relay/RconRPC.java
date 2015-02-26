@@ -1,6 +1,7 @@
 package net.tomp2p.relay;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 
@@ -20,6 +21,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -226,40 +228,49 @@ public class RconRPC extends DispatchHandler {
 	 * @param peerConnection
 	 */
 	private void handleRconAfterconnect(final Message message, final Responder responder, final PeerConnection peerConnection) {
-		// get the original message or create one for permanent connection
-		if (message.intList().isEmpty()) {
-			LOG.debug("This reverse connection is used permanently. Store it!");
-			storePeerConnection(message, peerConnection);
-			responder.response(createResponseMessage(message, Type.OK).keepAlive(true));
-		} else {
-			ConcurrentHashMap<Integer, FutureResponse> cachedRequests = peer.connectionBean().sender().cachedRequests();
-			final FutureResponse cachedRequest = cachedRequests.remove(message.intAt(0));
-			final Message cachedMessage = cachedRequest.request();
-			LOG.debug("This reverse connection is only used for sending a direct message {}", cachedMessage);
+		//send back an ok and keep the connection alive for both cases: permanent and immediate reply.
+		Message response = createResponseMessage(message, Type.OK).keepAlive(true);
+		LOG.debug("sending immediate keep alive message back {}", response);
+		FutureDone<Void> doneResponding = responder.response(response);
+		//wait until we sent the response (keep alive), sending before may confuse the decoder
+		doneResponding.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+			@Override
+			public void operationComplete(FutureDone<Void> future) throws Exception {
+				if (message.intList().isEmpty()) {
+					LOG.debug("This reverse connection is used permanently. Store it!");
+					storePeerConnection(message, peerConnection);
+				} else {
+					final Map<Integer, Pair<FutureResponse, FutureResponse>> cachedRequests = peer.connectionBean().sender().cachedRequests();
+					final Pair<FutureResponse, FutureResponse> cachedRequest = cachedRequests.remove(message.intAt(0));
+					final Message cachedMessage = cachedRequest.element0().request();
+					LOG.debug("This reverse connection is only used for sending a direct message {}", cachedMessage);
 
-			// send the message to the unreachable peer through the open channel
-			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), cachedMessage);
-			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-				@Override
-				public void operationComplete(final FutureResponse future) throws Exception {
-					if (future.isSuccess()) {
-						LOG.debug("Successfully transmitted request message {} to unreachablePeer {}", cachedMessage,
-								peerConnection.remotePeer());
-						cachedRequest.response(future.responseMessage());
-						
-						// we must make sure that the PeerConnection is closed, because it takes a lot of
-						// resources from the running pc
-						Message responseMessage = createResponseMessage(message, Type.OK).keepAlive(false);
-						LOG.debug("Returning OK for delivering single message over reverse connection {}", responseMessage);
-						responder.response(responseMessage);
-						peerConnection.close();
-					} else {
-						cachedRequest.failed("Cannot send the request message", future);
-						handleFail(message, responder, "Cannot send the request message");
-					}
+					// send the message to the unreachable peer through the open channel
+					FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), cachedMessage);
+					futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+						@Override
+						public void operationComplete(final FutureResponse future) throws Exception {
+							if (future.isSuccess()) {
+								LOG.debug("Successfully transmitted request message {} to unreachablePeer {}", cachedMessage,
+										peerConnection.remotePeer());
+								peerConnection.close();
+								//we need to finish both futures, even though the ACK message has not yet arrived. 
+								//First we need to finish the internal future, then the one used eg in the DHT
+								cachedRequest.element1().response(future.responseMessage());
+								cachedRequest.element0().response(future.responseMessage());
+								
+							} else {
+								//we need to finish both futures, even though the ACK message has not yet arrived. 
+								//First we need to finish the internal future, then the one used eg in the DHT
+								cachedRequest.element1().failed("Cannot send the request message", future);
+								cachedRequest.element0().failed("Cannot send the request message", future);
+								handleFail(message, responder, "Cannot send the request message");
+							}
+						}
+					});
 				}
-			});
-		}
+			}
+		});
 	}
 
 	/**

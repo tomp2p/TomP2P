@@ -29,7 +29,6 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
-import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;

@@ -39,8 +39,6 @@ import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.DigestStorage;
-import net.tomp2p.storage.RangeLock;
-import net.tomp2p.storage.Storage;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -248,7 +246,6 @@ public class StorageLayer implements DigestStorage {
 				Number640 minVersion = new Number640(key, Number160.ZERO);
 				Number640 maxVersion = new Number640(key, Number160.MAX_VALUE);
 				NavigableMap<Number640, Data> tmp = backend.subMap(minVersion, maxVersion, -1, true);
-				removePrepared(tmp);
 				NavigableMap<Number640, Data> heads = getLatestInternal(tmp);
 				if(heads.size() > 1) {
 					for(Number640 fork:heads.keySet()) {
@@ -317,7 +314,6 @@ public class StorageLayer implements DigestStorage {
 			//since we also have timeouts, we need to go through all the versions to see if we have a version fork
 			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
 			tmp.put(key, newData);
-			removePrepared(tmp);
 			boolean versionFork = getLatestInternal(tmp).size() > 1;
 			
 

@@ -23,7 +23,6 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.TrackerData;
-import net.tomp2p.p2p.EvaluatingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 

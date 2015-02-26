@@ -15,11 +15,13 @@
  */
 package net.tomp2p.connection;
 
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.tomp2p.connection.PeerException.AbortCause;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -225,8 +228,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
         
         @Override
-        public void response(Message responseMessage) {
-            Dispatcher.this.response(ctx, responseMessage);
+        public FutureDone<Void> response(Message responseMessage) {
+            return Dispatcher.this.response(ctx, responseMessage);
         }
         
         @Override
@@ -256,14 +259,15 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @param response
      *            The response to send
      */
-    private void response(final ChannelHandlerContext ctx, final Message response) {
+    private FutureDone<Void> response(final ChannelHandlerContext ctx, final Message response) {
+    	final FutureDone<Void> futureDone = new FutureDone<Void>();
         if (ctx.channel() instanceof DatagramChannel) {
             // check if channel is still open. If its not, then do not send
             // anything because
             // this will cause an exception that will be logged.
             if (!ctx.channel().isOpen()) {
                 LOG.debug("channel UDP is not open, do not reply {}", response);
-                return;
+                return futureDone.failed("channel UDP is not open, do not reply");
             }
             LOG.debug("reply UDP message {}", response);
         } else {
@@ -272,11 +276,19 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             // this will cause an exception that will be logged.
             if (!ctx.channel().isActive()) {
                 LOG.debug("channel TCP is not open, do not reply {}", response);
-                return;
+                return futureDone.failed("channel TCP is not open, do not reply");
             }
             LOG.debug("reply TCP message {} to {}", response, ctx.channel().remoteAddress());
         }
-        ctx.channel().writeAndFlush(response);
+        
+        ctx.channel().writeAndFlush(response).addListener(new GenericFutureListener<ChannelFuture>() {
+			@Override
+			public void operationComplete(ChannelFuture future) throws Exception {
+				//TODO: we could check if we were successful at this stage
+				futureDone.done();
+			}
+		});
+        return futureDone;
     }
 
 	/**

@@ -667,9 +667,9 @@ public class StorageRPC extends DispatchHandler {
     }
 
 	private boolean isDomainProtected(final Message message) {
-        boolean protectDomain = message.publicKey(0) != null
-                && (message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_4);
-        return protectDomain;
+		return message.publicKey(0) != null
+                && (message.type() == Type.REQUEST_2 
+                || message.type() == Type.REQUEST_4);
     }
 
     private boolean isStoreIfAbsent(final Message message) {

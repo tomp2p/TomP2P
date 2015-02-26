@@ -41,6 +41,8 @@ public class TestData {
         Assert.assertEquals(data, newData);
         Object test = newData.object();
         Assert.assertEquals("test", test);
+        transfer.release();
+        transfer2.release();
     }
     
     @Test
@@ -64,6 +66,11 @@ public class TestData {
         Assert.assertEquals(data, newData);
         ByteBuf test = newData.buffer();
         Assert.assertEquals(100000, test.readableBytes());
+        
+        transfer.release();
+        pa.release();
+        pa1.release();
+        test.release();
     }
     
     @Test
@@ -90,6 +97,11 @@ public class TestData {
         Assert.assertEquals(data, newData);
         ByteBuf test = newData.buffer();
         Assert.assertEquals(100000, test.readableBytes());
+        
+        transfer.release();
+        pa.release();
+        pa1.release();
+        test.release();
     }
     
     @Test
@@ -115,6 +127,11 @@ public class TestData {
         Assert.assertEquals(data, newData);
         ByteBuf test = newData.buffer();
         Assert.assertEquals(100000, test.readableBytes());
+        
+        transfer.release();
+        pa.release();
+        pa1.release();
+        test.release();
     }
     
     @Test
@@ -291,6 +308,7 @@ public class TestData {
         Data newData = Data.decodeHeader(transfer, new DSASignatureFactory());
         newData.decodeBuffer(transfer);
         newData.decodeDone(transfer, null, factory);
+        transfer.release();
         return newData;
     }
 }

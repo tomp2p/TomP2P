@@ -90,8 +90,9 @@ public class TestMessage {
 	@Test
 	public void compositeBufferTest1() {
 		AlternativeCompositeByteBuf cbuf = AlternativeCompositeByteBuf.compBuffer();
-		cbuf.writeInt(1);
 		ByteBuf buf = Unpooled.buffer();
+		
+		cbuf.writeInt(1);
 		buf.writeInt(2);
 		cbuf.capacity(4);
 		cbuf.addComponent(buf);
@@ -99,6 +100,9 @@ public class TestMessage {
 
 		Assert.assertEquals(1, cbuf.readInt());
 		Assert.assertEquals(2, cbuf.readInt());
+		
+		cbuf.release();
+		buf.release();
 	}
 
 	@Test
@@ -121,6 +125,7 @@ public class TestMessage {
 		System.err.println("capacity: " + cbuf.capacity());
 		// see https://github.com/netty/netty/issues/1976
 		cbuf.discardSomeReadBytes();
+		cbuf.release();
 	}
 
 	/**
@@ -425,6 +430,8 @@ public class TestMessage {
 		Assert.assertEquals(true, header);
 		Assert.assertEquals(true, payload);
 		compareMessage(m1, d.message());
+		
+		buf.release();
 	}
 
 	@Test
@@ -576,12 +583,12 @@ public class TestMessage {
 					}
 				});
 		
-		buf.retain();
 		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
 		encoder.write(ctx, m1, null);
 		Decoder decoder = new Decoder(new DSASignatureFactory());
 		decoder.decode(ctx, buf, m1.recipient().createSocketTCP(), m1
 				.sender().createSocketTCP());
+		buf.release();
 		return decoder.message();
 	}
 	

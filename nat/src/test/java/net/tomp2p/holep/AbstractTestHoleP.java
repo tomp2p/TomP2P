@@ -29,6 +29,8 @@ public class AbstractTestHoleP {
 	protected static final Random RND = new Random();
 	protected static final int PORTS = 4001;
 	protected static final int NUMBER_OF_NODES = 5;
+	protected static final int IDLE_UDP_SECONDS = 30;
+	protected static final int NUMBER_OF_HOLES = 8;
 
 	@Before
 	public void setupRelay() throws Exception {

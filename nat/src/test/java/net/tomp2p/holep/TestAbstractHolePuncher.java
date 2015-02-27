@@ -31,8 +31,6 @@ public class TestAbstractHolePuncher {
 	
 	// java reflection parameters
 	Class noparams[] = {};
-	Class[] paramInt = new Class[1];
-	Class[] paramString = new Class[1];
 	Class[] paramCCF = new Class[3];
 	Class[] paramHPC = new Class[4];
 	Class[] paramPH = new Class[2];
@@ -49,9 +47,6 @@ public class TestAbstractHolePuncher {
 		paramCCF[0] = List.class;
 		paramCCF[1] = FutureDone.class;
 		paramCCF[2] = Integer.TYPE;
-
-		// int parameter
-		paramInt[0] = Integer.TYPE;
 
 		// HolePuncher constructor parameter
 		paramHPC[0] = Peer.class;

@@ -304,8 +304,8 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 					// relays
 					peer.connectionBean()
 							.sender()
-							.sendUDP(createHolePHandler(futures, mainFutureDone, originalFutureResponse), holePFutureResponse,
-									initMessage, future.channelCreator(), idleUDPSeconds, BROADCAST_VALUE);
+							.sendUDP(createHolePHandler(futures, mainFutureDone, originalFutureResponse), holePFutureResponse, initMessage,
+									future.channelCreator(), idleUDPSeconds, BROADCAST_VALUE);
 					LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
 				} else {
 					mainFutureDone.failed("The creation of the channelCreator for to send the initMessage failed!");
@@ -330,11 +330,15 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) throws Exception {
 				final List<Integer> portList = checkReplyValues(msg, futureDone);
 				if (portList != null) {
+					final int numberOfConnectionAttempts = portList.size() / 2;
+					final AtomicInteger countDown = new AtomicInteger(numberOfConnectionAttempts);
 					for (int i = 0; i < portList.size(); i++) {
 						// this ensures, that if all hole punch attemps fail,
 						// the system is still able to send the message via
 						// relaying without the user noticing it
-						FutureResponse holePFutureResponse = handleFutureResponse(originalFutureResponse, portList, i);
+
+						FutureResponse holePFutureResponse = handleFutureResponse(originalFutureResponse, portList, i, countDown,
+								numberOfConnectionAttempts);
 
 						int localport = extractLocalPort(futureDone, portList, i);
 						final ChannelFuture channelFuture = extractChannelFuture(futures, localport);
@@ -358,16 +362,17 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			 * @param originalFutureResponse
 			 * @param portList
 			 * @param index
+			 * @param countDown
+			 * @param numberOfConnectionAttempts
 			 * @return
 			 */
 			private FutureResponse handleFutureResponse(final FutureResponse originalFutureResponse, final List<Integer> portList,
-					final int index) {
-				final int numberOfConnectionAttempts = portList.size() / 2;
-				final AtomicInteger countDown = new AtomicInteger(numberOfConnectionAttempts);
-				FutureResponse holePFutureResponse = futureResponses.get(index / 2);
+					final int index, final AtomicInteger countDown, final int numberOfConnectionAttempts) {
+				final int listIndex = index / 2;
+				final FutureResponse holePFutureResponse = futureResponses.get(listIndex);
 				holePFutureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 					@Override
-					public void operationComplete(FutureResponse future) throws Exception {
+					public void operationComplete(final FutureResponse future) throws Exception {
 						if (future.isSuccess()) {
 							if (!originalFutureResponse.isCompleted()) {
 								originalFutureResponse.response(future.responseMessage());
@@ -375,6 +380,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 						} else {
 							countDown.decrementAndGet();
 							System.err.println(countDown.get());
+							System.err.println(future.failedReason());
 							if (countDown.get() == 0) {
 								originalFutureResponse.failed("All " + numberOfConnectionAttempts + " connection attempts failed!");
 							}
@@ -424,14 +430,14 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * 
 	 * @return inboundHandler
 	 */
-	private SimpleChannelInboundHandler<Message> createAfterHolePHandler(final FutureDone<Message> futureDone) {
+	private SimpleChannelInboundHandler<Message> createAfterHolePHandler(final FutureDone<Message> mainFutureDone) {
 		final SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
 			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
 				if (Message.Type.OK == msg.type() && originalMessage.command() == msg.command()) {
 					LOG.debug("Successfully transmitted the original message to peer:[" + msg.sender().toString()
 							+ "]. Now here's the reply:[" + msg.toString() + "]");
-					futureDone.done(msg);
+					mainFutureDone.done(msg);
 					// TODO jwa does this work?
 					ctx.close();
 				} else if (Message.Type.REQUEST_3 == msg.type() && Commands.HOLEP.getNr() == msg.command()) {

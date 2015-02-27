@@ -10,16 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 public class PortPreservingStrategy extends AbstractHolePStrategy {
-
-	private static final NATType NAT_TYPE = NATType.PORT_PRESERVING;
 
 	public PortPreservingStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 		super(peer, numberOfHoles, idleUDPSeconds, originalMessage);
@@ -43,6 +39,7 @@ public class PortPreservingStrategy extends AbstractHolePStrategy {
 		initMessageFutureDone.done(holePMessage);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	protected void doPortGuessingTargetPeer(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) throws Exception {
 		List<Integer> remotePorts = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());

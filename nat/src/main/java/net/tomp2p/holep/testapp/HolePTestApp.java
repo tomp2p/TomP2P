@@ -212,7 +212,7 @@ public class HolePTestApp {
 		if (fd.isSuccess()) {
 			System.err.println("WORKS!");
 		} else {
-			System.err.println("DOES NOT WORK!");
+			System.err.println("DOES NOT WORK! "+fd.failedReason());
 		}
 	}
 

@@ -10,8 +10,6 @@ import org.junit.Test;
 
 public class IntegrationTestHolePuncher extends AbstractTestHoleP {
 
-	
-
 	@Test
 	public void testHolePunchPortPreserving() {
 		System.err.println("PortPreserving() start!");
@@ -51,7 +49,6 @@ public class IntegrationTestHolePuncher extends AbstractTestHoleP {
 			}
 		});
 		fd.awaitUninterruptibly();
-		System.out.println("DONE.");
 		shutdown();
 	}
 }

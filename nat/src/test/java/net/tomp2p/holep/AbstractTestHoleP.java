@@ -12,8 +12,10 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.UtilsNAT;
 import net.tomp2p.relay.tcp.TCPRelayClientConfig;
+import net.tomp2p.relay.tcp.TCPRelayServerConfig;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -38,10 +40,12 @@ public class AbstractTestHoleP {
 		peers = UtilsNAT.createNodes(NUMBER_OF_NODES, RND, PORTS);
 		master = peers[0];
 		UtilsNAT.perfectRouting(peers);
-		// every peer must own a PeerNAT in order to be able to be a relay and
-		// set up a reverse connection
-		for (Peer peer : peers) {
-			new PeerBuilderNAT(peer).start();
+		for (int i = 0; i< peers.length; i++) {
+			if (i == 0) {
+				new PeerBuilderNAT(peers[i]).addRelayServerConfiguration(RelayType.OPENTCP, new TCPRelayServerConfig()).start();
+			} else {
+				new PeerBuilderNAT(peers[i]).start();
+			}
 		}
 
 		unreachable1 = setUpRelayingWithNewPeer();

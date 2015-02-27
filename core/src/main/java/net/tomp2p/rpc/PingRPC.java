@@ -453,7 +453,6 @@ public class PingRPC extends DispatchHandler {
 				tcpPort = message.senderSocket().getPort();
 			}
 			PeerSocketAddress pAddress = new PeerSocketAddress(message.senderSocket().getAddress(), tcpPort, udpPort);
-			System.err.println(pAddress.toString());
 			responseMessage.peerSocketAddresses().clear();
 			Collection<PeerSocketAddress> list = new ArrayList<PeerSocketAddress>(2);
 			list.add(pAddress);

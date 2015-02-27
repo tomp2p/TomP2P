@@ -18,6 +18,7 @@ package net.tomp2p.replication;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -60,6 +61,8 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
     
     final PeerDHT peer;
 
+	private final Collection<ReplicationFilter> filters;
+
     /**
      * Constructor.
      * 
@@ -76,8 +79,9 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
      * @param keepData
      *           flag indicating if data will be kept in memory after loss of replication responsibility
      */
-    public Replication(final PeerDHT peer, final int replicationFactor, final boolean nRoot, final boolean keepData) {
+    public Replication(final PeerDHT peer, final int replicationFactor, final boolean nRoot, final boolean keepData, Collection<ReplicationFilter> filters) {
     	this.peer = peer;
+		this.filters = filters;
     	this.backend = peer.storageLayer();
         this.selfAddress = peer.peerAddress();
         this.peerMap = peer.peer().peerBean().peerMap();
@@ -175,6 +179,15 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
      */
     public void removeResponsibilityListener(final ResponsibilityListener responsibilityListener) {
         listeners.remove(responsibilityListener);
+    }
+    
+    public boolean rejectReplication(PeerAddress address) {
+    	for (ReplicationFilter filter : filters) {
+			if(filter.rejectReplication(address)) {
+				return true;
+			}
+		}
+    	return false;
     }
 
     /**
@@ -544,9 +557,19 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
      * @return The peer that is responsible for the location key, including myself.
      */
     private PeerAddress closest(final Number160 locationKey) {
-        SortedSet<PeerStatistic> tmp = peerMap.closePeers(locationKey, 1);
-        tmp.add(new PeerStatistic(selfAddress));
-        return tmp.iterator().next().peerAddress();
+		SortedSet<PeerStatistic> tmp = peerMap.closePeers(locationKey, 1);
+		tmp.add(new PeerStatistic(selfAddress));
+		Iterator<PeerStatistic> it = tmp.iterator();
+		while (it.hasNext()) {
+			PeerStatistic statistic = it.next();
+			if (!rejectReplication(statistic.peerAddress())) {
+				return statistic.peerAddress();
+			}
+		}
+
+		// TODO handle this better
+		LOG.warn("Not found any peer address that is allowed for replication. Take next best...");
+		return tmp.iterator().next().peerAddress();
     }
 
     /**
@@ -563,6 +586,12 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
      */
     private boolean isInReplicationRange(final Number160 locationKey, final PeerAddress peerAddress,
             final int replicationFactor) {
+		// check filter first
+		if (rejectReplication(peerAddress)) {
+			LOG.trace("Rejected replication to peer {}", peerAddress);
+			return false;
+		}
+    	
         SortedSet<PeerStatistic> tmp = peerMap.closePeers(locationKey, replicationFactor);
         PeerStatistic peerAddressStatistic = new PeerStatistic(peerAddress);
         PeerStatistic selfStatistic = new PeerStatistic(selfAddress);

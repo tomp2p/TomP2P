@@ -18,6 +18,7 @@ package net.tomp2p.replication;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -68,6 +69,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
     private boolean nRoot = false;
     private boolean keepData = false;
     private Replication replication;
+    private Collection<ReplicationFilter> replicationFilters = new HashSet<ReplicationFilter>();
     
     private ScheduledFuture<?> scheduledFuture;
     
@@ -189,6 +191,23 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
     	return blockSize;
     }
     
+	public IndirectReplication addReplicationFilter(ReplicationFilter filter) {
+		if (replicationFilters == null) {
+			replicationFilters = new HashSet<ReplicationFilter>(1);
+		}
+		replicationFilters.add(filter);
+		return this;
+	}
+
+	public Collection<ReplicationFilter> replicationFilters() {
+		return replicationFilters;
+	}
+
+	public IndirectReplication replicationFilters(Collection<ReplicationFilter> replicationFilters) {
+		this.replicationFilters = replicationFilters;
+		return this;
+	}
+    
     public IndirectReplication start() {
     	
     	if (intervalMillis == -1) {
@@ -212,7 +231,11 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
 			};
     	}
     	
-    	this.replication = new Replication(peer, replicationFactor.replicationFactor(), nRoot, keepData);
+    	if(replicationFilters == null) {
+    		replicationFilters = new HashSet<ReplicationFilter>(0);
+    	}
+    	
+    	this.replication = new Replication(peer, replicationFactor.replicationFactor(), nRoot, keepData, replicationFilters);
     	this.replication.addResponsibilityListener(this);
     	if(responsibilityListeners!=null) {
     		for(ResponsibilityListener responsibilityListener:responsibilityListeners) {
@@ -344,6 +367,10 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         int count = 0;
         List<FutureDone<?>> retVal = new ArrayList<FutureDone<?>>(replicationFactor);
         for (PeerStatistic peerStatistic : sortedSet) {
+        	if(replication.rejectReplication(peerStatistic.peerAddress())) {
+        		continue;
+        	}
+        	
             count++;
             closePeers.add(peerStatistic.peerAddress());
             retVal.add(replicationSender.sendDirect(peerStatistic.peerAddress(), locationKey, dataMapConverted));

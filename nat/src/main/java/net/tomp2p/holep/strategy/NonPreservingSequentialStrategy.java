@@ -88,7 +88,7 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 								List<Integer> replyPorts = new ArrayList<Integer>(channelFutures.size()*2);
 								for (int i = 0; i < channelFutures.size(); i++) {
 									int guessedPort = startingPort + (2*i);
-									portMappings.add(new Pair<Integer, Integer>(originalMessage.intList().get(i), startingPort + i));
+									portMappings.add(new Pair<Integer, Integer>(remotePorts.get(i), startingPort + i));
 									replyPorts.add(remotePorts.get(i));
 									replyPorts.add(guessedPort);
 								}

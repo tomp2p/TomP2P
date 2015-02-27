@@ -146,7 +146,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @param originalFutureResponse
 	 * @return holePhandler
 	 */
-	private SimpleChannelInboundHandler<Message> createHolePunchInboundHandler(final List<ChannelFuture> futures,
+	private SimpleChannelInboundHandler<Message> createHolePunchHandler(final List<ChannelFuture> futures,
 			final FutureDone<Message> futureDone, final FutureResponse originalFutureResponse) {
 		SimpleChannelInboundHandler<Message> holePunchInboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
@@ -351,6 +351,14 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 */
 	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone, final FutureResponse originalFutureResponse) {
 		final FutureResponse holePFutureResponse = new FutureResponse(originalMessage);
+		holePFutureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+			@Override
+			public void operationComplete(FutureResponse future) throws Exception {
+				if (!future.isSuccess()) {
+					mainFutureDone.failed("No port information could be exchanged");
+				}
+			}
+		});
 		final FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(prepareHandlers(true, mainFutureDone),
 				mainFutureDone, numberOfHoles);
 		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
@@ -373,7 +381,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 											peer.connectionBean()
 													.sender()
 													.sendUDP(
-															createHolePunchInboundHandler(futures, mainFutureDone, originalFutureResponse),
+															createHolePunchHandler(futures, mainFutureDone, originalFutureResponse),
 															holePFutureResponse, initMessage, future.channelCreator(), idleUDPSeconds,
 															BROADCAST_VALUE);
 											LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");

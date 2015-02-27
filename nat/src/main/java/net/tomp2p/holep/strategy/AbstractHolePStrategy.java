@@ -266,7 +266,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		for (int i = 0; i < channelFutures.size(); i++) {
 			Message dummyMessage = createDummyMessage(i);
 			FutureResponse futureResponse = new FutureResponse(dummyMessage);
-			LOG.trace("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
+			LOG.debug("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 			// this is a workaround to avoid adding a nat peer to the offline
 			// list of a peer!
@@ -304,7 +304,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 					// relays
 					peer.connectionBean()
 							.sender()
-							.sendUDP(createHolePunchHandler(futures, mainFutureDone, originalFutureResponse), holePFutureResponse,
+							.sendUDP(createHolePHandler(futures, mainFutureDone, originalFutureResponse), holePFutureResponse,
 									initMessage, future.channelCreator(), idleUDPSeconds, BROADCAST_VALUE);
 					LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
 				} else {
@@ -323,7 +323,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @param originalFutureResponse
 	 * @return holePhandler
 	 */
-	private SimpleChannelInboundHandler<Message> createHolePunchHandler(final List<ChannelFuture> futures,
+	private SimpleChannelInboundHandler<Message> createHolePHandler(final List<ChannelFuture> futures,
 			final FutureDone<Message> futureDone, final FutureResponse originalFutureResponse) {
 		SimpleChannelInboundHandler<Message> holePunchInboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
@@ -384,6 +384,18 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				return holePFutureResponse;
 			}
 
+			/**
+			 * ExtractLocalPort is a method which returns the portnumber of the
+			 * previously assigned socket given a guessedPort. This method is
+			 * needed, because the the ports on which the target peer will be
+			 * contacted may not be the same as the ports which were assigned at
+			 * the time of the creation of the channelFutures.
+			 * 
+			 * @param futureDone
+			 * @param portList
+			 * @param index
+			 * @return
+			 */
 			private int extractLocalPort(final FutureDone<Message> futureDone, final List<Integer> portList, final int index) {
 				int localport = -1;
 				if (portMappings.isEmpty()) {

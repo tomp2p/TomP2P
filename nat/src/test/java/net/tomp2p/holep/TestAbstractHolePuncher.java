@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
@@ -25,7 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 @SuppressWarnings("rawtypes")
-public class TestHolePuncher {
+public class TestAbstractHolePuncher {
 
 	static final int IDLE_UDP_SECONDS = 30;
 	static final int NUMBER_OF_HOLES = 3;
@@ -34,9 +33,9 @@ public class TestHolePuncher {
 	Class noparams[] = {};
 	Class[] paramInt = new Class[1];
 	Class[] paramString = new Class[1];
-	Class[] paramCCF = new Class[4];
+	Class[] paramCCF = new Class[3];
 	Class[] paramHPC = new Class[4];
-	Class[] paramPH = new Class[3];
+	Class[] paramPH = new Class[2];
 
 	Peer peer;
 	Peer peer2;
@@ -47,10 +46,9 @@ public class TestHolePuncher {
 	@Before
 	public void setUp() {
 		// createChannelFutures parameter
-		paramCCF[0] = FutureResponse.class;
-		paramCCF[1] = List.class;
-		paramCCF[2] = FutureDone.class;
-		paramCCF[3] = Integer.TYPE;
+		paramCCF[0] = List.class;
+		paramCCF[1] = FutureDone.class;
+		paramCCF[2] = Integer.TYPE;
 
 		// int parameter
 		paramInt[0] = Integer.TYPE;
@@ -62,9 +60,8 @@ public class TestHolePuncher {
 		paramHPC[3] = Message.class;
 
 		// prepareHandlers parameter
-		paramPH[0] = FutureResponse.class;
-		paramPH[1] = Boolean.TYPE;
-		paramPH[2] = FutureDone.class;
+		paramPH[0] = Boolean.TYPE;
+		paramPH[1] = FutureDone.class;
 
 		try {
 			peer = new PeerBuilder(Number160.createHash(RND.nextInt())).ports(
@@ -102,29 +99,32 @@ public class TestHolePuncher {
 					"prepareHandlers", paramPH);
 			methodPrepareHandlers.setAccessible(true);
 
+			FutureDone<Message> fDone1 = new FutureDone<Message>();
 			try {
-				methodCreateChannelFutures.invoke(obj, null, null, -1);
+				methodCreateChannelFutures.invoke(obj, null, fDone1, -1);
+				fDone1.awaitUninterruptibly(2000L);
+				if (!fDone1.isSuccess()) {
+					throw new Exception("This must happen");
+				}
 			} catch (Exception e) {
 				System.err.println(atomic.decrementAndGet());
 			}
 
-			FutureDone<List<ChannelFuture>> fDone;
+			FutureDone<List<ChannelFuture>> fDone2;
 			try {
-				FutureResponse fr = new FutureResponse(msg);
 				FutureDone<Message> mainFutureDone = new FutureDone<Message>();
 				
-				fDone = (FutureDone<List<ChannelFuture>>) methodCreateChannelFutures.invoke(obj, fr,
-						methodPrepareHandlers.invoke(obj, fr, true, mainFutureDone), mainFutureDone, NUMBER_OF_HOLES);
+				fDone2 = (FutureDone<List<ChannelFuture>>) methodCreateChannelFutures.invoke(obj,
+						methodPrepareHandlers.invoke(obj, true, mainFutureDone), mainFutureDone, NUMBER_OF_HOLES);
 				
-				fDone.awaitUninterruptibly();
-				Assert.assertTrue(fDone.isCompleted());
-				Assert.assertTrue(fDone.isSuccess());
-				Assert.assertEquals(NUMBER_OF_HOLES, fDone.object().size());
+				fDone2.awaitUninterruptibly();
+				Assert.assertTrue(fDone2.isCompleted());
+				Assert.assertTrue(fDone2.isSuccess());
+				Assert.assertEquals(NUMBER_OF_HOLES, fDone2.object().size());
 
 			} catch (Exception e) {
 				System.err.println(atomic.incrementAndGet());
 			}
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

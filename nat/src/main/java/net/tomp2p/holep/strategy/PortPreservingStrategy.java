@@ -65,19 +65,18 @@ public class PortPreservingStrategy extends AbstractHolePStrategy {
 	 * This method is just for testing causes.
 	 */
 	@Override
-	protected FutureDone<List<ChannelFuture>> createChannelFutures(final FutureResponse originalFutureResponse,
+	protected FutureDone<List<ChannelFuture>> createChannelFutures(
 			final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlersList, final FutureDone<Message> mainFutureDone,
 			final int numberOfHoles) {
-		return super.createChannelFutures(originalFutureResponse, handlersList, mainFutureDone, numberOfHoles);
+		return super.createChannelFutures(handlersList, mainFutureDone, numberOfHoles);
 	}
 
 	/**
 	 * This method is just for testing causes.
 	 */
 	@Override
-	protected List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(FutureResponse originalFutureResponse,
-			final boolean initiator, final FutureDone<Message> futureDone) {
-		return super.prepareHandlers(originalFutureResponse, initiator, futureDone);
+	protected List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(final boolean initiator, final FutureDone<Message> futureDone) {
+		return super.prepareHandlers(initiator, futureDone);
 	}
 
 }

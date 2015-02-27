@@ -3,6 +3,7 @@ package net.tomp2p.holep;
 import java.io.IOException;
 
 import net.tomp2p.connection.HolePInitiator;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.holep.strategy.NonPreservingSequentialStrategy;
 import net.tomp2p.holep.strategy.PortPreservingStrategy;
 import net.tomp2p.message.Message;
@@ -38,5 +39,11 @@ public class TestNATType {
 		Assert.assertEquals(NonPreservingSequentialStrategy.class,
 				NATType.NON_PRESERVING_SEQUENTIAL.getHolePuncher(peer, NUMBER_OF_HOLES, IDLE_UDP_SECONDS, msg).getClass());
 		Assert.assertEquals(null, NATType.NON_PRESERVING_OTHER.getHolePuncher(peer, NUMBER_OF_HOLES, IDLE_UDP_SECONDS, msg));
+	}
+	
+	@After
+	public void shutDown() {
+		BaseFuture future = peer.shutdown();
+		future.awaitUninterruptibly();
 	}
 }

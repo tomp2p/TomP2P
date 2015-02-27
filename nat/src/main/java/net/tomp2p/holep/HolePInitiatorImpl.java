@@ -22,6 +22,7 @@ public class HolePInitiatorImpl implements HolePInitiator {
 	private static final Logger LOG = LoggerFactory.getLogger(HolePInitiatorImpl.class);
 	private final NATTypeDetection natTypeDetection;
 	private Peer peer;
+	private boolean testCase = false;
 
 	public HolePInitiatorImpl(Peer peer) {
 		this.peer = peer;
@@ -38,7 +39,7 @@ public class HolePInitiatorImpl implements HolePInitiator {
 			return futureDone.failed("A symmetric NAT can't be traversed. No HolePunching possible!");
 		}
 		
-		HolePStrategy holePuncher = natTypeDetection.natType().getHolePuncher(peer, HolePInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
+		HolePStrategy holePuncher = natType().getHolePuncher(peer, HolePInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
 		return holePuncher.initiateHolePunch(futureDone, futureResponse);
 	}
 	
@@ -48,6 +49,14 @@ public class HolePInitiatorImpl implements HolePInitiator {
 	
 	public NATType natType() {
 		return natTypeDetection.natType();
+	}
+	
+	public boolean isTestCase() {
+		return testCase;
+	}
+	
+	public void testCase(final boolean testCase) {
+		this.testCase = testCase;
 	}
 	
 }

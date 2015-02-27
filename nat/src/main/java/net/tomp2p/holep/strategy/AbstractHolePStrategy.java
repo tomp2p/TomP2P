@@ -379,8 +379,6 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 							}
 						} else {
 							countDown.decrementAndGet();
-							System.err.println(countDown.get());
-							System.err.println(future.failedReason());
 							if (countDown.get() == 0) {
 								originalFutureResponse.failed("All " + numberOfConnectionAttempts + " connection attempts failed!");
 							}

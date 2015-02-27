@@ -23,6 +23,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.IOException;
@@ -82,8 +83,9 @@ public class TestReservation {
     	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
 		cs = new ChannelServer(bossGroup, workerGroup, c, null, null, null);
 		
-		cs.startupTCP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration());
-		cs.startupUDP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration(), false);
+		boolean tcp = cs.startupTCP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration());
+		boolean udp = cs.startupUDP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration(), false);
+		System.out.println("started tcp: "+tcp+", started udp: "+udp);
 		
 	}
 
@@ -317,7 +319,8 @@ public class TestReservation {
 			}
 			r.shutdown().awaitListenersUninterruptibly();
 		}
-		ev.shutdownGracefully().awaitUninterruptibly();
+		Future<?> f = ev.shutdownGracefully().awaitUninterruptibly();
+		f.awaitUninterruptibly();
 	}
 
 	private static class MyPipeLine implements PipelineFilter {

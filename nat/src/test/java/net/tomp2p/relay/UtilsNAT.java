@@ -116,7 +116,7 @@ public class UtilsNAT {
 	public static void perfectRouting(PeerDHT... peers) {
 		for (int i = 0; i < peers.length; i++) {
 			for (int j = 0; j < peers.length; j++)
-				peers[i].peer().peerBean().peerMap().peerFound(peers[j].peer().peerAddress(), null, null);
+				peers[i].peer().peerBean().peerMap().peerFound(peers[j].peer().peerAddress(), null, null, null);
 		}
 		System.err.println("perfect routing done.");
 	}
@@ -194,7 +194,7 @@ public class UtilsNAT {
 	public static void perfectRouting(Peer... peers) {
 		for (int i = 0; i < peers.length; i++) {
 			for (int j = 0; j < peers.length; j++)
-				peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
+				peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null, null);
 		}
 		System.err.println("perfect routing done.");
 	}

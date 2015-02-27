@@ -44,6 +44,8 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.DataFilter;
+import net.tomp2p.message.DataFilterTTL;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TomP2PCumulationTCP;
@@ -59,6 +61,7 @@ import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -80,6 +83,7 @@ public class Sender {
 	private final SendBehavior sendBehavior;
 	private final Random random;
 	private final PeerBean peerBean;
+	private final DataFilter dataFilterTTL = new DataFilterTTL();
 
 	// this map caches all messages which are meant to be sent by a reverse
 	private final ConcurrentHashMap<Integer, FutureResponse> cachedRequests = new ConcurrentHashMap<Integer, FutureResponse>();
@@ -153,6 +157,9 @@ public class Sender {
 		}
 
 		removePeerIfFailed(futureResponse, message);
+
+        // RTT calculation
+        futureResponse.startRTTMeasurement(false);
 
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null && peerConnection.channelFuture().channel().isActive()) {
@@ -401,12 +408,28 @@ public class Sender {
 	 */
 	public void sendSelf(final FutureResponse futureResponse, final Message message) {
 		LOG.debug("Handle message that is intended for the sender itself {}", message);
-		final DispatchHandler handler = dispatcher.associatedHandler(message);
-		handler.forwardMessage(message, null, new Responder() {
+		message.sendSelf();
+		
+		Message copy = message.duplicate(new DataFilter() {	
+			@Override
+			public Data filter(Data data, boolean isConvertMeta, boolean isReply) {
+				Data copyData = data.duplicate();
+				if(copyData.isSigned() && copyData.signature() == null) {
+					copyData.protectEntry(message.privateKey());
+				}
+				//set new valid from as this data item might have an old one
+				copyData.validFromMillis(System.currentTimeMillis());
+				return copyData;
+			}
+		});
+		
+		final DispatchHandler handler = dispatcher.associatedHandler(copy);
+		handler.forwardMessage(copy, null, new Responder() {
 
 			@Override
-			public void response(Message responseMessage) {
-				futureResponse.response(responseMessage);
+			public void response(final Message responseMessage) {
+				Message copy = responseMessage.duplicate(dataFilterTTL);
+				futureResponse.response(copy);
 			}
 
 			@Override
@@ -564,6 +587,10 @@ public class Sender {
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPSeconds,
 				isFireAndForget);
+
+        // RTT calculation
+        futureResponse.startRTTMeasurement(true);
+
 		try {
 			ChannelFuture channelFuture = null;
 			switch (sendBehavior.udpSendBehavior(message)) {
@@ -753,15 +780,8 @@ public class Sender {
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				futureResponse.removeCancel(connectCancel);
 				if (future.isSuccess()) {
-					futureResponse.progressHandler(new ProgresHandler() {
-						@Override
-						public void progres() {
-							final ChannelFuture writeFuture = future.channel().writeAndFlush(message);
-							afterSend(writeFuture, futureResponse, fireAndForget);
-						}
-					});
-					// this needs to be called first before all other progress
-					futureResponse.progressFirst();
+					final ChannelFuture writeFuture = future.channel().writeAndFlush(message);
+					afterSend(writeFuture, futureResponse, fireAndForget);
 				} else {
 					LOG.debug("Channel creation failed", future.cause());
 					futureResponse.failed("Channel creation failed " + future.channel() + "/" + future.cause());

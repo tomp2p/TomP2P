@@ -177,25 +177,13 @@ public interface BaseFuture extends Cancel {
      * and after that, the listener list is cleared, so there is no need to call removeListener if a future has been
      * completed.
      * 
+     * Be aware that the order of the listeners cannot be guaranteed.
+     * 
      * @param listener
      *            The listener extends the BaseFuture
      * @return this
      */
     BaseFuture addListener(BaseFutureListener<? extends BaseFuture> listener);
-
-    /**
-     * Adds a listener which is notified when the state of this future changes. All notifications are performed in a
-     * thread, which means that this method returns immediately. If a future is complete, then all listeners are called
-     * and after that, the listener list is cleared, so there is no need to call removeListener if a future has been
-     * completed. A flag decides if the listener is added at the end of the list or at the beginning.
-     * 
-     * @param listener
-     *            The listener extends the BaseFuture
-     * @param last
-     *            Set to true if the listener should be added at the end of the list, true if it should be added first
-     * @return this
-     */
-    BaseFuture addListener(BaseFutureListener<? extends BaseFuture> listener, boolean last);
 
     /**
      * Removes a listener which is notified when the state of this future changes. If a future is complete, then all

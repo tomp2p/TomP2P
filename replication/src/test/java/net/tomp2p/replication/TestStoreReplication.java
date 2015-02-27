@@ -8,7 +8,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -27,9 +27,11 @@ import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.dht.StorageMemory;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
@@ -67,21 +69,23 @@ public class TestStoreReplication {
 
             ResponsibilityListener responsibilityListener = new ResponsibilityListener() {
                 @Override
-                public void meResponsible(final Number160 locationKey) {
+                public FutureDone<?> meResponsible(final Number160 locationKey) {
                     System.err.println("I'm responsible for " + locationKey + " / ");
                     test2.incrementAndGet();
+                    return new FutureDone<Void>().done();
                 }
 
 				@Override
-                public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
+                public FutureDone<?> meResponsible(Number160 locationKey, PeerAddress newPeer) {
 	                System.err.println("I sync for " + locationKey + " / ");
+	                return new FutureDone<Void>().done();
                 }
 
 				@Override
                 public FutureDone<?> otherResponsible(Number160 locationKey, PeerAddress other) {
 					System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
-	                return null;
+                    return new FutureDone<Void>().done();
                 }
             };
             
@@ -89,7 +93,7 @@ public class TestStoreReplication {
             im.start();
 
             Number160 location = new Number160("0xff");
-            Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> dataMap = new TreeMap<Number160, Data>();
             dataMap.put(Number160.ZERO, new Data("string"));
 
             FutureChannelCreator fcc = master.peer().connectionBean().reservation().create(0, 1);
@@ -106,7 +110,7 @@ public class TestStoreReplication {
             // s1.put(location, Number160.ZERO, null, dataMap, false, false);
             final int slavePort = 7701;
             slave = new PeerBuilderDHT(new PeerBuilder(new Number160("0xfe")).ports(slavePort).start()).start();
-            master.peerBean().peerMap().peerFound(slave.peerAddress(), null, null);
+            master.peerBean().peerMap().peerFound(slave.peerAddress(), null, null, null);
             master.peerBean().peerMap().peerFailed(slave.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
@@ -140,7 +144,7 @@ public class TestStoreReplication {
         ChannelCreator cc = null;
         try {
             Number160 loc = new Number160(rnd);
-            Map<Number160, Data> contentMap = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> contentMap = new TreeMap<Number160, Data>();
             contentMap.put(Number160.ZERO, new Data("string"));
             final AtomicInteger test1 = new AtomicInteger(0);
             final AtomicInteger test2 = new AtomicInteger(0);
@@ -154,17 +158,20 @@ public class TestStoreReplication {
                 public FutureDone<?> otherResponsible(final Number160 locationKey, final PeerAddress other) {
                     System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
-                    return null;
+                    return new FutureDone<Void>().done();
                 }
 
                 @Override
-                public void meResponsible(final Number160 locationKey) {
+                public FutureDone<?> meResponsible(final Number160 locationKey) {
                     System.err.println("I'm responsible for " + locationKey);
                     test2.incrementAndGet();
+                    return new FutureDone<Void>().done();
                 }
                 @Override
-                public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
+                public FutureDone<?> meResponsible(Number160 locationKey, PeerAddress newPeer) {
 	                System.err.println("I sync for " + locationKey + " / ");
+	                test2.incrementAndGet();
+	                return new FutureDone<Void>().done();
                 }
             };
 
@@ -186,8 +193,8 @@ public class TestStoreReplication {
             System.err.println("slave1 is " + slave1.peerAddress());
             System.err.println("slave2 is " + slave2.peerAddress());
             // master peer learns about the slave peers
-            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
-            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null);
+            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null, null);
+            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null, null);
 
             System.err.println("both peers online");
             PeerAddress slaveAddress1 = slave1.peerAddress();
@@ -210,6 +217,12 @@ public class TestStoreReplication {
             }
             if (master != null) {
                 master.shutdown().await();
+            }
+            if (slave1 != null) {
+            	slave1.shutdown().await();
+            }
+            if (slave2 != null) {
+            	slave2.shutdown().await();
             }
         }
 
@@ -411,7 +424,7 @@ public class TestStoreReplication {
 		// in replica set anymore, node a has to notify node c
 		// replica set: c, d
 		// responsible: c
-		{ 0, 0, 1 }};
+		{ 0, 0, 0 }};
 		int[][] leaveC =
 		// leaving node b doesn't affect replica set or node a
 		// replica set: c, d
@@ -422,13 +435,13 @@ public class TestStoreReplication {
 		// nobody (meanwhile node d should notify node a, not tested here)
 		// replica set: a, d
 		// responsible: d
-		{ 0, 0, 0 },
+		{ 0, 0, 1 },
 		// node d leaves, node a becomes responsible for key c, but in
 		// this test node a doesn't get notified by node d and therefore
 		// node a doesn't know about it's responsibility
 		// replica set: a
 		// responsible: a
-		{ 0, 0, 0 }};
+		{ 1, 0, 0 }};
 		testReplication(keyC, replicationFactor, false, expectedC, leaveC);
 
 		Number160 keyD = new Number160("0xd");
@@ -446,7 +459,7 @@ public class TestStoreReplication {
 		// replica set of key d, node a has to notify node c
 		// replica set: b, c
 		// responsible: c
-		{ 0, 0, 1 },
+		{ 0, 0, 0 },
 		// node d joins, closer nodes c and d are in replica set of key
 		// d, closer node d becomes responsible, node a notifies nobody
 		// replica set: c, d
@@ -456,7 +469,7 @@ public class TestStoreReplication {
 		// node b leaves and doesn't affects replica set of key d
 		// replica set: c, d
 		// responsible: d
-		{ { 0, 0, 0 },
+		{ { 0, 0, 1 },
 		// node c leaves and node a joins replica set of key d, node d
 		// would be responsible to notify node a
 		// replica set: a, d
@@ -466,7 +479,7 @@ public class TestStoreReplication {
 		// node a wasn't previously notified by node d
 		// replica set: a
 		// responsible: a
-		{ 0, 0, 0 }};
+		{ 1, 0, 0 }};
 		testReplication(keyD, replicationFactor, false, expectedD, leaveD);
 	}
 
@@ -601,19 +614,19 @@ public class TestStoreReplication {
 		// becomes responsible, node a notifies node c
 		// replica set: a, b, c
 		// responsible: c
-		{ 0, 0, 1 },
+		{ 0, 0, 0 },
 		// node d joins, node d is in replica set of key d, node d
 		// becomes responsible, node a notifies node d
 		// replica set: b, c, d
 		// responsible: d
-		{ 0, 0, 1 }};
+		{ 0, 0, 0 }};
 		int[][] leaveD =
 		// node a has no responsibilities to check
-		{{ 0, 0, 0},
+		{{ 0, 0, 1},
 		// node a has no responsibilities to check
 		{ 0, 0, 0 },
 		// node a has no responsibilities to check
-		{ 0, 0, 0 }};
+		{ 1, 0, 0 }};
 		testReplication(key, replicationFactor, false, expectedD, leaveD);
 	}
 	
@@ -956,11 +969,10 @@ public class TestStoreReplication {
 		ChannelCreator cc = null;
 		try {
 			char[] letters = { 'a', 'b', 'c', 'd' };
-			StorageMemory storage = new StorageMemory();
 			for (int i = 0; i < joins.length; i++) {
 				if(i == 0) {
 					PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
-							.start()).storage(storage).start();
+							.start()).start();
 					ind = new IndirectReplication(peer).replicationFactor(replicationFactor).nRoot(nRoot).start();
 					peers.add(peer);
 				} else {
@@ -981,22 +993,24 @@ public class TestStoreReplication {
 				@Override
 				public FutureDone<?> otherResponsible(final Number160 locationKey, final PeerAddress other) {
 					replicateOther.incrementAndGet();
-					return null;
+					return new FutureDone<Void>().done();
 				}
 
 				@Override
-				public void meResponsible(final Number160 locationKey) {
+				public FutureDone<?> meResponsible(final Number160 locationKey) {
 					replicateI.incrementAndGet();
+					return new FutureDone<Void>().done();
 				}
 
 				@Override
-				public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
+				public FutureDone<?> meResponsible(Number160 locationKey, PeerAddress newPeer) {
 					replicateWe.incrementAndGet();
+					return new FutureDone<Void>().done();
 				}
 			});
 			
 			// create test data with given location key
-			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+			NavigableMap<Number160, Data> dataMap = new TreeMap<Number160, Data>();
 			dataMap.put(Number160.ZERO, new Data("string"));
 			PutBuilder putBuilder = new PutBuilder(master, lKey);
 			putBuilder.domainKey(Number160.ZERO);
@@ -1019,18 +1033,34 @@ public class TestStoreReplication {
 			
 			for (int i = 1; i < joins.length; i++) {
 				// insert a peer
-				master.peerBean().peerMap().peerFound(peers.get(i).peerAddress(), null, null);
+				final List<BaseFuture> bf = Collections.synchronizedList(new ArrayList<BaseFuture>());
+				AutomaticFuture af = new AutomaticFuture() {
+					@Override
+					public void futureCreated(BaseFuture future) {
+						bf.add(future);
+					}
+				};
+				master.peer().addAutomaticFuture(af);
+				master.peerBean().peerMap().peerFound(peers.get(i).peerAddress(), null, null, null);
+				master.peer().removeAutomaticFuture(af);
+				for(BaseFuture b:bf) {
+					b.awaitUninterruptibly();
+					b.awaitListenersUninterruptibly();
+				}
+				
 				// verify replication notifications
 				Assert.assertEquals(joins[i][0], replicateI.get());
 				replicateI.set(0);
 				Assert.assertEquals(joins[i][1], replicateWe.get());
 				replicateWe.set(0);
+				System.out.println(i);
 				Assert.assertEquals(joins[i][2], replicateOther.get());
 				replicateOther.set(0);
 			}
 			
 			for (int i = 0; i < leaves.length; i++) {
 				// remove a peer
+				System.out.println("leave" +i);
 				master.peerBean().peerMap().peerFailed(peers.get(i+1).peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 				// verify replication notifications
 				Assert.assertEquals(leaves[i][0], replicateI.get());
@@ -1043,14 +1073,16 @@ public class TestStoreReplication {
 			
 		} finally {
 			if (cc != null) {
-				cc.shutdown().awaitListenersUninterruptibly();
+				cc.shutdown().awaitUninterruptibly();
 			}
 			for (PeerDHT peer: peers) {
 				peer.shutdown().await();
 			}
 		}
 	}
-
+	
+	
+    //-Dio.netty.leakDetectionLevel=paranoid
 	@Test
 	public void testHeavyLoadNRootReplication() throws Exception {
 		PeerDHT master = null;
@@ -1062,7 +1094,7 @@ public class TestStoreReplication {
 			Utils2.perfectRouting(peers);
 			
 			for (int i = 0; i < peers.length; i++) {
-				new net.tomp2p.replication.IndirectReplication(peers[i]).intervalMillis(500).nRoot()
+				new net.tomp2p.replication.IndirectReplication(peers[i]).intervalMillis(1000).nRoot()
 				.replicationFactor(6).start();
 			}
 
@@ -1073,6 +1105,7 @@ public class TestStoreReplication {
 
 			String content = "";
 			for (int i = 0; i < 500; i++) {
+				System.err.print("round: "+i);
 				content += "a";
 				Number160 vKey = generateVersionKey(i, content);
 				Data data = new Data(content);
@@ -1123,6 +1156,7 @@ public class TestStoreReplication {
 						Assert.assertTrue(digestResult.keyDigest().get(digestKey).contains(bKey));
 					}
 				}
+				System.err.println("..");
 			}
 		} finally {
 			if (master != null) {

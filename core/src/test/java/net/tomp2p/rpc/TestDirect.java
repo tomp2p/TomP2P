@@ -1,13 +1,10 @@
 package net.tomp2p.rpc;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelCreator;
@@ -18,10 +15,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.ProgressListener;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.message.CountConnectionOutboundHandler;
-import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
@@ -34,120 +28,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class TestDirect {
-
-    @Test
-    public void testDirectMessage() throws Exception {
-        testDirectMessage(true);
-        testDirectMessage(false);
-    }
-
-    private void testDirectMessage(boolean wait) throws Exception {
-        Peer sender = null;
-        Peer recv1 = null;
-        ChannelCreator cc = null;
-        final AtomicInteger replyComplete = new AtomicInteger(0);
-        final AtomicInteger replyNotComplete = new AtomicInteger(0);
-        final AtomicInteger progressComplete = new AtomicInteger(0);
-        final AtomicInteger progressNotComplete = new AtomicInteger(0);
-        try {
-
-            PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
-            ChannelServerConfiguration css = pm1.createDefaultChannelServerConfiguration();
-            css.idleTCPSeconds(Integer.MAX_VALUE);
-            pm1.channelServerConfiguration(css);
-            sender = pm1.start();
-
-            PeerBuilder pm2 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088);
-            pm2.channelServerConfiguration(css);
-            recv1 = pm2.start();
-
-            recv1.rawDataReply(new RawDataReply() {
-
-                @Override
-                public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete)
-                        throws Exception {
-                    System.err.println("reply 2 ? " + complete);
-                    ByteBuf replyBuffer = Unpooled.buffer(50);
-                    replyBuffer.writerIndex(50);
-                    if (complete) {
-                        replyComplete.incrementAndGet();
-                        return new Buffer(replyBuffer, 100);
-                    } else {
-                        replyNotComplete.incrementAndGet();
-                        return new Buffer(replyBuffer, 100);
-                    }
-                }
-            });
-
-            FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-
-            SendDirectBuilder sendDirectBuilder = new SendDirectBuilder(sender, (PeerAddress) null);
-            sendDirectBuilder.streaming();
-            sendDirectBuilder.idleTCPSeconds(Integer.MAX_VALUE);
-
-            byte[] me = new byte[50];
-            Buffer b = new Buffer(Unpooled.compositeBuffer(), 100);
-            b.addComponent(Unpooled.wrappedBuffer(me));
-            if (!wait) {
-                ByteBuf replyBuffer = Unpooled.buffer(50);
-                replyBuffer.writerIndex(50);
-                b.addComponent(replyBuffer);
-            }
-            sendDirectBuilder.buffer(b);
-            sendDirectBuilder.progressListener(new ProgressListener() {
-                @Override
-                public void progress(final Message interMediateMessage) {
-                    if (interMediateMessage.isDone()) {
-                        progressComplete.incrementAndGet();
-                        System.err.println("progress 1 ? done");
-                    } else {
-                        progressNotComplete.incrementAndGet();
-                        System.err.println("progress 1 ? not done");
-                    }
-                }
-            });
-
-            FutureResponse fr = sender.directDataRPC().send(recv1.peerAddress(), sendDirectBuilder, cc);
-            if (wait) {
-                Thread.sleep(500);
-                ByteBuf replyBuffer = Unpooled.buffer(50);
-                replyBuffer.writerIndex(50);
-                b.addComponent(replyBuffer);
-            }
-            fr.progress();
-            System.err.println("progres");
-            // we are not done yet!
-
-            // now we are done
-            fr.awaitUninterruptibly();
-
-            if (wait) {
-                Assert.assertEquals(1, progressComplete.get());
-                Assert.assertEquals(1, progressNotComplete.get());
-                Assert.assertEquals(1, replyComplete.get());
-                Assert.assertEquals(1, replyNotComplete.get());
-            } else {
-                Assert.assertEquals(1, progressComplete.get());
-                Assert.assertEquals(1, progressNotComplete.get());
-                Assert.assertEquals(2, replyComplete.get());
-                Assert.assertEquals(0, replyNotComplete.get());
-            }
-
-            Assert.assertEquals(true, fr.isSuccess());
-        } finally {
-            if (cc != null) {
-                cc.shutdown().awaitListenersUninterruptibly();
-            }
-            if (sender != null) {
-                sender.shutdown().await();
-            }
-            if (recv1 != null) {
-                recv1.shutdown().await();
-            }
-        }
-    }
 
     @Test
     public void testDirectMessage1() throws Exception {
@@ -289,6 +169,7 @@ public class TestDirect {
 
             FutureDirect fd1 = sender.sendDirect(peerConnection).object("test")
                     .connectionTimeoutTCPMillis(2000).idleTCPSeconds(10 * 1000).start();
+            fd1.awaitUninterruptibly();
             fd1.awaitListenersUninterruptibly();
             Assert.assertEquals(true, fd1.isSuccess());
             Assert.assertEquals(1, ccohTCP.total());

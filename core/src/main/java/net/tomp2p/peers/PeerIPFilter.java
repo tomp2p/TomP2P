@@ -29,7 +29,7 @@ import java.util.Collection;
  * @author Thomas Bocek
  * 
  */
-public class PeerIPFilter implements PeerFilter {
+public class PeerIPFilter implements PeerMapFilter {
 
 	final int mask4;
 	final int mask6;
@@ -40,8 +40,12 @@ public class PeerIPFilter implements PeerFilter {
 	}
 
 	@Override
-	public boolean reject(final PeerAddress peerAddress, Collection<PeerAddress> all, Number160 target) {
-
+	public boolean rejectPeerMap(final PeerAddress peerAddress, final PeerMap peerMap) {
+		return rejectPreRouting(peerAddress, peerMap.all());
+	}
+	
+	@Override
+    public boolean rejectPreRouting(PeerAddress peerAddress, Collection<PeerAddress> all) {
 		if (peerAddress.inetAddress() instanceof Inet4Address) {
 			IPv4 ipv4 = IPv4.fromInetAddress(peerAddress.inetAddress());
 			for (PeerAddress inMap : all) {

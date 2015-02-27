@@ -39,7 +39,7 @@ import org.junit.Test;
 public class TestPeerMap {
 
     private static final Number160 ID = new Number160("0x1");
-    
+
     @Test
     public void testDifference() throws UnknownHostException {
         // setup
@@ -49,8 +49,8 @@ public class TestPeerMap {
         newC.add(Utils2.createAddress(88));
         newC.add(Utils2.createAddress(90));
         newC.add(Utils2.createAddress(91));
-        SortedSet<PeerAddress> result = new TreeSet<PeerAddress>(PeerMap.createComparator(new Number160(88)));
-        SortedSet<PeerAddress> already = new TreeSet<PeerAddress>(PeerMap.createComparator(new Number160(88)));
+        SortedSet<PeerAddress> result = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(new Number160(88)));
+        SortedSet<PeerAddress> already = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(new Number160(88)));
         already.add(Utils2.createAddress(90));
         already.add(Utils2.createAddress(15));
         // do testing
@@ -63,9 +63,9 @@ public class TestPeerMap {
     @Test
     public void testAdd1() {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(4).bagSizeOverflow(4);
+        conf.setFixedVerifiedBagSizes(4).setFixedOverflowBagSizes(4);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
 
         Number160 id1 = new Number160("0x2");
@@ -90,32 +90,32 @@ public class TestPeerMap {
         PeerAddress pa4 = new PeerAddress(id4);
         PeerAddress pa5 = new PeerAddress(id5);
         PeerAddress pa6 = new PeerAddress(id6);
-        peerMap.peerFound(pa1, null, null);
-        peerMap.peerFound(pa2, null, null);
-        peerMap.peerFound(pa3, null, null);
-        peerMap.peerFound(pa4, null, null);
-        peerMap.peerFound(pa5, null, null);
-        peerMap.peerFound(pa6, null, null);
-        SortedSet<PeerAddress> pa = peerMap.closePeers(ID, 2);
+        peerMap.peerFound(pa1, null, null, null);
+        peerMap.peerFound(pa2, null, null, null);
+        peerMap.peerFound(pa3, null, null, null);
+        peerMap.peerFound(pa4, null, null, null);
+        peerMap.peerFound(pa5, null, null, null);
+        peerMap.peerFound(pa6, null, null, null);
+        SortedSet<PeerStatistic> pa = peerMap.closePeers(ID, 2);
         Assert.assertEquals(2, pa.size());
-        Iterator<PeerAddress> iterator = pa.iterator();
-        Assert.assertEquals("0x3", iterator.next().peerId().toString());
-        Assert.assertEquals("0x2", iterator.next().peerId().toString());
+        Iterator<PeerStatistic> iterator = pa.iterator();
+        Assert.assertEquals("0x3", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x2", iterator.next().peerAddress().peerId().toString());
         pa = peerMap.closePeers(id3, 3);
         Assert.assertEquals(4, pa.size());
         iterator = pa.iterator();
-        Assert.assertEquals("0x4", iterator.next().peerId().toString());
-        Assert.assertEquals("0x5", iterator.next().peerId().toString());
-        Assert.assertEquals("0x6", iterator.next().peerId().toString());
-        Assert.assertEquals("0x7", iterator.next().peerId().toString());
+        Assert.assertEquals("0x4", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x5", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x6", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x7", iterator.next().peerAddress().peerId().toString());
     }
 
     @Test
     public void testAdd2() {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(3).bagSizeOverflow(3);
+        conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
 
         Number160 id1 = new Number160("0x2");
@@ -131,23 +131,23 @@ public class TestPeerMap {
         PeerAddress pa4 = new PeerAddress(id4);
         PeerAddress pa5 = new PeerAddress(id5);
         PeerAddress pa6 = new PeerAddress(id6);
-        peerMap.peerFound(pa1, null, null);
-        peerMap.peerFound(pa2, null, null);
-        peerMap.peerFound(pa3, null, null);
-        peerMap.peerFound(pa4, null, null);
-        peerMap.peerFound(pa5, null, null);
-        peerMap.peerFound(pa6, null, null);
-        SortedSet<PeerAddress> pa = peerMap.closePeers(ID, 2);
+        peerMap.peerFound(pa1, null, null, null);
+        peerMap.peerFound(pa2, null, null, null);
+        peerMap.peerFound(pa3, null, null, null);
+        peerMap.peerFound(pa4, null, null, null);
+        peerMap.peerFound(pa5, null, null, null);
+        peerMap.peerFound(pa6, null, null, null);
+        SortedSet<PeerStatistic> pa = peerMap.closePeers(ID, 2);
         Assert.assertEquals(2, pa.size());
-        Iterator<PeerAddress> iterator = pa.iterator();
-        Assert.assertEquals("0x3", iterator.next().peerId().toString());
-        Assert.assertEquals("0x2", iterator.next().peerId().toString());
+        Iterator<PeerStatistic> iterator = pa.iterator();
+        Assert.assertEquals("0x3", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x2", iterator.next().peerAddress().peerId().toString());
         pa = peerMap.closePeers(id3, 3);
         Assert.assertEquals(3, pa.size());
         iterator = pa.iterator();
-        Assert.assertEquals("0x4", iterator.next().peerId().toString());
-        Assert.assertEquals("0x5", iterator.next().peerId().toString());
-        Assert.assertEquals("0x6", iterator.next().peerId().toString());
+        Assert.assertEquals("0x4", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x5", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x6", iterator.next().peerAddress().peerId().toString());
         // 0x7 is in the non-verified / overflow map
         List<PeerAddress> list = peerMap.allOverflow();
         Assert.assertEquals("0x7", list.iterator().next().peerId().toString());
@@ -190,29 +190,29 @@ public class TestPeerMap {
         PeerAddress rn2 = new PeerAddress(new Number160(66));
         PeerAddress rn3 = new PeerAddress(new Number160(67));
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(3).bagSizeOverflow(3);
+        conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
-        SortedSet<PeerAddress> rc = peerMap.closePeers(new Number160(98), 3);
-        rc.add(rn2);
-        rc.add(rn1);
-        rc.add(rn3);
-        Assert.assertTrue(rc.first().equals(rn1));
+        SortedSet<PeerStatistic> rc = peerMap.closePeers(new Number160(98), 3);
+        rc.add(new PeerStatistic(rn2));
+        rc.add(new PeerStatistic(rn1));
+        rc.add(new PeerStatistic(rn3));
+        Assert.assertTrue(rc.first().peerAddress().equals(rn1));
     }
 
     @Test
     public void testAddNode() throws UnknownHostException {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(4).bagSizeOverflow(4);
+        conf.setFixedVerifiedBagSizes(4).setFixedOverflowBagSizes(4);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i < 12; i++) {
             PeerAddress r1 = new PeerAddress(new Number160(i));
-            peerMap.peerFound(r1, null, null);
+            peerMap.peerFound(r1, null, null, null);
         }
-        SortedSet<PeerAddress> close = peerMap.closePeers(new Number160(2), 2);
+        SortedSet<PeerStatistic> close = peerMap.closePeers(new Number160(2), 2);
         Assert.assertEquals(2, close.size());
         close = peerMap.closePeers(new Number160(6), 4);
         Assert.assertEquals(4, close.size());
@@ -221,15 +221,15 @@ public class TestPeerMap {
     @Test
     public void testAddNode2() throws UnknownHostException {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(3).bagSizeOverflow(3);
+        conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(60);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i < 12; i++) {
             PeerAddress r1 = new PeerAddress(new Number160((i % 6) + 1));
-            peerMap.peerFound(r1, null, null);
+            peerMap.peerFound(r1, null, null, null);
         }
-        SortedSet<PeerAddress> close = peerMap.closePeers(new Number160(2), 2);
+        SortedSet<PeerStatistic> close = peerMap.closePeers(new Number160(2), 2);
         Assert.assertEquals(2, close.size());
         close = peerMap.closePeers(new Number160(6), 1);
         Assert.assertEquals(3, close.size());
@@ -238,13 +238,13 @@ public class TestPeerMap {
     @Test
     public void testRemove() throws UnknownHostException, InterruptedException {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(3).bagSizeOverflow(3);
+        conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(1);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i <= 200; i++) {
             PeerAddress r1 = new PeerAddress(new Number160(i + 1));
-            peerMap.peerFound(r1, null, null);
+            peerMap.peerFound(r1, null, null, null);
         }
         Assert.assertEquals(20, peerMap.size());
         peerMap.peerFailed(new PeerAddress(new Number160(100)), new PeerException(AbortCause.PROBABLY_OFFLINE, "probably offline"));
@@ -262,13 +262,13 @@ public class TestPeerMap {
     @Test
     public void testRemoveConcurrent() throws UnknownHostException, InterruptedException {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(3).bagSizeOverflow(3);
+        conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(1);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         final PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i <= 200; i++) {
             PeerAddress r1 = new PeerAddress(new Number160(i + 1));
-            peerMap.peerFound(r1, null, null);
+            peerMap.peerFound(r1, null, null, null);
         }
         Assert.assertEquals(20, peerMap.size());
         Thread t1 = new Thread(new Runnable() {
@@ -300,15 +300,15 @@ public class TestPeerMap {
     @Test
     public void testAddConcurrent() throws UnknownHostException, InterruptedException {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(3).bagSizeOverflow(3);
+        conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(1);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         final PeerMap peerMap = new PeerMap(conf);
         Thread t1 = new Thread(new Runnable() {
             @Override
             public void run() {
                 for (int i = 1; i <= 50; i++) {
-                    peerMap.peerFound(new PeerAddress(new Number160(i + 1)), null, null);
+                    peerMap.peerFound(new PeerAddress(new Number160(i + 1)), null, null, null);
                 }
             }
         });
@@ -317,7 +317,7 @@ public class TestPeerMap {
             @Override
             public void run() {
                 for (int i = 1; i <= 100; i++) {
-                    peerMap.peerFound(new PeerAddress(new Number160(i + 1)), null, null);
+                    peerMap.peerFound(new PeerAddress(new Number160(i + 1)), null, null, null);
                 }
             }
         });
@@ -336,7 +336,7 @@ public class TestPeerMap {
      */
     @Test
     public void testMultiRandomAddRemove() throws InterruptedException {
-        final int rounds = 100;
+        final int rounds = 20;
         for (int i = 0; i < rounds; i++) {
             testRandomAddRemove();
         }
@@ -352,9 +352,9 @@ public class TestPeerMap {
     public void testRandomAddRemove() throws InterruptedException {
         for (int j = 0; j < 50; j++) {
             PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-            conf.bagSizeVerified(j + 1).bagSizeOverflow(j + 1);
+            conf.setFixedVerifiedBagSizes(j + 1).setFixedOverflowBagSizes(j + 1);
             conf.offlineCount(1000).offlineTimeout(1);
-            conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+            conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
             final PeerMap peerMap = new PeerMap(conf);
 
             final AtomicInteger add = new AtomicInteger();
@@ -367,7 +367,7 @@ public class TestPeerMap {
                 public void run() {
                     for (int i = 1; i <= rounds + diff; i++) {
                         if (i + diff < rounds) {
-                            boolean retVal = peerMap.peerFound(new PeerAddress(new Number160(i + 1)), null, null);
+                            boolean retVal = peerMap.peerFound(new PeerAddress(new Number160(i + 1)), null, null, null);
                             if (retVal) {
                                 add.incrementAndGet();
                             }
@@ -397,9 +397,9 @@ public class TestPeerMap {
     @Test
     public void testPerformance() throws IOException {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(3).bagSizeOverflow(3);
+        conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(100);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         final PeerMap peerMap = new PeerMap(conf);
         final Random random = new Random(42L);
         final List<PeerAddress> listAdded = new ArrayList<PeerAddress>();
@@ -411,10 +411,10 @@ public class TestPeerMap {
             listAdded.add(r1);
         }
         for (PeerAddress r1 : listAdded) {
-            peerMap.peerFound(r1, null, null);
+            peerMap.peerFound(r1, null, null, null);
         }
         for (PeerAddress r1 : listAdded) {
-            peerMap.peerFound(r1, null, null);
+            peerMap.peerFound(r1, null, null, null);
         }
         for (int i = 0; i < 100; i++) {
             PeerAddress removed = listAdded.get(random.nextInt(i + 1));
@@ -423,7 +423,7 @@ public class TestPeerMap {
             }
         }
         for (PeerAddress r1 : listAdded) {
-            peerMap.peerFound(r1, r1, null);
+            peerMap.peerFound(r1, r1, null, null);
         }
         Assert.assertEquals(47, peerMap.size());
         for (PeerAddress r1 : listRemoved) {
@@ -454,7 +454,7 @@ public class TestPeerMap {
         PeerAddress n2 = new PeerAddress(b2);
         PeerAddress n3 = new PeerAddress(b3);
         PeerAddress n4 = new PeerAddress(b4);
-        final NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createComparator(b3));
+        final NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(b3));
         queue.add(n1);
         queue.add(n2);
         queue.add(n3);
@@ -467,9 +467,9 @@ public class TestPeerMap {
     @Test
     public void testMaintenance() throws UnknownHostException, InterruptedException {
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-        conf.bagSizeVerified(10).bagSizeOverflow(10);
+        conf.setFixedVerifiedBagSizes(10).setFixedOverflowBagSizes(10);
         conf.offlineCount(1000).offlineTimeout(100);
-        conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         
         conf.maintenance(new DefaultMaintenance(4, new int[] { 1, 1 }));
         
@@ -478,7 +478,7 @@ public class TestPeerMap {
         PeerAddress pa1 = Utils2.createAddress(Number160.createHash("peer 1"));
         PeerAddress pa2 = Utils2.createAddress(Number160.createHash("peer 2"));
         
-        peerMap.peerFound(pa2, pa1, null);
+        peerMap.peerFound(pa2, pa1, null, null);
         List<PeerAddress> notInterested = new ArrayList<PeerAddress>();
         PeerStatistic peerStatatistic = peerMap.nextForMaintenance(notInterested);
         notInterested.add(peerStatatistic.peerAddress());
@@ -487,10 +487,10 @@ public class TestPeerMap {
         Assert.assertEquals(true, peerStatatistic == null);
         
         PeerAddress pa3 = Utils2.createAddress(Number160.createHash("peer 3"));
-        peerMap.peerFound(pa3, null, null);
+        peerMap.peerFound(pa3, null, null, null);
         peerStatatistic = peerMap.nextForMaintenance(notInterested);
         Assert.assertEquals(true, peerStatatistic == null);
-        Thread.sleep(1000);
+        Thread.sleep(1100);
         peerStatatistic = peerMap.nextForMaintenance(notInterested);
         Assert.assertEquals(peerStatatistic.peerAddress(), pa3);
     }
@@ -508,21 +508,21 @@ public class TestPeerMap {
 
             Number160 key = new Number160(rnd);
             PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-            conf.bagSizeVerified(10).bagSizeOverflow(10);
+            conf.setFixedVerifiedBagSizes(10).setFixedOverflowBagSizes(10);
             conf.offlineCount(1000).offlineTimeout(100);
-            conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+            conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
             final PeerMap peerMap = new PeerMap(conf);
             List<PeerAddress> peers = new ArrayList<PeerAddress>();
             for (int i = 0; i < round; i++) {
                 PeerAddress r1 = new PeerAddress(new Number160(rnd));
                 peers.add(r1);
-                peerMap.peerFound(r1, null, null);
+                peerMap.peerFound(r1, null, null, null);
             }
 
-            TreeSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createComparator(key));
+            TreeSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(key));
             set.addAll(peers);
             PeerAddress closest1 = set.iterator().next();
-            PeerAddress closest2 = peerMap.closePeers(key, 1).iterator().next();
+            PeerAddress closest2 = peerMap.closePeers(key, 1).iterator().next().peerAddress();
             if (peerMap.allOverflow().size() == 0) {
                 Assert.assertEquals(closest1, closest2);
             }

@@ -30,23 +30,18 @@ import net.tomp2p.utils.Utils;
  * 
  */
 public class DSASignatureCodec implements SignatureCodec {
-	private Number160 number1;
+	
+	public static final int SIGNATURE_SIZE = 2 * Number160.BYTE_ARRAY_SIZE;
+	private final Number160 number1;
+	private final Number160 number2;
 
-	private Number160 number2;
-
-	public DSASignatureCodec() {
-	}
-
-	public DSASignatureCodec(Number160 number1, Number160 number2) {
-		this.number1 = number1;
-		this.number2 = number2;
-	}
-
-	/* (non-Javadoc)
-	 * @see net.tomp2p.message.SignatureCodec#decode(byte[])
+	/**
+	 * Create a signature from an already encoded signature data
+	 * 
+	 * @param encodedData the signature (encoded)
+	 * @throws IOException
 	 */
-	@Override
-    public DSASignatureCodec decode(byte[] encodedData) throws IOException {
+	public DSASignatureCodec(byte[] encodedData) throws IOException {
 		if (encodedData[0] != 0x30) {
 			throw new IOException("expected sequence with value 48, but got " + encodedData[0]);
 		}
@@ -62,7 +57,6 @@ public class DSASignatureCodec implements SignatureCodec {
 			throw new IOException("cannot handle int legth > than 127, got " + intLen1);
 		}
 		number1 = encodeNumber(encodedData, 4, intLen1);
-		//
 		if (encodedData[4 + intLen1] != 0x02) {
 			throw new IOException("expected sequence with value 2, but got " + encodedData[4 + intLen1]);
 		}
@@ -71,7 +65,18 @@ public class DSASignatureCodec implements SignatureCodec {
 			throw new IOException("cannot handle int legth > than 127, got " + intLen2);
 		}
 		number2 = encodeNumber(encodedData, 6 + intLen1, intLen2);
-		return this;
+	}
+	
+	/**
+	 * Create a codec from a buffer, where the signature data is encoded
+	 * @param buf the buffer holding the signature at the next reader index
+	 */
+	public DSASignatureCodec(ByteBuf buf) {
+		byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
+		buf.readBytes(me);
+		number1 = new Number160(me);
+		buf.readBytes(me);
+		number2 = new Number160(me);
 	}
 
 	private Number160 encodeNumber(byte[] encodedData, int offset, int len) throws IOException {
@@ -88,11 +93,11 @@ public class DSASignatureCodec implements SignatureCodec {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see net.tomp2p.message.SignatureCodec#encode()
+	/**
+	 * @return ASN1 encoded signature
 	 */
 	@Override
-    public byte[] encode() throws IOException {
+    public byte[] encode() {
 		byte me[] = new byte[2 + (2 * (20 + 2))];
 		me[0] = 0x30;
 		me[1] = 2 * (20 + 2);
@@ -105,9 +110,6 @@ public class DSASignatureCodec implements SignatureCodec {
 		return me;
 	}
 	
-	/* (non-Javadoc)
-	 * @see net.tomp2p.message.SignatureCodec#write(io.netty.buffer.ByteBuf)
-	 */
 	@Override
     public SignatureCodec write(ByteBuf buf) {
 		buf.writeBytes(number1.toByteArray());
@@ -149,17 +151,7 @@ public class DSASignatureCodec implements SignatureCodec {
 	}
 
 	@Override
-    public SignatureCodec read(ByteBuf buf) {
-		byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
-		buf.readBytes(me);
-		number1 = new Number160(me);
-		buf.readBytes(me);
-		number2 = new Number160(me);
-	    return this;
-    }
-	
-	@Override
-    public int signatureSize() {
-	    return Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE;
-    }
+	public int signatureSize() {
+		return SIGNATURE_SIZE;
+	}
 }

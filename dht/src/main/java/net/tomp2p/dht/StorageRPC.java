@@ -21,9 +21,13 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -80,11 +84,17 @@ public class StorageRPC extends DispatchHandler {
     public StorageRPC(final PeerBean peerBean, final ConnectionBean connectionBean, final StorageLayer storageLayer) {
         super(peerBean, connectionBean);
         register(RPC.Commands.PUT.getNr(), 
-        		RPC.Commands.GET.getNr(), RPC.Commands.ADD.getNr(), 
-        		RPC.Commands.REMOVE.getNr(), RPC.Commands.DIGEST.getNr(), 
-        		RPC.Commands.DIGEST_BLOOMFILTER.getNr(), RPC.Commands.PUT_META.getNr(), 
-				RPC.Commands.DIGEST_META_VALUES.getNr(), RPC.Commands.PUT_CONFIRM.getNr(),
-				RPC.Commands.GET_LATEST.getNr(), RPC.Commands.GET_LATEST_WITH_DIGEST.getNr());
+        		RPC.Commands.GET.getNr(), 
+        		RPC.Commands.ADD.getNr(), 
+        		RPC.Commands.REMOVE.getNr(), 
+        		RPC.Commands.DIGEST.getNr(), 
+        		RPC.Commands.DIGEST_BLOOMFILTER.getNr(), 
+        		RPC.Commands.PUT_META.getNr(), 
+				RPC.Commands.DIGEST_META_VALUES.getNr(), 
+				RPC.Commands.PUT_CONFIRM.getNr(),
+				RPC.Commands.GET_LATEST.getNr(), 
+				RPC.Commands.GET_LATEST_WITH_DIGEST.getNr(),
+				RPC.Commands.REPLICA_PUT.getNr());
         this.factory = peerBean.bloomfilterFactory();
         this.storageLayer = storageLayer;
     }
@@ -128,7 +138,7 @@ public class StorageRPC extends DispatchHandler {
     public FutureResponse put(final PeerAddress remotePeer, final PutBuilder putBuilder,
             final ChannelCreator channelCreator) {
         final Type request = putBuilder.isProtectDomain() ? Type.REQUEST_2 : Type.REQUEST_1;
-        return put(remotePeer, putBuilder, request, channelCreator);
+        return put(remotePeer, putBuilder, request, RPC.Commands.PUT, channelCreator);
     }
 
     /**
@@ -166,7 +176,7 @@ public class StorageRPC extends DispatchHandler {
         } else {
             request = Type.REQUEST_3;
         }
-        return put(remotePeer, putBuilder, request, channelCreator);
+        return put(remotePeer, putBuilder, request, RPC.Commands.PUT, channelCreator);
     }
 
     /**
@@ -195,7 +205,13 @@ public class StorageRPC extends DispatchHandler {
      * final Map<Number160, Data> dataMap, final Type type, boolean signMessage, ChannelCreator channelCreator, boolean
      * forceUDP, SenderCacheStrategy senderCacheStrategy) {
      */
-    private FutureResponse put(final PeerAddress remotePeer, final PutBuilder putBuilder, final Type type,
+    
+    public FutureResponse putReplica(PeerAddress remotePeer, PutBuilder putBuilder,
+			ChannelCreator channelCreator) {
+		return put(remotePeer, putBuilder, Type.REQUEST_1, RPC.Commands.REPLICA_PUT, channelCreator);
+	}
+    
+    private FutureResponse put(final PeerAddress remotePeer, final PutBuilder putBuilder, final Type type, final RPC.Commands rpcCommand,
             final ChannelCreator channelCreator) {
 
         Utils.nullCheck(remotePeer);
@@ -208,7 +224,7 @@ public class StorageRPC extends DispatchHandler {
                     putBuilder.versionKey(), putBuilder.dataMapContent());
         }
 
-        final Message message = createMessage(remotePeer, RPC.Commands.PUT.getNr(), type);
+        final Message message = createMessage(remotePeer, rpcCommand.getNr(), type);
 
         if (putBuilder.isSign()) {
             message.publicKeyAndSign(putBuilder.keyPair());
@@ -356,7 +372,7 @@ public class StorageRPC extends DispatchHandler {
         }
 
         // convert the data
-        Map<Number160, Data> dataMap = new HashMap<Number160, Data>(addBuilder.dataSet().size());
+        NavigableMap<Number160, Data> dataMap = new TreeMap<Number160, Data>();
         if (addBuilder.dataSet() != null) {
             for (Data data : addBuilder.dataSet()) {
                 if (addBuilder.isList()) {
@@ -613,25 +629,13 @@ public class StorageRPC extends DispatchHandler {
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
             Responder responder) throws Exception {
 
-    	if (!(message.command() == RPC.Commands.ADD.getNr() || message.command() == RPC.Commands.PUT.getNr()
-				|| message.command() == RPC.Commands.GET.getNr()
-				|| message.command() == RPC.Commands.REMOVE.getNr()
-				|| message.command() == RPC.Commands.DIGEST.getNr()
-				|| message.command() == RPC.Commands.DIGEST_BLOOMFILTER.getNr()
-				|| message.command() == RPC.Commands.DIGEST_META_VALUES.getNr()
-				|| message.command() == RPC.Commands.PUT_META.getNr()
-				|| message.command() == RPC.Commands.PUT_CONFIRM.getNr()
-				|| message.command() == RPC.Commands.GET_LATEST.getNr()
-				|| message.command() == RPC.Commands.GET_LATEST_WITH_DIGEST.getNr())) {
-			throw new IllegalArgumentException("Message content is wrong " + message.command());
-		}
-        final Message responseMessage = createResponseMessage(message, Type.OK);
+    	final Message responseMessage = createResponseMessage(message, Type.OK);
 
         //switch/case does not work here out of the box, need to convert byte back to enum, not sure if thats worth it.
         if (message.command() == RPC.Commands.ADD.getNr()) {
         	handleAdd(message, responseMessage, isDomainProtected(message));
-        } else if(message.command() == RPC.Commands.PUT.getNr()) {
-            handlePut(message, responseMessage, isStoreIfAbsent(message), isDomainProtected(message));
+        } else if(message.command() == RPC.Commands.PUT.getNr() || message.command() == RPC.Commands.REPLICA_PUT.getNr()) {
+            handlePut(message, responseMessage, isStoreIfAbsent(message), isDomainProtected(message), isReplicaPut(message));
         } else if (message.command() == RPC.Commands.PUT_CONFIRM.getNr()) {
         	handlePutConfirm(message, responseMessage);
         } else if (message.command() == RPC.Commands.GET.getNr()) {
@@ -648,8 +652,8 @@ public class StorageRPC extends DispatchHandler {
             handleRemove(message, responseMessage, message.type() == Type.REQUEST_2);
         } else if (message.command() == RPC.Commands.PUT_META.getNr()) {
             handlePutMeta(message, responseMessage, message.type() == Type.REQUEST_2);
-        }else {
-            throw new IllegalArgumentException("Message content is wrong");
+        } else {
+            throw new IllegalArgumentException("Message content is wrong " + message.command());
         }
         if (sign) {
             responseMessage.publicKeyAndSign(peerBean().getKeyPair());
@@ -658,32 +662,30 @@ public class StorageRPC extends DispatchHandler {
         responder.response(responseMessage);
     }
 
-    
+    private boolean isReplicaPut(final Message message) {
+        return message.command() == RPC.Commands.REPLICA_PUT.getNr();
+    }
 
 	private boolean isDomainProtected(final Message message) {
-        boolean protectDomain = message.publicKey(0) != null
-                && (message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_4);
-        return protectDomain;
+		return message.publicKey(0) != null
+                && (message.type() == Type.REQUEST_2 
+                || message.type() == Type.REQUEST_4);
     }
 
     private boolean isStoreIfAbsent(final Message message) {
-        boolean absent = message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
-        return absent;
+    	return message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
     }
 
     private boolean isList(final Message message) {
-        boolean partial = message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
-        return partial;
+    	return message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
     }
 
     private boolean isAscending(final Message message) {
-        boolean partial = message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_3;
-        return partial;
+    	return message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_3;
     }
 
     private boolean isBloomFilterAnd(final Message message) {
-        boolean partial = message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2;
-        return partial;
+    	return message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2;
     }
     
     private void handlePutMeta(Message message, Message responseMessage, boolean isDomain) {
@@ -717,26 +719,44 @@ public class StorageRPC extends DispatchHandler {
     }
 
     private Message handlePut(final Message message, final Message responseMessage,
-            final boolean putIfAbsent, final boolean protectDomain) throws IOException {
+            final boolean putIfAbsent, final boolean protectDomain, final boolean replicaPut) throws IOException {
     	LOG.debug("handlePut {}", message);
         final PublicKey publicKey = message.publicKey(0);
         final DataMap toStore = message.dataMap(0);
         final int dataSize = toStore.size();
         final Map<Number640, Byte> result = new HashMap<Number640, Byte>(dataSize);
-        for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
-            Enum<?> putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(), entry.getValue());
+        
+        Map<Number640, Enum<?>> storeRes = 
+        		storageLayer.putAll(toStore.dataMap(), publicKey, putIfAbsent, protectDomain, message.isSendSelf());
+        
+        Set<Number160> affectedKeys = new HashSet<Number160>();
+        for (Map.Entry<Number640, Enum<?>> entry : storeRes.entrySet()) {
+        	result.put(entry.getKey(), (byte) entry.getValue().ordinal());
+        	
+            if ((entry.getValue() == PutStatus.OK || entry.getValue() == PutStatus.VERSION_FORK || entry.getValue() == PutStatus.DELETED)) {
+            	affectedKeys.add(entry.getKey().locationKey());
+            }
+        }
+        
+        if(replicationListener != null) {
+        	for(Number160 locationKey:affectedKeys) {
+        		replicationListener.dataInserted(locationKey);
+        	}
+        }
+        
+        /*for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
+            Enum<?> putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(), entry.getValue(), message.isSendSelf());
             result.put(entry.getKey(), (byte) putStatus.ordinal());
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (!entry.getValue().hasPrepareFlag()) {
             	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK || putStatus == PutStatus.DELETED)
             			&& replicationListener != null) {
-            		replicationListener.dataInserted(
-            				entry.getKey().locationKey());
+            		replicationListener.dataInserted(entry.getKey().locationKey(), replicaPut);
             	}
             }
            
-        }
+        }*/
 
         responseMessage.type(result.size() == dataSize ? Type.OK : Type.PARTIALLY_OK);
         responseMessage.keyMapByte(new KeyMapByte(result));
@@ -756,8 +776,7 @@ public class StorageRPC extends DispatchHandler {
 			
 			if ((status == PutStatus.OK || status == PutStatus.VERSION_FORK)
         			&& replicationListener != null) {
-        		replicationListener.dataInserted(
-        				entry.getKey().locationKey());
+        		replicationListener.dataInserted(entry.getKey().locationKey());
         	}
 		}
 		
@@ -779,31 +798,23 @@ public class StorageRPC extends DispatchHandler {
         // peer.
 
         for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
-            Enum<?> status = doAdd(protectDomain, entry, publicKey, list, storageLayer, peerBean().serverPeerAddress());
+            Enum<?> status = doAdd(protectDomain, entry, publicKey, list, storageLayer, peerBean().serverPeerAddress(), message.isSendSelf());
             result.put(entry.getKey(), (byte) status.ordinal());
 
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (!entry.getValue().hasPrepareFlag()) {
             	if (status == PutStatus.OK && replicationListener!=null) {
-            		replicationListener.dataInserted(
-            				entry.getKey().locationKey());
+            		replicationListener.dataInserted(entry.getKey().locationKey());
             	}
             }
-
         }
         responseMessage.keyMapByte(new KeyMapByte(result));
         return responseMessage;
     }
 
-    private Enum<?> doPut(final boolean putIfAbsent, final boolean protectDomain, final PublicKey publicKey,
-            final Number640 key, final Data value) {
-        LOG.debug("put data with key {} on {} with data {}", key, peerBean().serverPeerAddress(), value);
-        return storageLayer.put(key, value, publicKey, putIfAbsent, protectDomain);
-    }
-
     private static Enum<?> doAdd(final boolean protectDomain, final Map.Entry<Number640, Data> entry,
-            final PublicKey publicKey, final boolean list, final StorageLayer storageLayer, final PeerAddress serverPeerAddress) {
+            final PublicKey publicKey, final boolean list, final StorageLayer storageLayer, final PeerAddress serverPeerAddress, final boolean sendSelf) {
 
         LOG.debug("add list data with key {} on {}", entry.getKey(), serverPeerAddress);
         if (list) {
@@ -811,12 +822,12 @@ public class StorageRPC extends DispatchHandler {
             Enum<?> status;
             Number640 key = new Number640(entry.getKey().locationKey(), entry.getKey().domainKey(),
                     contentKey2, entry.getKey().versionKey());
-            while ((status = storageLayer.put(key, entry.getValue(), publicKey, true, protectDomain)) == PutStatus.FAILED_NOT_ABSENT) {
+            while ((status = storageLayer.put(key, entry.getValue(), publicKey, true, protectDomain, sendSelf)) == PutStatus.FAILED_NOT_ABSENT) {
                 contentKey2 = new Number160(RND);
             }
             return status;
         } else {
-            return storageLayer.put(entry.getKey(), entry.getValue(), publicKey, false, protectDomain);
+            return storageLayer.put(entry.getKey(), entry.getValue(), publicKey, false, protectDomain, sendSelf);
         }
     }
 
@@ -833,19 +844,19 @@ public class StorageRPC extends DispatchHandler {
         final boolean isRange = contentKeys != null && returnNr != null;
         final boolean isCollection = contentKeys != null && returnNr == null;
         final boolean isBloomFilterAnd = isBloomFilterAnd(message);
-        final Map<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
+        final NavigableMap<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
                 versionBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
         responseMessage.setDataMap(new DataMap(result));
         return responseMessage;
     }
 
-	private Map<Number640, Data> doGet(final Number160 locationKey, final Number160 domainKey,
+	private NavigableMap<Number640, Data> doGet(final Number160 locationKey, final Number160 domainKey,
             final KeyCollection contentKeys, final SimpleBloomFilter<Number160> contentBloomFilter,
             final SimpleBloomFilter<Number160> versionBloomFilter, final int limit, final boolean ascending,
             final boolean isRange, final boolean isCollection, final boolean isBloomFilterAnd) {
-	    final Map<Number640, Data> result;
+	    final NavigableMap<Number640, Data> result;
         if (isCollection) {
-            result = new HashMap<Number640, Data>();
+            result = new TreeMap<Number640, Data>();
             for (Number640 key : contentKeys.keys()) {
                 Data data = storageLayer.get(key);
                 if (data != null) {
@@ -880,7 +891,7 @@ public class StorageRPC extends DispatchHandler {
 		final Number160 contentKey = message.key(2);
 
 		Number640 key = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
-		final Map<Number640, Data> result = storageLayer.getLatestVersion(key);
+		final NavigableMap<Number640, Data> result = storageLayer.getLatestVersion(key);
 		responseMessage.setDataMap(new DataMap(result));
 
 		if (withDigest) {
@@ -907,7 +918,7 @@ public class StorageRPC extends DispatchHandler {
         final boolean isReturnBloomfilter = message.command() == RPC.Commands.DIGEST_BLOOMFILTER.getNr();
         final boolean isReturnMetaValues = message.command() == RPC.Commands.DIGEST_META_VALUES.getNr();
         if(isReturnMetaValues) {
-        	final Map<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
+        	final NavigableMap<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
                     versionBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
         	DataMap dataMap = new DataMap(result, true);
         	responseMessage.setDataMap(dataMap);
@@ -961,7 +972,7 @@ public class StorageRPC extends DispatchHandler {
         final Number160 domainKey = message.key(1);
         final KeyCollection keys = message.keyCollection(0);
         final PublicKey publicKey = message.publicKey(0);
-        Map<Number640, Data> result1 = null;
+        NavigableMap<Number640, Data> result1 = null;
         Map<Number640, Byte> result2 = null;
         final Integer returnNr = message.intAt(0);
         //used as a marker for the moment
@@ -971,7 +982,7 @@ public class StorageRPC extends DispatchHandler {
                
         if (isCollection) {
         	if(sendBackResults) {
-        		result1 = new HashMap<Number640, Data>(keys.size());
+        		result1 = new TreeMap<Number640, Data>();
         		for (Number640 key : keys.keys()) {
                     Pair<Data,Enum<?>> data = storageLayer.remove(key, publicKey, sendBackResults);
                     notifyRemoveResponsibility(key.locationKey(), data.element1());

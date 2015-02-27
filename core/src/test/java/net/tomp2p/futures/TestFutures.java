@@ -35,9 +35,8 @@ import org.junit.Test;
  */
 public class TestFutures {
 
-    private Object lock = new Object();
     private final int nr = 10;
-    private static final int RONUDS = 20000000;
+    private static final int RONUDS = 2000000;
     private static final int SUB = 1;
     private int steps = RONUDS / SUB;
     private final Set<Integer> done = new HashSet<Integer>();
@@ -85,10 +84,9 @@ public class TestFutures {
             number160s[i] = new Number160(rnd);
         }
         long start = System.currentTimeMillis();
-        recursive(array, number160s, 0, RONUDS / SUB, 0);
-        synchronized (lock) {
-            lock.wait();
-        }
+        FutureDone<Void> futureDone = new FutureDone<Void>();
+        recursive(array, number160s, 0, RONUDS / SUB, 0, futureDone);
+        futureDone.awaitUninterruptibly();
 
         // end test single-thread
         long stop = System.currentTimeMillis();
@@ -99,7 +97,7 @@ public class TestFutures {
     }
 
     private void recursive(final AtomicReferenceArray<FutureTest> array, final Number160[] number160s, final int start,
-            final int rounds, final int counter) {
+            final int rounds, final int counter, final FutureDone<Void> futureDone) {
         int active = 0;
         for (int i = 0; i < nr; i++) {
             if (array.get(i) == null) {
@@ -113,9 +111,7 @@ public class TestFutures {
         }
         if (active == 0) {
             System.err.println("we are done!");
-            synchronized (lock) {
-                lock.notifyAll();
-            }
+            futureDone.done();
         }
 
         FutureForkJoin<FutureTest> fork = new FutureForkJoin<FutureTest>(1, false, array);
@@ -135,7 +131,7 @@ public class TestFutures {
                 // + future.getLast().getRounds()+ " for "+future.getLast().getI()+
                 // "counter="+future.getLast().getCounter());
                 recursive(array, number160s, future.last().getStart() + steps, future.last().getRounds() + steps,
-                        future.last().getCounter() + 1);
+                        future.last().getCounter() + 1, futureDone);
             }
         });
     }

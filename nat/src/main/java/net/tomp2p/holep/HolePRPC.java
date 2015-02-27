@@ -1,7 +1,6 @@
 package net.tomp2p.holep;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.HolePInitiator;
@@ -17,7 +16,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.BaseRelayForwarderRPC;
+import net.tomp2p.relay.BaseRelayServer;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
@@ -70,7 +69,6 @@ public class HolePRPC extends DispatchHandler {
 	 * @param responder
 	 */
 	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
-		// TODO jwa clear out because this is just a test
 		NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
 		HolePStrategy holePuncher = type.getHolePuncher(peer, message.intAt(0), HolePInitiator.IDLE_UDP_SECONDS, message);
 		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
@@ -98,7 +96,7 @@ public class HolePRPC extends DispatchHandler {
 	 * @param responder
 	 */
 	private void forwardHolePunchRequest(final Message message, PeerConnection peerConnection, final Responder responder) {
-		final BaseRelayForwarderRPC forwarder = extractRelayForwarder(message);
+		final BaseRelayServer forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardPortsMessage(message, forwarder.unreachablePeerAddress());
 
@@ -173,15 +171,9 @@ public class HolePRPC extends DispatchHandler {
 	 *            the unreachable peer
 	 * @return forwarder
 	 */
-	private BaseRelayForwarderRPC extractRelayForwarder(final Message message) {
+	private BaseRelayServer extractRelayForwarder(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(peer.peerID(), message.recipient().peerId());
-		for (DispatchHandler handler : ioHandlers.values()) {
-			if (handler instanceof BaseRelayForwarderRPC) {
-				return (BaseRelayForwarderRPC) handler;
-			}
-		}
-		return null;
+		return (BaseRelayServer) dispatcher.searchHandler(BaseRelayServer.class, peer.peerID(), message.recipient().peerId());
 	}
 
 	/**

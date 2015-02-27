@@ -37,18 +37,18 @@ public class TestStatistics {
 	public void testCountPeers1() throws UnknownHostException {
 		Random rnd = new Random(42L);
 
-		for (int j = 1; j < 20; j++) {
+		for (int j = 1; j < 10; j++) {
 			int nr = 100000 * j;
 			PeerMapConfiguration conf = new PeerMapConfiguration(ID);
-			conf.bagSizeVerified(20).bagSizeOverflow(20);
+			conf.setFixedVerifiedBagSizes(20).setFixedOverflowBagSizes(20);
 			conf.offlineCount(1000).offlineTimeout(60);
-			conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+			conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
 			PeerMap peerMap = new PeerMap(conf);
 
 			Statistics statistics = new Statistics(peerMap);
 			for (int i = 0; i < nr; i++) {
 				PeerAddress pa = Utils2.createAddress(new Number160(rnd));
-				peerMap.peerFound(pa, null, null);
+				peerMap.peerFound(pa, null, null, null);
 			}
 
 			double diff = nr / statistics.estimatedNumberOfNodes();

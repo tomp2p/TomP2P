@@ -1,22 +1,19 @@
 package net.tomp2p.relay;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TimerTask;
 
-import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
+import net.tomp2p.relay.buffer.BufferedRelayClient;
 import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
@@ -37,8 +34,6 @@ public class PeerMapUpdateTask extends TimerTask {
 	private final BootstrapBuilder bootstrapBuilder;
 	private final DistributedRelay distributedRelay;
 
-	private Set<PeerAddress> gcmServersLast;
-
 	/**
 	 * Create a new peer map update task.
 	 * 
@@ -54,7 +49,6 @@ public class PeerMapUpdateTask extends TimerTask {
 		this.relayRPC = relayRPC;
 		this.bootstrapBuilder = bootstrapBuilder;
 		this.distributedRelay = distributedRelay;
-		this.gcmServersLast = new HashSet<PeerAddress>(distributedRelay.relayConfig().gcmServers());
 	}
 
 	@Override
@@ -70,12 +64,9 @@ public class PeerMapUpdateTask extends TimerTask {
 
 		// send the peer map to the relays
 		List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
-		boolean gcmServersChanged = distributedRelay.relayConfig().type() == RelayType.ANDROID && gcmServersChanged();
-		for (final BaseRelayConnection relay : distributedRelay.relays()) {
-			sendPeerMap(relay, peerMapVerified, gcmServersChanged);
+		for (final BaseRelayClient relay : distributedRelay.relayClients()) {
+			sendPeerMap(relay, peerMapVerified);
 		}
-		// copy to compare with next iteration
-		gcmServersLast = new HashSet<PeerAddress>(distributedRelay.relayConfig().gcmServers());
 
 		// try to add more relays
 		final FutureRelay futureRelay2 = new FutureRelay();
@@ -93,23 +84,20 @@ public class PeerMapUpdateTask extends TimerTask {
 	 * @param map
 	 *            The unreachable peer's peer map.
 	 */
-	private void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatistic>> map,
-			boolean gcmServersChanged) {
+	private void sendPeerMap(final BaseRelayClient connection, List<Map<Number160, PeerStatistic>> map) {
 		LOG.debug("Sending current routing table to relay {}", connection.relayAddress());
 
 		final Message message = relayRPC
 				.createMessage(connection.relayAddress(), RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
 		// TODO: neighbor size limit is 256, we might have more here
 		message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
-
-		if (gcmServersChanged) {
-			LOG.debug("Sending updated GCM server list as well");
-			message.neighborsSet(new NeighborSet(-1, distributedRelay.relayConfig().gcmServers()));
-		}
-
+		
+		// append relay-type specific data (if necessary)
+		distributedRelay.relayConfig().prepareMapUpdateMessage(message);
+		
 		final FutureResponse fr = connection.sendToRelay(message);
-		fr.addListener(new BaseFutureAdapter<BaseFuture>() {
-			public void operationComplete(BaseFuture future) throws Exception {
+		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
+			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isFailed()) {
 					LOG.warn("Failed to update routing table on relay peer {}. Reason: {}", connection.relayAddress(),
 							future.failedReason());
@@ -117,24 +105,14 @@ public class PeerMapUpdateTask extends TimerTask {
 				} else {
 					LOG.trace("Updated routing table on relay {}", connection.relayAddress());
 					connection.onMapUpdateSuccess();
+					
+					// process possible buffered messages (Android only)
+					if(connection instanceof BufferedRelayClient) {
+						BufferedRelayClient bufferedConn = (BufferedRelayClient) connection;
+						bufferedConn.onReceiveMessageBuffer(future.responseMessage(), new FutureDone<Void>());
+					}
 				}
 			}
 		});
-	}
-
-	/**
-	 * Checks the GCM Server map in the last run with the current server map. If they differ,
-	 * <code>true</code> is returned.
-	 */
-	private boolean gcmServersChanged() {
-		Collection<PeerAddress> newServers = distributedRelay.relayConfig().gcmServers();
-		if (newServers == null && gcmServersLast == null) {
-			return false;
-		} else if (newServers != null && gcmServersLast == null || newServers == null && gcmServersLast != null) {
-			return true;
-		} else {
-			// compare content
-			return !new HashSet<PeerAddress>(newServers).equals(gcmServersLast);
-		}
 	}
 }

@@ -24,9 +24,9 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
-import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
@@ -73,7 +73,7 @@ public class Data {
 	// can be added later
 	private SignatureCodec signature;
 	private int ttlSeconds = -1;
-	private Collection<Number160> basedOnSet = new ArrayList<Number160>(0);
+	private Set<Number160> basedOnSet = new HashSet<Number160>(0);
 	private PublicKey publicKey;
 	//this goes never over the network! If this is set, we have to sign lazy
 	private transient PrivateKey privateKey;
@@ -258,7 +258,7 @@ public class Data {
 		final int numBasedOn;
 		final int indexPublicKeySize;
 		final int indexBasedOn;
-		final Collection<Number160> basedOn = new ArrayList<Number160>();
+		final Set<Number160> basedOn = new HashSet<Number160>();
 		if (hasBasedOn(header)) {
 			// get # of based on keys
 			indexBasedOn = indexBasedOnNr + Utils.BYTE_BYTE_SIZE;
@@ -303,7 +303,6 @@ public class Data {
 			//get public key
 			buf.skipBytes(indexPublicKeySize);
 			publicKey = signatureFactory.decodePublicKey(buf);
-			
 		} else {
 			publicKeySize = 0;
 			indexPublicKey = indexPublicKeySize;
@@ -342,35 +341,39 @@ public class Data {
 	
 	public boolean decodeDone(final ByteBuf buf, SignatureFactory signatureFactory) {
 		if (signed) {
-			signature = signatureFactory.signatureCodec();
-			if(buf.readableBytes() < signature.signatureSize()) {
+			if(buf.readableBytes() < signatureFactory.signatureSize()) {
+				// don't even try to create a signature
 				return false;
 			}
-			signature.read(buf);
+			
+			signature = signatureFactory.signatureCodec(buf);
 		}
 		return true;
 	}
 
 	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey, SignatureFactory signatureFactory) {
 		if (signed) {
-			if(publicKey == PeerBuilder.EMPTY_PUBLIC_KEY) {
-				this.publicKey = publicKey;	
+			if(publicKey != PeerBuilder.EMPTY_PUBLIC_KEY && publicKey!= null && 
+					(this.publicKey==null || this.publicKey == PeerBuilder.EMPTY_PUBLIC_KEY)) {
+				this.publicKey = publicKey;
 			}
-			signature = signatureFactory.signatureCodec();
-			if(buf.readableBytes() < signature.signatureSize()) {
+			
+			if(buf.readableBytes() < signatureFactory.signatureSize()) {
+				// don't even try to create a signature
 				return false;
 			}
-			signature.read(buf);
+			
+			signature = signatureFactory.signatureCodec(buf);
 		}
 		return true;
 	}
 
-	public boolean verify(SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public boolean verify(SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException {
 		return verify(publicKey, signatureFactory);
 	}
 
-	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
-		return signatureFactory.verify(publicKey, buffer.toByteBuf(), signature);
+	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException {
+		return signatureFactory.verify(publicKey, toByteBuffers(), signature);
 	}
 
 	/**
@@ -461,9 +464,9 @@ public class Data {
 	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory, PrivateKey messagePrivateKey) throws InvalidKeyException, SignatureException, IOException {
 		if (signed) {
 			if(signature == null && privateKey != null) {
-				signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
+				signature = signatureFactory.sign(privateKey, toByteBuffers());
 			} else if (signature == null && messagePrivateKey != null) {
-				signature = signatureFactory.sign(messagePrivateKey, buffer.toByteBuf());
+				signature = signatureFactory.sign(messagePrivateKey, toByteBuffers());
 			} else if (signature == null) {
 				throw new IllegalArgumentException("you need a private key from somewhere");
 			}
@@ -471,6 +474,14 @@ public class Data {
 		}
 	}
 
+	/**
+	 * If you use this, make sure you are aware of Nettys reference counting.
+	 * 
+	 * http://netty.io/wiki/reference-counted-objects.html
+	 *  
+	 * Once this object is destroyed, the ByteBuf cannot be accessed anymore (unless you use retain/release).
+	 * @return
+	 */
 	public ByteBuf buffer() {
 		return buffer.toByteBuf();
 	}
@@ -499,7 +510,7 @@ public class Data {
 	private Data signNow(KeyPair keyPair, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory.sign(keyPair.getPrivate(), buffer.toByteBuf());
+			this.signature = signatureFactory.sign(keyPair.getPrivate(), toByteBuffers());
 			this.publicKey = keyPair.getPublic();
 			this.publicKeyFlag = true;
 			this.protectedEntry = protectedEntry;
@@ -518,51 +529,55 @@ public class Data {
 	private Data signNow(PrivateKey privateKey, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
+			this.signature = signatureFactory.sign(privateKey, toByteBuffers());
 			this.publicKeyFlag = true;
 			this.protectedEntry = protectedEntry;
 		}
 		return this;
 	}
 	
-	public Data sign(KeyPair keyPair) {
-		return sign(keyPair, false);
+	public Data protectEntry() {
+		this.signed = true;
+		this.publicKeyFlag = true;
+		this.protectedEntry = true;
+		return this;
+	}
+		
+	public Data protectEntry(PrivateKey privateKey) {
+		this.signed = true;
+		this.publicKeyFlag = true;
+		this.protectedEntry = true;
+		this.privateKey = privateKey;
+		return this;
 	}
 	
 	public Data protectEntry(KeyPair keyPair) {
-		return sign(keyPair, true);
-	}
-	
-	private Data sign(KeyPair keyPair, boolean protectedEntry) {
 		this.signed = true;
+		this.publicKeyFlag = true;
+		this.protectedEntry = true;
 		this.privateKey = keyPair.getPrivate();
 		this.publicKey = keyPair.getPublic();
-		this.publicKeyFlag = true;
-		this.protectedEntry = protectedEntry;
 		return this;
 	}
 	
 	public Data sign() {
-		return sign((PrivateKey)null, false);
+		this.signed = true;
+		this.publicKeyFlag = true;
+		return this;
 	}
 	
 	public Data sign(PrivateKey privateKey) {
-		return sign(privateKey, false);
-	}
-	
-	public Data protectEntry() {
-		return sign((PrivateKey)null, true);
-	}
-		
-	public Data protectEntry(PrivateKey privateKey) {
-		return sign(privateKey, true);
-	}	
-	
-	private Data sign(PrivateKey privateKey, boolean protectedEntry) {
 		this.signed = true;
-		this.privateKey = privateKey;
 		this.publicKeyFlag = true;
-		this.protectedEntry = protectedEntry;
+		this.privateKey = privateKey;
+		return this;
+	}
+	
+	public Data sign(KeyPair keyPair) {
+		this.signed = true;
+		this.publicKeyFlag = true;
+		this.privateKey = keyPair.getPrivate();
+		this.publicKey = keyPair.getPublic();
 		return this;
 	}
 
@@ -590,7 +605,7 @@ public class Data {
 		return this;
 	}
 
-	public Collection<Number160> basedOnSet() {
+	public Set<Number160> basedOnSet() {
 		return basedOnSet;
 	}
 
@@ -816,18 +831,14 @@ public class Data {
 	 * @return The byte array that is the payload. Here we copy the buffer
 	 */
 	public byte[] toBytes() {
-		// we do copy the buffer here
-		ByteBuf buf = buffer.toByteBuf();
-		byte[] me = new byte[buf.readableBytes()];
-		buf.readBytes(me);
-		return me;
+		return buffer.bytes();
 	}
 
 	/**
 	 * @return The ByteBuffers that is the payload. We do not make a copy here
 	 */
 	public ByteBuffer[] toByteBuffers() {
-		return buffer.toByteBuffer();
+		return buffer.bufferList().toArray(new ByteBuffer[0]);
 	}
 
 	public PublicKey publicKey() {
@@ -901,7 +912,7 @@ public class Data {
 
 	public Number160 hash() {
 		if (hash == null) {
-			hash = Utils.makeSHAHash(buffer.toByteBuf());
+			hash = Utils.makeSHAHash(buffer);
 		}
 		return hash;
 	}

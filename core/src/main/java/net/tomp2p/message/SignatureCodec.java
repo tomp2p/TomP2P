@@ -2,21 +2,23 @@ package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
 
-import java.io.IOException;
-
 public interface SignatureCodec {
 
-	SignatureCodec decode(byte[] encodedData) throws IOException;
+	/**
+	 * @return the encoded signature data
+	 */
+	byte[] encode();
 
 	/**
-	 * @return ASN1 encoded signature
-	 * @throws IOException
+	 * Write the signature data into the givne buffer
+	 * 
+	 * @param buf the buffer to write the signature into
+	 * @return this instance
 	 */
-	byte[] encode() throws IOException;
-
 	SignatureCodec write(ByteBuf buf);
-
-	SignatureCodec read(ByteBuf buf);
-
+	
+	/**
+	 * @return the key size in bytes
+	 */
 	int signatureSize();
 }

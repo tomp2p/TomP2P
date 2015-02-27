@@ -39,11 +39,9 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Random;
 import java.util.Set;
@@ -201,7 +199,7 @@ public class TestMessage {
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
 
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }));
@@ -240,7 +238,7 @@ public class TestMessage {
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
 
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).signNow(pair1.getPrivate(), factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).signNow(pair1.getPrivate(), factory));
@@ -280,7 +278,7 @@ public class TestMessage {
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
 
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).signNow(pair1, factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).signNow(pair1, factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).signNow(pair1, factory));
@@ -344,7 +342,25 @@ public class TestMessage {
 		final int size = 50 * 1024 * 1024;
 		Random rnd = new Random(42);
 		Message m1 = Utils2.createDummyMessage();
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+		Data data = new Data(new byte[size]);
+		dataMap.put(new Number640(rnd), data);
+		m1.setDataMap(new DataMap(dataMap));
+		Message m2 = encodeDecode(m1);
+		compareMessage(m1, m2);
+	}
+	
+	@Test
+	public void testBigDataSigned() throws Exception {
+		final int size = 50 * 1024 * 1024;
+		Random rnd = new Random(42);
+		Message m1 = Utils2.createDummyMessage();
+		
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair pair1 = gen.generateKeyPair();
+		m1.publicKeyAndSign(pair1);
+
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		Data data = new Data(new byte[size]);
 		dataMap.put(new Number640(rnd), data);
 		m1.setDataMap(new DataMap(dataMap));
@@ -359,7 +375,7 @@ public class TestMessage {
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
-		Map<Number640, Data> dataMap = new HashMap<Number640, Data>(1000);
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		Random rnd = new Random(42l);
 		for (int i = 0; i < 1000; i++) {
 			dataMap.put(new Number640(new Number160(rnd), new Number160(rnd),
@@ -512,6 +528,30 @@ public class TestMessage {
 		Assert.assertEquals(m1.sender().isSlow(), m2.sender().isSlow());
 		compareMessage(m1, m2);
 	}
+	
+	@Test
+	public void testSize() throws Exception {
+		Message message = Utils2.createDummyMessage();
+		
+		// add some data
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+		Data data = new Data(new byte[101]);
+		dataMap.put(new Number640(new Random()), data);
+		message.setDataMap(new DataMap(dataMap));
+		
+		// add some data
+		ByteBuf c = Unpooled.buffer().writeInt(99);
+		message.buffer(new Buffer(c));
+		
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		message.publicKey(gen.generateKeyPair().getPublic());
+	
+		message.intValue(-1);
+		message.longValue(9l);
+		
+		int size = message.estimateSize();
+		Assert.assertEquals(size, encodeDecode(message).estimateSize());
+	}
 
 	/**
 	 * Encodes and decodes a message.
@@ -544,7 +584,7 @@ public class TestMessage {
 				.sender().createSocketTCP());
 		return decoder.message();
 	}
-
+	
 	/**
 	 * Mock Nettys ChannelHandlerContext with the minimal functions.
 	 * 
@@ -618,53 +658,33 @@ public class TestMessage {
 		Assert.assertEquals(m1.sender(), m2.sender());
 		Assert.assertEquals(m1.sender().tcpPort(), m2.sender().tcpPort());
 
-		Assert.assertEquals(
-				true,
-				Utils.isSameSets(m1.bloomFilterList(),
-						m2.bloomFilterList()));
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.bufferList(), m2.bufferList()));
-		
-		
-		Assert.assertEquals(m1.dataMapList().size(), m2.dataMapList().size());
-		
-		//;
-		for(Iterator<DataMap> iter1 = m1.dataMapList().iterator(), 
-				iter2 = m2.dataMapList().iterator();iter1.hasNext() && iter2.hasNext();) {
-			Assert.assertEquals(true,
-					DeepEquals.deepEquals(iter1.next().dataMap(), iter2.next().dataMap()));
-		}
-		
-		
-		
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.intList(), m2.intList()));
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.keyList(), m2.keyList()));
-		Assert.assertEquals(
-				true,
-				Utils.isSameSets(m1.keyCollectionList(),
-						m2.keyCollectionList()));
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.keyMap640KeysList(), m2.keyMap640KeysList()));
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.longList(), m2.longList()));
-		
-		Assert.assertEquals(m1.neighborsSetList().size(), m2.neighborsSetList().size()); 
-		for(Iterator<NeighborSet> iter1 = m1.neighborsSetList().iterator(), 
-				iter2 = m2.neighborsSetList().iterator();iter1.hasNext() && iter2.hasNext();) {
-			Assert.assertEquals(
-					true,
-					Utils.isSameSets(iter1.next().neighbors(),
-							iter2.next().neighbors()));	
-		}
-		
-		
+		Assert.assertEquals(true, Utils.isSameSets(m1.bloomFilterList(), m2.bloomFilterList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.bufferList(), m2.bufferList()));
 
-		Assert.assertEquals(m1.sender().isFirewalledTCP(), m2.sender()
-				.isFirewalledTCP());
-		Assert.assertEquals(m1.sender().isFirewalledUDP(), m2.sender()
-				.isFirewalledUDP());
+		Assert.assertEquals(m1.dataMapList().size(), m2.dataMapList().size());
+
+		for (Iterator<DataMap> iter1 = m1.dataMapList().iterator(), iter2 = m2.dataMapList().iterator(); iter1.hasNext()
+				&& iter2.hasNext();) {
+			Assert.assertEquals(true, DeepEquals.deepEquals(iter1.next().dataMap(), iter2.next().dataMap()));
+		}
+
+		Assert.assertEquals(true, Utils.isSameSets(m1.intList(), m2.intList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.keyList(), m2.keyList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.keyCollectionList(), m2.keyCollectionList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.keyMap640KeysList(), m2.keyMap640KeysList()));
+		Assert.assertEquals(true, Utils.isSameSets(m1.longList(), m2.longList()));
+
+		Assert.assertEquals(m1.neighborsSetList().size(), m2.neighborsSetList().size());
+		for (Iterator<NeighborSet> iter1 = m1.neighborsSetList().iterator(), iter2 = m2.neighborsSetList().iterator(); iter1
+				.hasNext() && iter2.hasNext();) {
+			Assert.assertEquals(true, Utils.isSameSets(iter1.next().neighbors(), iter2.next().neighbors()));
+		}
+
+		Assert.assertEquals(m1.sender().isFirewalledTCP(), m2.sender().isFirewalledTCP());
+		Assert.assertEquals(m1.sender().isFirewalledUDP(), m2.sender().isFirewalledUDP());
+		Assert.assertEquals(m1.sender().isRelayed(), m2.sender().isRelayed());
+		Assert.assertEquals(m1.sender().isSlow(), m2.sender().isSlow());
+		Assert.assertEquals(m1.sender().isPortForwarding(), m2.sender().isPortForwarding());
 	}
 
 	/**

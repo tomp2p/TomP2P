@@ -13,7 +13,7 @@
 	<groupId>net.tomp2p</groupId>
 	<artifactId>tomp2p-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>5.0-Beta2-SNAPSHOT</version>
+	<version>5.0-Beta4</version>
 
 	<name>TomP2P</name>
 	<url>http://tomp2p.net</url>
@@ -34,11 +34,11 @@
 		<url>https://github.com/tomp2p/TomP2P</url>
 		<connection>scm:git:git://github.com/tomp2p/TomP2P.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com/tomp2p/TomP2P.git</developerConnection>
-	  <tag>HEAD</tag>
+	  <tag>tomp2p-parent-5.0-Beta4</tag>
   	</scm>
   	
   	<properties>
-        <netty.version>4.0.24.Final</netty.version>
+        <netty.version>4.0.25.Final</netty.version>
     </properties>
 
 	<modules>
@@ -47,6 +47,7 @@
 		<module>replication</module>
 		<module>examples</module>
 		<module>nat</module>
+		<module>android</module>
 		<module>all</module>
 		<module>storage</module>
 		<module>dht</module>

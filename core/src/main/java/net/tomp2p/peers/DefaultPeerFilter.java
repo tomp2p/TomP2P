@@ -18,16 +18,23 @@ package net.tomp2p.peers;
 
 import java.util.Collection;
 
+
 /**
  * The default filter accepts all peers.
  * 
  * @author Thomas Bocek
  * 
  */
-public class DefaultPeerFilter implements PeerFilter {
+public class DefaultPeerFilter implements PeerMapFilter {
 
 	@Override
-    public boolean reject(PeerAddress peerAddress, Collection<PeerAddress> all, Number160 target) {
+    public boolean rejectPeerMap(PeerAddress peerAddress, final PeerMap peerMap) {
+		// by default, don't reject anything
+	    return false;
+    }
+
+	@Override
+    public boolean rejectPreRouting(PeerAddress peerAddress, Collection<PeerAddress> all) {
 		// by default, don't reject anything
 	    return false;
     }

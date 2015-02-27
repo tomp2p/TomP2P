@@ -23,10 +23,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -186,7 +187,7 @@ public class SyncRPC extends DispatchHandler {
         
         final boolean isSyncFromOldVersion = message.type() == Type.REQUEST_2;
         final KeyMap640Keys keysMap = message.keyMap640Keys(0);
-        final Map<Number640, Data> retVal = new HashMap<Number640, Data>();
+        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
         
         for (Map.Entry<Number640, Collection<Number160>> entry : keysMap.keysMap().entrySet()) {
             Data data = storageLayer.get(entry.getKey());
@@ -204,6 +205,8 @@ public class SyncRPC extends DispatchHandler {
                     List<Checksum> checksums = RSync.checksums(data.toBytes(), blockSize);
                     AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
                     DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().versionKey(), data.hash(), abuf);
+                    //here we can release this buffer as encodeChecksum calls retain
+                    abuf.release();
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required hash = {}", data.hash());
                 }
@@ -217,6 +220,8 @@ public class SyncRPC extends DispatchHandler {
             		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
                     DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().versionKey(), 
                     		latest.getValue().hash(), abuf);
+                    //here we can release this buffer as encodeChecksum calls retain
+                    abuf.release();
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required for version");
             	} else {
@@ -273,7 +278,7 @@ public class SyncRPC extends DispatchHandler {
                     // TODO: don't copy data, toBytes does a copy!
                     DataBuffer reconstructedValue = RSync.reconstruct(dataOld.toBytes(), instructions, blockSize);
                     //TODO: domain protection?, make the flags configurable
-                    Enum<?> status = storageLayer.put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
+                    Enum<?> status = storageLayer.put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                         if (replicationListener != null) {
@@ -287,7 +292,7 @@ public class SyncRPC extends DispatchHandler {
                 	LOG.debug("handle copy {}", entry.getKey());
                     //TODO: domain protection?, make the flags configurable
                     Enum<?> status = storageLayer.put(entry.getKey(), entry.getValue(),
-                            message.publicKey(0), false, false);
+                            message.publicKey(0), false, false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                         if (replicationListener != null) {

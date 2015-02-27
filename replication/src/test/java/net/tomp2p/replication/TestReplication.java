@@ -25,8 +25,8 @@ import java.util.TreeSet;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.AutomaticFuture;
@@ -259,7 +259,7 @@ public class TestReplication {
             Number160 locationKey = new Number160(RND2);
             master.peerBean().peerMap();
             // closest
-            TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(PeerMap.createComparator(locationKey));
+            TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(locationKey));
             tmp.add(master.peerAddress());
             for (int i = 0; i < peers.length; i++) {
                 tmp.add(peers[i].peerAddress());
@@ -326,7 +326,7 @@ public class TestReplication {
     }
     
     private static PeerDHT searchPeer(final Number160 locationKey, final PeerDHT[] peers) {
-        TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(PeerMap.createComparator(locationKey));
+        TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(locationKey));
         for (int i = 0; i < peers.length; i++) {
             tmp.add(peers[i].peerAddress());
         }

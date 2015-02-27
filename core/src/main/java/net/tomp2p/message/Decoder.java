@@ -6,7 +6,6 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -16,6 +15,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,6 +55,7 @@ public class Decoder {
 
 	// current state - needs to be deleted if we want to reuse
 	private Message message = null;
+	private Signature signature = null;
 
 	private int neighborSize = -1;
 	private NeighborSet neighborSet = null;
@@ -139,7 +140,7 @@ public class Decoder {
 		}
 	}
 	
-	public void decodeSignature(final ByteBuf buf, final int readerBefore, final boolean donePayload) throws InvalidKeyException, SignatureException, IOException {
+	public void decodeSignature(final ByteBuf buf, final int readerBefore, final boolean donePayload) throws InvalidKeyException, SignatureException {
 		final int readerAfter = buf.readerIndex();
 		final int len = readerAfter - readerBefore;
 		if(len > 0) {
@@ -148,20 +149,26 @@ public class Decoder {
 	}
 
 	private void verifySignature(final ByteBuf buf, final int readerBefore, final int len, final boolean donePayload)
-	        throws SignatureException, IOException, InvalidKeyException {
+	        throws SignatureException, InvalidKeyException {
 
 		if (!message.isSign()) {
 			return;
 		}
 		// if we read the complete data, we also read the signature
 		// for the verification, we should not use this for the signature
-		final int length = donePayload ? len - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) : len;
+		final int length = donePayload ? len - signatureFactory.signatureSize() : len; 
 		ByteBuffer[] byteBuffers = buf.nioBuffers(readerBefore, length);
-		
-		Signature signature = signatureFactory.update(message.publicKey(0), byteBuffers);
+		if(signature == null) {
+			signature = signatureFactory.update(message.publicKey(0), byteBuffers);
+		} else {
+			for (int i = 0; i < byteBuffers.length; i++) {
+				signature.update(byteBuffers[i]);
+			}
+		}
 
 		if (donePayload) {
 			byte[] signatureReceived = message.receivedSignature().encode();
+			LOG.debug("Verifying received signature: {}", Arrays.toString(signatureReceived));
 			if (signature.verify(signatureReceived)) {
 				// set public key only if signature is correct
 				message.setVerified();
@@ -341,7 +348,7 @@ public class Decoder {
 					mapSize = buf.readInt();
 				}
 				if (dataMap == null) {
-					dataMap = new DataMap(new HashMap<Number640, Data>(2 * mapSize));
+					dataMap = new DataMap(new TreeMap<Number640, Data>());
 				}
 				if (data != null) {
 					if (!data.decodeBuffer(buf)) {
@@ -383,10 +390,7 @@ public class Decoder {
 						return false;
 					}
 					// if we have signed the message, set the public key anyway, but only if we indicated so
-					if (message.isSign() && message.publicKey(0) != null && data.hasPublicKey() 
-							&& (data.publicKey() == null || data.publicKey() == PeerBuilder.EMPTY_PUBLIC_KEY)) {
-						data.publicKey(message.publicKey(0));
-					}
+					inheritPublicKey(message, data);
 					data = null;
 					key = null;
 				}
@@ -584,13 +588,12 @@ public class Decoder {
 			}
 		}
 		if (message.isSign()) {
-			SignatureCodec signatureEncode = signatureFactory.signatureCodec();
-			size = signatureEncode.signatureSize();
-			if (buf.readableBytes() < size) {
+			size = signatureFactory.signatureSize();
+			if(buf.readableBytes() < size) {
 				return false;
 			}
 			
-			signatureEncode.read(buf);
+			SignatureCodec signatureEncode = signatureFactory.signatureCodec(buf);
 			message.receivedSignature(signatureEncode);
 		}
 		return true;
@@ -612,6 +615,7 @@ public class Decoder {
 		keyMap640Keys = null;
 		bufferSize = -1;
 		buffer = null;
+		signature = null;
 		return ret;
 	}
 
@@ -622,4 +626,11 @@ public class Decoder {
 	public Content lastContent() {
 		return lastContent;
 	}
+	
+	public static void inheritPublicKey(Message message, Data data) {
+	    if (message.isSign() && message.publicKey(0) != null && data.hasPublicKey() 
+	    		&& (data.publicKey() == null || data.publicKey() == PeerBuilder.EMPTY_PUBLIC_KEY)) {
+	    	data.publicKey(message.publicKey(0));
+	    }
+    }
 }

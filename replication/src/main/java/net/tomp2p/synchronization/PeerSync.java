@@ -16,7 +16,7 @@
 
 package net.tomp2p.synchronization;
 
-import java.util.Map;
+import java.util.NavigableMap;
 
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.ReplicationListener;
@@ -73,7 +73,7 @@ public class PeerSync implements ReplicationSender {
 	}
 	
 	@Override
-    public FutureDone<SyncStat> sendDirect(PeerAddress other, Number160 locationKey, Map<Number640, Data> dataMap) {
+    public FutureDone<SyncStat> sendDirect(PeerAddress other, Number160 locationKey, NavigableMap<Number640, Data> dataMap) {
         FutureDone<SyncStat> future = synchronize(other)
                 .dataMap(new DataMap(dataMap)).start();
         peer.peer().notifyAutomaticFutures(future);

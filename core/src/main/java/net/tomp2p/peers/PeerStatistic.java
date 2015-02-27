@@ -15,9 +15,11 @@
  */
 package net.tomp2p.peers;
 
-import java.io.Serializable;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import net.tomp2p.utils.FIFOCache;
 
 /**
  * Keeps track of the statistics of a given peer.
@@ -25,11 +27,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Thomas Bocek
  * 
  */
-public class PeerStatistic implements Serializable {
-    
-	private static final long serialVersionUID = -6225586345726672194L;
+public class PeerStatistic {
 
-	private final AtomicLong lastSeenOnline = new AtomicLong(0);
+    public static final int RTT_CACHE_SIZE = 5;
+
+    private final AtomicLong lastSeenOnline = new AtomicLong(0);
 
     private final long created = System.currentTimeMillis();
 
@@ -42,6 +44,10 @@ public class PeerStatistic implements Serializable {
     private PeerAddress peerAddress;
     
     private boolean local;
+
+    private FIFOCache<RTT> rttCache = new FIFOCache<RTT>(RTT_CACHE_SIZE);
+
+    private long numberOfResponses = 0;
 
     /**
      * Constructor. Sets the peer address
@@ -106,6 +112,14 @@ public class PeerStatistic implements Serializable {
         return (int) (lastSeenOnline.get() - created);
     }
 
+    public long getNumberOfResponses() {
+        return numberOfResponses;
+    }
+
+    public void increaseNumberOfResponses() {
+        numberOfResponses++;
+    }
+
     /**
      * @return the peer address associated with this peer address
      */
@@ -129,28 +143,12 @@ public class PeerStatistic implements Serializable {
         return previousPeerAddress;
     }
     
-    @Override
-    public int hashCode() {
-        return peerId.hashCode();
-    }
-    
-    @Override
-    public boolean equals(Object obj) {
-        if(obj == this) {
-        	return true;
-        }
-        if(!(obj instanceof PeerStatistic)) {
-        	return false;
-        }
-        PeerStatistic p = (PeerStatistic) obj;
-        return p.peerId.equals(peerId);
-    }
-
 	public PeerStatistic local() {
 	    setLocal(true);
 		return this;
     }
-	
+
+
 	public boolean isLocal() {
 		return local;
     }
@@ -158,5 +156,98 @@ public class PeerStatistic implements Serializable {
 	public PeerStatistic setLocal(boolean local) {
 		this.local = local;
 		return this;
+    }
+
+    /**
+     * Adds a RTT to the cache. If the provided RTT object is an estimate
+     * it will be ignored in case there are already first-hand measurements
+     * in the cache. Also any real measurement will clear out any estimates
+     * in the cache beforehand. This prevents any mix-up between real
+     * measurements and estimates
+     *
+     * @param rtt   The RTT object that should be added
+     * @return      The PeerStatistic object
+     */
+    public PeerStatistic addRTT(RTT rtt) {
+        if (rtt != null && rtt.getRtt() > 0) {
+            // If we have estimates in the cache,
+            // clear cache before adding "real" measurement
+            if (containsEstimates()) {
+                if (!rtt.isEstimated())
+                    rttCache.clear();
+
+                rttCache.add(rtt);
+                return this;
+
+            // Only add measured RTTs to our cache if we have some already
+            // Estimates will be ignored after we received at least 1 "real" RTT
+            } else if (!rtt.isEstimated() || rttCache.isEmpty()) {
+                rttCache.add(rtt);
+                return this;
+            }
+        }
+        return this;
+    }
+
+    /**
+     * @return  True, if the RTT cache contains estimates, false if empty or
+     *          cache is empty.
+     */
+    public boolean containsEstimates() {
+        return !rttCache.isEmpty() && rttCache.peek().isEstimated();
+    }
+
+    /**
+     * @return Most recent RTT or null if cache is empty
+     */
+    public RTT getLatestRTT() {
+        if (rttCache.isEmpty())
+            return null;
+
+        return rttCache.peekTail();
+    }
+
+    /**
+     * Get the mean of the last 5 RTTs
+     *
+     * @return Average RTT in milliseconds or -1 if cache is empty.
+     */
+    public long getMeanRTT() {
+        if (rttCache.isEmpty())
+            return -1;
+
+        long sum = 0;
+        for (Iterator<RTT> iterator = rttCache.iterator(); iterator.hasNext(); ) {
+            RTT next = iterator.next();
+            sum += next.getRtt();
+        }
+        return sum / rttCache.size();
+    }
+
+    /**
+     * How many RTT measurements are in the cache
+     *
+     * @return  Number of RTT objects in cache. Number between
+     *          0 and RTT_CACHE_SIZE
+     */
+    public int getRTTCount() {
+        return rttCache.size();
+    }
+
+    @Override
+    public int hashCode() {
+        return peerId.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj == this) {
+            return true;
+        }
+        if(!(obj instanceof PeerStatistic)) {
+            return false;
+        }
+        PeerStatistic p = (PeerStatistic) obj;
+        return p.peerId.equals(peerId);
     }
 }

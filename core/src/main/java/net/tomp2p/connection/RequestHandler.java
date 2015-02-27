@@ -15,7 +15,7 @@
  */
 package net.tomp2p.connection;
 
-import io.netty.channel.ChannelHandlerContext;
+ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -282,15 +282,17 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         	responseMessage.sender(realAddress);
         }
 
+        // Stop time measurement of RTT
+        futureResponse.stopRTTMeasurement();
+
         // We got a good answer, let's mark the sender as alive
         //if its an announce, the peer status will be handled in the RPC
 		if (responseMessage.command() != RPC.Commands.LOCAL_ANNOUNCE.getNr() 
 				&& (responseMessage.isOk() || responseMessage.isNotOk())) {
-			peerBean.notifyPeerFound(responseMessage.sender(), null, null);
+			peerBean.notifyPeerFound(responseMessage.sender(), null, null, futureResponse.getRoundTripTime());
 		}
         
         // call this for streaming support
-        futureResponse.progress(responseMessage);
         if (!responseMessage.isDone()) {
             LOG.debug("good message is streaming {}", responseMessage);
             return;

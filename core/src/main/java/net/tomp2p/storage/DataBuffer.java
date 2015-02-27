@@ -113,19 +113,12 @@ public class DataBuffer {
 	
 	/**
 	 * @return The ByteBuf arrays backed by the buffers stored in here. The buffer is
-	 *         not deep copied here.
+	 *         not deep copied here. That means the reference counting is done by this class. 
+	 *         If you want to use it longer than this object, call ByteBuf.retain().
 	 */
 	public ByteBuf[] toByteBufs() {
 		final DataBuffer copy = shallowCopy();
 		return copy.buffers.toArray(new ByteBuf[0]);
-	}
-
-	/**
-	 * @return The ByteBuffers backed by the buffers stored in here. The buffer
-	 *         is not deep copied here.
-	 */
-	public ByteBuffer[] toByteBuffer() {
-		return toByteBuf().nioBuffers();
 	}
 
 	/**
@@ -186,7 +179,7 @@ public class DataBuffer {
 
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(toByteBuffer());
+		return Arrays.hashCode(bytes());
 	}
 
 	@Override
@@ -198,7 +191,7 @@ public class DataBuffer {
 			return true;
 		}
 		final DataBuffer m = (DataBuffer) obj;
-		return m.toByteBuf().equals(toByteBuf());
+		return Arrays.equals(m.bytes(), bytes());
 	}
 
 	@Override
@@ -217,18 +210,18 @@ public class DataBuffer {
 	}
 
 	public byte[] bytes() {
-		final ByteBuffer[] bufs = toByteBuffer();
-		final int bufLength = bufs.length;
+		final List<ByteBuffer> bufs = bufferList();
 		int size = 0;
-		for (int i = 0; i < bufLength; i++) {
-			size += bufs[i].remaining();
+		for (ByteBuffer buf:bufs) {
+			size += buf.remaining();
 		}
 
-		byte[] retVal = new byte[size];
-		for (int i = 0, offset = 0; i < bufLength; i++) {
-			final int remaining = bufs[i].remaining();
-			bufs[i].get(retVal, offset, remaining);
-			offset += remaining;
+		final byte[] retVal = new byte[size];
+		int offset = 0;
+		for (ByteBuffer bb:bufs) {
+			final int length = bb.remaining();
+			bb.get(retVal, offset, length);
+			offset += length;
 		}
 		return retVal;
 	}

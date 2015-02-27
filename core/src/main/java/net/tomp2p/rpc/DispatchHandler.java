@@ -75,6 +75,7 @@ public abstract class DispatchHandler {
     * @param names
      */
     public void register(Number160 onBehalfOf, final int... names) {
+    	LOG.debug("registering {} for {} with {}", peerBean.serverPeerAddress().peerId(), onBehalfOf, names);
         connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), onBehalfOf, this, names);
     }
 
@@ -158,7 +159,7 @@ public abstract class DispatchHandler {
         // if we can contact the peer with its address. The peer may be
         // behind a NAT
     	if(requestMessage.command() != RPC.Commands.LOCAL_ANNOUNCE.getNr()) {
-    		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection);
+    		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection, null);
     	}
         
         try {

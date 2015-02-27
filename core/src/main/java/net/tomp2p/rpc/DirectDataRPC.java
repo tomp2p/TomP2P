@@ -69,8 +69,7 @@ public class DirectDataRPC extends DispatchHandler {
             final SendDirectBuilderI sendDirectBuilder) {
         final Message message = createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(),
                 sendDirectBuilder.isRaw() ? Type.REQUEST_1 : Type.REQUEST_2);
-        final FutureResponse futureResponse = new FutureResponse(message,
-                sendDirectBuilder.progressListener());
+        final FutureResponse futureResponse = new FutureResponse(message);
 
         if (sendDirectBuilder.isSign()) {
             message.publicKeyAndSign(sendDirectBuilder.keyPair());
@@ -133,8 +132,10 @@ public class DirectDataRPC extends DispatchHandler {
         final RawDataReply rawDataReply2 = rawDataReply;
         final ObjectDataReply objectDataReply2 = objectDataReply;
         if (message.type() == Type.REQUEST_1 && rawDataReply2 == null) {
+        	LOG.warn("no raw reply handler registered");
             responseMessage.type(Type.NOT_FOUND);
         } else if (message.type() == Type.REQUEST_2 && objectDataReply2 == null) {
+        	LOG.warn("no object reply handler registered");
             responseMessage.type(Type.NOT_FOUND);
         } else {
             final Buffer requestBuffer = message.buffer(0);
@@ -146,6 +147,7 @@ public class DirectDataRPC extends DispatchHandler {
                 final Buffer replyBuffer = rawDataReply2.reply(message.sender(), requestBuffer,
                         message.isDone());
                 if (replyBuffer == null && message.isDone()) {
+                	LOG.warn("raw reply is null, returning not found - debug message");
                     responseMessage.type(Type.NOT_FOUND);
                 } else if (replyBuffer != requestBuffer) {
                     // can be partial as well
@@ -160,6 +162,7 @@ public class DirectDataRPC extends DispatchHandler {
 
                 Object reply = objectDataReply2.reply(message.sender(), obj);
                 if (reply == null) {
+                	LOG.warn("object reply is null, returning not found - debug message");
                     responseMessage.type(Type.NOT_FOUND);
                 } else if (reply == obj) {
                     responseMessage.type(Type.OK);

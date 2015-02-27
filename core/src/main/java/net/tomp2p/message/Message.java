@@ -26,16 +26,20 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Queue;
 import java.util.Random;
+import java.util.TreeMap;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.rpc.SimpleBloomFilter;
+import net.tomp2p.storage.Data;
 
 /**
  * The message is in binary format in TomP2P. It has several header and payload fields. Since
@@ -168,7 +172,7 @@ public class Message {
     // Payload:
     // we can send 8 types
     private Content[] contentTypes = new Content[CONTENT_TYPE_LENGTH];
-    private final Queue<MessageContentIndex> contentReferences = new LinkedList<MessageContentIndex>();
+    private final transient Queue<MessageContentIndex> contentReferences = new LinkedList<MessageContentIndex>();
 
     // ********* Here comes the payload objects ************
     // The content lists:
@@ -198,6 +202,7 @@ public class Message {
     private transient boolean sign = false;
     private transient boolean content = false;
     private transient boolean verified = false;
+    private transient boolean sendSelf = false;
 
     /**
      * Creates message with a random ID.
@@ -1086,4 +1091,182 @@ public class Message {
     public boolean isDone() {
         return done;
     }
+    
+    public Message sendSelf(final boolean sendSelf) {
+        this.sendSelf = sendSelf;
+        return this;
+    }
+    
+    public Message sendSelf() {
+        return sendSelf(true);
+    }
+
+    public boolean isSendSelf() {
+        return sendSelf;
+    }
+    
+    public Message duplicate() {
+    	return duplicate(null);
+    }
+    
+    public Message duplicate(DataFilter dataFilter) {
+    	Message message = new Message();
+    	
+    	// Header
+        message.messageId = this.messageId;
+        message.version = this.version;
+        message.type = this.type;
+        message.command = this.command;
+        message.sender = this.sender;
+        message.recipient = this.recipient;
+        // recipientRelay is not transferred
+        message.options = this.options;
+
+        // Payload
+        message.contentTypes =  this.contentTypes;
+        // contentReferences is transient
+
+        // ********* Here comes the payload objects ************
+        // The content lists:
+        message.neighborsList = this.neighborsList;
+        message.keyList = this.keyList;
+        message.bloomFilterList = this.bloomFilterList;
+        if(dataFilter == null) {
+        	message.dataMapList = this.dataMapList;
+        } else {
+    		message.dataMapList = filter(dataFilter);
+        }
+        message.integerList = this.integerList;
+        message.longList = this.longList;
+        message.keyCollectionList = this.keyCollectionList;
+        message.keyMap640KeysList = this.keyMap640KeysList;
+        message.keyMapByteList = this.keyMapByteList;
+        message.bufferList = this.bufferList;
+        message.trackerDataList = this.trackerDataList;
+        message.publicKeyList = this.publicKeyList;
+        message.peerSocketAddressList = this.peerSocketAddressList;
+        message.signatureEncode = this.signatureEncode;
+        
+        // these are transient
+        //presetContentTypes
+        //privateKey;
+        //senderSocket;
+        //recipientSocket;
+        //udp;
+        //done;
+        //sign;
+        //content;
+        //verified;
+        //sendSelf;
+        
+        return message;
+    }
+
+	/**
+	 * Change the data and make a shallow copy of the data. This means fields
+	 * such as TTL or other are copied, the underlying buffer remains the same
+	 * 
+	 * @param dataFilter
+	 *            The filter that will be applied on each data item
+	 * @return The filtered data
+	 */
+	private List<DataMap> filter(DataFilter dataFilter) {
+		final List<DataMap> dataMapListCopy = new ArrayList<DataMap>(this.dataMapList().size());
+		for (DataMap dataMap : this.dataMapList()) {
+			final NavigableMap<Number640, Data> dataMapCopy = new TreeMap<Number640, Data>();
+			for (Map.Entry<Number640, Data> entry : dataMap.dataMap()
+					.entrySet()) {
+				Data filteredData = dataFilter.filter(entry.getValue(), dataMap.isConvertMeta(), !isRequest());
+				dataMapCopy.put(entry.getKey(), filteredData);
+			}
+			dataMapListCopy.add(new DataMap(dataMapCopy, dataMap.isConvertMeta()));
+		}
+		return dataMapListCopy;
+	}
+	
+	/**
+	 * Returns the estimated message size. If the message contains data, a constant value of 1000bytes is added.
+	 */
+	public int estimateSize() {
+		int current = MessageHeaderCodec.HEADER_SIZE;
+		
+		if(neighborsList != null) {
+			for (NeighborSet neighbors : neighborsList) {
+				for (PeerAddress address : neighbors.neighbors()) {
+					current += address.size() + 1;
+				}
+			}
+		}
+		
+		if(keyList != null) {
+			current += keyList.size() * Number160.BYTE_ARRAY_SIZE;
+		}
+		
+		if(bloomFilterList != null) {
+			for (SimpleBloomFilter<Number160> filter : bloomFilterList) {
+				current += filter.size();
+			}
+		}
+		
+		if(integerList != null) {
+			current += integerList.size() * 4;
+		}
+		
+		if(longList != null) {
+			current += longList.size() * 8;
+		}
+		
+		if(keyCollectionList != null) {
+			for (KeyCollection coll : keyCollectionList) {
+				current += 4 + coll.size() * Number640.BYTE_ARRAY_SIZE;
+			}
+		}
+		
+		if(keyMap640KeysList != null) {
+			for (KeyMap640Keys keys : keyMap640KeysList) {
+				current += 4 + keys.size() * Number640.BYTE_ARRAY_SIZE;
+			}
+		}
+		
+		if(keyMapByteList != null) {
+			for (KeyMapByte keys : keyMapByteList) {
+				current += 4 + keys.size();
+			}
+		}
+		
+		if(bufferList != null) {
+			for (Buffer buffer : bufferList) {
+				current += 4 + buffer.length();
+			}
+		}
+		
+		if(publicKeyList != null) {
+			for (PublicKey key : publicKeyList) {
+				current += key.getEncoded().length;
+			}
+		}
+		
+		if(peerSocketAddressList != null) {
+			for (PeerSocketAddress address : peerSocketAddressList) {
+				current += address.size() + 1;
+			}
+		}
+		
+		if(signatureEncode != null) {
+			current += signatureEncode.signatureSize();
+		}
+		
+		/**
+		 * Here are the estimations to skip CPU intensive calculations
+		 */
+		if(dataMapList != null) {
+			current += 1000;
+		}
+		
+		if(trackerDataList != null) {
+			current += 1000; // estimated size
+		}
+		
+		return current;
+	}
 }

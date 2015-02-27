@@ -12,8 +12,8 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.UtilsNAT;
+import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -62,7 +62,7 @@ public class AbstractTestHoleP {
 
 		// setup relay
 		PeerNAT uNat = new PeerBuilderNAT(unreachable).start();
-		FutureRelayNAT frn = uNat.startRelay(RelayConfig.OpenTCP(), master.peerAddress());
+		FutureRelayNAT frn = uNat.startRelay(new TCPRelayClientConfig(), master.peerAddress());
 		frn.awaitUninterruptibly();
 		Assert.assertTrue(frn.isSuccess());
 

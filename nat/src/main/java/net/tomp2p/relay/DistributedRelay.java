@@ -3,13 +3,11 @@ package net.tomp2p.relay;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -18,15 +16,11 @@ import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.relay.android.AndroidRelayConnection;
-import net.tomp2p.relay.android.MessageBuffer;
-import net.tomp2p.relay.android.MessageBufferListener;
-import net.tomp2p.relay.android.gcm.GCMMessageHandler;
-import net.tomp2p.relay.tcp.OpenTCPRelayConnection;
+import net.tomp2p.relay.buffer.BufferRequestListener;
+import net.tomp2p.relay.buffer.BufferedRelayClient;
 import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
@@ -41,22 +35,18 @@ import org.slf4j.LoggerFactory;
  * @author Nico Rutishauser
  * 
  */
-public class DistributedRelay implements GCMMessageHandler {
+public class DistributedRelay implements BufferRequestListener {
 
 	private final static Logger LOG = LoggerFactory.getLogger(DistributedRelay.class);
 
 	private final Peer peer;
 	private final RelayRPC relayRPC;
-	private final ConnectionConfiguration config;
 
-	private final List<BaseRelayConnection> relays;
+	private final List<BaseRelayClient> relayClients;
 	private final Set<PeerAddress> failedRelays;
 
 	private final Collection<RelayListener> relayListeners;
-	private final RelayConfig relayConfig;
-
-	// optional field, only when an android device and buffering is requested
-	private MessageBuffer<String> gcmBuffer;
+	private final RelayClientConfig relayConfig;
 
 	/**
 	 * @param peer
@@ -70,33 +60,17 @@ public class DistributedRelay implements GCMMessageHandler {
 	 * @param relayType
 	 *            the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, ConnectionConfiguration config, RelayConfig relayConfig) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, RelayClientConfig relayConfig) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
-		this.config = config;
 		this.relayConfig = relayConfig;
 
-		relays = Collections.synchronizedList(new ArrayList<BaseRelayConnection>());
+		relayClients = Collections.synchronizedList(new ArrayList<BaseRelayClient>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(relayConfig.failedRelayWaitTime());
 		relayListeners = Collections.synchronizedList(new ArrayList<RelayListener>(1));
-		
-		// buffering is currently only allowed at Android devices
-		if(relayConfig.type() == RelayType.ANDROID && relayConfig.bufferConfiguration() != null) {
-			gcmBuffer = new MessageBuffer<String>(relayConfig.bufferConfiguration());
-			gcmBuffer.addListener(new MessageBufferListener<String>() {
-				
-				@Override
-				public void bufferFull(List<String> messages) {
-					Set<String> relayIds = new HashSet<String>(messages);
-					for (String peerId : relayIds) {
-						sendBufferRequest(peerId);
-					}
-				}
-			});
-		}
 	}
 
-	public RelayConfig relayConfig() {
+	public RelayClientConfig relayConfig() {
 		return relayConfig;
 	}
 
@@ -105,10 +79,10 @@ public class DistributedRelay implements GCMMessageHandler {
 	 * 
 	 * @return List of PeerAddresses of the relay peers (copy)
 	 */
-	public List<BaseRelayConnection> relays() {
-		synchronized (relays) {
+	public List<BaseRelayClient> relayClients() {
+		synchronized (relayClients) {
 			// make a copy
-			return Collections.unmodifiableList(new ArrayList<BaseRelayConnection>(relays));
+			return Collections.unmodifiableList(new ArrayList<BaseRelayClient>(relayClients));
 		}
 	}
 
@@ -120,10 +94,10 @@ public class DistributedRelay implements GCMMessageHandler {
 
 	public FutureForkJoin<FutureDone<Void>> shutdown() {
 		final AtomicReferenceArray<FutureDone<Void>> futureDones;
-		synchronized (relays) {
-			futureDones = new AtomicReferenceArray<FutureDone<Void>>(relays.size());
-			for (int i = 0; i < relays.size(); i++) {
-				futureDones.set(i, relays.get(i).shutdown());
+		synchronized (relayClients) {
+			futureDones = new AtomicReferenceArray<FutureDone<Void>>(relayClients.size());
+			for (int i = 0; i < relayClients.size(); i++) {
+				futureDones.set(i, relayClients.get(i).shutdown());
 			}
 		}
 
@@ -177,8 +151,8 @@ public class DistributedRelay implements GCMMessageHandler {
 			}
 
 			// filter relays that are already connected
-			synchronized (relays) {
-				for (BaseRelayConnection relay : relays) {
+			synchronized (relayClients) {
+				for (BaseRelayClient relay : relayClients) {
 					if (relay.relayAddress().equals(pa)) {
 						iterator.remove();
 						break;
@@ -197,7 +171,7 @@ public class DistributedRelay implements GCMMessageHandler {
 	 * @return FutureDone
 	 */
 	private void setupPeerConnections(final FutureRelay futureRelay, List<PeerAddress> relayCandidates) {
-		final int nrOfRelays = Math.min(relayConfig.type().maxRelayCount() - relays.size(), relayCandidates.size());
+		final int nrOfRelays = Math.min(relayConfig.type().maxRelayCount() - relayClients.size(), relayCandidates.size());
 		if (nrOfRelays > 0) {
 			LOG.debug("Setting up {} relays", nrOfRelays);
 
@@ -212,7 +186,7 @@ public class DistributedRelay implements GCMMessageHandler {
 				futureRelay.failed("done");
 			} else {
 				// nothing to do
-				futureRelay.done(Collections.<BaseRelayConnection> emptyList());
+				futureRelay.done(Collections.<BaseRelayClient> emptyList());
 			}
 		}
 	}
@@ -268,7 +242,7 @@ public class DistributedRelay implements GCMMessageHandler {
 			public void operationComplete(FutureForkJoin<FutureDone<PeerConnection>> futureForkJoin) throws Exception {
 				if (futureForkJoin.isSuccess()) {
 					updatePeerAddress();
-					futureRelay.done(relays());
+					futureRelay.done(relayClients());
 				} else if (!peer.isShutdown()) {
 					setupPeerConnectionsRecursive(futures, relayCandidates, numberOfRelays, futureRelay, fail + 1,
 							status.append(futureForkJoin.failedReason()).append(" "));
@@ -298,22 +272,8 @@ public class DistributedRelay implements GCMMessageHandler {
 		// encode the relay type in the message such that the relay node knows how to handle
 		message.intValue(relayConfig.type().ordinal());
 
-		// server credentials only used by Android peers
-		if (relayConfig.type() == RelayType.ANDROID) {
-			if (relayConfig.registrationId() == null) {
-				LOG.error("Registration ID must be provided when using Android mode");
-				return futureDone.failed("No GCM registration ID provided");
-			} else {
-				// add the registration ID, the GCM authentication key and the map update interval
-				message.buffer(RelayUtils.encodeString(relayConfig.registrationId()));
-				message.intValue(relayConfig.peerMapUpdateInterval());
-			}
-			
-			if(relayConfig.gcmServers() != null && !relayConfig.gcmServers().isEmpty()) {
-				// provide gcm servers at startup, later they will be updated using the map update task
-				message.neighborsSet(new NeighborSet(-1, relayConfig.gcmServers()));
-			}
-		}
+		// append relay-type specific data
+		relayConfig.prepareSetupMessage(message);
 
 		LOG.debug("Setting up relay connection to peer {}, message {}", candidate, message);
 		final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
@@ -324,13 +284,12 @@ public class DistributedRelay implements GCMMessageHandler {
 					final PeerConnection peerConnection = futurePeerConnection.object();
 
 					// send the message
-					FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(),
-							config, message);
+					FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), message);
 					response.addListener(new BaseFutureAdapter<FutureResponse>() {
 						public void operationComplete(FutureResponse future) throws Exception {
 							if (future.isSuccess()) {
 								// finialize the relay setup
-								setupAddRelays(candidate, peerConnection);
+								setupAddRelays(peerConnection);
 								futureDone.done(peerConnection);
 							} else {
 								LOG.debug("Peer {} denied relay request", candidate);
@@ -353,32 +312,21 @@ public class DistributedRelay implements GCMMessageHandler {
 	/**
 	 * Is called when the setup with the relay worked. Adds the relay to the list.
 	 */
-	private void setupAddRelays(PeerAddress relayAddress, PeerConnection peerConnection) {
-		synchronized (relays) {
-			if (relays.size() >= relayConfig.type().maxRelayCount()) {
+	private void setupAddRelays(PeerConnection peerConnection) {
+		synchronized (relayClients) {
+			if (relayClients.size() >= relayConfig.type().maxRelayCount()) {
 				LOG.warn("The maximum number ({}) of relays is reached", relayConfig.type().maxRelayCount());
 				return;
 			}
 		}
 
-		BaseRelayConnection connection = null;
-		switch (relayConfig.type()) {
-			case OPENTCP:
-				connection = new OpenTCPRelayConnection(peerConnection, peer, config);
-				break;
-			case ANDROID:
-				connection = new AndroidRelayConnection(relayAddress, relayRPC, peer, config);
-				break;
-			default:
-				LOG.error("Unknown relay type {}", relayConfig);
-				return;
-		}
-
+		BaseRelayClient connection = relayConfig.createClient(peerConnection, peer);
 		addCloseListener(connection);
-
-		synchronized (relays) {
-			LOG.debug("Adding peer {} as a relay", relayAddress);
-			relays.add(connection);
+		
+		synchronized (relayClients) {
+			LOG.debug("Adding peer {} as a relay", peerConnection.remotePeer());
+			relayClients.add(connection);
+			relayRPC.addClient(connection);
 		}
 	}
 
@@ -390,7 +338,7 @@ public class DistributedRelay implements GCMMessageHandler {
 	 * @param connection
 	 *            the relay connection on which to add a close listener
 	 */
-	private void addCloseListener(final BaseRelayConnection connection) {
+	private void addCloseListener(final BaseRelayClient connection) {
 		connection.addCloseListener(new RelayListener() {
 			@Override
 			public void relayFailed(PeerAddress relayAddress) {
@@ -400,7 +348,8 @@ public class DistributedRelay implements GCMMessageHandler {
 				// unreachable peer's PeerAddress if a relay peer failed.
 				// It will also cancel the {@link PeerMapUpdateTask}
 				// maintenance task if the last relay is removed.
-				relays.remove(connection);
+				relayClients.remove(connection);
+				relayRPC.removeClient(connection);
 				failedRelays.add(relayAddress);
 				updatePeerAddress();
 
@@ -420,11 +369,11 @@ public class DistributedRelay implements GCMMessageHandler {
 	 */
 	private void updatePeerAddress() {
 		// add relay addresses to peer address
-		boolean hasRelays = !relays.isEmpty();
+		boolean hasRelays = !relayClients.isEmpty();
 
-		Collection<PeerSocketAddress> socketAddresses = new ArrayList<PeerSocketAddress>(relays.size());
-		synchronized (relays) {
-			for (BaseRelayConnection relay : relays) {
+		Collection<PeerSocketAddress> socketAddresses = new ArrayList<PeerSocketAddress>(relayClients.size());
+		synchronized (relayClients) {
+			for (BaseRelayClient relay : relayClients) {
 				PeerAddress pa = relay.relayAddress();
 				socketAddresses.add(new PeerSocketAddress(pa.inetAddress(), pa.tcpPort(), pa.udpPort()));
 			}
@@ -437,36 +386,17 @@ public class DistributedRelay implements GCMMessageHandler {
 		LOG.debug("Updated peer address {}, isrelay = {}", newAddress, hasRelays);
 	}
 
+
 	@Override
-	public void onGCMMessageArrival(String peerId) {
-		if(relayConfig.type() != RelayType.ANDROID) {
-			throw new UnsupportedOperationException("Must be of type 'Android' to access this method");
-		}
-		
-		if(gcmBuffer == null) {
-			LOG.trace("GCM messages are unbuffered. Ask relay {} for messages now", peerId);
-			sendBufferRequest(peerId);
-		} else {
-			LOG.trace("Add the GCM message into the buffer before processing it.");
-			gcmBuffer.addMessage(peerId, 1);
-		}
-	}
-	
-	/**
-	 * Helper method to find the correct connection for the given peerId and sends the request to get the
-	 * buffered messages
-	 * 
-	 * @param relayPeerId the id of the peer as a String
-	 */
-	private void sendBufferRequest(String relayPeerId) {
-		for (BaseRelayConnection relayConnection : relays()) {
+	public FutureDone<Void> sendBufferRequest(String relayPeerId) {
+		for (BaseRelayClient relayConnection : relayClients()) {
 			String peerId = relayConnection.relayAddress().peerId().toString();
-			if (peerId.equals(relayPeerId) && relayConnection instanceof AndroidRelayConnection) {
-				((AndroidRelayConnection) relayConnection).sendBufferRequest();
-				return;
+			if (peerId.equals(relayPeerId) && relayConnection instanceof BufferedRelayClient) {
+				return ((BufferedRelayClient) relayConnection).sendBufferRequest();
 			}
 		}
 
 		LOG.warn("No connection to relay {} found. Ignoring the message.", relayPeerId);
+		return new FutureDone<Void>().failed("No connection to relay " + relayPeerId + " found");
 	}
 }

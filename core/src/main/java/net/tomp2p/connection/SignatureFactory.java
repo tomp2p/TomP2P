@@ -51,15 +51,27 @@ public interface SignatureFactory extends Serializable {
 	PublicKey decodePublicKey(ByteBuf buf);
 
 	void encodePublicKey(PublicKey publicKey, ByteBuf buf);
+	
+	SignatureCodec sign(PrivateKey private1, ByteBuffer[] byteBuffers) throws InvalidKeyException, SignatureException, IOException;
+	
+	boolean verify(PublicKey public1, ByteBuffer[] byteBuffers, SignatureCodec signature) throws SignatureException,
+			InvalidKeyException;
 
-	SignatureCodec sign(PrivateKey privateKey, ByteBuf buf) throws InvalidKeyException,
-			SignatureException, IOException;
-
-	boolean verify(PublicKey publicKey, ByteBuf buf, SignatureCodec signatureEncoded)
-			throws SignatureException, InvalidKeyException, IOException;
 
 	Signature update(PublicKey publicKey, ByteBuffer[] byteBuffers) throws InvalidKeyException, SignatureException;
 
-	SignatureCodec signatureCodec();
+	/**
+	 * Get the signature codec and read the signature directly from the buffer
+	 * 
+	 * @param buf the buffer containing the signature at the reader index
+	 * @return the signature codec
+	 * @throws IOException if the signature cannot be read from the buffer
+	 */
+	SignatureCodec signatureCodec(ByteBuf buf);
+	
+	/**
+	 * @return the number of bytes of the signature codec
+	 */
+	int signatureSize();
 
 }

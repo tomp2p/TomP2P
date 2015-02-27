@@ -19,7 +19,9 @@ package net.tomp2p.examples;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 
 import net.tomp2p.dht.FutureDigest;
 import net.tomp2p.dht.FutureGet;
@@ -102,7 +104,7 @@ public final class ExampleBloomFilter {
 
         Number160 nr1 = new Number160(RND);
 
-        Map<Number160, Data> contentMap = new HashMap<Number160, Data>();
+        NavigableMap<Number160, Data> contentMap = new TreeMap<Number160, Data>();
         System.out.println("first we store 1000 items from 0-999 under key " + nr1);
         for (int i = 0; i < nrPeers; i++) {
             contentMap.put(new Number160(i), new Data("data " + i));
@@ -112,7 +114,7 @@ public final class ExampleBloomFilter {
         futurePut.awaitUninterruptibly();
         // store another one
         Number160 nr2 = new Number160(RND);
-        contentMap = new HashMap<Number160, Data>();
+        contentMap = new TreeMap<Number160, Data>();
         System.out.println("then we store 1000 items from 800-1799 under key " + nr2);
         for (int i = range1; i < range2; i++) {
             contentMap.put(new Number160(i), new Data("data " + i));

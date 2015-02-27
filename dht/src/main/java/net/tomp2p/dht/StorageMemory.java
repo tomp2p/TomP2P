@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import net.tomp2p.peers.Number160;
@@ -61,7 +60,7 @@ public class StorageMemory implements Storage {
     final private Map<Number480, PublicKey> entryMap = new ConcurrentHashMap<Number480, PublicKey>();
 
     // Responsibility
-    final private Map<Number160, Set<Number160>> responsibilityMap = new ConcurrentHashMap<Number160, Set<Number160>>();
+    final private Map<Number160, Number160> responsibilityMap = new ConcurrentHashMap<Number160, Number160>();
     final private Map<Number160, Set<Number160>> responsibilityMapRev = new ConcurrentHashMap<Number160, Set<Number160>>();
     
     final int storageCheckIntervalMillis;
@@ -82,8 +81,8 @@ public class StorageMemory implements Storage {
 
 	// Core
     @Override
-    public boolean put(Number640 key, Data value) {
-        dataMap.put(key, value);
+    public Data put(Number640 key, Data value) {
+        final Data oldData = dataMap.put(key, value);
         if (maxVersions > 0) {
         	NavigableMap<Number640, Data> versions = dataMap.subMap(
 				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.ZERO), true,
@@ -97,7 +96,7 @@ public class StorageMemory implements Storage {
 				removeTimeout(entry.getKey());
 			}
         }
-        return true;
+        return oldData;
     }
 
     @Override
@@ -145,11 +144,8 @@ public class StorageMemory implements Storage {
         // 
         // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
         // then you will call next() that returns null and an exception is thrown.
-        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
-        for(Map.Entry<Number640, Data> entry:tmp.entrySet()) {
-        	retVal.put(entry.getKey(), entry.getValue());
-        }
         
+        final NavigableMap<Number640, Data> retVal = new ConcurrentSkipListMap<Number640, Data>(tmp);
         tmp.clear();
         return retVal;
     }
@@ -157,7 +153,9 @@ public class StorageMemory implements Storage {
     @Override
     public NavigableMap<Number640, Data> subMap(Number640 fromKey, Number640 toKey, int limit,
             boolean ascending) {
-    	final NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
+    	
+    	final NavigableMap<Number640, Data> clone = ((ConcurrentSkipListMap<Number640, Data>)dataMap).clone();
+    	final NavigableMap<Number640, Data> tmp = clone.subMap(fromKey, true, toKey, true);
         final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
         if (limit < 0) {
         	
@@ -181,11 +179,11 @@ public class StorageMemory implements Storage {
             // 
             // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
             // then you will call next() that returns null and an exception is thrown.
-        	for(Map.Entry<Number640, Data> entry:(ascending ? tmp : tmp.descendingMap()).entrySet()) {
-            	retVal.put(entry.getKey(), entry.getValue());
-            }
+        	//for(Map.Entry<Number640, Data> entry:(ascending ? tmp : tmp.descendingMap()).entrySet()) {
+            //	retVal.put(entry.getKey(), entry.getValue());
+            //}
+        	return ascending ? tmp : tmp.descendingMap();
         } else {
-            limit = Math.min(limit, tmp.size());
             Iterator<Map.Entry<Number640, Data>> iterator = ascending ? tmp.entrySet().iterator() : tmp
                     .descendingMap().entrySet().iterator();
             for (int i = 0; iterator.hasNext() && i < limit; i++) {
@@ -280,9 +278,12 @@ public class StorageMemory implements Storage {
     public boolean isDomainProtectedByOthers(Number320 key, PublicKey publicKey) {
         PublicKey other = protectedMap.get(key);
         if (other == null) {
+        	LOG.debug("domain {} not protected", key);
             return false;
         }
-        return !other.equals(publicKey);
+        final boolean retVal = !other.equals(publicKey);
+        LOG.debug("domain {} protected: {}", key, retVal);
+        return retVal;
     }
 
     private Set<Number640> putIfAbsent2(long expiration, Set<Number640> hashSet) {
@@ -291,7 +292,7 @@ public class StorageMemory implements Storage {
     }
 
 	@Override
-	public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
+	public Number160 findPeerIDsForResponsibleContent(Number160 locationKey) {
 		return responsibilityMap.get(locationKey);
 	}
 
@@ -302,35 +303,33 @@ public class StorageMemory implements Storage {
 
 	@Override
 	public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
-		Set<Number160> peerIDs = putIfAbsent(locationKey, new HashSet<Number160>());
-		boolean isNew = peerIDs.add(peerId);
-		Set<Number160> contentIDs = putIfAbsentRev(peerId, new HashSet<Number160>());
-		contentIDs.add(locationKey);
-		if (isNew && LOG.isDebugEnabled()) {
-			LOG.debug("Update {} is responsible for key {}.", peerId, locationKey);
+		final Number160 oldPeerID =  responsibilityMap.put(locationKey, peerId);
+		final boolean hasChanged;
+		if(oldPeerID != null) {
+			if(oldPeerID.equals(peerId)) {
+				hasChanged = false;
+			} else {
+				removeRevResponsibility(oldPeerID, locationKey);
+				hasChanged = true;
+			}
+		} else {
+			hasChanged = true;
 		}
-		return isNew;
-	}
-
-    private Set<Number160> putIfAbsent(Number160 locationKey, Set<Number160> hashSet) {
-        Set<Number160> peerIDs = ((ConcurrentMap<Number160, Set<Number160>>) responsibilityMap).putIfAbsent(
-        		locationKey, hashSet);
-        return peerIDs == null ? hashSet : peerIDs;
-    }
-
-	private Set<Number160> putIfAbsentRev(Number160 peerId, Set<Number160> hashSet) {
-		Set<Number160> contentIDs = ((ConcurrentMap<Number160, Set<Number160>>) responsibilityMapRev)
-				.putIfAbsent(peerId, hashSet);
-		return contentIDs == null ? hashSet : contentIDs;
+		Set<Number160> contentIDs = responsibilityMapRev.get(peerId);
+		if(contentIDs == null) {
+			contentIDs = new HashSet<Number160>();
+			responsibilityMapRev.put(peerId, contentIDs);
+		}
+		contentIDs.add(locationKey);
+		LOG.debug("Update {} is responsible for key {}.", peerId, locationKey);
+		return hasChanged;
 	}
 
     @Override
     public void removeResponsibility(Number160 locationKey) {
-    	 Set<Number160> peerIds = responsibilityMap.remove(locationKey);
-    	 if(peerIds != null) {
-			for (Number160 peerId : peerIds) {
-				removeRevResponsibility(peerId, locationKey);
-			}
+    	 Number160 peerId = responsibilityMap.remove(locationKey);
+    	 if(peerId != null) {
+			removeRevResponsibility(peerId, locationKey);
 			LOG.debug("Remove responsiblity for {}.", locationKey);
     	 }
     }
@@ -344,15 +343,6 @@ public class StorageMemory implements Storage {
             }
         }
     }
-
-    @Override
-	public void removeResponsibility(Number160 locationKey, Number160 peerId) {
-		Set<Number160> peerIds = responsibilityMap.get(locationKey);
-		if (peerIds != null && peerIds.remove(peerId)) {
-			removeRevResponsibility(peerId, locationKey);
-			LOG.debug("Remove responsibility of {} for {}.", peerId, locationKey);
-		}
-	}
 
     // Misc
     @Override

@@ -8,9 +8,6 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.SortedSet;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.message.TrackerData;
@@ -23,11 +20,15 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapChangeListener;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.RTT;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.DigestTracker;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Pair;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TrackerStorage implements Maintainable, PeerMapChangeListener, PeerStatusListener, DigestTracker {
     
@@ -169,8 +170,8 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 			if(isInReplicationRange(entry.getKey().locationKey(), remotePeer, replicationFactor)) {
 				//limit the pushing peer to those that are responsible
 				if(isInReplicationRange(entry.getKey().locationKey(), self, replicationFactor)) {
-					NavigableSet<PeerAddress> closePeers = peerMap.closePeers(entry.getKey().locationKey(), replicationFactor);
-					PeerAddress newResponsible = closePeers.headSet(remotePeer).last();
+					NavigableSet<PeerStatistic> closePeers = peerMap.closePeers(entry.getKey().locationKey(), replicationFactor);
+					PeerAddress newResponsible = closePeers.headSet(new PeerStatistic(remotePeer)).last().peerAddress();
 					TrackerData trackerData = new TrackerData(entry.getValue().values());
 					LOG.debug("other peer left, make sure we have enough copies {}, send to peer {}", trackerData, remotePeer);
 					peerExchange.peerExchange(newResponsible, entry.getKey(), trackerData);
@@ -186,9 +187,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 
 	private boolean isInReplicationRange(final Number160 locationKey, final PeerAddress peerAddress,
 	        final int replicationFactor) {
-		SortedSet<PeerAddress> tmp = peerMap.closePeers(locationKey, replicationFactor);
-		tmp.add(self);
-		return tmp.headSet(peerAddress).size() < replicationFactor;
+		SortedSet<PeerStatistic> tmp = peerMap.closePeers(locationKey, replicationFactor);
+		tmp.add(new PeerStatistic(self));
+		return tmp.headSet(new PeerStatistic(peerAddress)).size() < replicationFactor;
 	}
 
 	private boolean add(Number320 key, PeerAddress peerAddress, Map<Number320, Map<PeerAddress, Pair<PeerStatistic, Data>>> map, Data attachement) {
@@ -245,7 +246,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
     }
 
 	@Override
-	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
+	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection, RTT roundTripTime) {
 		boolean firsthand = referrer == null;
 		if (firsthand) {
 			peerOffline.remove(remotePeer.peerId());

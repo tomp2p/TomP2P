@@ -4,14 +4,13 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.relay.FutureRelay;
-import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.android.gcm.GCMMessageHandler;
+import net.tomp2p.relay.buffer.BufferRequestListener;
 
 public class FutureRelayNAT extends BaseFutureImpl<FutureRelayNAT> {
 
 	private Shutdown shutdown;
 	private FutureRelay futureRelay;
-	private GCMMessageHandler messageHandler;
+	private BufferRequestListener bufferRequestListener;
 
 	public FutureRelayNAT() {
 		self(this);
@@ -64,15 +63,12 @@ public class FutureRelayNAT extends BaseFutureImpl<FutureRelayNAT> {
 		}
 	}
 	
-	public FutureRelayNAT gcmMessageHandler(GCMMessageHandler messageHandler) {
-		this.messageHandler = messageHandler;
+	public FutureRelayNAT bufferRequestListener(BufferRequestListener bufferRequestListener) {
+		this.bufferRequestListener = bufferRequestListener;
 		return this;
 	}
 	
-	/**
-	 * Handles GCM messages when they arrive. Is null except for the case {@link RelayType#ANDROID}
-	 */
-	public GCMMessageHandler gcmMessageHandler() {
-		return messageHandler;
+	public BufferRequestListener bufferRequestListener() {
+		return bufferRequestListener;
 	}
 }

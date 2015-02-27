@@ -1,0 +1,6 @@
+language: java
+
+jdk:
+ - openjdk7
+
+#script: mvn -Dtest=net.tomp2p.p2p.TestAnnounce test && exit 1

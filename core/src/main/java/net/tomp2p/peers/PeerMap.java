@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -29,6 +30,7 @@ import java.util.TreeSet;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.PeerException.AbortCause;
+import net.tomp2p.p2p.PeerStatisticComparator;
 import net.tomp2p.utils.CacheMap;
 import net.tomp2p.utils.ConcurrentCacheMap;
 
@@ -45,8 +47,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     private static final Logger LOG = LoggerFactory.getLogger(PeerMap.class);
 
     // each distance bit has its own bag this is the size of the verified peers (the ones that we know are reachable)
-    private final int bagSizeVerified;
-    private final int bagSizeOverflow;
+    private final int[] bagSizesVerified;
+    private final int[] bagSizesOverflow;
 
     // the id of this node
     private final Number160 self;
@@ -64,7 +66,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     // stores listeners that will be notified if a peer gets removed or added
     private final List<PeerMapChangeListener> peerMapChangeListeners = new ArrayList<PeerMapChangeListener>();
 
-    private final Collection<PeerFilter> peerFilters;
+    private final Collection<PeerMapFilter> peerMapFilters;
 
     // the number of failures until a peer is considered offline
     private final int offlineCount;
@@ -72,6 +74,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     private final Maintenance maintenance;
     
     private final boolean peerVerification;
+
+    private PeerStatisticComparator peerStatisticComparator;
 
     /**
      * Creates the bag for the peers. This peer knows a lot about close peers and the further away the peers are, the
@@ -87,34 +91,45 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         if (self == null || self.isZero()) {
             throw new IllegalArgumentException("Zero or null are not a valid IDs");
         }
-        this.bagSizeVerified = peerMapConfiguration.bagSizeVerified();
-        this.bagSizeOverflow = peerMapConfiguration.bagSizeOverflow();
+        this.bagSizesVerified = peerMapConfiguration.getVerifiedBagSizes();
+        this.bagSizesOverflow = peerMapConfiguration.getOverflowBagSizes();
         this.offlineCount = peerMapConfiguration.offlineCount();
-        this.peerFilters = peerMapConfiguration.peerFilters();
-        this.peerMapVerified = initFixedMap(bagSizeVerified, false);
-        this.peerMapOverflow = initFixedMap(bagSizeOverflow, true);
+        this.peerMapFilters = peerMapConfiguration.peerMapFilters();
+        this.peerMapVerified = initMap(bagSizesVerified, false);
+        this.peerMapOverflow = initMap(bagSizesOverflow, true);
         // bagSizeVerified * Number160.BITS should be enough
         this.offlineMap = new ConcurrentCacheMap<Number160, PeerAddress>(
-                peerMapConfiguration.offlineTimeout(), bagSizeVerified * Number160.BITS);
+                peerMapConfiguration.offlineTimeout(), totalNumberOfVerifiedBags());
         this.shutdownMap = new ConcurrentCacheMap<Number160, PeerAddress>(
-                peerMapConfiguration.shutdownTimeout(), bagSizeVerified * Number160.BITS);
+                peerMapConfiguration.shutdownTimeout(), totalNumberOfVerifiedBags());
         this.exceptionMap = new ConcurrentCacheMap<Number160, PeerAddress>(
-                peerMapConfiguration.exceptionTimeout(), bagSizeVerified * Number160.BITS);
+                peerMapConfiguration.exceptionTimeout(), totalNumberOfVerifiedBags());
         this.maintenance = peerMapConfiguration.maintenance().init(peerMapVerified, peerMapOverflow,
                 offlineMap, shutdownMap, exceptionMap);
         this.peerVerification = peerMapConfiguration.isPeerVerification();
+        this.peerStatisticComparator = peerMapConfiguration.getPeerStatisticComparator();
+
+    }
+
+    private int totalNumberOfVerifiedBags() {
+        int sum = 0;
+        for (int i=0; i<Number160.BITS; i++) {
+            sum += bagSizesVerified[i];
+        }
+        return sum;
     }
 
     /**
-     * Create a fixed size bag with an unmodifiable map.
-     * 
-     * @param bagSize
-     *            The bag size
+     * Create a list of bag with an unmodifiable map.
+     *
+     * @param bagSizes
+     *            The bag sizes
      * @param caching
      *            If a caching map should be created
+     *
      * @return The list of bags containing an unmodifiable map
      */
-    private List<Map<Number160, PeerStatistic>> initFixedMap(final int bagSize, final boolean caching) {
+    private List<Map<Number160, PeerStatistic>> initMap(final int[] bagSizes, final boolean caching) {
         List<Map<Number160, PeerStatistic>> tmp = new ArrayList<Map<Number160, PeerStatistic>>();
         for (int i = 0; i < Number160.BITS; i++) {
             // I made some experiments here and concurrent sets are not
@@ -126,9 +141,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             //
             // We also only allocate memory for the bags far away, as they are likely to be filled first.
             if (caching) {
-                tmp.add(new CacheMap<Number160, PeerStatistic>(bagSize, true));
+                tmp.add(new CacheMap<Number160, PeerStatistic>(bagSizes[i], true));
             } else {
-                final int memAlloc = Math.max(0, bagSize - (Number160.BITS - i));
+                final int memAlloc = bagSizes[i] / 8;
                 tmp.add(new HashMap<Number160, PeerStatistic>(memAlloc));
             }
         }
@@ -233,12 +248,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
     
     private boolean reject (PeerAddress peerAddress) {
-    	if(peerFilters == null || peerFilters.size() ==0) {
+    	if(peerMapFilters == null || peerMapFilters.size() ==0) {
     		return false;
     	}
-    	final Collection<PeerAddress> all = all();
-    	for(PeerFilter peerFilter:peerFilters) {
-    		if(peerFilter.reject(peerAddress, all, self)) {
+    	
+    	for(PeerMapFilter peerFilter:peerMapFilters) {
+    		if(peerFilter.rejectPeerMap(peerAddress, this)) {
     			return true;
     		}
     	}
@@ -255,10 +270,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @param referrer
      *            If we had direct contact and we know for sure that this node is online, we set firsthand to true.
      *            Information from 3rd party peers are always second hand and treated as such
+     * @param roundTripTime
+     *            A RTT object, that measured the round-trip-time related to the finding of this peer. This is
+     *            will be saved into the PeerStatistic
      * @return True if the neighbor could be added or updated, otherwise false.
      */
     @Override
-    public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection) {    	
+    public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection, RTT roundTripTime) {
     	LOG.debug("peer {} is online reporter was {}", remotePeer, referrer);
         boolean firstHand = referrer == null;
         //if we got contacted by this peer, but we did not initiate the connection
@@ -302,13 +320,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         
         final int classMember = classMember(remotePeer.peerId());
 
-        // the peer might have a new port
-        final PeerStatistic oldPeerStatatistic = updateExistingVerifiedPeerAddress(
-                peerMapVerified.get(classMember), remotePeer, firstHand);
-        if (oldPeerStatatistic != null) {
+        // Update existing PeerStatistic with RTT info and potential new port
+        final PeerStatistic oldPeerStatistic = updateExistingVerifiedPeerAddress(
+                peerMapVerified.get(classMember), remotePeer, firstHand, roundTripTime);
+        if (oldPeerStatistic != null) {
             // we update the peer, so we can exit here and report that we have
             // updated it.
-            notifyUpdate(remotePeer, oldPeerStatatistic);
+            notifyUpdate(remotePeer, oldPeerStatistic);
             return true;
         } else {
             if (firstHand || (secondHand && !peerVerification)) {
@@ -317,12 +335,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 synchronized (map) {
                     // check again, now we are synchronized
                     if (map.containsKey(remotePeer.peerId())) {
-                        return peerFound(remotePeer, referrer, peerConnection);
+                        return peerFound(remotePeer, referrer, peerConnection, roundTripTime);
                     }
-                    if (map.size() < bagSizeVerified) {
-                        final PeerStatistic peerStatatistic = new PeerStatistic(remotePeer);
-                        peerStatatistic.successfullyChecked();
-                        map.put(remotePeer.peerId(), peerStatatistic);
+                    if (map.size() < bagSizesVerified[classMember]) {
+                        final PeerStatistic peerStatistic = new PeerStatistic(remotePeer);
+                        peerStatistic.successfullyChecked();
+                        peerStatistic.addRTT(roundTripTime);
+                        map.put(remotePeer.peerId(), peerStatistic);
                         insterted = true;
                     }
                 }
@@ -342,14 +361,18 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // check if we have it stored in the non verified map.
         final Map<Number160, PeerStatistic> mapOverflow = peerMapOverflow.get(classMember);
         synchronized (mapOverflow) {
-            PeerStatistic peerStatatistic = mapOverflow.get(remotePeer.peerId());
-            if (peerStatatistic == null) {
-                peerStatatistic = new PeerStatistic(remotePeer);
+            PeerStatistic peerStatistic = mapOverflow.get(remotePeer.peerId());
+            if (peerStatistic == null) {
+                peerStatistic = new PeerStatistic(remotePeer);
             }
             if (firstHand) {
-                peerStatatistic.successfullyChecked();
+                peerStatistic.successfullyChecked();
+                peerStatistic.addRTT(roundTripTime);
             }
-            mapOverflow.put(remotePeer.peerId(), peerStatatistic);
+            if (thirdHand && roundTripTime != null) {
+                peerStatistic.addRTT(roundTripTime.setEstimated());
+            }
+            mapOverflow.put(remotePeer.peerId(), peerStatistic);
         }
 
         notifyInsert(remotePeer, false);
@@ -362,8 +385,6 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * 
      * @param remotePeer
      *            The node that should be removed
-     * @param force
-     *            A flag that removes a peer immediately.
      * @return True if the neighbor was removed and added to a cache list. False if peer has not been removed or is
      *         already in the peer removed temporarily list.
      */
@@ -394,15 +415,15 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             tmp = peerMapVerified.get(classMember);
             if (tmp != null) {
                 boolean removed = false;
-                final PeerStatistic peerStatatistic;
+                final PeerStatistic peerStatistic;
                 synchronized (tmp) {
-                    peerStatatistic = tmp.remove(remotePeer.peerId());
-                    if (peerStatatistic != null) {
+                    peerStatistic = tmp.remove(remotePeer.peerId());
+                    if (peerStatistic != null) {
                         removed = true;
                     }
                 }
                 if (removed) {
-                    notifyRemove(remotePeer, peerStatatistic);
+                    notifyRemove(remotePeer, peerStatistic);
                     return true;
                 }
             }
@@ -455,13 +476,39 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             return tmp.containsKey(peerAddress.peerId());
         }
     }
+
+    /**
+     * Checks if an entry of that peerAddress is available in the verified peer map
+     * or overflow peer map.
+     * @param peerAddress
+     * @return The PeerStatistic or null if peer is not in peer map
+     */
+    public PeerStatistic getPeerStatistic(final PeerAddress peerAddress) {
+        PeerStatistic peerStatistic;
+        final int classMember = classMember(peerAddress.peerId());
+        if (classMember == -1) {
+            // -1 means we searched for ourself and we never are our neighbor
+            return null;
+        }
+
+        // Try to find PeerStatistic in verified Map
+        peerStatistic = peerMapVerified().get(classMember).get(peerAddress.peerId());
+
+        // If that failed, look in the overflow map
+        if (peerStatistic == null) {
+            peerStatistic = peerMapOverflow().get(classMember).get(peerAddress.peerId());
+        }
+
+        return peerStatistic;
+
+    }
     
     /**
      * Returns close peers to the peer itself.
      * @param atLeast The number we want to find at least
      * @return A sorted set with close peers first in this set.
      */
-    public NavigableSet<PeerAddress> closePeers(final int atLeast) {
+    public NavigableSet<PeerStatistic> closePeers(final int atLeast) {
         return closePeers(self, atLeast);
     }
 
@@ -475,12 +522,17 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The number we want to find at least
      * @return A sorted set with close peers first in this set. Use set.first() to get the closest peer
      */
-    public NavigableSet<PeerAddress> closePeers(final Number160 id, final int atLeast) {
-    	return closePeers(self(), id, atLeast, peerMapVerified);
+    public NavigableSet<PeerStatistic> closePeers(final Number160 id, final int atLeast) {
+    	return closePeers(self(), id, atLeast, peerMapVerified, peerStatisticComparator.getComparator(id));
     }
 
-    public static NavigableSet<PeerAddress> closePeers(final Number160 self, final Number160 other, final int atLeast, List<Map<Number160, PeerStatistic>> peerMap) {
-        final NavigableSet<PeerAddress> set = new TreeSet<PeerAddress>(createComparator(other));
+    public static NavigableSet<PeerStatistic> closePeers(final Number160 self, final Number160 other,
+                                                         final int atLeast,
+                                                         List<Map<Number160, PeerStatistic>> peerMap,
+                                                         Comparator<PeerStatistic> comparator) {
+
+        if (comparator == null) comparator = createXORStatisticComparator(other);
+        final NavigableSet<PeerStatistic> set = new TreeSet<PeerStatistic>(comparator);
         final int classMember = classMember(self, other);
         // special treatment, as we can start iterating from 0
         if (classMember == -1) {
@@ -539,12 +591,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * 
      * @return The XOR comparator
      */
-    public Comparator<PeerAddress> createComparator() {
-        return createComparator(self);
+    public Comparator<PeerAddress> createXORAddressComparator() {
+        return createXORAddressComparator(self);
     }
 
     /**
-     * Return all addresses from the neighbor list. The collection is a copy and it is partially sorted.
+     * Return all addresses from the neighbor list. The collection is a copy and it is partially sorted. This operation is slow.
      * 
      * @return All neighbors
      */
@@ -552,8 +604,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         List<PeerAddress> all = new ArrayList<PeerAddress>();
         for (Map<Number160, PeerStatistic> map : peerMapVerified) {
             synchronized (map) {
-                for (PeerStatistic peerStatatistic : map.values()) {
-                    all.add(peerStatatistic.peerAddress());
+                for (PeerStatistic peerStatistic : map.values()) {
+                    all.add(peerStatistic.peerAddress());
                 }
             }
         }
@@ -577,8 +629,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         List<PeerAddress> all = new ArrayList<PeerAddress>();
         for (Map<Number160, PeerStatistic> map : peerMapOverflow) {
             synchronized (map) {
-                for (PeerStatistic peerStatatistic : map.values()) {
-                    all.add(peerStatatistic.peerAddress());
+                for (PeerStatistic peerStatistic : map.values()) {
+                    all.add(peerStatistic.peerAddress());
                 }
             }
         }
@@ -654,17 +706,6 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * @see PeerMap.routing.Routing#isCloser(java.math.BigInteger, PeerAddress.routing.NodeAddress,
-     *      PeerAddress.routing.NodeAddress)
-     * @param key
-     *            The key to search for
-     * @param rn2
-     *            The remote node on the routing path to node close to key
-     * @param rn
-     *            An other remote node on the routing path to node close to key
-     * @return True if rn2 is closer or has the same distance to key as rn
-     */
-    /**
      * Returns -1 if the first remote node is closer to the key, if the secondBITS is closer, then 1 is returned. If
      * both are equal, 0 is returned
      * 
@@ -681,22 +722,73 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
+     * Returns -1 if the first remote node is closer to the key, if the secondBITS is closer, then 1 is returned. If
+     * both are equal, 0 is returned
+     *
+     * @param ln The location
+     * @param rn The peer to test if closer to the id
+     * @param rn2 The other peer to test if closer to the id
+     * @return -1 if rn2 is closer to ln (in terms of xor distance bit length), 1 if
+     *          rn1 is closer or 0 if they are equal.
+     */
+    public static int classCloser(final Number160 ln, final PeerAddress rn, final PeerAddress rn2) {
+        Integer d1 = classMember(ln, rn.peerId());
+        Integer d2 = classMember(ln, rn2.peerId());
+        return d1.compareTo(d2);
+    }
+
+    /**
      * Create the Kademlia distance comparator.
      * 
-     * @param id
+     * @param location
      *            The id of this peer
      * @return The XOR comparator
      */
-    public static Comparator<PeerAddress> createComparator(final Number160 id) {
+    public static Comparator<PeerAddress> createXORAddressComparator(final Number160 location) {
         return new Comparator<PeerAddress>() {
             public int compare(final PeerAddress remotePeer, final PeerAddress remotePeer2) {
-                return isKadCloser(id, remotePeer, remotePeer2);
+                return isKadCloser(location, remotePeer, remotePeer2);
             }
         };
     }
+
+    public static Comparator<PeerStatistic> createXORStatisticComparator(final Number160 location) {
+        return new Comparator<PeerStatistic>() {
+            @Override
+            public int compare(PeerStatistic o1, PeerStatistic o2) {
+                if (o1.peerAddress() != null && o2.peerAddress() != null) {
+                    return isKadCloser(location, o1.peerAddress(), o2.peerAddress());
+                }
+                return 0;
+            }
+        };
+    }
+
+
+    public Comparator<PeerStatistic> createStatisticComparator(final Number160 location) {
+        return peerStatisticComparator.getComparator(location);
+    }
+
+    /**
+     * Takes a collection of PeerAddress and returns an equivalent collection
+     * of PeerStatistic from the PeerMap. New PeerStatistics are created for peers
+     * that are not yet in the PeerMap
+     * @param peerAddresses
+     * @return
+     */
+    public Collection<PeerStatistic> getPeerStatistics(Collection<PeerAddress> peerAddresses) {
+        HashSet<PeerStatistic> result = new HashSet<PeerStatistic>();
+        for (PeerAddress peerAddress : peerAddresses) {
+            PeerStatistic peerStatistic = getPeerStatistic(peerAddress);
+            if (peerStatistic == null) {
+                peerStatistic = new PeerStatistic(peerAddress);
+            }
+            result.add(peerStatistic);
+        }
+        return result;
+    }
     
-    public static Comparator<Number160> createComparator2(final Number160 id) {
-        return new Comparator<Number160>() {
+    public static Comparator<Number160> createComparator2(final Number160 id) { return new Comparator<Number160>() {
             public int compare(final Number160 remotePeer, final Number160 remotePeer2) {
                 return isCloser(id, remotePeer, remotePeer2);
             }
@@ -713,7 +805,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The second id
      * @return returns the bit difference and -1 if they are equal
      */
-    static int classMember(final Number160 id1, final Number160 id2) {
+    public static int classMember(final Number160 id1, final Number160 id2) {
         return distance(id1, id2).bitLength() - 1;
     }
 
@@ -745,9 +837,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             final Map<Number160, PeerStatistic> tmp, final int maxFail) {
         if (tmp != null) {
             synchronized (tmp) {
-                PeerStatistic peerStatatistic = tmp.get(remotePeer.peerId());
-                if (peerStatatistic != null) {
-                    if (peerStatatistic.failed() >= maxFail) {
+                PeerStatistic peerStatistic = tmp.get(remotePeer.peerId());
+                if (peerStatistic != null) {
+                    if (peerStatistic.failed() >= maxFail) {
                         return true;
                     }
                 }
@@ -766,17 +858,20 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The address of the peer that may have been changed
      * @param firstHand
      *            True if this peer send and received a message from the remote peer
+     * @param roundTripTime
      * @return The old peer address if we have updated the peer, null otherwise
      */
     public static PeerStatistic updateExistingVerifiedPeerAddress(
-            final Map<Number160, PeerStatistic> tmp, final PeerAddress peerAddress, final boolean firstHand) {
+            final Map<Number160, PeerStatistic> tmp, final PeerAddress peerAddress, final boolean firstHand, RTT roundTripTime) {
         synchronized (tmp) {
             PeerStatistic old = tmp.get(peerAddress.peerId());
             if (old != null) {
             	//TODO: this should only be from firsthand!
                 old.peerAddress(peerAddress);
+                old.addRTT(roundTripTime);
                 if (firstHand) {
                     old.successfullyChecked();
+                    old.increaseNumberOfResponses();
                 }
                 return old;
             }
@@ -796,22 +891,22 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The bag where to take the addresses from
      * @return True if the desired size has been reached
      */
-    private static boolean fillSet(final int atLeast, final SortedSet<PeerAddress> set,
+    private static boolean fillSet(final int atLeast, final SortedSet<PeerStatistic> set,
             final Map<Number160, PeerStatistic> tmp) {
         synchronized (tmp) {
-            for (final PeerStatistic peerStatatistic : tmp.values()) {
-                set.add(peerStatatistic.peerAddress());
+            for (final PeerStatistic peerStatistic : tmp.values()) {
+                set.add(peerStatistic);
             }
         }
         return set.size() >= atLeast;
     }
 
-	public int bagSizeVerified() {
-	    return bagSizeVerified;
+	public int bagSizeVerified(int bag) {
+	    return bagSizesVerified[bag];
     }
 	
-	public int bagSizeOverflow() {
-	    return bagSizeOverflow;
+	public int bagSizeOverflow(int bag) {
+	    return bagSizesOverflow[bag];
     }
 
 	public PeerAddress find(Number160 peerId) {
@@ -820,9 +915,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 			return null;
 		}
 		Map<Number160, PeerStatistic> tmp = peerMapVerified.get(classMember);
-		PeerStatistic peerStatatistic = tmp.get(peerId);
-		if(peerStatatistic!=null) {
-			return peerStatatistic.peerAddress();
+		PeerStatistic peerStatistic = tmp.get(peerId);
+		if(peerStatistic!=null) {
+			return peerStatistic.peerAddress();
 		}
 	    return null;
     }

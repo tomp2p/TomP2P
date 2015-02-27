@@ -27,7 +27,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.RelayConfig;
+import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 
 public class ExampleNAT {
 	private final static int PORT_SERVER = 4000;
@@ -60,7 +60,7 @@ public class ExampleNAT {
 		
 		FutureDiscover fd = peer.discover().peerAddress(pa).start();
 		FutureNAT fn = peerNAT.startSetupPortforwarding(fd);
-		FutureRelayNAT frn = peerNAT.startRelay(RelayConfig.OpenTCP(), fd, fn);
+		FutureRelayNAT frn = peerNAT.startRelay(new TCPRelayClientConfig(), fd, fn);
 		
 		frn.awaitUninterruptibly();
 		if (fd.isSuccess()) {

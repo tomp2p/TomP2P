@@ -90,7 +90,6 @@ public class Reservation {
 	 *            permanent TCP connections
 	 */
 	public Reservation(final EventLoopGroup workerGroup, final ChannelClientConfiguration channelClientConfiguration) {
-
 		this.workerGroup = workerGroup;
 		this.maxPermitsUDP = channelClientConfiguration.maxPermitsUDP();
 		this.maxPermitsTCP = channelClientConfiguration.maxPermitsTCP();
@@ -180,12 +179,11 @@ public class Reservation {
 			futureChannelCreationDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 				@Override
 				public void operationComplete(final FutureDone<Void> future) throws Exception {
-					// release the permits in all cases, otherwise we may see
-					// inconsitencies
+					// release the permits in all cases, otherwise we may see inconsistencies
 					semaphoreUPD.release(permitsUDP);
 					semaphoreTCP.release(permitsTCP);
 				}
-			}, false); // false is important, to be always the first listener
+			});
 			executor.execute(new WaitReservation(futureChannelCreator, futureChannelCreationDone, permitsUDP,
 			        permitsTCP));
 			return futureChannelCreator;
@@ -221,7 +219,7 @@ public class Reservation {
 					// inconsitencies
 					semaphorePermanentTCP.release(permitsPermanentTCP);
 				}
-			}, false); // false is important, to be always the first listener
+			});
 			executor.execute(new WaitReservationPermanent(futureChannelCreator, futureChannelCreationDone,
 			        permitsPermanentTCP));
 			return futureChannelCreator;
@@ -239,8 +237,7 @@ public class Reservation {
 		write.lock();
 		try {
 			if (shutdown) {
-				shutdownFuture().failed("already shutting down");
-				return shutdownFuture();
+				return futureReservationDone.failed("already shutting down");
 			}
 			shutdown = true;
 		} finally {
@@ -261,14 +258,20 @@ public class Reservation {
 				wr.futureChannelCreator().failed("shutting down");
 			}
 		}
+		
+		final Collection<ChannelCreator> copyChannelCreators;
+		synchronized (channelCreators) {
+			copyChannelCreators = new ArrayList<ChannelCreator>(channelCreators);
+		}
+		
 
 		// the channelCreator does not change anymore from here on
-		final int size = channelCreators.size();
+		final int size = copyChannelCreators.size();
 		if (size == 0) {
 			futureReservationDone.done();
 		} else {
 			final AtomicInteger completeCounter = new AtomicInteger(0);
-			for (final ChannelCreator channelCreator : channelCreators) {
+			for (final ChannelCreator channelCreator : copyChannelCreators) {
 				// this is very important that we set first the listener and
 				// then call shutdown. Otherwise, the order of
 				// the listener calls is not guaranteed and we may call this
@@ -283,7 +286,7 @@ public class Reservation {
 							semaphoreUPD.acquireUninterruptibly(maxPermitsUDP);
 							semaphoreTCP.acquireUninterruptibly(maxPermitsTCP);
 							semaphorePermanentTCP.acquireUninterruptibly(maxPermitsPermanentTCP);
-							shutdownFuture().done();
+							futureReservationDone.done();
 						}
 					}
 				});
@@ -291,13 +294,6 @@ public class Reservation {
 			}
 		}
 		// wait for completion
-		return shutdownFuture();
-	}
-
-	/**
-	 * @return The shutdown future that is used when calling {@link #shutdown()}
-	 */
-	public FutureDone<Void> shutdownFuture() {
 		return futureReservationDone;
 	}
 
@@ -312,15 +308,7 @@ public class Reservation {
 		channelCreator.shutdownFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
-				read.lock();
-				try {
-					if (shutdown) {
-						return;
-					}
-					channelCreators.remove(channelCreator);
-				} finally {
-					read.unlock();
-				}
+				channelCreators.remove(channelCreator);
 			}
 		});
 		channelCreators.add(channelCreator);

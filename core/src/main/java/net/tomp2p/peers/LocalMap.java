@@ -49,7 +49,7 @@ public class LocalMap implements Maintainable, PeerStatusListener {
     }
 
 	@Override
-    public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
+    public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection, RTT roundTripTime) {
 		//do nothing, here we get to know all the peers, we are interested only in those we have stored
         return false;
     }
@@ -63,7 +63,7 @@ public class LocalMap implements Maintainable, PeerStatusListener {
         
         if (firstHand || secondHand) {
             offlineMap.remove(remotePeer.peerId());
-            PeerStatistic peerStatatistic = PeerMap.updateExistingVerifiedPeerAddress(localMap, remotePeer, firstHand);
+            PeerStatistic peerStatatistic = PeerMap.updateExistingVerifiedPeerAddress(localMap, remotePeer, firstHand, null);
             if(peerStatatistic == null) {
             	peerStatatistic = new PeerStatistic(remotePeer);
             	localMap.put(remotePeer.peerId(), peerStatatistic);

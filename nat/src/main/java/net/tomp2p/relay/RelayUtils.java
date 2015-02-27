@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
@@ -40,7 +39,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatistic;
-import net.tomp2p.relay.android.MessageBuffer;
+import net.tomp2p.relay.buffer.MessageBuffer;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 import org.slf4j.Logger;
@@ -61,7 +60,7 @@ public class RelayUtils {
 		PeerMapConfiguration peerMapConfiguration = new PeerMapConfiguration(sender.peerId());
 		PeerMap peerMap = new PeerMap(peerMapConfiguration);
 		for (PeerAddress peerAddress : map) {
-			peerMap.peerFound(peerAddress, null, null);
+			peerMap.peerFound(peerAddress, null, null, null);
 		}
 		return peerMap.peerMapVerified();
 	}
@@ -76,23 +75,6 @@ public class RelayUtils {
 		return result;
 	}
 
-	/**
-	 * Basically does the same as
-	 * {@link MessageUtils#decodeMessage(Buffer, InetSocketAddress, InetSocketAddress, SignatureFactory)}, but
-	 * in addition checks that the relay peers of the decoded message are set correctly
-	 */
-	public static Message decodeRelayedMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender,
-			SignatureFactory signatureFactory) throws InvalidKeyException, NoSuchAlgorithmException,
-			InvalidKeySpecException, SignatureException, IOException {
-		Message decodedMessage = decodeMessage(buf, recipient, sender, signatureFactory);
-		boolean isRelay = decodedMessage.sender().isRelayed();
-		if (isRelay && !decodedMessage.peerSocketAddresses().isEmpty()) {
-			PeerAddress tmpSender = decodedMessage.sender().changePeerSocketAddresses(decodedMessage.peerSocketAddresses());
-			decodedMessage.sender(tmpSender);
-		}
-		return decodedMessage;
-	}
-	
 	/**
 	 * Composes all messages of a list into a single buffer object, ready to be transmitted over the network.
 	 * The composing happens in-order. Alternatively, the message size and then the message is written to the
@@ -136,7 +118,7 @@ public class RelayUtils {
 			ByteBuf message = messageBuffer.readBytes(size);
 			
 			try {
-				Message decodedMessage = decodeRelayedMessage(new Buffer(message), recipient, sender, signatureFactory);
+				Message decodedMessage = decodeRelayedMessage(message, recipient, sender, signatureFactory);
 				messages.add(decodedMessage);
 			} catch (Exception e) {
 				LOG.error("Cannot decode buffered message. Skip it.", e);
@@ -159,14 +141,31 @@ public class RelayUtils {
 	/**
 	 * Decodes a message which was encoded using {{@link #encodeMessage(Message, SignatureFactory)}}.
 	 */
-	public static Message decodeMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
+	public static Message decodeMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
 	        throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, IOException {
 		Decoder d = new Decoder(signatureFactory);
-		final int readerBefore = buf.buffer().readerIndex();
-		d.decodeHeader(buf.buffer(), recipient, sender);
-		final boolean donePayload = d.decodePayload(buf.buffer());
-		d.decodeSignature(buf.buffer(), readerBefore, donePayload);
+		final int readerBefore = buf.readerIndex();
+		d.decodeHeader(buf, recipient, sender);
+		final boolean donePayload = d.decodePayload(buf);
+		d.decodeSignature(buf, readerBefore, donePayload);
 		return d.message();
+	}
+	
+	/**
+	 * Basically does the same as
+	 * {@link MessageUtils#decodeMessage(Buffer, InetSocketAddress, InetSocketAddress, SignatureFactory)}, but
+	 * in addition checks that the relay peers of the decoded message are set correctly
+	 */
+	public static Message decodeRelayedMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender,
+			SignatureFactory signatureFactory) throws InvalidKeyException, NoSuchAlgorithmException,
+			InvalidKeySpecException, SignatureException, IOException {
+		Message decodedMessage = decodeMessage(buf, recipient, sender, signatureFactory);
+		boolean isRelay = decodedMessage.sender().isRelayed();
+		if (isRelay && !decodedMessage.peerSocketAddresses().isEmpty()) {
+			PeerAddress tmpSender = decodedMessage.sender().changePeerSocketAddresses(decodedMessage.peerSocketAddresses());
+			decodedMessage.sender(tmpSender);
+		}
+		return decodedMessage;
 	}
 	
 	/**
@@ -234,8 +233,8 @@ public class RelayUtils {
 	 * Send a Message from one Peer to another Peer internally. This avoids the
 	 * overhead of sendDirect.
 	 */
-	private static void send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config, final FutureResponse futureResponse) {
-		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean, connectionBean, config);
+	private static void send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, final FutureResponse futureResponse) {
+		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean, connectionBean, connectionBean.channelServer().channelServerConfiguration());
 		final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
 		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
@@ -255,9 +254,9 @@ public class RelayUtils {
 	 * Connection setup.
 	 * @return the response
 	 */
-	public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config, Message message) {
+	public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, Message message) {
 		final FutureResponse futureResponse = new FutureResponse(message);
-		send(peerConnection, peerBean, connectionBean, config, futureResponse);
+		send(peerConnection, peerBean, connectionBean, futureResponse);
 		return futureResponse;
 	}
 	
@@ -268,7 +267,7 @@ public class RelayUtils {
 	 * @param config
 	 * @return
 	 */
-	public static FutureResponse connectAndSend(final Peer peer, final Message message, final ConnectionConfiguration config) {
+	public static FutureResponse connectAndSend(final Peer peer, final Message message) {
 		final FutureResponse futureResponse = new FutureResponse(message);
 		final FuturePeerConnection fpc = peer.createPeerConnection(message.recipient());
 		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
@@ -278,7 +277,7 @@ public class RelayUtils {
                 	final PeerConnection peerConnection = futurePeerConnection.object();
                 	
                 	// send the message
-                	send(peerConnection, peer.peerBean(), peer.connectionBean(), config, futureResponse);
+                	send(peerConnection, peer.peerBean(), peer.connectionBean(), futureResponse);
                 } else {
                     futureResponse.failed(fpc);
                 }

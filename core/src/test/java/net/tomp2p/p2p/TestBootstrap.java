@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Random;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.peers.Number160;

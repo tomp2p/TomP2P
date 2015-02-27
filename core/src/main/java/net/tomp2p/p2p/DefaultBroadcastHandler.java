@@ -18,7 +18,7 @@ package net.tomp2p.p2p;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
 import java.util.Set;
 
@@ -85,7 +85,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
     @Override
     public void receive(final Message message) {
         final Number160 messageKey = message.key(0);
-        final Map<Number640, Data> dataMap;
+        final NavigableMap<Number640, Data> dataMap;
         if(message.dataMap(0)!=null) {
              dataMap = message.dataMap(0).dataMap();
         } else {
@@ -95,9 +95,8 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
         if (twiceSeen(messageKey)) {
             return;
         }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("got broadcast map " + dataMap + " from " + peer.peerID());
-        }
+        LOG.debug("got broadcast map {} from {}", dataMap, peer.peerID());
+       
         synchronized (DEBUG_COUNTER) {
             DEBUG_COUNTER.add(peer.peerID());
         }
@@ -143,7 +142,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
      * @param isUDP
      *            Flag if message can be sent with UDP
      */
-    private void firstPeer(final Number160 messageKey, final Map<Number640, Data> dataMap, final int hopCounter,
+    private void firstPeer(final Number160 messageKey, final NavigableMap<Number640, Data> dataMap, final int hopCounter,
             final boolean isUDP) {
         final List<PeerAddress> list = peer.peerBean().peerMap().all();
         for (final PeerAddress peerAddress : list) {
@@ -180,7 +179,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
      * @param isUDP
      *            Flag if message can be sent with UDP
      */
-    private void otherPeer(final Number160 messageKey, final Map<Number640, Data> dataMap,
+    private void otherPeer(final Number160 messageKey, final NavigableMap<Number640, Data> dataMap,
             final int hopCounter, final boolean isUDP) {
         LOG.debug("other");
         final List<PeerAddress> list = peer.peerBean().peerMap().all();
@@ -202,7 +201,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
                         
                         futures[i] = peer.broadcastRPC().send(randomAddress,
                                 broadcastBuilder, future.channelCreator(), broadcastBuilder);
-                        LOG.debug("2nd broadcast to {}", randomAddress);
+                        LOG.debug("2nd broadcast to {} with hop {}", randomAddress, hopCounter + 1);
                     }
                     Utils.addReleaseListener(future.channelCreator(), futures);
                 } else {

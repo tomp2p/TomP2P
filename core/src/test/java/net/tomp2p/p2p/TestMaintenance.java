@@ -13,24 +13,26 @@ public class TestMaintenance {
     @Test
     public void testMaintenance() throws Exception {
         final Random rnd = new Random(42L);
-        Peer master = null;
+        Peer[] peers = null;
         try {
             // setup
             AtomicInteger counter = new AtomicInteger(0);
-            Peer[] peers = Utils2.createRealNodes(10, rnd, 4001, new Rep(counter));
-            master = peers[0];
+            peers = Utils2.createRealNodes(10, rnd, 4001, new Rep(counter));
+            Peer master = peers[0];
             //give the master one of the peers,
-            master.peerBean().peerMap().peerFound(peers[1].peerAddress(), peers[2].peerAddress(), null);
+            master.peerBean().peerMap().peerFound(peers[1].peerAddress(), peers[2].peerAddress(), null, null);
             // wait for 1 sec.
             
-            master.peerBean().peerMap().peerFound(peers[1].peerAddress(), peers[2].peerAddress(), null);
+            master.peerBean().peerMap().peerFound(peers[1].peerAddress(), peers[2].peerAddress(), null, null);
             Thread.sleep(3000);
             
             //both peers pinged each other
             Assert.assertEquals(2, counter.get());
         } finally {
-            if (master != null) {
-                master.shutdown().await();
+            if (peers != null) {
+            	for(int i=0;i<peers.length;i++) {
+            		peers[i].shutdown().await();
+            	}
             }
         }
         

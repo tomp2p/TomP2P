@@ -16,7 +16,6 @@
 
 package net.tomp2p.dht;
 
-import net.tomp2p.futures.ProgressListener;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SendDirectBuilderI;
@@ -34,8 +33,6 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
     private boolean cancelOnFinish = false;
 
     private boolean streaming = false;
-
-    private ProgressListener progressListener;
 
     public SendBuilder(PeerDHT peer, Number160 locationKey) {
         super(peer, locationKey);
@@ -98,14 +95,5 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         }
         preBuild("send-builder");
         return peer.distributedHashTable().direct(this);
-    }
-
-    public SendBuilder progressListener(ProgressListener progressListener) {
-        this.progressListener = progressListener;
-        return this;
-    }
-
-    public ProgressListener progressListener() {
-        return progressListener;
     }
 }

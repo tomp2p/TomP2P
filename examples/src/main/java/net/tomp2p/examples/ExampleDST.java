@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.p2p.Peer;
@@ -107,10 +107,10 @@ public final class ExampleDST {
         	StorageLayer sl = new StorageLayer(new StorageMemory()) {
         		@Override
         		public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-        		        boolean domainProtection) {
+        		        boolean domainProtection, boolean selfSend) {
         			Map<Number640, Data> map = get(key.minContentKey(), key.maxContentKey(), -1, false);
         			if (map.size() < max) {
-        				return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+        				return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
         			} else {
         				return PutStatus.FAILED;
         			}

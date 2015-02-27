@@ -14,7 +14,7 @@
 	<parent>
 		<groupId>net.tomp2p</groupId>
 		<artifactId>tomp2p-parent</artifactId>
-		<version>5.0-Beta2-SNAPSHOT</version>
+		<version>5.0-Beta4</version>
 	</parent>
 
 	<artifactId>tomp2p-nat</artifactId>
@@ -85,13 +85,5 @@
 			<version>1.9.5</version>
 		</dependency>
 	</dependencies>
-
-	<build>
-		<testResources>
-			<testResource>
-				<directory>src/test/resources</directory>
-			</testResource>
-		</testResources>
-	</build>
 
 </project>

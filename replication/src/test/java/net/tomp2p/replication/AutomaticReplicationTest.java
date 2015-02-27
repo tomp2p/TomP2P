@@ -13,8 +13,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -214,8 +214,8 @@ public class AutomaticReplicationTest {
 
     private NavigableSet<PeerAddress> findTheClosestPeer(PeerDHT[] peers, Number160 locationKey) {
     	
-    	Comparator<PeerAddress> c = PeerMap.createComparator(locationKey);
-    	TreeSet<PeerAddress> ts = new TreeSet<PeerAddress>(c);
+    	Comparator<PeerAddress> c = PeerMap.createXORAddressComparator(locationKey);
+        TreeSet<PeerAddress> ts = new TreeSet<PeerAddress>(c);
     	for(PeerDHT peer:peers) {
     		ts.add(peer.peerAddress());
     	}

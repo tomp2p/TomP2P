@@ -6,14 +6,15 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -36,10 +37,13 @@ import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SynchronizationTest {
 
 	private final static Random random = new Random(42);
+	private static final Logger LOG = LoggerFactory.getLogger(SynchronizationTest.class);
 
 	@Test
 	public void testAdler() {
@@ -152,10 +156,9 @@ public class SynchronizationTest {
 		for (int i = 0; i < 3; i++) {
 			System.out.print(" " + (char) (i + 65));
 		}
-		System.out.println();
-		System.out.println("changes: " + l);
-		System.out.println("content size: " + k);
-		System.out.println("block size: " + size);
+		LOG.debug("changes: " + l);
+		LOG.debug("content size: " + k);
+		LOG.debug("block size: " + size);
 
 		String oldValue = "";
 		StringBuilder sb = new StringBuilder(k);
@@ -164,8 +167,8 @@ public class SynchronizationTest {
 			sb.append((char) (temp + 65));
 		}
 		oldValue = sb.toString();
-		System.out.println("oldvalue.length=" + oldValue.length());
-		System.out.println("old value: " + oldValue);
+		LOG.debug("oldvalue.length=" + oldValue.length());
+		LOG.debug("old value: " + oldValue);
 
 		String newValue = oldValue;
 		for (int i = 0; i < l; i++) {
@@ -174,12 +177,12 @@ public class SynchronizationTest {
 			sb1.setCharAt(temp, 'X');
 			newValue = sb1.toString();
 		}
-		System.out.println("new value: " + newValue);
+		LOG.debug("new value: " + newValue);
 
 		List<Checksum> checksums = RSync.checksums(oldValue.getBytes(), size);
 		List<Instruction> instructions = RSync.instructions(newValue.getBytes(), checksums, size);
-		System.out.println("checksums(" + checksums.size() + "): " + checksums);
-		System.out.println("instructions(" + instructions.size() + "): " + instructions);
+		LOG.debug("checksums(" + checksums.size() + "): " + checksums);
+		LOG.debug("instructions(" + instructions.size() + "): " + instructions);
 
 		DataBuffer reconstructedValue = RSync.reconstruct(oldValue.getBytes(), instructions, size);
 
@@ -207,7 +210,7 @@ public class SynchronizationTest {
 			final Number160 contentKey = Number160.ZERO;
 			final String value = "Test";
 
-			HashMap<Number640, Data> map = new HashMap<Number640, Data>();
+			NavigableMap<Number640, Data> map = new TreeMap<Number640, Data>();
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
@@ -275,7 +278,7 @@ public class SynchronizationTest {
 			final Number160 contentKey = Number160.ZERO;
 			final String value = "Test";
 
-			HashMap<Number640, Data> map = new HashMap<Number640, Data>();
+			NavigableMap<Number640, Data> map = new TreeMap<Number640, Data>();
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
@@ -318,6 +321,13 @@ public class SynchronizationTest {
 			}
 		}
 	}
+	
+	@Test
+	public void testInfoMessageNOTSAMELoop() throws IOException, InterruptedException {
+		for (int i=0;i<100;i++) {
+			testInfoMessageNOTSAME();
+		}
+	}
 
 	@Test
 	public void testInfoMessageNOTSAME() throws IOException, InterruptedException {
@@ -344,7 +354,7 @@ public class SynchronizationTest {
 			sender.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
 			receiver.put(locationKey).data(new Data(value1)).start().awaitUninterruptibly();
 
-			HashMap<Number640, Data> map = new HashMap<Number640, Data>();
+			NavigableMap<Number640, Data> map = new TreeMap<Number640, Data>();
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 

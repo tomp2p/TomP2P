@@ -38,7 +38,6 @@ public class Statistics {
 	}
 	
 	public double estimatedNumberOfNodes() {
-		final int bagSize = peerMap.bagSizeVerified();
 		final List<Map<Number160, PeerStatistic>> map = peerMap.peerMapVerified();
 		// assume we are full
 		double gap = 0D;
@@ -47,13 +46,13 @@ public class Statistics {
 			Map<Number160, PeerStatistic> peers = map.get(i);
 			final int numPeers = peers.size();
 
-			if (numPeers > 0 && numPeers < bagSize) {
+			if (numPeers > 0 && numPeers < peerMap.bagSizeVerified(i)) {
 				double currentGap = Math.pow(2, i) / numPeers;
 				gap += currentGap * numPeers;
 				gapCount += numPeers;
 			} else if (numPeers == 0) {
 				// we are empty
-			} else if (numPeers == bagSize) {
+			} else if (numPeers == peerMap.bagSizeVerified(i)) {
 				// we are full
 			}
 		}

@@ -6,7 +6,7 @@ import net.tomp2p.futures.BaseFutureImpl;
 
 public class FutureRelay extends BaseFutureImpl<FutureRelay> {
 
-	private Collection<BaseRelayConnection> relays;
+	private Collection<BaseRelayClient> relays;
 
 	private boolean isRelayNotRequired;
 
@@ -26,7 +26,7 @@ public class FutureRelay extends BaseFutureImpl<FutureRelay> {
 		return this;
 	}
 
-	public FutureRelay done(Collection<BaseRelayConnection> relays) {
+	public FutureRelay done(Collection<BaseRelayClient> relays) {
 		synchronized (lock) {
 			if (!completedAndNotify()) {
 				return this;
@@ -44,7 +44,7 @@ public class FutureRelay extends BaseFutureImpl<FutureRelay> {
 		}
 	}
 
-	public Collection<BaseRelayConnection> relays() {
+	public Collection<BaseRelayClient> relays() {
 		synchronized (lock) {
 			return relays;
 		}

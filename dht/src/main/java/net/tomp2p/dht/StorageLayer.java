@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
@@ -38,7 +39,7 @@ import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.DigestStorage;
-import net.tomp2p.storage.KeyLock;
+import net.tomp2p.storage.RangeLock;
 import net.tomp2p.storage.Storage;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
@@ -60,7 +61,7 @@ public class StorageLayer implements DigestStorage {
 
 	// The number of PutStatus should never exceed 255.
 	public enum PutStatus {
-		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND, DELETED
+		OK, OK_PREPARED, OK_UNCHANGED, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND, DELETED  
 	};
 
 	// Hash of public key is always preferred
@@ -79,18 +80,9 @@ public class StorageLayer implements DigestStorage {
 	// anyone
 	final private Collection<Number160> removedDomains = new HashSet<Number160>();
 
-	final private KeyLock<Storage> dataLock = new KeyLock<Storage>();
-
-	final private KeyLock<Number160> dataLock160 = new KeyLock<Number160>();
-
-	final private KeyLock<Number320> dataLock320 = new KeyLock<Number320>();
-
-	final private KeyLock<Number480> dataLock480 = new KeyLock<Number480>();
-
-	final private KeyLock<Number640> dataLock640 = new KeyLock<Number640>();
+	final private RangeLock<Number640> rangeLock = new RangeLock<Number640>();
+	final private RangeLock<Number640> responsibilityLock = new RangeLock<Number640>();
 	
-	final private KeyLock<Number160> responsibilityLock = new KeyLock<Number160>();
-
 	final private Storage backend;
 
 	public StorageLayer(Storage backend) {
@@ -144,55 +136,212 @@ public class StorageLayer implements DigestStorage {
 	boolean isDomainRemoved(Number160 domain) {
 		return removedDomains.contains(domain);
 	}
-
+	
+	private RangeLock<Number640>.Range lock(Number640 min, Number640 max) { 
+		return rangeLock.lock(min, max);
+	}
+	
+	private RangeLock<Number640>.Range lock(Number640 number640) { 
+		return rangeLock.lock(number640, number640);
+	}
+	
+	private RangeLock<Number640>.Range lock(Number480 number480) { 
+		return rangeLock.lock(new Number640(number480, Number160.ZERO), new Number640(number480, Number160.MAX_VALUE));
+	}
+	
+	private RangeLock<Number640>.Range lock(Number320 number320) { 
+		return rangeLock.lock(
+				new Number640(number320, Number160.ZERO, Number160.ZERO), 
+				new Number640(number320, Number160.MAX_VALUE, Number160.MAX_VALUE));
+	}
+	
+	private RangeLock<Number640>.Range lock(Number160 number160) { 
+		return rangeLock.lock(
+				new Number640(number160, Number160.ZERO, Number160.ZERO, Number160.ZERO), 
+				new Number640(number160, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE));
+	}
+	
+	private RangeLock<Number640>.Range lockResponsibility(Number160 number160) { 
+		return responsibilityLock.lock(
+				new Number640(number160, Number160.ZERO, Number160.ZERO, Number160.ZERO), 
+				new Number640(number160, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE));
+	}
+	
+	private RangeLock<Number640>.Range lock() { 
+		return rangeLock.lock(
+				new Number640(Number160.ZERO, Number160.ZERO, Number160.ZERO, Number160.ZERO), 
+				new Number640(Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE));
+	}
+	
+	public Map<Number640, Enum<?>> putAll(final NavigableMap<Number640, Data> dataMap, PublicKey publicKey, boolean putIfAbsent,
+	        boolean domainProtection, boolean sendSelf) {
+		if(dataMap.isEmpty()) {
+			return Collections.emptyMap();
+		}
+		final Number640 min = dataMap.firstKey();
+		final Number640 max = dataMap.lastKey();
+		final Map<Number640, Enum<?>> retVal = new HashMap<Number640, Enum<?>>();
+		final HashSet<Number480> keysToCheck = new HashSet<Number480>();
+		final RangeLock<Number640>.Range lock = lock(min, max);
+		try {
+			for(Map.Entry<Number640, Data> entry: dataMap.entrySet()) {
+				Number640 key = entry.getKey();
+				keysToCheck.add(key.locationAndDomainAndContentKey());
+				Data newData = entry.getValue();
+				if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
+					retVal.put(key, PutStatus.FAILED_SECURITY);
+					continue;
+				}
+				
+				// We need this check in case we did not use the encoder/deconder,
+				// which is the case if we send the message to ourself. In that
+				// case, the public key of the data is never set to the message
+				// publick key, if the publick key of the data was null.
+				final PublicKey dataKey;
+				if(sendSelf && newData.publicKey() == null) {
+					dataKey = publicKey;
+				} else {
+					dataKey = newData.publicKey();
+				}
+				
+				if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, dataKey,
+				        newData.isProtectedEntry())) {
+					retVal.put(key, PutStatus.FAILED_SECURITY);
+					continue;
+				}
+				
+				boolean contains = backend.contains(key);
+				if (contains) {
+					if(putIfAbsent) {
+						retVal.put(key, PutStatus.FAILED_NOT_ABSENT);
+						continue;
+					}
+					final Data oldData = backend.get(key);
+					if(oldData.isDeleted()) {
+						retVal.put(key, PutStatus.DELETED);
+						continue;
+					}
+					if(!oldData.basedOnSet().equals(newData.basedOnSet())) {
+						retVal.put(key, PutStatus.VERSION_FORK);
+						continue;
+					}
+				}
+				
+				Data oldData = backend.put(key, newData);
+				
+				long expiration = newData.expirationMillis();
+				// handle timeout
+				backend.addTimeout(key, expiration);
+				
+				if(newData.hasPrepareFlag()) {
+					retVal.put(key, PutStatus.OK_PREPARED);
+				} else {
+					if(newData.equals(oldData)) {
+						retVal.put(key, PutStatus.OK_UNCHANGED);
+					} else {
+						retVal.put(key, PutStatus.OK);
+					}
+				}
+			}
+			//now check for forks
+			for(Number480 key:keysToCheck) {
+				Number640 minVersion = new Number640(key, Number160.ZERO);
+				Number640 maxVersion = new Number640(key, Number160.MAX_VALUE);
+				NavigableMap<Number640, Data> tmp = backend.subMap(minVersion, maxVersion, -1, true);
+				NavigableMap<Number640, Data> heads = getLatestInternal(tmp);
+				if(heads.size() > 1) {
+					for(Number640 fork:heads.keySet()) {
+						if(retVal.containsKey(fork)) {
+							retVal.put(fork, PutStatus.VERSION_FORK);
+						}
+					}
+				}
+			}
+			return retVal;
+			
+		} finally {
+			lock.unlock();
+		}
+	}
+	
 	public Enum<?> put(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-	        boolean domainProtection) {
-		boolean retVal = false;
-		KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(key.locationAndDomainAndContentKey());
+	        boolean domainProtection, boolean sendSelf) {
+		final NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+		dataMap.put(key, newData);
+		Map<Number640, Enum<?>> putStatus = putAll(dataMap, publicKey, putIfAbsent, domainProtection, sendSelf);
+		Enum<?> retVal = putStatus.get(key);
+		if(retVal == null) {
+			return PutStatus.FAILED;
+		} else {
+			return retVal;
+		}
+	}
+
+	@Deprecated
+	public Enum<?> putOld(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
+	        boolean domainProtection, boolean sendSelf) {
+		RangeLock<Number640>.Range lock = lock(key.locationAndDomainAndContentKey());
 		try {
 			if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
 				return PutStatus.FAILED_SECURITY;
 			}
-			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, newData.publicKey(),
+			
+			// We need this check in case we did not use the encoder/deconder,
+			// which is the case if we send the message to ourself. In that
+			// case, the public key of the data is never set to the message
+			// publick key, if the publick key of the data was null.
+			final PublicKey dataKey;
+			if(sendSelf && newData.publicKey() == null) {
+				dataKey = publicKey;
+			} else {
+				dataKey = newData.publicKey();
+			}
+			
+			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, dataKey,
 			        newData.isProtectedEntry())) {
 				return PutStatus.FAILED_SECURITY;
 			}
 
 			boolean contains = backend.contains(key);
-			if (putIfAbsent && contains) {
-				return PutStatus.FAILED_NOT_ABSENT;
+			if (contains) {
+				if(putIfAbsent) {
+					return PutStatus.FAILED_NOT_ABSENT;
+				}
+				final Data oldData = backend.get(key);
+				if(oldData.isDeleted()) {
+					return PutStatus.DELETED;
+				}
 			}
-			
+				
+			//since we also have timeouts, we need to go through all the versions to see if we have a version fork
 			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
-			if (tmp.containsKey(key)) {
-				 if (tmp.get(key).isDeleted()) {
-					 return PutStatus.DELETED;
-				 }
-			}
 			tmp.put(key, newData);
 			boolean versionFork = getLatestInternal(tmp).size() > 1;
+			
 
-			retVal = backend.put(key, newData);
-			if (retVal) {
-				long expiration = newData.expirationMillis();
-				// handle timeout
-				backend.addTimeout(key, expiration);
-			}
+			final Data oldData = backend.put(key, newData);
+			
+			long expiration = newData.expirationMillis();
+			// handle timeout
+			backend.addTimeout(key, expiration);
+			
 
-			if (retVal && versionFork) {
+			if (versionFork) {
 				return PutStatus.VERSION_FORK;
-			} else if (retVal) {
-				return PutStatus.OK;
 			} else {
-				return PutStatus.FAILED;
+				if(newData.equals(oldData)) {
+					return PutStatus.OK_UNCHANGED;
+				} else {
+					return PutStatus.OK;
+				}
 			}
 		} finally {
-			dataLock480.unlock(lock);
+			lock.unlock();
 		}
 	}
 
 	public Pair<Data, Enum<?>> remove(Number640 key, PublicKey publicKey, boolean returnData) {
-		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		RangeLock<Number640>.Range lock = lock(key);
 		try {
 			if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
 				return new Pair<Data, Enum<?>>(null, PutStatus.FAILED_SECURITY);
@@ -206,16 +355,16 @@ public class StorageLayer implements DigestStorage {
 			backend.removeTimeout(key);
 			return new Pair<Data, Enum<?>>(backend.remove(key, returnData), PutStatus.OK);
 		} finally {
-			dataLock640.unlock(lock);
+			lock.unlock();
 		}
 	}
 
 	public Data get(Number640 key) {
-		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		RangeLock<Number640>.Range lock = lock(key);
 		try {
 			return getInternal(key);
 		} finally {
-			dataLock640.unlock(lock);
+			lock.unlock();
 		}
 	}
 
@@ -229,7 +378,7 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
-		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
 			removePrepared(tmp);
@@ -240,20 +389,20 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	public Map<Number640, Data> getLatestVersion(Number640 key) {
-		KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(key.locationAndDomainAndContentKey());
+	public NavigableMap<Number640, Data> getLatestVersion(Number640 key) {
+		RangeLock<Number640>.Range lock = lock(key.locationAndDomainAndContentKey());
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
 			removePrepared(tmp);
 			return getLatestInternal(tmp);
 		} finally {
-			dataLock480.unlock(lock);
+			lock.unlock();
 		}
 	}
 
-	private Map<Number640, Data> getLatestInternal(NavigableMap<Number640, Data> tmp) {
+	private NavigableMap<Number640, Data> getLatestInternal(NavigableMap<Number640, Data> tmp) {
 	    // delete all predecessors
-	    Map<Number640, Data> result = new HashMap<Number640, Data>();
+		NavigableMap<Number640, Data> result = new TreeMap<Number640, Data>();
 	    while (!tmp.isEmpty()) {
 	    	// first entry is a latest version
 	    	Entry<Number640, Data> latest = tmp.lastEntry();
@@ -275,7 +424,9 @@ public class StorageLayer implements DigestStorage {
 	    }
     }
 
-	private void deletePredecessors(Number640 key, NavigableMap<Number640, Data> sortedMap) {
+	//recursive version
+	@Deprecated
+	private void deletePredecessors2(Number640 key, NavigableMap<Number640, Data> sortedMap) {
 		Data version = sortedMap.remove(key);
 		// check if version has been already deleted
 		if (version == null) {
@@ -290,9 +441,26 @@ public class StorageLayer implements DigestStorage {
 			deletePredecessors(new Number640(key.locationAndDomainAndContentKey(), basedOnKey), sortedMap);
 		}
 	}
+	
+	//iterative version
+	private void deletePredecessors(Number640 key, NavigableMap<Number640, Data> sortedMap) {
+		final List<Number640> toRemove = new ArrayList<Number640>();
+		toRemove.add(key);
+		//int counter = 0;
+		while(!toRemove.isEmpty()) {
+			//System.err.println("counter: "+ (counter++));
+			final Data version = sortedMap.remove(toRemove.remove(0));
+			// check if version has been already deleted && // check if version is initial version
+			if(version != null && !version.basedOnSet().isEmpty()) {
+				for (final Number160 basedOnKey : version.basedOnSet()) {
+					toRemove.add(new Number640(key.locationAndDomainAndContentKey(), basedOnKey));
+				}
+			}
+		}
+	}
 
 	public NavigableMap<Number640, Data> get() {
-		KeyLock<Storage>.RefCounterLock lock = dataLock.lock(backend);
+		RangeLock<Number640>.Range lock = lock();
 		try {
 			return backend.map();
 		} finally {
@@ -301,17 +469,17 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	public boolean contains(Number640 key) {
-		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		RangeLock<Number640>.Range lock = lock(key);
 		try {
 			return backend.contains(key);
 		} finally {
-			dataLock640.unlock(lock);
+			lock.unlock();
 		}
 	}
 
-	public Map<Number640, Data> get(Number640 from, Number640 to, SimpleBloomFilter<Number160> contentBloomFilter,
+	public NavigableMap<Number640, Data> get(Number640 from, Number640 to, SimpleBloomFilter<Number160> contentBloomFilter,
 	        SimpleBloomFilter<Number160> versionBloomFilter, int limit, boolean ascending, boolean isBloomFilterAnd) {
-		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
 			Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
@@ -349,31 +517,8 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	private KeyLock<?>.RefCounterLock findAndLock(Number640 from, Number640 to) {
-		if (!from.locationKey().equals(to.locationKey())) {
-			// everything is different, return a 640 lock
-			KeyLock<Storage>.RefCounterLock lock = dataLock.lock(backend);
-			return lock;
-		} else if (!from.domainKey().equals(to.domainKey())) {
-			// location key is the same, rest is different
-			KeyLock<Number160>.RefCounterLock lock = dataLock160.lock(from.locationKey());
-			return lock;
-		} else if (!from.contentKey().equals(to.contentKey())) {
-			// location and domain key are same, rest is different
-			KeyLock<Number320>.RefCounterLock lock = dataLock320.lock(from.locationAndDomainKey());
-			return lock;
-		} else if (!from.versionKey().equals(to.versionKey())) {
-			// location, domain, and content key are the same, rest is different
-			KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(from.locationAndDomainAndContentKey());
-			return lock;
-		} else {
-			KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(from);
-			return lock;
-		}
-	}
-
-	public SortedMap<Number640, Data> removeReturnData(Number640 from, Number640 to, PublicKey publicKey) {
-		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+	public NavigableMap<Number640, Data> removeReturnData(Number640 from, Number640 to, PublicKey publicKey) {
+		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
 
@@ -387,7 +532,7 @@ public class StorageLayer implements DigestStorage {
 					return null;
 				}
 			}
-			SortedMap<Number640, Data> result = backend.remove(from, to, true);
+			NavigableMap<Number640, Data> result = backend.remove(from, to, true);
 			for (Map.Entry<Number640, Data> entry : result.entrySet()) {
 				Data data = entry.getValue();
 				if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
@@ -401,7 +546,7 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	public SortedMap<Number640, Byte> removeReturnStatus(Number640 from, Number640 to, PublicKey publicKey) {
-		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
 			SortedMap<Number640, Byte> result = new TreeMap<Number640, Byte>();
@@ -418,26 +563,24 @@ public class StorageLayer implements DigestStorage {
 	public void checkTimeout() {
 		long time = System.currentTimeMillis();
 		Collection<Number640> toRemove = backend.subMapTimeout(time);
-		if (toRemove.size() > 0) {
-			for (Number640 key : toRemove) {
-				KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-				try {
-					backend.remove(key, false);
-					backend.removeTimeout(key);
-				} finally {
-					lock.unlock();
-				}
+		for (Number640 key : toRemove) {
+			RangeLock<Number640>.Range lock = lock(key);
+			try {
+				backend.remove(key, false);
+				backend.removeTimeout(key);
 				// remove responsibility if we don't have any data stored under
 				// locationkey
 				Number160 locationKey = key.locationKey();
-				KeyLock<Number160>.RefCounterLock lock1 = dataLock160.lock(locationKey);
+				RangeLock<Number640>.Range lockResp= lockResponsibility(locationKey);
 				try {
 					if (isEmpty(locationKey)) {
 						backend.removeResponsibility(locationKey);
 					}
 				} finally {
-					lock1.unlock();
+					lockResp.unlock();
 				}
+			} finally {
+				lock.unlock();
 			}
 		}
 	}
@@ -455,7 +598,7 @@ public class StorageLayer implements DigestStorage {
 	@Override
     public DigestInfo digest(Number640 from, Number640 to, int limit, boolean ascending) {
 		DigestInfo digestInfo = new DigestInfo();
-		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
@@ -476,7 +619,7 @@ public class StorageLayer implements DigestStorage {
     public DigestInfo digest(Number320 locationAndDomainKey, SimpleBloomFilter<Number160> keyBloomFilter,
 	        SimpleBloomFilter<Number160> contentBloomFilter, int limit, boolean ascending, boolean isBloomFilterAnd) {
 		DigestInfo digestInfo = new DigestInfo();
-		KeyLock<Number320>.RefCounterLock lock = dataLock320.lock(locationAndDomainKey);
+		RangeLock<Number640>.Range lock = lock(locationAndDomainKey);
 		try {
 			Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
 			Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
@@ -513,7 +656,7 @@ public class StorageLayer implements DigestStorage {
     public DigestInfo digest(Collection<Number640> number640s) {
 		DigestInfo digestInfo = new DigestInfo();
 		for (Number640 number640 : number640s) {
-			KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(number640);
+			RangeLock<Number640>.Range lock = lock(number640);
 			try {
 				if (backend.contains(number640)) {
 					Data data = getInternal(number640);
@@ -561,7 +704,8 @@ public class StorageLayer implements DigestStorage {
 			// false if the domain is protected
 			return !entryProtectedByOthers;
 		} else {
-			if (canClaimEntry(key, publicKeyMessage)) {
+			//replication cannot sign messages with the originators key, so we must also check the public key of the data
+			if (canClaimEntry(key, publicKeyMessage) || canClaimEntry(key, publicKeyData)) {
 				if (canProtectEntry(key.domainKey(), publicKeyMessage)) {
 					return backend.protectEntry(key, publicKeyData);
 				} else {
@@ -632,84 +776,64 @@ public class StorageLayer implements DigestStorage {
 		return key.equals(Utils.makeSHAHash(publicKey.getEncoded()));
 	}
 
-	public KeyLock<Storage> lockStorage() {
-		return dataLock;
-	}
-
-	public KeyLock<Number160> lockNumber160() {
-		return dataLock160;
-	}
-
-	public KeyLock<Number320> lockNumber320() {
-		return dataLock320;
-	}
-
-	public KeyLock<Number480> lockNumber480() {
-		return dataLock480;
+	public RangeLock<Number640> rangeLock() {
+		return rangeLock;
 	}
 
 	public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {
-		Collection<Number160> contentIDs = backend.findContentForResponsiblePeerID(peerID);
-        if (contentIDs == null) {
-            return Collections.<Number160> emptyList();
-        } else {
-            KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(peerID);
-            try {
-                return new ArrayList<Number160>(contentIDs);
-            } finally {
-                responsibilityLock.unlock(lock);
-            }
+		RangeLock<Number640>.Range lockResp = lockResponsibility(peerID);
+		try {
+			Collection<Number160> contentIDs = backend.findContentForResponsiblePeerID(peerID);
+			if (contentIDs == null) {
+				return Collections.<Number160> emptyList();
+			} else {
+				return new ArrayList<Number160>(contentIDs);
+			}
+		} finally {
+			lockResp.unlock();
         }
 	}
 	
-	public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
-		Collection<Number160> peerIDs = backend.findPeerIDsForResponsibleContent(locationKey);
-        if (peerIDs == null) {
-            return Collections.<Number160> emptyList();
-        } else {
-            KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(locationKey);
-            try {
-                return new ArrayList<Number160>(peerIDs);
-            } finally {
-                responsibilityLock.unlock(lock);
-            }
+	public Number160 findPeerIDsForResponsibleContent(Number160 locationKey) {
+		RangeLock<Number640>.Range lockResp = lockResponsibility(locationKey);
+		try {
+			return backend.findPeerIDsForResponsibleContent(locationKey);
+		} finally {
+			lockResp.unlock();
         }
 	}
 	
 	public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
-		KeyLock<Number160>.RefCounterLock lock1 = responsibilityLock.lock(peerId);
-		KeyLock<Number160>.RefCounterLock lock2 = responsibilityLock.lock(locationKey);
+		RangeLock<Number640>.Range lockResp1 = lockResponsibility(peerId);
+		RangeLock<Number640>.Range lockResp2 = lockResponsibility(locationKey);
         try {
             return backend.updateResponsibilities(locationKey, peerId);
         } finally {
-            responsibilityLock.unlock(lock1);
-            responsibilityLock.unlock(lock2);
+        	lockResp1.unlock();
+        	lockResp2.unlock();
         }
 	}
 	
 	public void removeResponsibility(Number160 locationKey, boolean keepData) {
-		KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(locationKey);
+		RangeLock<Number640>.Range lockResp = lockResponsibility(locationKey);
 		try {
 			if (!keepData) {
-				backend.remove(
+				RangeLock<Number640>.Range lock = lock(locationKey);
+				try {
+					final NavigableMap<Number640, Data> removed = backend.remove(
 						new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO),
 						new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE),
 						false);
+					for(Number640 rem:removed.keySet()) {
+						backend.removeTimeout(rem);
+					}
+				} finally {
+					lock.unlock();
+		        }
 			}
         	backend.removeResponsibility(locationKey);
         } finally {
-            responsibilityLock.unlock(lock);
-        }
-	}
-
-	public void removeResponsibility(Number160 locationKey, Number160 peerId) {
-		KeyLock<Number160>.RefCounterLock lock1 = responsibilityLock.lock(peerId);
-		KeyLock<Number160>.RefCounterLock lock2 = responsibilityLock.lock(locationKey);
-        try {
-        	backend.removeResponsibility(locationKey, peerId);
-        } finally {
-        	responsibilityLock.unlock(lock1);
-            responsibilityLock.unlock(lock2);
+        	lockResp.unlock();
         }
 	}
 
@@ -733,8 +857,7 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	public Enum<?> updateMeta(PublicKey publicKey, Number640 key, Data newData) {
-		boolean found = false;
-		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		RangeLock<Number640>.Range lock = lock(key);
 		try {
 			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, newData.publicKey(),
 			        newData.isProtectedEntry())) {
@@ -760,12 +883,14 @@ public class StorageLayer implements DigestStorage {
 				long expiration = data.expirationMillis();
 				// handle timeout
 				backend.addTimeout(key, expiration);
-				found = backend.put(key, data);
+				backend.put(key, data);
+				return PutStatus.OK;
+			} else {
+				return PutStatus.NOT_FOUND;
 			}
 		} finally {
-			dataLock640.unlock(lock);
+			lock.unlock();
 		}
-		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
 	}
 
 	public int storageCheckIntervalMillis() {
@@ -773,8 +898,7 @@ public class StorageLayer implements DigestStorage {
     }
 
 	public Enum<?> putConfirm(PublicKey publicKey, Number640 key, Data newData) {
-		boolean found = false;
-		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		RangeLock<Number640>.Range lock = lock(key);
 		try {
 			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, newData.publicKey(),
 					newData.isProtectedEntry())) {
@@ -792,11 +916,14 @@ public class StorageLayer implements DigestStorage {
 				long expiration = data.expirationMillis();
 				// handle timeout
 				backend.addTimeout(key, expiration);
-				found = backend.put(key, data);
+				backend.put(key, data);
+				return PutStatus.OK;
+			} else {
+				return PutStatus.NOT_FOUND;
 			}
 		} finally {
-			dataLock640.unlock(lock);
+			lock.unlock();
 		}
-		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
+		//TODO: check for FORKS!
 	}
 }

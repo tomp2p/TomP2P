@@ -82,7 +82,7 @@ public class DistributedTracker {
 					Collection<Pair<PeerStatistic, Data>> value = trackerStorage.peers(new Number320(builder.locationKey(), builder
 					        .domainKey())).values(); 
 					TrackerData peers = new TrackerData(value);
-					NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createComparator(stableRandom));
+					NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(stableRandom));
 					if(peers != null && peers.peerAddresses()!=null) {
 						queue.addAll(peers.peerAddresses().keySet());
 					}
@@ -177,7 +177,7 @@ public class DistributedTracker {
 	        TrackerConfiguration trackerConfiguration, FutureTracker futureTracker, boolean isGet,
 	        final Set<Number160> knownPeers, Operation operation) {
 		FutureResponse[] futureResponses = new FutureResponse[trackerConfiguration.parallel()];
-		NavigableSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(PeerMap.createComparator(stableRandom));
+		NavigableSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(stableRandom));
 		loopRec(locationKey, domainKey, queueToAsk, secondaryQueue, new HashSet<PeerAddress>(),
 		        new HashSet<PeerAddress>(), new HashMap<PeerAddress, TrackerData>(), operation,
 		        trackerConfiguration.parallel(), new AtomicInteger(0), trackerConfiguration.maxFailure(),
@@ -335,7 +335,7 @@ public class DistributedTracker {
 		RoutingBuilder routingBuilder = builder.createBuilder(builder.routingConfiguration());
 		routingBuilder.locationKey(builder.locationKey());
 		routingBuilder.domainKey(builder.domainKey());
-		routingBuilder.peerFilters(builder.peerFilters());
+		routingBuilder.peerMapFilters(builder.peerMapFilters());
 		return routing.route(routingBuilder, type, channelCreator);
 	}
 

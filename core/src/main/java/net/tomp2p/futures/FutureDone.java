@@ -16,6 +16,9 @@
 
 package net.tomp2p.futures;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * A generic future that can be used to set a future to complete with an attachment.
  * 
@@ -70,5 +73,24 @@ public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
         synchronized (lock) {
             return object;
         }
+    }
+    
+    public static FutureDone<List<FutureDone<?>>> whenAll(final List<FutureDone<?>> all) {
+    	final AtomicInteger counter = new AtomicInteger();
+    	final int size = all.size();
+    	final FutureDone<List<FutureDone<?>>> retFutureDone = new FutureDone<List<FutureDone<?>>>();
+    	
+    	for(final FutureDone<?> future:all) {
+    		future.addListener(new BaseFutureAdapter<FutureDone<?>>() {
+				@Override
+                public void operationComplete(FutureDone<?> future) throws Exception {
+	                if(counter.incrementAndGet() == size) {
+	                	retFutureDone.done(all);
+	                }
+                }
+			});
+    	}
+    	
+    	return retFutureDone;
     }
 }

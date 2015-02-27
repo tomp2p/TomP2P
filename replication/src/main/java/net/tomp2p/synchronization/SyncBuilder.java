@@ -20,7 +20,6 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -131,7 +130,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
         if (dataMap != null) {
             return dataMap;
         } else {
-            Map<Number640, Data> newDataMap = new HashMap<Number640, Data>();
+        	NavigableMap<Number640, Data> newDataMap = new TreeMap<Number640, Data>();
             if (key != null) {
                 Data data = peer.storageLayer().get(key);
                 if (data == null) {
@@ -222,7 +221,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                             return;
                         }
 
-                        Map<Number640, Data> retVal = new HashMap<Number640, Data>();
+                        NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
                         boolean syncMessageRequired = false;
                         int dataCopy = 0;
                         int dataOrig = 0;
@@ -264,6 +263,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		
                         		dataCopy += SyncUtils.encodeInstructions(instructions, versionKey, hash, abuf);
                         		DataBuffer dataBuffer = new DataBuffer(abuf);
+                        		abuf.release();
                         		//diff
                         		Data data1 = new Data(dataBuffer).flag1();
                                 retVal.put(entry.getKey(), data1);                    		

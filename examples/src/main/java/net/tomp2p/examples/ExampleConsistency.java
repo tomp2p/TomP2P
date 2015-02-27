@@ -25,8 +25,8 @@ import java.util.TreeSet;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.Statistics;
@@ -97,7 +97,7 @@ public final class ExampleConsistency {
             ClassNotFoundException {
         System.out.println("key is " + key1);
         // find close peers
-        NavigableSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createComparator(key1));
+        NavigableSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(key1));
         for (PeerDHT peer : peers) {
             set.add(peer.peerAddress());
         }
@@ -138,11 +138,11 @@ public final class ExampleConsistency {
         System.out.println("The 3 peers are now onlyne again, with the old data");
         Number640 key = new Number640(key1, Number160.ZERO, Number160.ZERO, Number160.ZERO);
         peers[peerOffline1].storageLayer()
-                .put(key, new Data("Test 1"), null, false, false);
+                .put(key, new Data("Test 1"), null, false, false, false);
         peers[peerOffline2].storageLayer()
-                .put(key, new Data("Test 1"), null, false, false);
+                .put(key, new Data("Test 1"), null, false, false, false);
         peers[peerOffline3].storageLayer()
-                .put(key, new Data("Test 1"), null, false, false);
+                .put(key, new Data("Test 1"), null, false, false, false);
         // we got Test 1
         FutureGet futureGet2 = peers[0].get(key1).requestP2PConfiguration(REQUEST_3).all().start();
         futureGet2.awaitUninterruptibly();
@@ -180,9 +180,9 @@ public final class ExampleConsistency {
         // load old data
         Number640 key = new Number640(key1, Number160.ZERO, Number160.ZERO, Number160.ZERO);
         mpeer1.storageLayer()
-                .put(key, new Data("attack, attack, attack!"), null, false, false);
+                .put(key, new Data("attack, attack, attack!"), null, false, false, false);
         mpeer2.storageLayer()
-                .put(key, new Data("attack, attack, attack!"), null, false, false);
+                .put(key, new Data("attack, attack, attack!"), null, false, false, false);
         //uncomment below if you want to attack with 3 close peers
         //mpeer3.getPeerBean().storage()
         //        .put(key, new Data("attack, attack, attack!"), null, false, false);

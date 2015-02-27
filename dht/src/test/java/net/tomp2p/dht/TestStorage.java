@@ -15,7 +15,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.KeyLock;
 import net.tomp2p.storage.Storage;
 
 import org.junit.Assert;
@@ -55,19 +54,19 @@ public class TestStorage {
     }
 
     private void store(StorageLayer storage, int nr) throws IOException {
-        Enum<?> store = storage.put(key1, new Data("test1"), null, false, false);
-        Assert.assertEquals(PutStatus.OK, store);
-        store = storage.put(key2, new Data("test2"), null, false, false);
-        Assert.assertEquals(PutStatus.OK, store);
+        Enum<?> store = storage.put(key1, new Data("test1"), null, false, false, false);
+        Assert.assertTrue(PutStatus.OK == store || PutStatus.OK_UNCHANGED == store);
+        store = storage.put(key2, new Data("test2"), null, false, false, false);
+        Assert.assertTrue(PutStatus.OK == store || PutStatus.OK_UNCHANGED == store);
     }
 
     private void store(StorageLayer storage, PublicKey publicKey, boolean protectDomain) throws IOException {
         Enum<?> store = storage.put(key1, new Data("test1"), publicKey, false,
-                protectDomain);
-        Assert.assertEquals(PutStatus.OK, store);
+                protectDomain, false);
+        Assert.assertTrue(PutStatus.OK == store || PutStatus.OK_UNCHANGED == store);
         store = storage.put(key2, new Data("test2"), publicKey, false,
-                protectDomain);
-        Assert.assertEquals(PutStatus.OK, store);
+                protectDomain, false);
+        Assert.assertTrue(PutStatus.OK == store || PutStatus.OK_UNCHANGED == store);
     }
 
     @Test
@@ -97,9 +96,9 @@ public class TestStorage {
     private void testPut(StorageLayer storage) throws IOException {
         store(storage);
         Enum<?> store = storage
-                .put(key1, new Data("test3"), null, false, false);
+                .put(key1, new Data("test3"), null, false, false, false);
         Assert.assertEquals(PutStatus.OK, store);
-        storage.put(key3, new Data("test4"), null, false, false);
+        storage.put(key3, new Data("test4"), null, false, false, false);
         SortedMap<Number640, Data> result = storage.get(key1, key4, -1, true);
         Assert.assertEquals(3, result.size());
     }
@@ -118,11 +117,11 @@ public class TestStorage {
 		Data data1 = new Data("test1");
 		Data data2a = new Data("test2a").addBasedOn(key1.versionKey());
 		Data data2b = new Data("test2b").addBasedOn(key1.versionKey());
-		Enum<?> store = storage.put(key1, data1, null, true, false);
+		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
-		store = storage.put(key2a, data2a, null, true, false);
+		store = storage.put(key2a, data2a, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
-		store = storage.put(key2b, data2b, null, true, false);
+		store = storage.put(key2b, data2b, null, true, false, false);
 		Assert.assertEquals(PutStatus.VERSION_FORK, store);
 	}
 
@@ -138,10 +137,11 @@ public class TestStorage {
 		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
 		Data data1 = new Data("test1");
 		Data data2 = new Data("test2").prepareFlag();
-		Enum<?> store = storage.put(key1, data1, null, true, false);
+		data2.addBasedOn(new Number160(0));
+		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
-		store = storage.put(key2, data2, null, true, false);
-		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2, data2, null, true, false, false);
+		Assert.assertEquals(PutStatus.OK_PREPARED, store);
 		Assert.assertEquals(data1, storage.get(key1));
 		Assert.assertNull(storage.get(key2));
 	}
@@ -158,10 +158,11 @@ public class TestStorage {
 		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
 		Data data1 = new Data("test1");
 		Data data2 = new Data("test2").prepareFlag();
-		Enum<?> store = storage.put(key1, data1, null, true, false);
+		data2.addBasedOn(new Number160(0));
+		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
-		store = storage.put(key2, data2, null, true, false);
-		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2, data2, null, true, false, false);
+		Assert.assertEquals(PutStatus.OK_PREPARED, store);
 		NavigableMap<Number640, Data> map = storage.get(new Number640(locationKey, domainKey, content1,
 				Number160.ZERO), new Number640(locationKey, domainKey, content1, Number160.MAX_VALUE), -1,
 				true);
@@ -181,10 +182,11 @@ public class TestStorage {
 		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
 		Data data1 = new Data("test1");
 		Data data2 = new Data("test2").prepareFlag();
-		Enum<?> store = storage.put(key1, data1, null, true, false);
+		data2.addBasedOn(new Number160(0));
+		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
-		store = storage.put(key2, data2, null, true, false);
-		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2, data2, null, true, false, false);
+		Assert.assertEquals(PutStatus.OK_PREPARED, store);
 		Collection<Number640> number640 = new ArrayList<Number640>(2);
 		number640.add(key1);
 		number640.add(key2);
@@ -205,10 +207,11 @@ public class TestStorage {
 		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
 		Data data1 = new Data("test1");
 		Data data2 = new Data("test2").prepareFlag();
-		Enum<?> store = storage.put(key1, data1, null, true, false);
+		data2.addBasedOn(new Number160(0));
+		Enum<?> store = storage.put(key1, data1, null, true, false, false);
 		Assert.assertEquals(PutStatus.OK, store);
-		store = storage.put(key2, data2, null, true, false);
-		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2, data2, null, true, false, false);
+		Assert.assertEquals(PutStatus.OK_PREPARED, store);
 		DigestInfo digest = storage.digest(new Number640(locationKey, domainKey, content1,
 				Number160.ZERO), new Number640(locationKey, domainKey, content1, Number160.MAX_VALUE), -1,
 				true);
@@ -225,9 +228,9 @@ public class TestStorage {
 
     private void testPutIfAbsent(StorageLayer storage) throws IOException {
         store(storage);
-        Enum<?> store = storage.put(key1, new Data("test3"), null, true, false);
+        Enum<?> store = storage.put(key1, new Data("test3"), null, true, false, false);
         Assert.assertEquals(PutStatus.FAILED_NOT_ABSENT, store);
-        storage.put(key3, new Data("test4"), null, true, false);
+        storage.put(key3, new Data("test4"), null, true, false, false);
         SortedMap<Number640, Data> result1 = storage.get(key1, key3, -1, true);
         Assert.assertEquals(3, result1.size());
         SortedMap<Number640, Data> result2 = storage.get(key1, key2, -1, true);
@@ -264,7 +267,7 @@ public class TestStorage {
     private void testTTL1(StorageLayer storage) throws Exception {
         Data data = new Data("string");
         data.ttlSeconds(0);
-        storage.put(key1, data, null, false, false);
+        storage.put(key1, data, null, false, false, false);
         Thread.sleep(2000);
         Data tmp = storage.get(key1);
         Assert.assertEquals(true, tmp != null);
@@ -280,7 +283,7 @@ public class TestStorage {
     private void testTTL2(StorageLayer storage) throws Exception {
         Data data = new Data("string");
         data.ttlSeconds(1);
-        storage.put(key1, data, null, false, false);
+        storage.put(key1, data, null, false, false, false);
         Thread.sleep(2000);
         storage.checkTimeout();
         Data tmp = storage.get(key1);
@@ -298,7 +301,7 @@ public class TestStorage {
     private void testTTLLeak(StorageLayer storage) throws Exception {
         Data data = new Data("string");
         data.ttlSeconds(1);
-        storage.put(key1, data, null, false, false);
+        storage.put(key1, data, null, false, false, false);
         Thread.sleep(2000);
         storage.checkTimeout();
         Data tmp = storage.get(key1);
@@ -315,11 +318,11 @@ public class TestStorage {
     private void testResponsibility(Storage storage) throws Exception {
         storage.updateResponsibilities(content1, locationKey);
         storage.updateResponsibilities(content2, locationKey);
-        Assert.assertEquals(locationKey, storage.findPeerIDsForResponsibleContent(content1).iterator().next());
+        Assert.assertEquals(locationKey, storage.findPeerIDsForResponsibleContent(content1));
         Assert.assertEquals(2, storage.findContentForResponsiblePeerID(locationKey).size());
         storage.updateResponsibilities(content1, domainKey);
         storage.updateResponsibilities(content2, locationKey);
-        Assert.assertEquals(domainKey, storage.findPeerIDsForResponsibleContent(content1).iterator().next());
+        Assert.assertEquals(domainKey, storage.findPeerIDsForResponsibleContent(content1));
     }
 
     @Test
@@ -335,76 +338,15 @@ public class TestStorage {
         KeyPair pair2 = gen.generateKeyPair();
         store(storage, pair1.getPublic(), true);
         Enum<?> result1 = storage.put(key3, new Data("test4"),
-                pair1.getPublic(), false, false);
+                pair1.getPublic(), false, false, false);
         Assert.assertEquals(PutStatus.OK, result1);
         Enum<?> result3 = storage.put(key3, new Data("test6"),
-                pair1.getPublic(), false, true);
+                pair1.getPublic(), false, true, false);
         Assert.assertEquals(PutStatus.OK, result3);
         // domain is protected by pair1
         Enum<?> result2 = storage.put(key3, new Data("test5"),
-                pair2.getPublic(), false, true);
+                pair2.getPublic(), false, true, false);
         Assert.assertEquals(PutStatus.FAILED_SECURITY, result2);
-    }
-
-    @Test
-    public void testLock1() {
-        KeyLock<Number160> lock = new KeyLock<Number160>();
-        KeyLock<Number160>.RefCounterLock tmp = lock.lock(Number160.createHash("test"));
-        Assert.assertEquals(1, lock.cacheSize());
-        lock.unlock(tmp);
-        Assert.assertEquals(0, lock.cacheSize());
-        lock.unlock(tmp);
-    }
-
-    @Test
-    public void testLock2() {
-        KeyLock<Number160> lock = new KeyLock<Number160>();
-        KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test1"));
-        KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test2"));
-        Assert.assertEquals(2, lock.cacheSize());
-        lock.unlock(tmp1);
-        lock.unlock(tmp2);
-        Assert.assertEquals(0, lock.cacheSize());
-    }
-
-    @Test
-    public void testLockConcurrent() throws InterruptedException {
-        final KeyLock<Number160> lock = new KeyLock<Number160>();
-        for (int i = 0; i < 100; i++) {
-            final int ii = i;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test1"));
-                    KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test2"));
-                    lock.unlock(tmp1);
-                    lock.unlock(tmp2);
-                    System.err.print("a" + ii + " ");
-                }
-            }).start();
-        }
-        for (int i = 0; i < 100; i++) {
-            final int ii = i;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test3"));
-                    KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test4"));
-                    lock.unlock(tmp1);
-                    lock.unlock(tmp2);
-                    System.err.print("b" + ii + " ");
-                }
-            }).start();
-        }
-        Thread.sleep(500);
-        Assert.assertEquals(0, lock.cacheSize());
-        KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test1"));
-        KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test2"));
-        Assert.assertEquals(2, lock.cacheSize());
-        lock.unlock(tmp1);
-        Assert.assertEquals(1, lock.cacheSize());
-        lock.unlock(tmp2);
-        Assert.assertEquals(0, lock.cacheSize());
     }
     
     @Test

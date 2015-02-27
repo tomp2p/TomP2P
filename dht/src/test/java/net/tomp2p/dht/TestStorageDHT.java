@@ -6,13 +6,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServerConfiguration;
@@ -84,7 +85,7 @@ public class TestStorageDHT {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).start();
             PeerAddress[] pa = UtilsDHT2.createDummyAddress(300, PORT_TCP, PORT_UDP);
             for (int i = 0; i < pa.length; i++) {
-                sender.peerBean().peerMap().peerFound(pa[i], null, null);
+                sender.peerBean().peerMap().peerFound(pa[i], null, null, null);
             }
             new NeighborRPC(sender.peerBean(), sender.peer().connectionBean());
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).start();
@@ -97,7 +98,7 @@ public class TestStorageDHT {
             SimpleBloomFilter<Number160> bf = new SimpleBloomFilter<Number160>(20, 10);
             for (int i = 0; i < 10; i++) {
                 Number640 key = new Number640(new Number160(0x1), Number160.ZERO, Number160.createHash(i), Number160.ZERO);
-                sender.storageLayer().put(key, new Data("test"), null, false, false);
+                sender.storageLayer().put(key, new Data("test"), null, false, false, false);
                 bf.add(Number160.createHash(i));
             }
 
@@ -217,7 +218,7 @@ public class TestStorageDHT {
             
             StorageRPC smmSender = sender.storeRPC();
             
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
             byte[] me2 = new byte[] { 2, 3, 4 };
             Data test = new Data(me1);
@@ -290,7 +291,7 @@ public class TestStorageDHT {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
             byte[] me2 = new byte[] { 2, 3, 4 };
             Data test = new Data(me1);
@@ -358,7 +359,7 @@ public class TestStorageDHT {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
             byte[] me2 = new byte[] { 2, 3, 4 };
             tmp.put(new Number160(77), new Data(me1));
@@ -415,7 +416,7 @@ public class TestStorageDHT {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
             byte[] me2 = new byte[] { 2, 3, 4 };
             tmp.put(new Number160(77), new Data(me1));
@@ -485,7 +486,7 @@ public class TestStorageDHT {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
             byte[] me2 = new byte[] { 2, 3, 4 };
             tmp.put(new Number160(77), new Data(me1));
@@ -555,7 +556,7 @@ public class TestStorageDHT {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[100];
             byte[] me2 = new byte[10000];
             tmp.put(new Number160(77), new Data(me1));
@@ -640,7 +641,7 @@ public class TestStorageDHT {
     
     private FutureResponse store(PeerDHT sender, final PeerDHT recv1, StorageRPC smmSender, ChannelCreator cc)
             throws Exception {
-        Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+        NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
         byte[] me1 = new byte[] { 1, 2, 3 };
         byte[] me2 = new byte[] { 2, 3, 4 };
         tmp.put(new Number160(77), new Data(me1));
@@ -666,7 +667,7 @@ public class TestStorageDHT {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
             byte[] me2 = new byte[] { 2, 3, 4 };
             byte[] me3 = new byte[] { 5, 3, 4 };
@@ -725,7 +726,7 @@ public class TestStorageDHT {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).enableMaintenance(false).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).enableMaintenance(false).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
             byte[] me2 = new byte[] { 2, 3, 4 };
             byte[] me3 = new byte[] { 5, 3, 4 };
@@ -794,7 +795,7 @@ public class TestStorageDHT {
             recv1 = new PeerBuilderDHT(pm2.start()).storage(storeRecv).start();
 
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[50 * 1024 * 1024];
             tmp.put(new Number160(77), new Data(me1));
 
@@ -848,7 +849,7 @@ public class TestStorageDHT {
             recv1 = new PeerBuilderDHT(pm2.start()).storage(storeRecv).start();
 
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[50 * 1024 * 1024];
             tmp.put(new Number160(77), new Data(me1));
 
@@ -905,7 +906,7 @@ public class TestStorageDHT {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[50 * 1024 * 1024];
             tmp.put(new Number160(77), new Data(me1));
 
@@ -957,7 +958,7 @@ public class TestStorageDHT {
             recv1 = new PeerBuilderDHT(pm2.start()).storage(storeRecv).start();
 
             StorageRPC smmSender = sender.storeRPC();
-            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
             byte[] me1 = new byte[50 * 1024 * 1024];
             tmp.put(new Number160(77), new Data(me1));
 
@@ -1007,7 +1008,7 @@ public class TestStorageDHT {
 			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start()).start();
 			slave = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start()).start();
 			
-			Map<Number640,Data> tmp = new HashMap<Number640,Data>();
+			NavigableMap<Number640,Data> tmp = new TreeMap<Number640,Data>();
 			for(int i=0;i<5;i++) {
 				byte[] me = new byte[480];
 				Arrays.fill(me, (byte)(i-6));

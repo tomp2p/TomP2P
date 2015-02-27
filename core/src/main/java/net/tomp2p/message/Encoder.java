@@ -26,6 +26,8 @@ public class Encoder {
 
     private static final Logger LOG = LoggerFactory.getLogger(Encoder.class);
 
+    private final DataFilter dataFilterTTL = new DataFilterTTL();
+    
     private boolean header = false;
     private boolean resume = false;
     private Message message;
@@ -64,7 +66,7 @@ public class Encoder {
             if (message.isSign()) {
             	//we sign if we did not provide a signature already
             	if(signatureCodec == null) {
-            		signatureCodec = signatureFactory.sign(message.privateKey(), buf);
+            		signatureCodec = signatureFactory.sign(message.privateKey(), buf.nioBuffers());
             	}
             	//in case of relay, we have a signature, so we need to reuse this
             	signatureCodec.write(buf);
@@ -240,19 +242,10 @@ public class Encoder {
     }
 
 	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
-		if(isConvertMeta) {
-			data = data.duplicateMeta();
-		} else {
-			data = data.duplicate();
-		}
-		if(isReply) {
-			int ttl = (int) ((data.expirationMillis() - System.currentTimeMillis()) / 1000);
-			data.ttlSeconds(ttl < 0 ? 0 : ttl);
-		}
-		//final int startWriter = buf.writerIndex();
-	    data.encodeHeader(buf, signatureFactory);
-	    data.encodeBuffer(buf);
-	    data.encodeDone(buf, signatureFactory, message.privateKey());
+		Data copyData = dataFilterTTL.filter(data, isConvertMeta, isReply);
+		copyData.encodeHeader(buf, signatureFactory);
+		copyData.encodeBuffer(buf);
+		copyData.encodeDone(buf, signatureFactory, message.privateKey());
     }
 
     public Message message() {

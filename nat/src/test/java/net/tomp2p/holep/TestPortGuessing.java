@@ -1,24 +1,18 @@
 package net.tomp2p.holep;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import io.netty.buffer.Unpooled;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.List;
 
 import net.tomp2p.connection.HolePInitiator;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.holep.strategy.AbstractHolePStrategy;
-import net.tomp2p.holep.strategy.NonPreservingSequentialStrategy;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.rpc.RPC;

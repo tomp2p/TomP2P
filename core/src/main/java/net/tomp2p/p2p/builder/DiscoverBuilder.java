@@ -260,9 +260,9 @@ public class DiscoverBuilder {
                         }
                         // else -> we announce exactly how the other peer sees
                         // us
-                        FutureResponse fr1 = peer.pingRPC().pingTCPProbe(peerAddress, cc,
+                        peer.pingRPC().pingTCPProbe(peerAddress, cc,
                                 configuration);
-                        FutureResponse fr2 = peer.pingRPC().pingUDPProbe(peerAddress, cc,
+                        peer.pingRPC().pingUDPProbe(peerAddress, cc,
                                 configuration);
                         // from here we probe, set the timeout here
                         futureDiscover.timeout(serverAddress, peer.connectionBean().timer(), discoverTimeoutSec);

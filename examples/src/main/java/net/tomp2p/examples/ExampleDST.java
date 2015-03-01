@@ -52,7 +52,7 @@ public final class ExampleDST {
 	//The number of values per peer stored
 	private final static int n = 2;
 	
-	//The range of the values
+	//The range of the values, needs to be power of 2
 	private final static int m = 8; //1024*1024; // m is th
 
     /**

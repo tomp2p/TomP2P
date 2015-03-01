@@ -260,10 +260,26 @@ public class DiscoverBuilder {
                         }
                         // else -> we announce exactly how the other peer sees
                         // us
-                        peer.pingRPC().pingTCPProbe(peerAddress, cc,
+                        FutureResponse fr1 = peer.pingRPC().pingTCPProbe(peerAddress, cc,
                                 configuration);
-                        peer.pingRPC().pingUDPProbe(peerAddress, cc,
+                        fr1.addListener(new BaseFutureAdapter<FutureResponse>() {
+							@Override
+                            public void operationComplete(FutureResponse future) throws Exception {
+	                            if(future.isFailed()) {
+	                            	futureDiscover.failed("FutureDiscover (2): We need at least the TCP connection", future);
+	                            }
+                            }
+						});
+                        FutureResponse fr2 = peer.pingRPC().pingUDPProbe(peerAddress, cc,
                                 configuration);
+                        fr2.addListener(new BaseFutureAdapter<FutureResponse>() {
+							@Override
+                            public void operationComplete(FutureResponse future) throws Exception {
+	                            if(future.isFailed()) {
+	                            	LOG.warn("FutureDiscover (2): UDP failed connection", future);
+	                            }
+                            }
+						});
                         // from here we probe, set the timeout here
                         futureDiscover.timeout(serverAddress, peer.connectionBean().timer(), discoverTimeoutSec);
                         return;
@@ -272,7 +288,7 @@ public class DiscoverBuilder {
                         return;
                     }
                 } else {
-                    futureDiscover.failed("For discovery, we need at least the TCP connection.",
+                	futureDiscover.failed("FutureDiscover (1): We need at least the TCP connection",
                             futureResponseTCP);
                     return;
                 }

@@ -90,7 +90,7 @@ public class DistributedRouting {
     public FutureDone<Pair<FutureRouting,FutureRouting>> bootstrap(final Collection<PeerAddress> peerAddresses,
             final RoutingBuilder routingBuilder, final ChannelCreator cc) {
         // search close peers
-        LOG.debug("Broadcast to {}.", peerAddresses);
+        LOG.debug("Bootstrap to {}.", peerAddresses);
         final FutureDone<Pair<FutureRouting,FutureRouting>> futureDone = new FutureDone<Pair<FutureRouting,FutureRouting>>();
 
         // first we find close peers to us

@@ -13,7 +13,7 @@
 	<groupId>net.tomp2p</groupId>
 	<artifactId>tomp2p-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>5.0-Beta5</version>
+	<version>5.0-Beta6-SNAPSHOT</version>
 
 	<name>TomP2P</name>
 	<url>http://tomp2p.net</url>
@@ -34,7 +34,7 @@
 		<url>https://github.com/tomp2p/TomP2P</url>
 		<connection>scm:git:git://github.com/tomp2p/TomP2P.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com/tomp2p/TomP2P.git</developerConnection>
-	  <tag>tomp2p-parent-5.0-Beta5</tag>
+	  <tag>HEAD</tag>
   	</scm>
   	
   	<properties>

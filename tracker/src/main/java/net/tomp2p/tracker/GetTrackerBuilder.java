@@ -22,8 +22,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
 public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
-    private EvaluatingSchemeTracker evaluatingScheme;
-
+    
     private Set<Number160> knownPeers;
 
     private boolean expectAttachement = false;
@@ -31,15 +30,6 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
     public GetTrackerBuilder(PeerTracker peer, Number160 locationKey) {
         super(peer, locationKey);
         self(this);
-    }
-
-    public EvaluatingSchemeTracker evaluatingScheme() {
-        return evaluatingScheme;
-    }
-
-    public GetTrackerBuilder evaluatingScheme(EvaluatingSchemeTracker evaluatingScheme) {
-        this.evaluatingScheme = evaluatingScheme;
-        return this;
     }
 
     public boolean isExpectAttachement() {
@@ -70,12 +60,6 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
         if (knownPeers == null) {
             knownPeers = new SimpleBloomFilter<Number160>(1024, 1024);
         }
-        
-        if (evaluatingScheme == null) {
-        	evaluatingScheme = new VotingSchemeTracker();
-        }
-        
-        
         
         return peer.distributedTracker().get(this);
     }

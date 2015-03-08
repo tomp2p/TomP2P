@@ -38,12 +38,12 @@ public class TestNeighbor {
     public static final int PORT_UDP = 5002;
 
     @Test
-    public void testNeigbhor() throws Exception {
+    public void testNeigbhorUdp() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
         try {
             sender = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start();
-            PeerAddress[] pa = Utils2.createDummyAddress(300, PORT_TCP, PORT_UDP);
+            PeerAddress[] pa = Utils2.createDummyAddresses(300, PORT_TCP, PORT_UDP);
             for (int i = 0; i < pa.length; i++) {
                 sender.peerBean().peerMap().peerFound(pa[i], null, null);
             }
@@ -63,7 +63,7 @@ public class TestNeighbor {
             // Thread.sleep(10000000);
             Assert.assertEquals(true, fr.isSuccess());
             NeighborSet pas = fr.responseMessage().neighborsSet(0);
-            // we are able to fit 40 neighbors into 1400 bytes
+            // we are able to fit 33 neighbors into 1000 bytes
             Assert.assertEquals(33, pas.size());
             Assert.assertEquals(new Number160("0x1"), pas.neighbors().iterator().next().peerId());
             Assert.assertEquals(PORT_TCP, pas.neighbors().iterator().next().tcpPort());
@@ -85,7 +85,7 @@ public class TestNeighbor {
         Peer recv1 = null;
         try {
             sender = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start();
-            PeerAddress[] pa = Utils2.createDummyAddress(300, PORT_TCP, PORT_UDP);
+            PeerAddress[] pa = Utils2.createDummyAddresses(300, PORT_TCP, PORT_UDP);
             for (int i = 0; i < pa.length; i++) {
                 sender.peerBean().peerMap().peerFound(pa[i], null, null);
             }
@@ -108,7 +108,7 @@ public class TestNeighbor {
             // Thread.sleep(10000000);
             Assert.assertEquals(true, fr.isSuccess());
             NeighborSet pas = fr.responseMessage().neighborsSet(0);
-            // we are able to fit 40 neighbors into 1400 bytes
+            // we are able to fit 33 neighbors into 1000 bytes
             Assert.assertEquals(33, pas.size());
             Assert.assertEquals(new Number160("0x1"), pas.neighbors().iterator().next().peerId());
             Assert.assertEquals(PORT_TCP, pas.neighbors().iterator().next().tcpPort());
@@ -147,7 +147,7 @@ public class TestNeighbor {
             Assert.assertEquals(true, fr.isSuccess());
             NeighborSet pas = fr.responseMessage().neighborsSet(0);
 
-            // I see no one, not evenmyself. My peer was added in the overflow map
+            // I see no one, not even myself. My peer was added in the overflow map
             Assert.assertEquals(0, pas.size());
             cc.shutdown();
         } finally {

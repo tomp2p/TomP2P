@@ -127,7 +127,7 @@ public class TimeoutFactory {
 					ctx.channel().close().addListener(new GenericFutureListener<ChannelFuture>() {
 						@Override
 						public void operationComplete(final ChannelFuture future) throws Exception {
-							futureResponse.failed("channel is idle " + evt);
+							futureResponse.failed("Channel is idle " + evt);
 						}
 					});
 

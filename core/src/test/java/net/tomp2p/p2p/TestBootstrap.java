@@ -72,7 +72,7 @@ public class TestBootstrap {
         Peer master = null;
         try {
             // setup
-            Peer[] peers = Utils2.createNodes(2000, rnd, 4001);
+            Peer[] peers = Utils2.createNodes(3, rnd, 4001);
             master = peers[0];
             // do testing
             List<FutureBootstrap> tmp = new ArrayList<FutureBootstrap>();

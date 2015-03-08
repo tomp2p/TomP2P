@@ -368,7 +368,7 @@ public class TestPing {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
             long start = System.currentTimeMillis();
-            List<FutureResponse> list = new ArrayList<FutureResponse>(100);
+            List<FutureResponse> list = new ArrayList<FutureResponse>(1000);
             for (int i = 0; i < 20; i++) {
                 FutureChannelCreator fcc = recv1.connectionBean().reservation().create(0, 50);
                 fcc.awaitUninterruptibly();
@@ -388,11 +388,7 @@ public class TestPing {
                 cc.shutdown().await();
             }
             System.out.println("TCP time: " + (System.currentTimeMillis() - start));
-            for (FutureResponse fr2 : list) {
-                fr2.awaitUninterruptibly();
-                Assert.assertEquals(true, fr2.isSuccess());
-            }
-            //
+
             start = System.currentTimeMillis();
             list = new ArrayList<FutureResponse>(50);
             for (int i = 0; i < 20; i++) {

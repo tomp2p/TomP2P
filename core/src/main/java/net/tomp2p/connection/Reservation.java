@@ -164,7 +164,7 @@ public class Reservation {
 		read.lock();
 		try {
 			if (shutdown) {
-				return futureChannelCreator.failed("shutting down");
+				return futureChannelCreator.failed("Shutting down.");
 			}
 
 			FutureDone<Void> futureChannelCreationDone = new FutureDone<Void>();
@@ -244,10 +244,10 @@ public class Reservation {
 		for (Runnable r : executor.shutdownNow()) {
 			if (r instanceof WaitReservation) {
 				WaitReservation wr = (WaitReservation) r;
-				wr.futureChannelCreator().failed("shutting down");
+				wr.futureChannelCreator().failed("Shutting down.");
 			} else {
 				WaitReservationPermanent wr = (WaitReservationPermanent) r;
-				wr.futureChannelCreator().failed("shutting down");
+				wr.futureChannelCreator().failed("Shutting down.");
 			}
 		}
 

@@ -33,7 +33,7 @@ public class DropConnectionInboundHandler extends ChannelInboundHandlerAdapter {
 		int current;
 		if ((current = counter.incrementAndGet()) > limit) {
 			ctx.channel().close();
-			LOG.warn("dropped connection because {} > {} connections active.",  current, limit);
+			LOG.warn("Dropped connection because {} > {} connections active.",  current, limit);
 		}
 		ctx.fireChannelRegistered();
 	}

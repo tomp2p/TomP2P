@@ -143,11 +143,9 @@ public class HeartBeat extends ChannelDuplexHandler {
 
         state = 1;
 
-        EventExecutor loop = ctx.executor();
-
         lastReadTime = lastWriteTime = System.currentTimeMillis();
         
-        heartBeatFuture = loop.scheduleAtFixedRate(new Heartbeating(ctx), timeToHeartBeatMillis, timeToHeartBeatMillis, TimeUnit.MILLISECONDS);
+        heartBeatFuture = ctx.executor().scheduleAtFixedRate(new Heartbeating(ctx), timeToHeartBeatMillis, timeToHeartBeatMillis, TimeUnit.MILLISECONDS);
     }
     
     private void destroy() {

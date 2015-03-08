@@ -154,7 +154,7 @@ public class Utils2 {
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 peers[i] = new PeerBuilder(peerId)
                         .masterPeer(peers[0])
-                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
+                        .enableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
@@ -339,7 +339,7 @@ public class Utils2 {
 	    return createAddress(Number160.createHash(inet), inet, 8005, 8006, false, false);
     }
 	
-	public static PeerAddress[] createDummyAddress(int size, int portTCP, int portUDP) throws UnknownHostException {
+	public static PeerAddress[] createDummyAddresses(int size, int portTCP, int portUDP) throws UnknownHostException {
         PeerAddress[] pa = new PeerAddress[size];
         for (int i = 0; i < size; i++) {
             pa[i] = createAddress(i + 1, portTCP, portUDP);

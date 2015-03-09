@@ -181,10 +181,11 @@ public class PeerConnection {
     }
     
     public boolean isOpen() {
-    	if(channelFuture!=null) {
-    		return channelFuture.channel().isOpen();
-    	}
-    	return false;
+    	if (channelFuture!=null) {
+     		return channelFuture.channel().isOpen();
+     	} else {
+     		return false;
+     	}
     }
     
     public PeerConnection changeRemotePeer(PeerAddress remotePeer) {
@@ -200,9 +201,17 @@ public class PeerConnection {
 			return true;
 		}
 		PeerConnection p = (PeerConnection) obj;
-		if(channelFuture!=null) {
-			return channelFuture.channel().equals(p.channelFuture.channel());
-		}
-        return false;
+		if (channelFuture!=null) {
+ 			return channelFuture.channel().equals(p.channelFuture.channel());
+ 		}
+		return remotePeer.equals(p.remotePeer);
+    }
+    
+    @Override
+    public int hashCode() {
+    	if(channelFuture!=null) {
+    		return channelFuture.hashCode();
+    	}
+    	return remotePeer.hashCode();
     }
 }

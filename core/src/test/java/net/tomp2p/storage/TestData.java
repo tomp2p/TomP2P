@@ -45,6 +45,14 @@ public class TestData {
         transfer2.release();
     }
     
+    @Test	
+    public void clearTest()	{		
+    	ByteBuf acbb = AlternativeCompositeByteBuf.compBuffer();		
+    	acbb.clear();
+    	Assert.assertEquals(0, acbb.readerIndex());
+    	Assert.assertEquals(0, acbb.writerIndex());
+    }
+    
     @Test
     public void testData2Copy() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
         Data data = new Data(1, 100000);

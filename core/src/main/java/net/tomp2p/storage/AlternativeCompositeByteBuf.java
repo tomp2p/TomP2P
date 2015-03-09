@@ -1446,7 +1446,16 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	private void setComponentWriterIndex(int writerIndex) {
+		if (this.writerIndex == writerIndex) {
+			//nothing to do
+			return;
+		}
 		int index = findIndex(writerIndex);
+		if(index < 0) {
+			//no component found, make sure we can write, thus adding a compontent. TODO: check fillbuffer
+			ensureWritable(writerIndex);
+			index = findIndex(writerIndex);
+		}
 		int to = findIndex(this.writerIndex);
 		Component c = components.get(index);
 		int relWriterIndex = writerIndex - c.offset;

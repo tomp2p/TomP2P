@@ -74,7 +74,7 @@ public final class ExampleBloomFilter {
     private static void bloomFilterBasics() {
         final int nrElements = 20;
         System.out.println("bloomfilter basics:");
-        SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(0.05, nrElements);
+        SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(16, nrElements);
         System.out.println("false-prob. rate: " + sbf.expectedFalsePositiveProbability());
         System.out.println("init: " + sbf.getBitSet().size());
         for (int i = 0; i < nrElements; i++) {
@@ -130,12 +130,15 @@ public final class ExampleBloomFilter {
         System.out.println("We got bloomfilter for the first key: " + contentBF);
         //TODO: check keyBF.contains(new Number160(123));
         // query for nr2, but return only those that are in this bloom filter
+        //intersection
         FutureGet futureGet1 = peers[peer10].get(nr2).all().keyBloomFilter(contentBF)
                 .domainKey(Number160.createHash("my_domain")).start();
         futureGet1.awaitUninterruptibly();
+
         System.out.println("For the 2nd key we requested with this Bloom filer and we got "
                 + futureGet1.dataMap().size() + " items.");
-        
+
+        //difference
         FutureGet futureGet2 = peers[peer10].get(nr2).all().bloomFilterIntersect().keyBloomFilter(contentBF)
                 .domainKey(Number160.createHash("my_domain")).start();
         futureGet2.awaitUninterruptibly();

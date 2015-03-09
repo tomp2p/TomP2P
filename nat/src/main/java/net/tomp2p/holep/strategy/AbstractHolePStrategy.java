@@ -615,7 +615,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 */
 	private void checkTestCase(final FutureDone<Message> mainFutureDone) {
 		if (((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).isTestCase()) {
-			mainFutureDone.failed("You shall not pass!!!");
+			mainFutureDone.failed("Gandalf says: You shall not pass!!!");
 		}
 	}
 

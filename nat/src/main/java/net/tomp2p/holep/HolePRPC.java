@@ -45,7 +45,7 @@ public class HolePRPC extends DispatchHandler {
 		if (message.type() == Message.Type.REQUEST_1) {
 			LOG.debug("New HolePunch process initiated from peer " + message.sender().peerId() + " to peer " + message.recipient().peerId()
 					+ " on ports: " + message.intList().toString());
-			forwardHolePunchRequest(message, peerConnection, responder);
+			forwardHolePunchMessage(message, peerConnection, responder);
 		}
 		// This means that peer1 has answered
 		else if (message.type() == Message.Type.REQUEST_2) {
@@ -95,7 +95,7 @@ public class HolePRPC extends DispatchHandler {
 	 * @param peerConnection
 	 * @param responder
 	 */
-	private void forwardHolePunchRequest(final Message message, PeerConnection peerConnection, final Responder responder) {
+	private void forwardHolePunchMessage(final Message message, PeerConnection peerConnection, final Responder responder) {
 		final BaseRelayServer forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardPortsMessage(message, forwarder.unreachablePeerAddress());

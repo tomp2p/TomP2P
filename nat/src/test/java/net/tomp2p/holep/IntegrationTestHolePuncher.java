@@ -19,7 +19,6 @@ public class IntegrationTestHolePuncher extends AbstractTestHoleP {
 	@Test
 	public void testRelayFallback() {
 		((HolePInitiatorImpl) unreachable1.peerBean().holePunchInitiator()).testCase(true);
-		;
 		System.err.println("testRelayFallback() start!");
 		doTest();
 	}

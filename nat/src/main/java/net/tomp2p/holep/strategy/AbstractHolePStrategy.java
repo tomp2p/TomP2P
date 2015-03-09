@@ -24,6 +24,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.holep.DuplicatesHandler;
 import net.tomp2p.holep.HolePInitiatorImpl;
 import net.tomp2p.holep.HolePScheduler;
+import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -41,6 +42,15 @@ import org.slf4j.LoggerFactory;
 
 /**
  * DO NOT INSTANCIATE THIS CLASS! <br>
+ * <br>
+ * 
+ * If you need to add a new supported nat type please extend this class and
+ * change also {@link NATType} and {@link NATTypeDetection}. <br>
+ * <br>
+ * 
+ * This class is responsible for the whole hole punching procedure. It covers
+ * all aspects of the procedure on the sender and the recipient side.
+ * 
  * 
  * @author Jonas Wagner
  * 
@@ -60,6 +70,16 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	protected List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
 	protected List<FutureResponse> futureResponses = new ArrayList<FutureResponse>();
 
+	/**
+	 * This constructor should never be called by the user, since it should be
+	 * called by its strategy pattern instances like
+	 * {@link PortPreservingStrategy}.
+	 * 
+	 * @param peer
+	 * @param numberOfHoles
+	 * @param idleUDPSeconds
+	 * @param originalMessage
+	 */
 	protected AbstractHolePStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 		this.peer = peer;
 		this.numberOfHoles = numberOfHoles;
@@ -271,8 +291,8 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 			// this is a workaround to avoid adding a nat peer to the offline
 			// list of a peer!
-			
-			//TODO jwa check this values!!!
+
+			// TODO jwa check this values!!!
 			peer.peerBean().peerMap().peerFound(originalSender, null, null, new RTT(200L, true));
 		}
 	}
@@ -556,7 +576,9 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * This method creates the initial {@link Message} with {@link Commands}
 	 * .HOLEP and {@link Type}.REQUEST_1. This {@link Message} will be forwarded
 	 * to the rendez-vous server (a relay of the remote peer) and initiate the
-	 * hole punching procedure on the other peer.
+	 * hole punching procedure on the other peer. This method also calls the
+	 * doPortGuessingInitiatingPeer(...) method of its subclass implementation
+	 * in order to gain the correct ports.
 	 * 
 	 * @param message
 	 * @param channelCreator
@@ -576,6 +598,15 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		return initMessageFutureDone;
 	}
 
+	/**
+	 * This method will create so called dummy messages without any content.
+	 * Such methods are needed to create the port mapping entries in the peers
+	 * NAT device.
+	 * 
+	 * @param index
+	 *            i
+	 * @return dummyMessage
+	 */
 	private Message createDummyMessage(int i) {
 		final int remotePort = portMappings.get(i).element0();
 		final int localPort = portMappings.get(i).element1();
@@ -586,6 +617,15 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		return dummyMessage;
 	}
 
+	/**
+	 * This method creates the reply {@link Message} with {@link Commands}
+	 * .HOLEP and {@link Type}.REQUEST_2. This method also calls the
+	 * doPortGuessingTargetPeer(...) method of its subclass implementation in
+	 * order to gain the correct ports.
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
 	private FutureDone<Message> createReplyMessage() throws Exception {
 		FutureDone<Message> replyMessageFuture2 = new FutureDone<Message>();
 		Message replyMessage = createHolePMessage(originalMessage.sender(), peer.peerBean().serverPeerAddress(), Commands.HOLEP.getNr(),
@@ -595,6 +635,16 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		return replyMessageFuture2;
 	}
 
+	/**
+	 * This is a generic method which creates a {@link Message} with the basic
+	 * parameters. The method avoids duplicate code.
+	 * 
+	 * @param recipient
+	 * @param sender
+	 * @param command
+	 * @param type
+	 * @return holePMessage
+	 */
 	private Message createHolePMessage(final PeerAddress recipient, final PeerAddress sender, final byte command, final Message.Type type) {
 		Message message = new Message();
 		message.recipient(recipient);

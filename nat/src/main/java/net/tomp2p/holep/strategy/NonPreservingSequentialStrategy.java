@@ -30,13 +30,13 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 		final FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(1, 0);
 		fcc1.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
-			public void operationComplete(FutureChannelCreator future) throws Exception {
+			public void operationComplete(final FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(initMessage.recipient(),
+					final FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(initMessage.recipient(),
 							future.channelCreator(), new DefaultConnectionConfiguration(), peer);
 					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
 						@Override
-						public void operationComplete(FutureDone<List<PeerSocketAddress>> future2) throws Exception {
+						public void operationComplete(final FutureDone<List<PeerSocketAddress>> future2) throws Exception {
 							if (future2.isSuccess()) {
 								final List<PeerSocketAddress> addresses = future2.object();
 								final int startingPort = addresses.get(1).udpPort() + 2;
@@ -56,10 +56,10 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 
 	private void guessPortsInitiatingPeer(final Message initMessage, final List<ChannelFuture> channelFutures, int startingPort)
 			throws IOException {
-		List<Integer> portList = new ArrayList<Integer>(channelFutures.size());
+		final List<Integer> portList = new ArrayList<Integer>(channelFutures.size());
 		for (int i = 0; i < channelFutures.size(); i++) {
-			int guessedPort = startingPort + (2 * i);
-			InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
+			final int guessedPort = startingPort + (2 * i);
+			final InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
 			portMappings.add(new Pair<Integer, Integer>(guessedPort, inetSocketAddress.getPort()));
 			portList.add(guessedPort);
 		}
@@ -71,21 +71,21 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 
 	@Override
 	protected void doPortGuessingTargetPeer(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
-		FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
+		final FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
 		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 
 			@Override
-			public void operationComplete(FutureChannelCreator future) throws Exception {
+			public void operationComplete(final FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
 					final FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(replyMessage.recipient(),
 							future.channelCreator(), new DefaultConnectionConfiguration(), peer);
 					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
 						@Override
-						public void operationComplete(FutureDone<List<PeerSocketAddress>> future) throws Exception {
+						public void operationComplete(final FutureDone<List<PeerSocketAddress>> future) throws Exception {
 							if (future.isSuccess()) {
 								final List<PeerSocketAddress> addresses = future.object();
 								// TODO jwa is this a good thing?
-								int startingPort = addresses.get(0).udpPort() + 2;
+								final int startingPort = addresses.get(0).udpPort() + 2;
 								guessPortsTargetPeer(replyMessage, startingPort);
 
 								replyMessageFuture2.done(replyMessage);
@@ -103,10 +103,10 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 
 	private void guessPortsTargetPeer(final Message replyMessage, int startingPort) throws ClassNotFoundException, IOException {
 		@SuppressWarnings("unchecked")
-		List<Integer> remotePorts = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());
-		List<Integer> replyPorts = new ArrayList<Integer>(channelFutures.size() * 2);
+		final List<Integer> remotePorts = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());
+		final List<Integer> replyPorts = new ArrayList<Integer>(channelFutures.size() * 2);
 		for (int i = 0; i < channelFutures.size(); i++) {
-			int guessedPort = startingPort + (2 * i);
+			final int guessedPort = startingPort + (2 * i);
 			portMappings.add(new Pair<Integer, Integer>(remotePorts.get(i), startingPort + i));
 			replyPorts.add(remotePorts.get(i));
 			replyPorts.add(guessedPort);
@@ -116,5 +116,4 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 		// send all ports via Buffer
 		replyMessage.buffer(encodePortList(replyPorts));
 	}
-
 }

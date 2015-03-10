@@ -58,17 +58,17 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractHolePStrategy implements HolePStrategy {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractHolePStrategy.class);
-	protected static final int NUMBER_OF_TRIALS = HolePInitiator.NUMBER_OF_TRIALS;
-	protected static final boolean BROADCAST_VALUE = HolePInitiator.BROADCAST;
-	protected static final boolean FIRE_AND_FORGET_VALUE = false;
+	private static final int NUMBER_OF_TRIALS = HolePInitiator.NUMBER_OF_TRIALS;
+	private static final boolean BROADCAST_VALUE = HolePInitiator.BROADCAST;
+	private static final boolean FIRE_AND_FORGET_VALUE = false;
+	private final int numberOfHoles;
+	private final int idleUDPSeconds;
+	private List<FutureResponse> futureResponses = new ArrayList<FutureResponse>();
+	private PeerAddress originalSender;
 	protected final Peer peer;
-	protected final int numberOfHoles;
-	protected final int idleUDPSeconds;
 	protected final Message originalMessage;
-	protected PeerAddress originalSender;
 	protected List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>();
 	protected List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
-	protected List<FutureResponse> futureResponses = new ArrayList<FutureResponse>();
 
 	/**
 	 * This constructor should never be called by the user, since it should be
@@ -121,7 +121,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 */
 	protected List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> prepareHandlers(final boolean initiator,
 			final FutureDone<Message> futureDone) {
-		List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
+		final List<Map<String, Pair<EventExecutorGroup, ChannelHandler>>> handlerList = new ArrayList<Map<String, Pair<EventExecutorGroup, ChannelHandler>>>(
 				numberOfHoles);
 		SimpleChannelInboundHandler<Message> inboundHandler;
 		Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
@@ -164,15 +164,15 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		for (int i = 0; i < numberOfHoles; i++) {
 			final FutureResponse futureResponse = futureResponses.get(i);
 			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = handlersList.get(i);
-			FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
+			final FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
 			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception {
+				public void operationComplete(final FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
-						ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers, futureResponse);
+						final ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers, futureResponse);
 						cF.addListener(new GenericFutureListener<ChannelFuture>() {
 							@Override
-							public void operationComplete(ChannelFuture future) throws Exception {
+							public void operationComplete(final ChannelFuture future) throws Exception {
 								if (future.isSuccess()) {
 									channelFutures.add(future);
 								} else {
@@ -210,13 +210,13 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				mainFutureDone, numberOfHoles);
 		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 			@Override
-			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
+			public void operationComplete(final FutureDone<List<ChannelFuture>> future) throws Exception {
 				if (future.isSuccess()) {
 					final List<ChannelFuture> futures = future.object();
 					final FutureDone<Message> initMessage = createInitMessage(futures);
 					initMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 						@Override
-						public void operationComplete(FutureDone<Message> future) throws Exception {
+						public void operationComplete(final FutureDone<Message> future) throws Exception {
 							if (future.isSuccess()) {
 								final Message initMessage = future.object();
 								sendHolePInitMessage(mainFutureDone, originalFutureResponse, futures, initMessage);
@@ -246,16 +246,16 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				replyMessageFuture, numberOfHoles);
 		rmfChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 			@Override
-			public void operationComplete(FutureDone<List<ChannelFuture>> future) throws Exception {
+			public void operationComplete(final FutureDone<List<ChannelFuture>> future) throws Exception {
 				if (future.isSuccess()) {
 					channelFutures = future.object();
 					final FutureDone<Message> replyMessageFuture2 = createReplyMessage();
 					replyMessageFuture2.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 						@Override
-						public void operationComplete(FutureDone<Message> future) throws Exception {
+						public void operationComplete(final FutureDone<Message> future) throws Exception {
 							if (future.isSuccess()) {
-								Message replyMessage = future.object();
-								Thread holePunchScheduler = new Thread(new HolePScheduler(NUMBER_OF_TRIALS, thisInstance));
+								final Message replyMessage = future.object();
+								final Thread holePunchScheduler = new Thread(new HolePScheduler(NUMBER_OF_TRIALS, thisInstance));
 								holePunchScheduler.start();
 								replyMessageFuture.done(replyMessage);
 							} else {
@@ -285,8 +285,8 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		}
 
 		for (int i = 0; i < channelFutures.size(); i++) {
-			Message dummyMessage = createDummyMessage(i);
-			FutureResponse futureResponse = new FutureResponse(dummyMessage);
+			final Message dummyMessage = createDummyMessage(i);
+			final FutureResponse futureResponse = new FutureResponse(dummyMessage);
 			LOG.debug("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 			// this is a workaround to avoid adding a nat peer to the offline
@@ -308,16 +308,16 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 */
 	private void sendHolePInitMessage(final FutureDone<Message> mainFutureDone, final FutureResponse originalFutureResponse,
 			final List<ChannelFuture> futures, final Message initMessage) {
-		FutureChannelCreator fChannelCreator = peer.connectionBean().reservation().create(1, 0);
+		final FutureChannelCreator fChannelCreator = peer.connectionBean().reservation().create(1, 0);
 		fChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
-			public void operationComplete(FutureChannelCreator future) throws Exception {
+			public void operationComplete(final FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
 					final FutureResponse holePFutureResponse = new FutureResponse(originalMessage);
 					// we need to know if the setUp failed.
 					holePFutureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 						@Override
-						public void operationComplete(FutureResponse future) throws Exception {
+						public void operationComplete(final FutureResponse future) throws Exception {
 							if (!future.isSuccess()) {
 								mainFutureDone.failed("No port information could be exchanged");
 							}
@@ -348,7 +348,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 */
 	private SimpleChannelInboundHandler<Message> createHolePHandler(final List<ChannelFuture> futures,
 			final FutureDone<Message> futureDone, final FutureResponse originalFutureResponse) {
-		SimpleChannelInboundHandler<Message> holePunchInboundHandler = new SimpleChannelInboundHandler<Message>() {
+		final SimpleChannelInboundHandler<Message> holePunchInboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
 			protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) throws Exception {
 				final List<Integer> portList = checkReplyValues(msg, futureDone);
@@ -360,10 +360,10 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 						// the system is still able to send the message via
 						// relaying without the user noticing it
 
-						FutureResponse holePFutureResponse = handleFutureResponse(originalFutureResponse, portList, i, countDown,
+						final FutureResponse holePFutureResponse = handleFutureResponse(originalFutureResponse, portList, i, countDown,
 								numberOfConnectionAttempts);
 
-						int localport = extractLocalPort(futureDone, portList, i);
+						final int localport = extractLocalPort(futureDone, portList, i);
 						final ChannelFuture channelFuture = extractChannelFuture(futures, localport);
 						if (channelFuture == null) {
 							futureDone.failed("Something went wrong with the portmappings!");
@@ -454,7 +454,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	private SimpleChannelInboundHandler<Message> createAfterHolePHandler(final FutureDone<Message> mainFutureDone) {
 		final SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
-			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+			protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) throws Exception {
 				if (Message.Type.OK == msg.type() && originalMessage.command() == msg.command()) {
 					LOG.debug("Successfully transmitted the original message to peer:[" + msg.sender().toString()
 							+ "]. Now here's the reply:[" + msg.toString() + "]");
@@ -482,10 +482,10 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @param localPort
 	 * @return
 	 */
-	private ChannelFuture extractChannelFuture(List<ChannelFuture> futures, int localPort) {
+	private ChannelFuture extractChannelFuture(final List<ChannelFuture> futures, final int localPort) {
 		for (ChannelFuture future : futures) {
 			if (future.channel().localAddress() != null) {
-				InetSocketAddress inetSocketAddress = (InetSocketAddress) future.channel().localAddress();
+				final InetSocketAddress inetSocketAddress = (InetSocketAddress) future.channel().localAddress();
 				if (inetSocketAddress.getPort() == localPort) {
 					return future;
 				}
@@ -507,7 +507,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			List<Integer> portList = null;
 			try {
 				portList = (List<Integer>) Utils.decodeJavaObject(msg.buffer(0).buffer());
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				futureDone.failed("The decoding of the buffer threw an exception!");
 				e.printStackTrace();
 				return null;
@@ -537,9 +537,9 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @return
 	 * @throws IOException
 	 */
-	protected Buffer encodePortList(List<Integer> portList) throws IOException {
-		byte[] bytes = Utils.encodeJavaObject(portList);
-		Buffer byteBuf = new Buffer(Unpooled.wrappedBuffer(bytes));
+	protected Buffer encodePortList(final List<Integer> portList) throws IOException {
+		final byte[] bytes = Utils.encodeJavaObject(portList);
+		final Buffer byteBuf = new Buffer(Unpooled.wrappedBuffer(bytes));
 		return byteBuf;
 	}
 
@@ -557,11 +557,11 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @return
 	 */
 	private Message createSendOriginalMessage(final int localPort, final int remotePort) {
-		PeerAddress sender = originalMessage.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false)
+		final PeerAddress sender = originalMessage.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false)
 				.changeRelayed(false);
-		PeerAddress recipient = originalMessage.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false)
+		final PeerAddress recipient = originalMessage.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false)
 				.changeFirewalledUDP(false).changeRelayed(false);
-		Message sendMessage = createHolePMessage(recipient, sender, originalMessage.command(), originalMessage.type());
+		final Message sendMessage = createHolePMessage(recipient, sender, originalMessage.command(), originalMessage.type());
 		sendMessage.version(originalMessage.version());
 		sendMessage.intValue(originalMessage.messageId());
 		sendMessage.udp(true);
@@ -585,12 +585,12 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @return holePMessage
 	 */
 	private FutureDone<Message> createInitMessage(final List<ChannelFuture> channelFutures) throws Exception {
-		FutureDone<Message> initMessageFutureDone = new FutureDone<Message>();
-		PeerSocketAddress socketAddress = Utils.extractRandomRelay(originalMessage);
+		final FutureDone<Message> initMessageFutureDone = new FutureDone<Message>();
+		final PeerSocketAddress socketAddress = Utils.extractRandomRelay(originalMessage);
 		// we need to make a copy of the original Message
-		PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
+		final PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
 				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
-		Message initMessage = createHolePMessage(recipient, originalMessage.sender(), RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
+		final Message initMessage = createHolePMessage(recipient, originalMessage.sender(), RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
 		initMessage.version(originalMessage.version());
 		initMessage.udp(true);
 		doPortGuessingInitiatingPeer(initMessage, initMessageFutureDone, channelFutures);
@@ -607,12 +607,12 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 *            i
 	 * @return dummyMessage
 	 */
-	private Message createDummyMessage(int i) {
-		final int remotePort = portMappings.get(i).element0();
-		final int localPort = portMappings.get(i).element1();
-		PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false).changePorts(-1, remotePort);
-		PeerAddress sender = peer.peerBean().serverPeerAddress().changePorts(-1, localPort);
-		Message dummyMessage = createHolePMessage(recipient, sender, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_3);
+	private Message createDummyMessage(final int index) {
+		final int remotePort = portMappings.get(index).element0();
+		final int localPort = portMappings.get(index).element1();
+		final PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false).changePorts(-1, remotePort);
+		final PeerAddress sender = peer.peerBean().serverPeerAddress().changePorts(-1, localPort);
+		final Message dummyMessage = createHolePMessage(recipient, sender, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_3);
 		dummyMessage.udp(true);
 		return dummyMessage;
 	}
@@ -627,8 +627,8 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @throws Exception
 	 */
 	private FutureDone<Message> createReplyMessage() throws Exception {
-		FutureDone<Message> replyMessageFuture2 = new FutureDone<Message>();
-		Message replyMessage = createHolePMessage(originalMessage.sender(), peer.peerBean().serverPeerAddress(), Commands.HOLEP.getNr(),
+		final FutureDone<Message> replyMessageFuture2 = new FutureDone<Message>();
+		final Message replyMessage = createHolePMessage(originalMessage.sender(), peer.peerBean().serverPeerAddress(), Commands.HOLEP.getNr(),
 				Type.OK);
 		replyMessage.messageId(originalMessage.messageId());
 		doPortGuessingTargetPeer(replyMessage, replyMessageFuture2);
@@ -646,7 +646,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @return holePMessage
 	 */
 	private Message createHolePMessage(final PeerAddress recipient, final PeerAddress sender, final byte command, final Message.Type type) {
-		Message message = new Message();
+		final Message message = new Message();
 		message.recipient(recipient);
 		message.sender(sender);
 		message.command(command);

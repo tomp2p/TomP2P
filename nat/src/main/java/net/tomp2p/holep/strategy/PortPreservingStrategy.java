@@ -24,11 +24,9 @@ public class PortPreservingStrategy extends AbstractHolePStrategy {
 	@Override
 	protected void doPortGuessingInitiatingPeer(final Message holePMessage, final FutureDone<Message> initMessageFutureDone,
 			final List<ChannelFuture> channelFutures) throws Exception {
-		// TODO jwa --> create something like a configClass or file where the
-		// number of holes in the firewall can be specified.
-		List<Integer> portList = new ArrayList<Integer>(channelFutures.size());
+		final List<Integer> portList = new ArrayList<Integer>(channelFutures.size());
 		for (int i = 0; i < channelFutures.size(); i++) {
-			InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
+			final InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
 			portList.add(inetSocketAddress.getPort());
 		}
 		holePMessage.intValue(portList.size());
@@ -42,10 +40,10 @@ public class PortPreservingStrategy extends AbstractHolePStrategy {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void doPortGuessingTargetPeer(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) throws Exception {
-		List<Integer> remotePorts = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());
-		List<Integer> replyPorts = new ArrayList<Integer>(channelFutures.size()*2);
+		final List<Integer> remotePorts = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());
+		final List<Integer> replyPorts = new ArrayList<Integer>(channelFutures.size()*2);
 		for (int i = 0; i < channelFutures.size(); i++) {
-			InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
+			final InetSocketAddress socket = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
 			portMappings.add(new Pair<Integer, Integer>(remotePorts.get(i), socket.getPort()));
 			replyPorts.add(remotePorts.get(i));
 			replyPorts.add(socket.getPort());

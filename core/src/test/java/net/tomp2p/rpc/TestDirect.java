@@ -52,13 +52,13 @@ public class TestDirect {
         try {
 
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
-            ChannelServerConfiguration css = pm1.createDefaultChannelServerConfiguration();
-            css.idleTCPSeconds(Integer.MAX_VALUE);
-            pm1.channelServerConfiguration(css);
+            ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+            csc.idleTCPSeconds(Integer.MAX_VALUE);
+            pm1.channelServerConfiguration(csc);
             sender = pm1.start();
 
             PeerBuilder pm2 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088);
-            pm2.channelServerConfiguration(css);
+            pm2.channelServerConfiguration(csc);
             recv1 = pm2.start();
 
             recv1.rawDataReply(new RawDataReply() {

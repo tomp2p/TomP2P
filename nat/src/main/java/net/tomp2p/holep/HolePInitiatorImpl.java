@@ -30,33 +30,39 @@ public class HolePInitiatorImpl implements HolePInitiator {
 	}
 
 	@Override
-	public FutureDone<Message> handleHolePunch(int idleUDPSeconds, FutureResponse futureResponse,
-			Message originalMessage) {
+	public FutureDone<Message> handleHolePunch(int idleUDPSeconds, FutureResponse futureResponse, Message originalMessage) {
 		FutureDone<Message> futureDone = new FutureDone<Message>();
-		
+
 		if (natTypeDetection.natType() == NATType.NON_PRESERVING_OTHER) {
 			LOG.error("A symmetric NAT can't be traversed. No HolePunching possible!");
 			return futureDone.failed("A symmetric NAT can't be traversed. No HolePunching possible!");
 		}
-		
+
 		HolePStrategy holePuncher = natType().getHolePuncher(peer, HolePInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
 		return holePuncher.initiateHolePunch(futureDone, futureResponse);
 	}
-	
+
+	/**
+	 * CheckNatType will trigger the {@link NATTypeDetection} object to ping the
+	 * given relay peer in order to find out the {@link NATType} of this
+	 * {@link Peer}.
+	 * 
+	 * @param peerAddress
+	 */
 	public void checkNatType(PeerAddress peerAddress) {
 		natTypeDetection.checkNATType(peerAddress);
 	}
-	
+
 	public NATType natType() {
 		return natTypeDetection.natType();
 	}
-	
+
 	public boolean isTestCase() {
 		return testCase;
 	}
-	
+
 	public void testCase(final boolean testCase) {
 		this.testCase = testCase;
 	}
-	
+
 }

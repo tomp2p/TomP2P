@@ -13,24 +13,29 @@ import net.tomp2p.peers.PeerSocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * This class is responsible for finding out the NATType which the peer is
+ * using.
+ * 
+ * @author jonaswagner
+ * 
+ */
 public class NATTypeDetection {
-	
+
 	private static final int SEQ_PORT_TOLERANCE = 5;
 	private NATType natType = null;
 	private static final Logger LOG = LoggerFactory.getLogger(NATTypeDetection.class);
 	private Peer peer;
-	
-	
+
 	public NATTypeDetection(Peer peer) {
 		this.peer = peer;
 		this.natType = NATType.UNKNOWN;
 	}
-	
+
 	public NATType natType() {
 		return natType;
 	}
-	
+
 	/**
 	 * This method contacts a Relay {@link Peer} in order to find out the NAT
 	 * port assignement behaviour. There are five possible NAT behaviours: <br />
@@ -68,17 +73,15 @@ public class NATTypeDetection {
 	 * @param recipientPsa
 	 *            The recipients {@link PeerSocketAddress}
 	 */
-	private void pingRelayNATTest(final FutureDone<NATType> fd, final PeerAddress relayPeer,
-			final PeerSocketAddress senderPsa, final PeerSocketAddress recipientPsa) {
-		// watch out for sideEffects
-		// test NATType
+	private void pingRelayNATTest(final FutureDone<NATType> fd, final PeerAddress relayPeer, final PeerSocketAddress senderPsa,
+			final PeerSocketAddress recipientPsa) {
 		FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(1, 0);
 		fcc1.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(relayPeer,
-							future.channelCreator(), new DefaultConnectionConfiguration(), peer);
+					FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(relayPeer, future.channelCreator(),
+							new DefaultConnectionConfiguration(), peer);
 					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
 						@Override
 						public void operationComplete(FutureDone<List<PeerSocketAddress>> future) throws Exception {
@@ -122,7 +125,7 @@ public class NATTypeDetection {
 	 */
 	private void checkNATType(FutureDone<NATType> fd, PeerSocketAddress senderPsa, PeerSocketAddress recipientPsa,
 			PeerSocketAddress senderPsa2, PeerSocketAddress recipientPsa2) {
-		//TODO jwa THE FOLLOWING CHECK DOES NOT WORK!!!!!!
+		// TODO jwa THE FOLLOWING CHECK DOES NOT WORK!!!!!!
 		if (senderPsa.inetAddress().equals(recipientPsa.inetAddress())) {
 			signalNAT("there is no NAT to be traversed!", NATType.NO_NAT, fd);
 		} else if (senderPsa.udpPort() == recipientPsa.udpPort() && senderPsa2.udpPort() == recipientPsa2.udpPort()) {
@@ -136,8 +139,8 @@ public class NATTypeDetection {
 	}
 
 	/**
-	 * This method sets the {@link NATType} on the
-	 * {@link HolePInitiatorImpl} object.
+	 * This method sets the {@link NATType} on the {@link HolePInitiatorImpl}
+	 * object.
 	 * 
 	 * @param debugMsg
 	 * @param natType

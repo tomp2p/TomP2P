@@ -27,6 +27,10 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Jonas Wagner
  * 
+ *         This class is responsible for the transmission of the holep setup and
+ *         reply message for the hole punch procedure. The class will also start
+ *         the hole punch procedure on the target peer side.
+ * 
  */
 public class HolePRPC extends DispatchHandler {
 
@@ -47,7 +51,8 @@ public class HolePRPC extends DispatchHandler {
 					+ " on ports: " + message.intList().toString());
 			forwardHolePunchMessage(message, peerConnection, responder);
 		}
-		// This means that peer1 has answered
+		// This means that the initiating peer has sent a holep setup message to
+		// this peer
 		else if (message.type() == Message.Type.REQUEST_2) {
 			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
 			handleHolePunch(message, peerConnection, responder);
@@ -59,10 +64,10 @@ public class HolePRPC extends DispatchHandler {
 	/**
 	 * This method is called by handleResponse(...) and initiates the hole
 	 * punching procedure on the nat peer that needs to be contacted. It creates
-	 * an {@link AbstractHolePStrategy} and waits then for the reply{@link Message} which
-	 * the peer that needs to be contacted sends back to the initiating peer.
-	 * The reply{@link Message} contains information about the holes which are
-	 * punched currently.
+	 * an {@link AbstractHolePStrategy} and waits then for the reply
+	 * {@link Message} which the peer that needs to be contacted sends back to
+	 * the initiating peer. The reply{@link Message} contains information about
+	 * the holes which are punched currently.
 	 * 
 	 * @param message
 	 * @param peerConnection

@@ -27,7 +27,7 @@ public class NATTypeDetection {
 	private static final Logger LOG = LoggerFactory.getLogger(NATTypeDetection.class);
 	private Peer peer;
 
-	public NATTypeDetection(Peer peer) {
+	public NATTypeDetection(final Peer peer) {
 		this.peer = peer;
 		this.natType = NATType.UNKNOWN;
 	}
@@ -123,8 +123,8 @@ public class NATTypeDetection {
 	 * @param recipientPsa2
 	 *            The recipients {@link PeerSocketAddress} from the second ping.
 	 */
-	private void checkNATType(FutureDone<NATType> fd, PeerSocketAddress senderPsa, PeerSocketAddress recipientPsa,
-			PeerSocketAddress senderPsa2, PeerSocketAddress recipientPsa2) {
+	private void checkNATType(final FutureDone<NATType> fd, final PeerSocketAddress senderPsa, final PeerSocketAddress recipientPsa,
+			final PeerSocketAddress senderPsa2, final PeerSocketAddress recipientPsa2) {
 		// TODO jwa THE FOLLOWING CHECK DOES NOT WORK!!!!!!
 		if (senderPsa.inetAddress().equals(recipientPsa.inetAddress())) {
 			signalNAT("there is no NAT to be traversed!", NATType.NO_NAT, fd);

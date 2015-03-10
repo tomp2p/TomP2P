@@ -37,25 +37,25 @@ public class HolePRPC extends DispatchHandler {
 	private static final Logger LOG = LoggerFactory.getLogger(HolePRPC.class);
 	private final Peer peer;
 
-	public HolePRPC(Peer peer) {
+	public HolePRPC(final Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.HOLEP.getNr());
 		this.peer = peer;
 	}
 
 	@Override
-	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) throws Exception {
+	public void handleResponse(final Message message, final PeerConnection peerConnection, boolean sign, final Responder responder) throws Exception {
 		// This means, that a new Holepunch has been initiated.
 		if (message.type() == Message.Type.REQUEST_1) {
 			LOG.debug("New HolePunch process initiated from peer " + message.sender().peerId() + " to peer " + message.recipient().peerId()
 					+ " on ports: " + message.intList().toString());
-			forwardHolePunchMessage(message, peerConnection, responder);
+			forwardHolePunchMessage(message, responder);
 		}
 		// This means that the initiating peer has sent a holep setup message to
 		// this peer
 		else if (message.type() == Message.Type.REQUEST_2) {
 			LOG.debug("HolePunch initiated on peer: " + message.recipient().peerId());
-			handleHolePunch(message, peerConnection, responder);
+			handleHolePunch(message, responder);
 		} else {
 			throw new IllegalArgumentException("Message Content is wrong!");
 		}
@@ -70,13 +70,12 @@ public class HolePRPC extends DispatchHandler {
 	 * the holes which are punched currently.
 	 * 
 	 * @param message
-	 * @param peerConnection
 	 * @param responder
 	 */
-	private void handleHolePunch(final Message message, final PeerConnection peerConnection, final Responder responder) {
-		NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
-		HolePStrategy holePuncher = type.getHolePuncher(peer, message.intAt(0), HolePInitiator.IDLE_UDP_SECONDS, message);
-		FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
+	private void handleHolePunch(final Message message, final Responder responder) {
+		final NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
+		final HolePStrategy holePuncher = type.getHolePuncher(peer, message.intAt(0), HolePInitiator.IDLE_UDP_SECONDS, message);
+		final FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
 			@Override
@@ -97,20 +96,18 @@ public class HolePRPC extends DispatchHandler {
 	 * peer.
 	 * 
 	 * @param message
-	 * @param peerConnection
 	 * @param responder
 	 */
-	private void forwardHolePunchMessage(final Message message, PeerConnection peerConnection, final Responder responder) {
+	private void forwardHolePunchMessage(final Message message, final Responder responder) {
 		final BaseRelayServer forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardPortsMessage(message, forwarder.unreachablePeerAddress());
-
-			FutureDone<Message> response = forwarder.forwardToUnreachable(forwardMessage);
+			final FutureDone<Message> response = forwarder.forwardToUnreachable(forwardMessage);
 			response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 				@Override
 				public void operationComplete(FutureDone<Message> future) throws Exception {
 					if (future.isSuccess()) {
-						Message answerMessage = createAnswerMessage(message, future.object());
+						final Message answerMessage = createAnswerMessage(message, future.object());
 						LOG.debug("Returing from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);
 					} else {
@@ -131,8 +128,8 @@ public class HolePRPC extends DispatchHandler {
 	 * @param recipient
 	 * @return forwardMessage
 	 */
-	private Message createForwardPortsMessage(Message message, PeerAddress recipient) {
-		Message forwardMessage = createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_2);
+	private Message createForwardPortsMessage(final Message message, final PeerAddress recipient) {
+		final Message forwardMessage = createMessage(recipient, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_2);
 		forwardMessage.version(message.version());
 		forwardMessage.messageId(message.messageId());
 
@@ -157,7 +154,7 @@ public class HolePRPC extends DispatchHandler {
 	 * @return
 	 */
 	private Message createAnswerMessage(final Message originalMessage, final Message replyMessage) {
-		Message answerMessage = createResponseMessage(originalMessage, Message.Type.OK);
+		final Message answerMessage = createResponseMessage(originalMessage, Message.Type.OK);
 		answerMessage.command(Commands.HOLEP.getNr());
 
 		// forward port information of unreachable peer2
@@ -187,7 +184,7 @@ public class HolePRPC extends DispatchHandler {
 	 * @param originalMessage
 	 * @param copyMessage
 	 */
-	private void duplicateBuffer(final Message originalMessage, Message copyMessage) {
+	private void duplicateBuffer(final Message originalMessage, final Message copyMessage) {
 		for (Buffer buf : originalMessage.bufferList()) {
 			copyMessage.buffer(new Buffer(buf.buffer().duplicate()));
 		}

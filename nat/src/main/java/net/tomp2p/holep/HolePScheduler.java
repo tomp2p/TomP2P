@@ -17,7 +17,7 @@ public class HolePScheduler implements Runnable {
 	private int numberOfTrials;
 	private HolePStrategy holePuncher;
 
-	public HolePScheduler(int numberOfTrials, HolePStrategy holePuncher) {
+	public HolePScheduler(final int numberOfTrials, final HolePStrategy holePuncher) {
 		// 300 -> 5min
 		if (numberOfTrials > FIVE_MINUTES) {
 			throw new IllegalArgumentException("numberOfTrials can't be higher than 300 (5min)!");

@@ -4,6 +4,6 @@ import net.tomp2p.message.Message;
 
 public interface ProgressListener {
 
-    void progress(Message interMediateMessage);
+    void progress(Message intermediateMessage);
 
 }

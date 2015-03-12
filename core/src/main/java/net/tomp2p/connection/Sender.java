@@ -86,7 +86,7 @@ public class Sender {
 	private final DataFilter dataFilterTTL = new DataFilterTTL();
 
 	// this map caches all messages which are meant to be sent by a reverse
-	private final ConcurrentHashMap<Integer, FutureResponse> cachedRequests = new ConcurrentHashMap<Integer, FutureResponse>();
+	private final ConcurrentHashMap<Integer, Pair<FutureResponse, FutureResponse>> cachedRequests = new ConcurrentHashMap<Integer, Pair<FutureResponse, FutureResponse>>();
 
 	private PingBuilderFactory pingBuilderFactory;
 
@@ -210,13 +210,14 @@ public class Sender {
 
 		LOG.debug("initiate reverse connection setup to peer with peerAddress {}", message.recipient());
 		Message rconMessage = createRconMessage(message);
+		final FutureResponse rconResponse = new FutureResponse(rconMessage);
 
 		// cache the original message until the connection is established
-		cachedRequests.put(message.messageId(), futureResponse);
+		cachedRequests.put(message.messageId(), new Pair<FutureResponse, FutureResponse>(futureResponse, rconResponse));
 
 		// wait for response (whether the reverse connection setup was
 		// successful)
-		final FutureResponse rconResponse = new FutureResponse(rconMessage);
+		
 
 		SimpleChannelInboundHandler<Message> rconInboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
@@ -228,6 +229,7 @@ public class Sender {
 					LOG.debug("Could not acquire a reverse connection, msg: {}", message);
 					rconResponse.failed("Could not acquire a reverse connection, msg: " + message);
 					futureResponse.failed(rconResponse);
+					cachedRequests.remove(message.messageId());
 				}
 			}
 		};
@@ -427,9 +429,10 @@ public class Sender {
 		handler.forwardMessage(copy, null, new Responder() {
 
 			@Override
-			public void response(final Message responseMessage) {
+			public FutureDone<Void> response(final Message responseMessage) {
 				Message copy = responseMessage.duplicate(dataFilterTTL);
 				futureResponse.response(copy);
+				return new FutureDone<Void>().done();
 			}
 
 			@Override
@@ -902,7 +905,7 @@ public class Sender {
 	 * reverse connection is set up beforehand. After a successful connection
 	 * establishment, the cached messages are sent through the direct channel.
 	 */
-	public ConcurrentHashMap<Integer, FutureResponse> cachedRequests() {
+	public ConcurrentHashMap<Integer, Pair<FutureResponse, FutureResponse>> cachedRequests() {
 		return cachedRequests;
 	}
 

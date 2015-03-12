@@ -20,7 +20,6 @@ import io.netty.buffer.ByteBuf;
 import java.util.Map;
 
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.peers.PeerAddress;
 
 /**

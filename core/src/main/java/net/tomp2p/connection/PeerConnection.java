@@ -186,7 +186,7 @@ public class PeerConnection {
     }
     
     public boolean isOpen() {
-    	if(channelFuture!=null) {
+    	if (channelFuture!=null) {
     		return channelFuture.channel().isOpen();
     	} else {
     		return false;
@@ -200,11 +200,9 @@ public class PeerConnection {
 	@Override
 	public int hashCode() {
 		if(channelFuture!=null) {
-			channelFuture.hashCode();
-		} else if(remotePeer != null) {
-			return remotePeer.hashCode();
+            return channelFuture.hashCode();
 		}
-		return super.hashCode();
+        return remotePeer.hashCode();
 	}
     
     @Override
@@ -216,9 +214,9 @@ public class PeerConnection {
 			return true;
 		}
 		PeerConnection p = (PeerConnection) obj;
-		if(channelFuture!=null) {
+		if (channelFuture!=null) {
 			return channelFuture.channel().equals(p.channelFuture.channel());
 		}
-        return false;
+        return remotePeer.equals(p.remotePeer);
     }
 }

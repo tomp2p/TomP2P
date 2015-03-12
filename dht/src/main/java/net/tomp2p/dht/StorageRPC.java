@@ -677,7 +677,7 @@ public class StorageRPC extends DispatchHandler {
     }
 
     private boolean isList(final Message message) {
-    	return message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
+        return message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4;
     }
 
     private boolean isAscending(final Message message) {

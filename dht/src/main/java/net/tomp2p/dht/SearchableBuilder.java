@@ -1,4 +1,4 @@
-package net.tomp2p.p2p.builder;
+package net.tomp2p.dht;
 
 import java.util.Collection;
 

@@ -15,7 +15,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.Storage;
 
 import org.junit.Assert;
 import org.junit.Test;

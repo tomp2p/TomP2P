@@ -245,7 +245,7 @@ public class RoutingMechanism {
 
     public void neighbors(RoutingBuilder builder) {
         synchronized (this) {
-
+        	applyPostRouting(builder, directHits, potentialHits);
             futureRoutingResponse.neighbors(directHits, potentialHits, alreadyAsked,
                     builder.isBootstrap(), builder.isRoutingToOthers());
         }
@@ -434,6 +434,37 @@ public class RoutingMechanism {
 
     public int nrNoNewInfo() {
         return nrNoNewInfo;
+    }
+    
+    /**
+	 * Apply the post routing filters if necessary
+	 * 
+	 * @param routingBuilder
+	 * @param directHits
+	 * @param potentialHits
+	 */
+	private static void applyPostRouting(RoutingBuilder routingBuilder, SortedMap<PeerAddress, DigestInfo> directHits,
+			NavigableSet<PeerAddress> potentialHits) {
+		// filter routing results using the configured post-routing filters
+		if (routingBuilder.postRoutingFilters() != null) {
+			for (PostRoutingFilter filter : routingBuilder.postRoutingFilters()) {
+				// filter the potential hits
+				Iterator<PeerAddress> potentialIter = potentialHits.iterator();
+				while (potentialIter.hasNext()) {
+					if (filter.rejectPotentialHit(potentialIter.next())) {
+						potentialIter.remove();
+					}
+				}
+
+				// filter the direct hits
+				Iterator<PeerAddress> directIter = directHits.keySet().iterator();
+				while (directIter.hasNext()) {
+					if (filter.rejectDirectHit(directIter.next())) {
+						directIter.remove();
+					}
+				}
+			}
+		}
     }
 
 }

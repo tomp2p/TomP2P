@@ -269,6 +269,7 @@ public class SyncRPC extends DispatchHandler {
                 	Number160 versionKey = SyncUtils.decodeHeader(buf);
                 	Number160 hash = SyncUtils.decodeHeader(buf);
                     List<Instruction> instructions = SyncUtils.decodeInstructions(buf);
+                    buf.release();
 
                     Data dataOld = storageLayer.get(new Number640(entry.getKey().locationAndDomainAndContentKey(), versionKey));
 

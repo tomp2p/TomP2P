@@ -16,6 +16,8 @@
 package net.tomp2p.tracker;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,9 +25,9 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.TrackerData;
-import net.tomp2p.p2p.EvaluatingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.storage.Data;
 
 /**
  * This class holds the object for future results from the tracker get() and
@@ -34,8 +36,6 @@ import net.tomp2p.peers.PeerAddress;
  * @author Thomas Bocek
  */
 public class FutureTracker extends BaseFutureImpl<FutureTracker> {
-    // since we receive results from multiple peers, we need to summarize them
-    final private EvaluatingSchemeTracker evaluatingSchemeTracker;
 
     // a set of know peers that we don't want in the result set.
     final private Set<Number160> knownPeers;
@@ -50,7 +50,7 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     private FutureDone<Void> futureDone;
 
     public FutureTracker() {
-        this(null, null);
+        this(null);
     }
 
     /**
@@ -64,8 +64,7 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
      * @param futureCreate
      *            Keeps track of futures that are based on this future
      */
-    public FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker, Set<Number160> knownPeers) {
-        this.evaluatingSchemeTracker = evaluatingSchemeTracker;
+    public FutureTracker(Set<Number160> knownPeers) {
         this.knownPeers = knownPeers;
         self(this);
     }
@@ -130,9 +129,18 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     }
 
     /**
+     * Use trackerPeers()
+     * 
      * @return The peer address that send back data.
      */
+    @Deprecated
     public Set<PeerAddress> peersOnTracker() {
+        synchronized (lock) {
+            return peersOnTracker.keySet();
+        }
+    }
+    
+    public Set<PeerAddress> trackerPeers() {
         synchronized (lock) {
             return peersOnTracker.keySet();
         }
@@ -154,10 +162,30 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
      * 
      * @return The data from the trackers.
      */
-    public Collection<TrackerData> trackers() {
+    public Collection<TrackerData> trackerData() {
         synchronized (lock) {
-            return evaluatingSchemeTracker.evaluateSingle(peersOnTracker);
+            return peersOnTracker.values();
         }
+    }
+    
+    public Collection<PeerAddress> trackers() {
+    	final Collection<PeerAddress> retVal = new HashSet<PeerAddress>();
+    	synchronized (lock) {
+    		for(TrackerData trackerData:peersOnTracker.values()) {
+    			retVal.addAll(trackerData.peerAddresses().keySet());
+    		}
+    	}
+    	return retVal;
+    }
+    
+    public Map<PeerAddress, Data> trackerMap() {
+    	final Map<PeerAddress, Data> retVal = new HashMap<PeerAddress, Data>();
+    	synchronized (lock) {
+    		for(TrackerData trackerData:peersOnTracker.values()) {
+    			retVal.putAll(trackerData.peerAddresses());
+    		}
+    	}
+    	return retVal;
     }
     
     public FutureDone<Void> futuresCompleted() {

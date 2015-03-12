@@ -120,11 +120,9 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
     private boolean twiceSeen(final Number160 messageKey) {
         Boolean isInCache = cache.putIfAbsent(messageKey, Boolean.TRUE);
         if (isInCache != null) {
-            if (isInCache) {
-                cache.put(messageKey, false);
-            } else {
-                return true;
-            }
+            //ttl refresh
+            cache.put(messageKey, Boolean.TRUE);
+            return true;
         }
         return false;
     }

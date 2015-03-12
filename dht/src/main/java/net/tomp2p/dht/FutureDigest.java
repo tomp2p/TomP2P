@@ -18,7 +18,6 @@ package net.tomp2p.dht;
 import java.util.Map;
 
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 

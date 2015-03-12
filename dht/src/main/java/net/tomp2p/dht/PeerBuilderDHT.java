@@ -1,7 +1,6 @@
 package net.tomp2p.dht;
 
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.storage.Storage;
 
 public class PeerBuilderDHT {
 

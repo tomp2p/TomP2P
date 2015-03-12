@@ -89,6 +89,10 @@ public class MaintenanceTask implements Runnable {
         synchronized (lock) {
             shutdown = true;
             final int max = runningFutures.size();
+            if(max == 0) {
+                futureShutdown.done();
+                return futureShutdown;
+            }
             final AtomicInteger counter = new AtomicInteger(0);
             for (BaseFuture future : runningFutures.keySet()) {
                 future.addListener(new BaseFutureAdapter<BaseFuture>() {

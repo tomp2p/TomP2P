@@ -42,7 +42,6 @@ import net.tomp2p.p2p.DistributedRouting;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.builder.BasicBuilder;
 import net.tomp2p.p2p.builder.RoutingBuilder;
-import net.tomp2p.p2p.builder.SearchableBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;

@@ -1,4 +1,4 @@
-# TomP2P
+# TomP2P [![Build Status](https://travis-ci.org/tomp2p/TomP2P.svg?branch=master)](https://travis-ci.org/tomp2p/TomP2P)
 
 [TomP2P](http://tomp2p.net) is a P2P library and a *distributed hash table* (DHT) implementation
 which provides a decentralized key-value infrastructure for distributed 

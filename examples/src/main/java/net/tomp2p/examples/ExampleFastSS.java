@@ -81,7 +81,7 @@ public class ExampleFastSS {
                 // get the peers that have this file
                 FutureTracker futureTracker = peers2[20].getTracker(key1).start();
                 futureTracker.awaitUninterruptibly();
-                PeerAddress peerAddress = futureTracker.trackers().iterator().next().peerAddresses().keySet().iterator().next();
+                PeerAddress peerAddress = futureTracker.trackerData().iterator().next().peerAddresses().keySet().iterator().next();
                 // download
                 FutureDirect futureDirect = peers1[20].peer().sendDirect(peerAddress).object(key1).start();
                 futureDirect.awaitUninterruptibly();

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.p2p;
+package net.tomp2p.replication;
 
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.Number160;

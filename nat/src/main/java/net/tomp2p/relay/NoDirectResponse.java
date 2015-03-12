@@ -1,6 +1,7 @@
 package net.tomp2p.relay;
 
 import net.tomp2p.connection.Responder;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 
@@ -20,8 +21,9 @@ class NoDirectResponse implements Responder {
     /**
      * Saves the response message. The response message can be retrieved using {@link NoDirectResponse#response()}
      */
-    public void response(Message responseMessage) {
+    public FutureDone<Void> response(Message responseMessage) {
         this.response = responseMessage;
+        return new FutureDone<Void>().done();
     }
 
     /**

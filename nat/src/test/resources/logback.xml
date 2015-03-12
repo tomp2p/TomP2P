@@ -7,8 +7,19 @@
         </encoder>
     </appender>
 
+	
     <!-- <logger name="net.tomp2p" level="ERROR"/>
+    <logger name="net.tomp2p.replication" level="TRACE"/>
     <logger name="net.tomp2p.connection" level="INFO"/>
+    
+    <logger name="net.tomp2p.relay.BaseRelayServer" level="TRACE"/>
+	<logger name="net.tomp2p.connection.Dispatcher" level="TRACE"/>
+	<logger name="net.tomp2p.connection.RequestHandler" level="TRACE"/>
+	<logger name="net.tomp2p.connection.Sender" level="TRACE"/>
+	<logger name="net.tomp2p.relay.RconRPC" level="TRACE"/>
+	<logger name="net.tomp2p.replication" level="TRACE"/>
+	<logger name="net.tomp2p.relay.RconRPC" level="TRACE"/>
+	<logger name="net.tomp2p.connection.RequestHandler" level="TRACE"/>
     
     <logger name="net.tomp2p.rcon" level="DEBUG"/>
     <logger name="net.tomp2p.relay" level="DEBUG"/>
@@ -37,6 +48,9 @@
     <!-- Disable Netty Warning that I'm aware of -->
     <logger name="io.netty.util.concurrent.SingleThreadEventExecutor"
             level="OFF"/>
+
+	<!-- Used to see the output in TestRelayReplication -->
+    <logger name="net.tomp2p.replication" level="DEBUG"/>
 
     <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF.
          See http://logback.qos.ch/manual/architecture.html for more

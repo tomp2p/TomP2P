@@ -196,6 +196,7 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 		servers.remove(unreachablePeer);
 		peerBean().removePeerStatusListener(server);
 		connectionBean().dispatcher().removeIoHandler(peer.peerID(), unreachablePeer.peerId());
+		LOG.info("Removed {} from relay because it is offline", unreachablePeer);
 	}
 
 	private void registerRelayServer(BaseRelayServer server) {
@@ -249,7 +250,8 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 		final Responder responder = new Responder() {
 			// TODO: add reply leak handler
 			@Override
-			public void response(Message responseMessage) {
+			public FutureDone<Void> response(Message responseMessage) {
+				final FutureDone<Void> futureDone = new FutureDone<Void>();
 				LOG.debug("Send reply message to relay peer: {}", responseMessage);
 				try {
 					if (responseMessage.sender().isRelayed() && !responseMessage.sender().peerSocketAddresses().isEmpty()) {
@@ -258,9 +260,13 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 					envelope.buffer(RelayUtils.encodeMessage(responseMessage, signatureFactory()));
 				} catch (Exception e) {
 					LOG.error("Cannot piggyback the response", e);
+					futureDone.failed("Cannot piggyback the response");
 					failed(Type.EXCEPTION, e.getMessage());
+					return futureDone;
 				}
 				responderToRelay.response(envelope);
+				futureDone.done();
+				return futureDone;
 			}
 
 			@Override

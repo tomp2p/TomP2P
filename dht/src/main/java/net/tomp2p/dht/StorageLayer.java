@@ -39,8 +39,6 @@ import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.DigestStorage;
-import net.tomp2p.storage.RangeLock;
-import net.tomp2p.storage.Storage;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 

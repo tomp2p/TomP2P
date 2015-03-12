@@ -73,7 +73,7 @@ public class DistributedTracker {
 	}
 
 	public FutureTracker get(final GetTrackerBuilder builder) {
-		final FutureTracker futureTracker = new FutureTracker(builder.evaluatingScheme(), builder.knownPeers());
+		final FutureTracker futureTracker = new FutureTracker(builder.knownPeers());
 		builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(final FutureChannelCreator futureChannelCreator2) throws Exception {
@@ -132,7 +132,7 @@ public class DistributedTracker {
 
 	public FutureTracker add(final AddTrackerBuilder builder) {
 
-		final FutureTracker futureTracker = new FutureTracker(new VotingSchemeTracker(), builder.knownPeers());
+		final FutureTracker futureTracker = new FutureTracker(builder.knownPeers());
 		builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(final FutureChannelCreator futureChannelCreator2) throws Exception {

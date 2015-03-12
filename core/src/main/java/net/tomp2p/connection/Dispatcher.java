@@ -330,9 +330,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     	
     	for(Map.Entry<Number320, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
     		for(Map.Entry<Integer, DispatchHandler> entry2:entry.getValue().entrySet()) {
-    			DispatchHandler handlerh = entry.getValue().get(command);
-    			if(handlerh!=null && entry2.getKey().equals(command)) {
-    				result.put(entry.getKey(), handlerh);
+    			DispatchHandler handler = entry.getValue().get(command);
+    			if(handler!=null && entry2.getKey().equals(command)) {
+    				result.put(entry.getKey(), handler);
     			}
     		}
     	}

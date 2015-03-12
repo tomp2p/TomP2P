@@ -200,13 +200,9 @@ public class HolePTestApp {
 		setObjectDataReply2();
 	}
 
-	public void sendHolePMessage(int port) throws IOException {
+	public void sendHolePMessage() throws IOException {
 		setObjectDataReply();
 		
-		if (port == -1) {
-			port = 8080;
-		}
-
 		FutureDirect fd = peer.sendDirect(natPeerAddress).object("Hello World").forceUDP(true).start();
 		fd.awaitUninterruptibly();
 		

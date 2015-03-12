@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.HolePInitiator;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -128,6 +129,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 
 		if (initiator) {
 			for (int i = 0; i < numberOfHoles; i++) {
+				// we need an own futureresponse for every hole we try to punch
 				futureResponses.add(new FutureResponse(originalMessage));
 				inboundHandler = createAfterHolePHandler(futureDone);
 				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, futureResponses.get(i), idleUDPSeconds, false);
@@ -136,6 +138,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		} else {
 			inboundHandler = new DuplicatesHandler(peer.connectionBean().dispatcher());
 			for (int i = 0; i < numberOfHoles; i++) {
+				// we need an own futureresponse for every hole we try to punch
 				futureResponses.add(new FutureResponse(originalMessage));
 				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, futureResponses.get(i), idleUDPSeconds, false);
 				handlerList.add(handlers);
@@ -359,7 +362,6 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 						// this ensures, that if all hole punch attemps fail,
 						// the system is still able to send the message via
 						// relaying without the user noticing it
-
 						final FutureResponse holePFutureResponse = handleFutureResponse(originalFutureResponse, portList, i, countDown,
 								numberOfConnectionAttempts);
 

@@ -125,8 +125,7 @@ public class NATTypeDetection {
 	 */
 	private void checkNATType(final FutureDone<NATType> fd, final PeerSocketAddress senderPsa, final PeerSocketAddress recipientPsa,
 			final PeerSocketAddress senderPsa2, final PeerSocketAddress recipientPsa2) {
-		// TODO jwa THE FOLLOWING CHECK DOES NOT WORK!!!!!!
-		if (senderPsa.inetAddress().equals(recipientPsa.inetAddress())) {
+		if (peer.peerAddress().peerSocketAddress().inetAddress().equals(recipientPsa.inetAddress())) {
 			signalNAT("there is no NAT to be traversed!", NATType.NO_NAT, fd);
 		} else if (senderPsa.udpPort() == recipientPsa.udpPort() && senderPsa2.udpPort() == recipientPsa2.udpPort()) {
 			signalNAT("Port preserving NAT detected. UDP hole punching is possible", NATType.PORT_PRESERVING, fd);
@@ -147,7 +146,7 @@ public class NATTypeDetection {
 	 * @param fd
 	 */
 	private void signalNAT(final String debugMsg, final NATType natType, final FutureDone<NATType> fd) {
-		LOG.debug(debugMsg);
+		LOG.warn(debugMsg);
 		this.natType = natType;
 		fd.done(natType);
 	}

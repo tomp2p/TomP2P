@@ -27,6 +27,7 @@ public class HolePTestDriver {
 			testApp.startMasterPeer();
 			break;
 		case 2:
+			// args like: "192.168.178.20 peer1"
 			testApp.startNATPeer(args);
 			break;
 		case 3:

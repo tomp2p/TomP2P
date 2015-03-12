@@ -40,8 +40,20 @@ public class HolePTestController {
 				}
 			}
 		});
-	}
 	
+		this.view.getStressTestButton().addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				System.err.println("Button \"Stress Test pressed!\"");
+				try {
+					app.stressTest();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+	}
 	
 
 }

@@ -295,7 +295,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			// this is a workaround to avoid adding a nat peer to the offline
 			// list of a peer!
 
-			// TODO jwa check this value!!!
+			// TODO jwa check this values!!!
 			peer.peerBean().peerMap().peerFound(originalSender, null, null, new RTT(200L, true));
 		}
 	}

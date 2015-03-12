@@ -39,7 +39,7 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message> {
 	 * the first received message with the isExpectDuplicateFlag.
 	 */
 	@Override
-	protected synchronized void channelRead0(final ChannelHandlerContext ctx, final Message msg) throws Exception {
+	protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) throws Exception {
 		if (msg.isExpectDuplicate()) {
 			if (first) {
 				first = false;

@@ -26,32 +26,32 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 	@Override
 	protected void doPortGuessingInitiatingPeer(final Message initMessage, final FutureDone<Message> initMessageFutureDone,
 			final List<ChannelFuture> channelFutures) {
-		// signal the other peer what type of NAT we are using
-		final FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(1, 0);
-		fcc1.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-			@Override
-			public void operationComplete(final FutureChannelCreator future) throws Exception {
-				if (future.isSuccess()) {
-					final FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(initMessage.recipient(),
-							future.channelCreator(), new DefaultConnectionConfiguration(), peer);
-					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
-						@Override
-						public void operationComplete(final FutureDone<List<PeerSocketAddress>> future2) throws Exception {
-							if (future2.isSuccess()) {
-								final List<PeerSocketAddress> addresses = future2.object();
-								final int startingPort = addresses.get(1).udpPort() + 2;
-								guessPortsInitiatingPeer(initMessage, channelFutures, startingPort);
-								initMessageFutureDone.done(initMessage);
-							} else {
-								initMessageFutureDone.failed("Ping failed!");
-							}
-						}
-					});
-				} else {
-					initMessageFutureDone.failed("No ChannelFuture could be created!");
-				}
-			}
-		});
+//		// signal the other peer what type of NAT we are using
+//		final FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(1, 0);
+//		fcc1.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+//			@Override
+//			public void operationComplete(final FutureChannelCreator future) throws Exception {
+//				if (future.isSuccess()) {
+//					final FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(initMessage.recipient(),
+//							future.channelCreator(), new DefaultConnectionConfiguration(), peer);
+//					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
+//						@Override
+//						public void operationComplete(final FutureDone<List<PeerSocketAddress>> future2) throws Exception {
+//							if (future2.isSuccess()) {
+//								final List<PeerSocketAddress> addresses = future2.object();
+//								final int startingPort = addresses.get(1).udpPort() + 2;
+//								guessPortsInitiatingPeer(initMessage, channelFutures, startingPort);
+//								initMessageFutureDone.done(initMessage);
+//							} else {
+//								initMessageFutureDone.failed("Ping failed!");
+//							}
+//						}
+//					});
+//				} else {
+//					initMessageFutureDone.failed("No ChannelFuture could be created!");
+//				}
+//			}
+//		});
 	}
 
 	private void guessPortsInitiatingPeer(final Message initMessage, final List<ChannelFuture> channelFutures, int startingPort)
@@ -71,34 +71,32 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 
 	@Override
 	protected void doPortGuessingTargetPeer(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
-		final FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
-		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-
-			@Override
-			public void operationComplete(final FutureChannelCreator future) throws Exception {
-				if (future.isSuccess()) {
-					final FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(replyMessage.recipient(),
-							future.channelCreator(), new DefaultConnectionConfiguration(), peer);
-					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
-						@Override
-						public void operationComplete(final FutureDone<List<PeerSocketAddress>> future) throws Exception {
-							if (future.isSuccess()) {
-								final List<PeerSocketAddress> addresses = future.object();
-								// TODO jwa is this a good thing?
-								final int startingPort = addresses.get(0).udpPort() + 2;
-								guessPortsTargetPeer(replyMessage, startingPort);
-
-								replyMessageFuture2.done(replyMessage);
-							} else {
-								replyMessageFuture2.failed("Ping failed!");
-							}
-						}
-					});
-				} else {
-					replyMessageFuture2.failed("Could not create ChannelFuture!");
-				}
-			}
-		});
+//		final FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
+//		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+//
+//			@Override
+//			public void operationComplete(final FutureChannelCreator future) throws Exception {
+//				if (future.isSuccess()) {
+//					final FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(replyMessage.recipient(),
+//							future.channelCreator(), new DefaultConnectionConfiguration(), peer);
+//					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
+//						@Override
+//						public void operationComplete(final FutureDone<List<PeerSocketAddress>> future) throws Exception {
+//							if (future.isSuccess()) {
+//								final List<PeerSocketAddress> addresses = future.object();
+//								final int startingPort = addresses.get(0).udpPort() + 2;
+//								guessPortsTargetPeer(replyMessage, startingPort);
+//								replyMessageFuture2.done(replyMessage);
+//							} else {
+//								replyMessageFuture2.failed("Ping failed!");
+//							}
+//						}
+//					});
+//				} else {
+//					replyMessageFuture2.failed("Could not create ChannelFuture!");
+//				}
+//			}
+//		});
 	}
 
 	private void guessPortsTargetPeer(final Message replyMessage, int startingPort) throws ClassNotFoundException, IOException {

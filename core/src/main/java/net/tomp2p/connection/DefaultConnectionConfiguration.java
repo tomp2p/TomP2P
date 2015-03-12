@@ -24,12 +24,12 @@ package net.tomp2p.connection;
  */
 public class DefaultConnectionConfiguration implements ConnectionConfiguration {
 
-    private boolean forceUDP = false;
-    private boolean forceTCP = false;
-    private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
-    private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
-    private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
-    private int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
+	protected boolean forceUDP = false;
+    protected boolean forceTCP = false;
+    protected int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
+    protected int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
+    protected int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
+    protected int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
 
     @Override
     public int idleTCPSeconds() {

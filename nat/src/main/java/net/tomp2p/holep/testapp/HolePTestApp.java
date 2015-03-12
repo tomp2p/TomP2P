@@ -72,7 +72,7 @@ public class HolePTestApp {
 				default:
 					break;
 				}
-				
+
 				return reply;
 			}
 		});
@@ -106,6 +106,11 @@ public class HolePTestApp {
 
 		// setup relay
 		pNAT = new PeerBuilderNAT(peer).start();
+		// FutureDone<NATType> fDone = pNAT.checkNATType(bootstrapPeerAddress);
+		// fDone.awaitUninterruptibly();
+		// if (fDone.isSuccess()) {
+		// System.err.println(fDone.object().toString());
+		// }
 
 		// set up 3 relays
 		// FutureRelay futureRelay = uNat.startSetupRelay(new FutureRelay());
@@ -140,7 +145,7 @@ public class HolePTestApp {
 				}
 			}
 		});
-		
+
 		setObjectDataReply2();
 	}
 
@@ -195,20 +200,16 @@ public class HolePTestApp {
 		setObjectDataReply2();
 	}
 
-	public void sendHolePMessage(int port) throws IOException {
+	public void sendHolePMessage() throws IOException {
 		setObjectDataReply();
-		
-		if (port == -1) {
-			port = 8080;
-		}
 
 		FutureDirect fd = peer.sendDirect(natPeerAddress).object("Hello World").forceUDP(true).start();
 		fd.awaitUninterruptibly();
-		
+
 		if (fd.isSuccess()) {
 			System.err.println("WORKS!");
 		} else {
-			System.err.println("DOES NOT WORK!");
+			System.err.println("DOES NOT WORK! " + fd.failedReason());
 		}
 	}
 
@@ -223,6 +224,44 @@ public class HolePTestApp {
 			System.err.println("SENDDIRECT-MESSAGE FAIL!");
 		} else {
 			System.err.println("SENDDIRECT-MESSAGE SUCCESS!");
+		}
+	}
+
+	public void stressTest() {
+		Thread thread = new Thread(new TheThread());
+		thread.run();
+	}
+
+	public void sendStressMessage() {
+		System.err.println("Now sending a thousand messages at once");
+
+		FutureDirect fd = peer.sendDirect(natPeerAddress).object("Hello World").forceUDP(true).start();
+		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
+			@Override
+			public void operationComplete(FutureDirect future) throws Exception {
+				if (future.isSuccess()) {
+					System.err.println("WORKS!");
+				} else {
+					System.err.println("DOES NOT WORK! " + future.failedReason());
+				}
+			}
+
+		});
+	}
+
+	public class TheThread implements Runnable {
+
+		@Override
+		public void run() {
+			for (int i = 0; i < 1000; i++) {
+//				try {
+//					Thread.sleep(10);
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
+				sendStressMessage();
+				System.out.println(i + ". message sent");
+			}
 		}
 	}
 }

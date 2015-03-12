@@ -5,8 +5,8 @@ import java.util.Map;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.holep.HolePunchInitiatorImpl;
-import net.tomp2p.holep.HolePunchRPC;
+import net.tomp2p.holep.HolePInitiatorImpl;
+import net.tomp2p.holep.HolePRPC;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.relay.RconRPC;
@@ -73,7 +73,7 @@ public class PeerBuilderNAT {
 	public PeerNAT start() {
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
-		final HolePunchRPC holePunchRPC = new HolePunchRPC(peer);
+		final HolePRPC holePunchRPC = new HolePRPC(peer);
 		
 		if(relayServerConfigurations == null) {
 			relayServerConfigurations = new HashMap<RelayType, RelayServerConfig>(0);
@@ -93,7 +93,7 @@ public class PeerBuilderNAT {
 			}
 		});
 		
-		peer.peerBean().holePunchInitiator(new HolePunchInitiatorImpl(peer));
+		peer.peerBean().holePunchInitiator(new HolePInitiatorImpl(peer));
 
 		return new PeerNAT(peer, natUtils, relayRPC, manualPorts);
 	}

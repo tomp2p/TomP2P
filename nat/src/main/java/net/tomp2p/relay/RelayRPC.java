@@ -14,7 +14,7 @@ import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.holep.HolePunchRPC;
+import net.tomp2p.holep.HolePRPC;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -61,12 +61,12 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 	 * This variable is needed, because a relay overwrites every RPC of an
 	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. This
 	 * variable is forwarded to the {@link RelayForwarderRPC} in order to
-	 * guarantee the existence of a {@link HolePunchRPC}. Without this variable, no
+	 * guarantee the existence of a {@link HolePRPC}. Without this variable, no
 	 * hole punch connections would be possible.
 	 * 
 	 * @author jonaswagner
 	 */
-	private final HolePunchRPC holePunchRPC;
+	private final HolePRPC holePunchRPC;
 
 	/**
 	 * Register the RelayRPC. After the setup, the peer is ready to act as a
@@ -77,14 +77,14 @@ public class RelayRPC extends DispatchHandler implements OfflineListener {
 	 * @param rconRPC the reverse connection RPC
 	 * @return
 	 */
-	public RelayRPC(Peer peer, RconRPC rconRPC, HolePunchRPC holePunchRPC, Map<RelayType, RelayServerConfig> serverConfigs) {
+	public RelayRPC(Peer peer, RconRPC rconRPC, HolePRPC holePRPC, Map<RelayType, RelayServerConfig> serverConfigs) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peer = peer;
 		this.serverConfigs = serverConfigs;
 		this.servers = new ConcurrentHashMap<Number160, BaseRelayServer>();
 		this.clients = new ConcurrentHashMap<Number160, BaseRelayClient>();
 		this.rconRPC = rconRPC;
-		this.holePunchRPC = holePunchRPC;
+		this.holePunchRPC = holePRPC;
 
 		// register this handler
 		register(RPC.Commands.RELAY.getNr());

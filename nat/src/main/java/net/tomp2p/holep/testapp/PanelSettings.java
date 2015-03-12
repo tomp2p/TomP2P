@@ -1,8 +1,10 @@
 package net.tomp2p.holep.testapp;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.LayoutManager;
 
-import javax.swing.*;
+import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 public class PanelSettings {

@@ -16,17 +16,16 @@
 package net.tomp2p.connection;
 
  import io.netty.channel.ChannelHandlerContext;
- import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.SimpleChannelInboundHandler;
+import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.MessageID;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.rpc.RPC;
 
- import net.tomp2p.futures.FutureResponse;
- import net.tomp2p.message.Message;
- import net.tomp2p.message.MessageID;
- import net.tomp2p.peers.PeerAddress;
- import net.tomp2p.peers.PeerStatusListener;
- import net.tomp2p.rpc.RPC;
-
- import org.slf4j.Logger;
- import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Is able to send UDP messages (as a request) and processes incoming replies. It is important that this class handles

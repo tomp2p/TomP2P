@@ -1,26 +1,24 @@
 package net.tomp2p.holep.testapp;
 
-import java.awt.*;
+import java.awt.FlowLayout;
 
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JFrame;
 
 public class HolePTestView extends JFrame {
 
+	private static final long serialVersionUID = 1L;
 	// Buttons
 	private JButton getNatPeerAddressButton = new JButton("get peer2 PeerAddress");
 	private JButton punchHoleButton = new JButton("punch a hole on port xy");
-
-	// Textfields
-	private static JTextArea punchHolePort = new JTextArea("8080");
-	private static Label punchHolePort_text = new Label("enter a valid Port");
+	private JButton scriptStressTestButton = new JButton("StressTest");
 
 	public HolePTestView(String frameName) {
 		setLayout(new FlowLayout());
 		
 		add(getNatPeerAddressButton);
-		add(punchHolePort_text);
-		add(punchHolePort);
 		add(punchHoleButton);
+		add(scriptStressTestButton);
 		
 		setTitle(frameName);
 //		setPreferredSize(new Dimension(500, 500));
@@ -35,12 +33,8 @@ public class HolePTestView extends JFrame {
 	public JButton getPunchHoleButton() {
 		return punchHoleButton;
 	}
-
-	public static JTextArea getPunchHolePort() {
-		return punchHolePort;
-	}
-
-	public static Label getPunchHolePort_text() {
-		return punchHolePort_text;
+	
+	public JButton getStressTestButton() {
+		return scriptStressTestButton;
 	}
 }

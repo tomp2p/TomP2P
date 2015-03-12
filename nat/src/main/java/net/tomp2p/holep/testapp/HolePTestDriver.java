@@ -1,9 +1,9 @@
 package net.tomp2p.holep.testapp;
 
-import ch.qos.logback.classic.Level;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
 
 public class HolePTestDriver {
 
@@ -11,20 +11,23 @@ public class HolePTestDriver {
 
 	public static void main(String[] args) throws Exception {
 
+		System.err.println("TESTAPP STARTED");
+		
 		// set Logger Level
 		ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
 				.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-		root.setLevel(Level.TRACE);
-		LOG.warn("Logger with Level " + Level.TRACE.toString() + " initialized");
+		root.setLevel(Level.WARN);
+		LOG.warn("Logger with Level " + Level.WARN.toString() + " initialized");
 
 		HolePTestApp testApp = new HolePTestApp();
-		HolePTestController controller = new HolePTestController("DaView", testApp);
+		new HolePTestController("DaView", testApp);
 
 		switch (args.length) {
 		case 0:
 			testApp.startMasterPeer();
 			break;
 		case 2:
+			// args like: "192.168.178.20 peer1"
 			testApp.startNATPeer(args);
 			break;
 		case 3:

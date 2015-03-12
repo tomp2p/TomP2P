@@ -33,22 +33,27 @@ public class HolePTestController {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				System.err.println("Button \"PunchHole pressed!\"");
-				final int port;
 				try {
-					String portNr = view.getPunchHolePort().getText();
-					if (portNr == null || Integer.valueOf(portNr) < 0 || Integer.valueOf(portNr) > 65000) {
-						throw new IllegalArgumentException("There is something wrong with the portNr. PortNr = " + portNr);
-					} else {
-						port = Integer.valueOf(portNr);
-					}
-					app.sendHolePMessage(port);
+					app.sendHolePMessage();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+	
+		this.view.getStressTestButton().addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				System.err.println("Button \"Stress Test pressed!\"");
+				try {
+					app.stressTest();
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
 			}
 		});
 	}
-	
 	
 
 }

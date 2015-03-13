@@ -16,7 +16,7 @@ public class BootstrapBenchmark {
 		
 		try {
 			// setup
-			Peer[] peers = BenchmarkUtil.createNodes(10, rnd, 9099, true);
+			Peer[] peers = BenchmarkUtil.createNodes(500, rnd, 9099, true, false);
 			master = peers[0];
 			
 			// bootstrap all slaves to the master
@@ -30,12 +30,12 @@ public class BootstrapBenchmark {
 			System.out.printf("Bootstrap environment set up with %s peers.\n", peers.length);
 			
 			// wait for peers to know each other
-			final int delaySec = 10;
+			final int delaySec = 30;
 			System.out.printf("Waiting %s seconds.\n", delaySec);
 			Thread.sleep(delaySec*1000);
 			
 			// bootstrap a new peer, measure time
-			Peer newPeer = BenchmarkUtil.createSlave(master, rnd, true);
+			Peer newPeer = BenchmarkUtil.createSlave(master, rnd, true, false);
 			
 			long start = BenchmarkUtil.StartBenchmark("benchmark1");
 			FutureBootstrap future = newPeer.bootstrap().peerAddress(master.peerAddress()).start();

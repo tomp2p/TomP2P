@@ -3,6 +3,9 @@ package net.tomp2p.nat;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.holep.HolePInitiatorImpl;
@@ -17,6 +20,7 @@ import net.tomp2p.relay.tcp.TCPRelayServerConfig;
 
 public class PeerBuilderNAT {
 
+	private static final Logger LOG = LoggerFactory.getLogger(PeerBuilderNAT.class);
 	final private Peer peer;
 
 	private boolean manualPorts = false;
@@ -24,9 +28,14 @@ public class PeerBuilderNAT {
 	// holds multiple implementations for serving relay peers
 	private Map<RelayType, RelayServerConfig> relayServerConfigurations;
 
+	private static final int DEFAULT_NUMBER_OF_HOLEP_HOLES = 3;
+	private int holePNumberOfHoles = DEFAULT_NUMBER_OF_HOLEP_HOLES;
+	private static final int DEFAULT_NUMBER_OF_HOLE_PUNCHES = 3;
+	private int holePNumberOfPunches = DEFAULT_NUMBER_OF_HOLE_PUNCHES;
+
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
-		
+
 		// add TCP server by default
 		this.relayServerConfigurations = new HashMap<RelayType, RelayServerConfig>();
 		relayServerConfigurations.put(RelayType.OPENTCP, new TCPRelayServerConfig());
@@ -46,7 +55,8 @@ public class PeerBuilderNAT {
 	}
 
 	/**
-	 * @return the relay server configurations. By default, {@link RelayType#OPENTCP} is implemented.
+	 * @return the relay server configurations. By default,
+	 *         {@link RelayType#OPENTCP} is implemented.
 	 */
 	public Map<RelayType, RelayServerConfig> relayServerConfigurations() {
 		return relayServerConfigurations;
@@ -54,20 +64,62 @@ public class PeerBuilderNAT {
 
 	/**
 	 * Set all relay server configurations
+	 * 
 	 * @return this instance
 	 */
 	public PeerBuilderNAT relayServerConfigurations(Map<RelayType, RelayServerConfig> relayServerConfigurations) {
 		this.relayServerConfigurations = relayServerConfigurations;
 		return this;
 	}
-	
+
 	/**
 	 * Add a new server configuration (e.g. for {@link RelayType#ANDROID}).
-	 * @return  this instance
+	 * 
+	 * @return this instance
 	 */
 	public PeerBuilderNAT addRelayServerConfiguration(RelayType relayType, RelayServerConfig configuration) {
 		relayServerConfigurations.put(relayType, configuration);
 		return this;
+	}
+
+	/**
+	 * This method specifies the amount of holes, which shall be punched by the
+	 * {@link HolePStrategy}.
+	 * 
+	 * @param holePNumberOfHoles
+	 * @return this instance
+	 */
+	public PeerBuilderNAT holePNumberOfHoles(final int holePNumberOfHoles) {
+		if (holePNumberOfHoles < 1 || holePNumberOfHoles > 100) {
+			LOG.error("The specified number of holes is invalid. holePNumberOfHoles must be between 1 and 100. The value is changed back to the default value (which is currently "
+					+ DEFAULT_NUMBER_OF_HOLEP_HOLES + ")");
+			return this;
+		} else {
+			this.holePNumberOfHoles = holePNumberOfHoles;
+			return this;
+		}
+	}
+
+	public int holePNumberOfHoles() {
+		return this.holePNumberOfHoles;
+	}
+
+	/**
+	 * specifies how many times the hole will be punched (e.g. if
+	 * holePNumberOfPunches = 3, then then all holes will be punched with dummy
+	 * messages 3 times in a row with 1 second delay (see {@link HolePScheduler}
+	 * ).
+	 * 
+	 * @param holePNumberOfPunches
+	 * @return this instance
+	 */
+	public PeerBuilderNAT holePNumberOfHolePunches(final int holePNumberOfPunches) {
+		this.holePNumberOfPunches = holePNumberOfPunches;
+		return this;
+	}
+
+	public int holePNumberOfPunches() {
+		return holePNumberOfPunches;
 	}
 
 	public PeerNAT start() {
@@ -75,7 +127,11 @@ public class PeerBuilderNAT {
 		final RconRPC rconRPC = new RconRPC(peer);
 		final HolePRPC holePunchRPC = new HolePRPC(peer);
 		
-		if(relayServerConfigurations == null) {
+		peer.peerBean().holePunchInitiator(new HolePInitiatorImpl(peer));
+		peer.peerBean().holePNumberOfHoles(holePNumberOfHoles);
+		peer.peerBean().holePNumberOfPunches(holePNumberOfPunches);
+
+		if (relayServerConfigurations == null) {
 			relayServerConfigurations = new HashMap<RelayType, RelayServerConfig>(0);
 		} else {
 			// start the server configurations
@@ -92,8 +148,6 @@ public class PeerBuilderNAT {
 				return new FutureDone<Void>().done();
 			}
 		});
-		
-		peer.peerBean().holePunchInitiator(new HolePInitiatorImpl(peer));
 
 		return new PeerNAT(peer, natUtils, relayRPC, manualPorts);
 	}

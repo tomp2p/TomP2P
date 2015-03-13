@@ -38,6 +38,7 @@ public class HolePTestApp {
 	public void startMasterPeer() throws Exception {
 		peer = new PeerBuilder(Number160.createHash("master")).ports(port).start();
 		pNAT = new PeerBuilderNAT(peer).start();
+		pNAT = new PeerBuilderNAT(peer).holePNumberOfHoles(3).holePNumberOfHolePunches(3).start();
 		System.err.println("SERVER BOOTSTRAP SUCCESS!");
 		System.err.println("IP: " + peer.peerAddress().inetAddress());
 		System.err.println("ID: " + peer.peerID());

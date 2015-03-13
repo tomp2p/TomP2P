@@ -53,6 +53,8 @@ public class PeerBean {
     private DigestStorage digestStorage;
     private DigestTracker digestTracker;
     private HolePInitiator holePunchInitiator;
+    private int holePNumberOfHoles;
+    private int holePNumberOfPunches;
     private LocalMap localMap;
     
 	/**
@@ -248,4 +250,22 @@ public class PeerBean {
 	public LocalMap localMap() {
 	    return localMap;
     }
+	
+	public PeerBean holePNumberOfHoles(final int holePNumberOfHoles) {
+		this.holePNumberOfHoles = holePNumberOfHoles;
+		return this;
+	}
+	
+	public int holePNumberOfHoles() {
+		return holePNumberOfHoles;
+	}
+
+	public PeerBean holePNumberOfPunches(final int holePNumberOfPunches) {
+		this.holePNumberOfPunches = holePNumberOfPunches;
+		return this;
+	}
+	
+	public int holePNumberOfPunches() {
+		return this.holePNumberOfPunches;
+	}
 }

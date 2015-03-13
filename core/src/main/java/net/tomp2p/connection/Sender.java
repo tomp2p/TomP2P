@@ -158,8 +158,8 @@ public class Sender {
 
 		removePeerIfFailed(futureResponse, message);
 
-        // RTT calculation
-        futureResponse.startRTTMeasurement(false);
+		// RTT calculation
+		futureResponse.startRTTMeasurement(false);
 
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null && peerConnection.channelFuture().channel().isActive()) {
@@ -217,7 +217,6 @@ public class Sender {
 
 		// wait for response (whether the reverse connection setup was
 		// successful)
-		
 
 		SimpleChannelInboundHandler<Message> rconInboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
@@ -411,20 +410,20 @@ public class Sender {
 	public void sendSelf(final FutureResponse futureResponse, final Message message) {
 		LOG.debug("Handle message that is intended for the sender itself {}", message);
 		message.sendSelf();
-		
-		Message copy = message.duplicate(new DataFilter() {	
+
+		Message copy = message.duplicate(new DataFilter() {
 			@Override
 			public Data filter(Data data, boolean isConvertMeta, boolean isReply) {
 				Data copyData = data.duplicate();
-				if(copyData.isSigned() && copyData.signature() == null) {
+				if (copyData.isSigned() && copyData.signature() == null) {
 					copyData.protectEntry(message.privateKey());
 				}
-				//set new valid from as this data item might have an old one
+				// set new valid from as this data item might have an old one
 				copyData.validFromMillis(System.currentTimeMillis());
 				return copyData;
 			}
 		});
-		
+
 		final DispatchHandler handler = dispatcher.associatedHandler(copy);
 		handler.forwardMessage(copy, null, new Responder() {
 
@@ -591,8 +590,8 @@ public class Sender {
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPSeconds,
 				isFireAndForget);
 
-        // RTT calculation
-        futureResponse.startRTTMeasurement(true);
+		// RTT calculation
+		futureResponse.startRTTMeasurement(true);
 
 		try {
 			ChannelFuture channelFuture = null;
@@ -887,11 +886,12 @@ public class Sender {
 				if (future.isFailed()) {
 					if (message.recipient().isRelayed()) {
 						// TODO: make the relay go away if failed
-					} else {
-						synchronized (peerStatusListeners) {
-							for (PeerStatusListener peerStatusListener : peerStatusListeners) {
-								peerStatusListener.peerFailed(message.recipient(), new PeerException(future));
-							}
+					} else if (message.command() == RPC.Commands.HOLEP.getNr() && message.type().ordinal() == Message.Type.REQUEST_3.ordinal()) {
+						//do nothing, because such a (dummy) message will never reach its target the first time
+					}
+					synchronized (peerStatusListeners) {
+						for (PeerStatusListener peerStatusListener : peerStatusListeners) {
+							peerStatusListener.peerFailed(message.recipient(), new PeerException(future));
 						}
 					}
 				}

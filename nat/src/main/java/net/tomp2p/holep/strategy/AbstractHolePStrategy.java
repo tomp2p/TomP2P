@@ -59,9 +59,6 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractHolePStrategy implements HolePStrategy {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractHolePStrategy.class);
-	private static final int NUMBER_OF_TRIALS = HolePInitiator.NUMBER_OF_TRIALS;
-	private static final boolean BROADCAST_VALUE = HolePInitiator.BROADCAST;
-	private static final boolean FIRE_AND_FORGET_VALUE = false;
 	private final int numberOfHoles;
 	private final int idleUDPSeconds;
 	private List<FutureResponse> futureResponses = new ArrayList<FutureResponse>();
@@ -258,7 +255,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 						public void operationComplete(final FutureDone<Message> future) throws Exception {
 							if (future.isSuccess()) {
 								final Message replyMessage = future.object();
-								final Thread holePunchScheduler = new Thread(new HolePScheduler(NUMBER_OF_TRIALS, thisInstance));
+								final Thread holePunchScheduler = new Thread(new HolePScheduler(peer.peerBean().holePNumberOfPunches(), thisInstance));
 								holePunchScheduler.start();
 								replyMessageFuture.done(replyMessage);
 							} else {
@@ -296,7 +293,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			// list of a peer!
 
 			// TODO jwa check this values!!!
-			peer.peerBean().peerMap().peerFound(originalSender, null, null, new RTT(200L, true));
+//			peer.peerBean().peerMap().peerFound(originalSender, null, null, new RTT(200L, true));
 		}
 	}
 

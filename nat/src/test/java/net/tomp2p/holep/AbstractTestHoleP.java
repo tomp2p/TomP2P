@@ -32,7 +32,6 @@ public class AbstractTestHoleP {
 	protected static final int PORTS = 4001;
 	protected static final int NUMBER_OF_NODES = 5;
 	protected static final int IDLE_UDP_SECONDS = 30;
-	protected static final int NUMBER_OF_HOLES = 8;
 
 	@Before
 	public void setupRelay() throws Exception {
@@ -42,7 +41,7 @@ public class AbstractTestHoleP {
 		UtilsNAT.perfectRouting(peers);
 		for (int i = 0; i< peers.length; i++) {
 			if (i == 0) {
-				new PeerBuilderNAT(peers[i]).addRelayServerConfiguration(RelayType.OPENTCP, new TCPRelayServerConfig()).start();
+				new PeerBuilderNAT(peers[i]).addRelayServerConfiguration(RelayType.OPENTCP, new TCPRelayServerConfig()).holePNumberOfHoles(8).start();
 			} else {
 				new PeerBuilderNAT(peers[i]).start();
 			}

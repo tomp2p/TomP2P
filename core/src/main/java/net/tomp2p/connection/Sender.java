@@ -462,10 +462,12 @@ public class Sender {
 		}
 
 		handlers.put("decoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(channelClientConfiguration.signatureFactory())));
+				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(channelClientConfiguration.signatureFactory(), 
+						channelClientConfiguration.byteBufAllocator())));
 		handlers.put(
 				"encoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
+				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(channelClientConfiguration.signatureFactory(),
+						channelClientConfiguration.byteBufAllocator())));
 
 		if (peerConnection != null) {
 			// we expect replies on this connection
@@ -734,7 +736,7 @@ public class Sender {
 				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(channelClientConfiguration.signatureFactory())));
 		handlers.put(
 				"encoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
+				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(channelClientConfiguration.signatureFactory(), channelClientConfiguration.byteBufAllocator())));
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}

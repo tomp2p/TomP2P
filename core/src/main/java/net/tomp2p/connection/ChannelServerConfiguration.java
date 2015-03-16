@@ -16,6 +16,10 @@
 
 package net.tomp2p.connection;
 
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
+
 
 /**
  * The the configuration for the server.
@@ -50,6 +54,8 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     private int maxUDPIncomingConnections = 1000;
     
     private int heartBeatMillis = PeerConnection.HEART_BEAT_MILLIS;
+    
+    private ByteBufAllocator byteBufAllocator;
 
     /**
      * @return True if this peer is behind a firewall and cannot be accessed directly
@@ -276,5 +282,22 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
 	@Override
 	public int slowResponseTimeoutSeconds() {
 		return slowResponseTimeoutSeconds;
+	}
+
+	public ChannelServerConfiguration byteBufPool() {
+		return byteBufPool(true);
+	}
+	
+	public ChannelServerConfiguration byteBufPool(boolean enable) {
+		if(enable) {
+			byteBufAllocator = PooledByteBufAllocator.DEFAULT;
+		} else {
+			byteBufAllocator = UnpooledByteBufAllocator.DEFAULT;
+		}
+		return this;
+	}
+
+	public ByteBufAllocator byteBufAllocator() {
+		return byteBufAllocator;
 	}
 }

@@ -1368,9 +1368,6 @@ public class TestDHT {
 		}
 	}
 
-	
-
-	// TODO: make this work
 	@Test
 	public void testTooManyOpenFilesInSystem() throws Exception {
 		Peer master = null;

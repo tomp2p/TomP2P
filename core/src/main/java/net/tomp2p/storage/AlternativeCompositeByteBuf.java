@@ -244,7 +244,8 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		if (newCapacity > oldCapacity) {
 			// need more storage
 			final int paddingLength = newCapacity - oldCapacity;
-			addComponent(fillBuffer, allocBuffer(paddingLength));
+			//since we allocate, refCnt is set to 1, don't increase it
+			addComponent0(fillBuffer, allocBuffer(paddingLength));
 		} else if (newCapacity < oldCapacity) {
 			// remove storage
 			int bytesToTrim = oldCapacity - newCapacity;
@@ -289,30 +290,44 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		if (buffers == null) {
 			throw new NullPointerException("buffers");
 		}
-
 		for (ByteBuf b : buffers) {
 			if (b == null) {
 				break;
 			}
 			//We want to use this buffer, so mark is as used
 			b.retain();
-			Component c = new Component(b.order(ByteOrder.BIG_ENDIAN)
-					.duplicate());
-			final int size = components.size();
-			components.add(c);
-			if (size != 0) {
-				Component prev = components.get(size - 1);
-				if (fillBuffer) {
-					// we plan to fill the buffer
-					c.offset = prev.offset + prev.buf.capacity();
-				} else {
-					// the buffer may not get filled
-					c.offset = prev.endOffset();
-				}
-			}
-			writerIndex0(writerIndex() + c.buf.writerIndex());
+			addComponentElement(fillBuffer, b);
 		}
 		return this;
+	}
+
+	private AlternativeCompositeByteBuf addComponent0(boolean fillBuffer, ByteBuf... buffers) {
+		for (ByteBuf b : buffers) {
+			if (b == null) {
+				break;
+			}
+			//this is called from internally only for buffers we already have a refCnt++
+			addComponentElement(fillBuffer, b);
+		}
+		return this;
+	}
+	
+	private void addComponentElement(final boolean fillBuffer, final ByteBuf b) {
+		final Component c = new Component(b.order(ByteOrder.BIG_ENDIAN)
+				.duplicate());
+		final int size = components.size();
+		components.add(c);
+		if (size != 0) {
+			Component prev = components.get(size - 1);
+			if (fillBuffer) {
+				// we plan to fill the buffer
+				c.offset = prev.offset + prev.buf.capacity();
+			} else {
+				// the buffer may not get filled
+				c.offset = prev.endOffset();
+			}
+		}
+		writerIndex0(writerIndex() + c.buf.writerIndex());
 	}
 
 	@Override
@@ -2072,24 +2087,28 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		return new AlternativeCompositeByteBuf(alloc, direct, buffers);
 	}
 
-	public static AlternativeCompositeByteBuf compBuffer(boolean direct) {
-		return compBuffer(ALLOC, direct);
-	}
-
 	public static AlternativeCompositeByteBuf compBuffer() {
-		return compBuffer(false);
+		return compBuffer(ALLOC, false);
 	}
 
 	public static AlternativeCompositeByteBuf compDirectBuffer() {
-		return compBuffer(true);
+		return compBuffer(ALLOC, true);
 	}
-
+	
 	public static AlternativeCompositeByteBuf compDirectBuffer(ByteBuf... buffers) {
 		return compBuffer(ALLOC, true, buffers);
+	}
+	
+	public static AlternativeCompositeByteBuf compDirectBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
+		return compBuffer(alloc, true, buffers);
 	}
 
 	public static AlternativeCompositeByteBuf compBuffer(ByteBuf... buffers) {
 		return compBuffer(ALLOC, false, buffers);
+	}
+
+	public static AlternativeCompositeByteBuf compBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
+		return compBuffer(alloc, false, buffers);
 	}
 
 }

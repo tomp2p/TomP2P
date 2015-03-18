@@ -221,6 +221,29 @@ public class DataBuffer {
 			super.finalize();
 		}
 	}
+	
+	/**
+	 * If you plan to use PooledByteBufAlloc, then its important to release the
+	 * buffer once its not used anymore. Currently the ByteBuf lives with the
+	 * DataBuffer object, and when the DataBuffer object is garbage collected,
+	 * then the buffer is released. This does not work well with
+	 * PooledByteBufAlloc, however, it works with UnpooledByteBufAlloc, which is
+	 * the default. The PooledByteBufAlloc, when running low on memory cannot
+	 * force the garbage collection to happen, thus, there will be frequent
+	 * OutOfMemoryExceptions when using pooled buffers. Thus, the buffer needs
+	 * to be released manually with the following method.
+	 * 
+	 * @return The data buffer
+	 */
+	public DataBuffer release() {
+		synchronized (buffers) {
+			for (ByteBuf buf : buffers) {
+				buf.release();
+			}
+			buffers.clear();
+		}
+		return this;
+	}
 
 	public byte[] bytes() {
 		final List<ByteBuffer> bufs = bufferList();

@@ -918,5 +918,10 @@ public class Data {
 		}
 		return hash;
 	}
+	
+	public Data release() {
+		buffer.release();
+		return this;
+	}
 
 }

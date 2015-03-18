@@ -39,7 +39,7 @@ public class BenchmarkUtil {
 			pb.channelServerConfiguration(createInfiniteTimeoutChannelServerConfiguration(port));
 		}
 		peers[0] = pb.start();
-		System.out.printf("Created master peer: %s.\n", peers[0].peerID());
+		//System.out.printf("Created master peer: %s.\n", peers[0].peerID());
 
 		for (int i = 1; i < nrOfPeers; i++) {
 			peers[i] = createSlave(peers[0], rnd, maintenance, timeout);
@@ -57,7 +57,7 @@ public class BenchmarkUtil {
 			pb.channelServerConfiguration(createInfiniteTimeoutChannelServerConfiguration(Ports.DEFAULT_PORT));
 		}
 		Peer slave = pb.start();
-		System.out.printf("Created slave peer %s.\n", slave.peerID());
+		//System.out.printf("Created slave peer %s.\n", slave.peerID());
 		return slave;
 	}
 
@@ -79,12 +79,13 @@ public class BenchmarkUtil {
 		return System.nanoTime();
 	}
 
-	public static void stopBenchmark(long start, String caller) {
+	public static double stopBenchmark(long start, String caller) {
 		long stop = System.nanoTime();
 		long nanos = stop - start;
 		System.out.printf("%s: Stopped Benchmarking.\n", caller);
 		System.out.printf("%s: %s ns | %s ms | %s s\n", caller, toNanos(nanos), toMillis(nanos),
 				toSeconds(nanos));
+		return toMillis(nanos);
 	}
 
 	private static long warmupTimer() {
@@ -99,10 +100,8 @@ public class BenchmarkUtil {
 	
 	private static void reclaimResources() {
 		// best-effort only
-		/*System.out.println("Garbage Collection attempted...");
-		Runtime.getRuntime().gc();
+		System.out.println("Garbage Collection attempted...");
 		System.out.println("Object Finalization attempted...");
-		Runtime.getRuntime().runFinalization();*/
 		restoreJvm();
 	}
 

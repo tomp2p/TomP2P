@@ -84,15 +84,15 @@ public class BenchmarkUtil {
     {
     	attemptGarbageCollection();
     	System.out.printf("%s: Starting Benchmarking...\n", caller);
-        return System.currentTimeMillis();
+        return System.nanoTime();
     }
 
     public static void stopBenchmark(long start, String caller)
     {
-    	long stop = System.currentTimeMillis();
-    	long millis = stop - start;
+    	long stop = System.nanoTime();
+    	long nanos = stop - start;
         System.out.printf("%s: Stopped Benchmarking.\n", caller);
-        System.out.printf("%s: %s ns | %s ms | %s s\n", caller, toNanos(millis), toMillis(millis), toSeconds(millis));
+        System.out.printf("%s: %s ns | %s ms | %s s\n", caller, toNanos(nanos), toMillis(nanos), toSeconds(nanos));
     }
 
     public static void attemptGarbageCollection()
@@ -101,19 +101,19 @@ public class BenchmarkUtil {
     	Runtime.getRuntime().gc();
     }
     
-    private static double toSeconds(long millis)
+    private static double toSeconds(long nanos)
     {
-        return (double) millis / 1000;
+        return (double) nanos / 1000000000;
     }
 
-    private static double toMillis(long millis)
+    private static double toMillis(long nanos)
     {
-    	return (double) millis;
+    	return (double) nanos / 1000000;
     }
 
-    private static double toNanos(long millis)
+    private static double toNanos(long nanos)
     {
-        return (double) toSeconds(millis) * 1000000000;
+    	return nanos;
     }
     
     private static Number160 createRandomId(InteropRandom rnd) {

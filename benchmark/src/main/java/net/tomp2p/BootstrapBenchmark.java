@@ -24,6 +24,7 @@ public class BootstrapBenchmark {
 			for (int i = 1; i < peers.length; i++) {
 				futures[i-1] = peers[i].bootstrap().peerAddress(master.peerAddress()).start();
 			}
+			System.out.println("Waiting for all peers to finish bootstrap...");
 			for (FutureBootstrap future : futures) {
 				future.awaitUninterruptibly();
 			}
@@ -31,16 +32,16 @@ public class BootstrapBenchmark {
 			
 			// wait for peers to know each other
 			final int delaySec = 30;
-			System.out.printf("Waiting %s seconds.\n", delaySec);
+			System.out.printf("Waiting %s seconds...\n", delaySec);
 			Thread.sleep(delaySec*1000);
 			
 			// bootstrap a new peer, measure time
 			Peer newPeer = BenchmarkUtil.createSlave(master, rnd, true, false);
 			
-			long start = BenchmarkUtil.StartBenchmark("benchmark1");
+			long start = BenchmarkUtil.startBenchmark("benchmark1");
 			FutureBootstrap future = newPeer.bootstrap().peerAddress(master.peerAddress()).start();
 			future.awaitUninterruptibly();
-			BenchmarkUtil.StopBenchmark(start, "benchmark1");
+			BenchmarkUtil.stopBenchmark(start, "benchmark1");
 			
 		} finally {
 			if (master != null) {

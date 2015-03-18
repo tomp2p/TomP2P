@@ -229,7 +229,7 @@ public class Reservation {
 		write.lock();
 		try {
 			if (shutdown) {
-				shutdownFuture().failed("already shutting down");
+				shutdownFuture().failed("Already shutting down.");
 				return shutdownFuture();
 			}
 			shutdown = true;

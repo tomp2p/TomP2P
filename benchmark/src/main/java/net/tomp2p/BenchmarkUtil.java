@@ -80,13 +80,14 @@ public class BenchmarkUtil {
             .ports(new Ports(port, port));
     }
 
-    public static long StartBenchmark(String caller)
+    public static long startBenchmark(String caller)
     {
+    	attemptGarbageCollection();
     	System.out.printf("%s: Starting Benchmarking...\n", caller);
         return System.currentTimeMillis();
     }
 
-    public static void StopBenchmark(long start, String caller)
+    public static void stopBenchmark(long start, String caller)
     {
     	long stop = System.currentTimeMillis();
     	long millis = stop - start;
@@ -94,6 +95,12 @@ public class BenchmarkUtil {
         System.out.printf("%s: %s ns | %s ms | %s s\n", caller, toNanos(millis), toMillis(millis), toSeconds(millis));
     }
 
+    public static void attemptGarbageCollection()
+    {
+    	System.out.println("Garbage Collection attempted...");
+    	Runtime.getRuntime().gc();
+    }
+    
     private static double toSeconds(long millis)
     {
         return (double) millis / 1000;

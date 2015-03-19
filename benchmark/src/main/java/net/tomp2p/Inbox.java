@@ -1,6 +1,10 @@
 package net.tomp2p;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 public class Inbox {
 
@@ -51,6 +55,7 @@ public class Inbox {
 		}
 		
 		printResults(results);
+		writeFile(results);
 	}
 
 	private static void printStopwatchProperties() {
@@ -69,4 +74,25 @@ public class Inbox {
         System.out.printf("Standard Deviation: %s ms.\n", Statistics.calculateStdDev(results));
         System.out.println("-------------------------------");
     }
+	
+	private static void writeFile(double[] results) throws IOException
+	{
+		String location = System.getProperty("user.home") + "/Desktop/benchmarking/Java/runtimesJava.txt";
+
+		File file = new File(location);
+		FileOutputStream fos = new FileOutputStream(file);
+		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+		try {
+			bw.write(String.format("%s, %s", "Repetition", "RuntimeJava"));
+			bw.newLine();
+			for (int i = 0; i < results.length; i++)
+			{
+				bw.write(String.format("%s, %s", i, results[i]));
+				bw.newLine();
+			}
+		} finally {
+			bw.close();
+		}
+		System.out.printf("Results written to %s.\n", location);
+	}
 }

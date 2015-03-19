@@ -36,10 +36,10 @@ public class TestPortGuessing extends AbstractTestHoleP {
 		final List mockedList = mock(List.class);
 		final ChannelFuture mockedChannelFuture = mock(ChannelFuture.class);
 		final Channel mockedChannel = mock(Channel.class);
-		for (int i = 0; i < HolePInitiator.NUMBER_OF_HOLES; i++) {
+		for (int i = 0; i < unreachable1.peerBean().holePNumberOfHoles(); i++) {
 			when(mockedList.get(i)).thenReturn(mockedChannelFuture);
 		}
-		when(mockedList.size()).thenReturn(HolePInitiator.NUMBER_OF_HOLES);
+		when(mockedList.size()).thenReturn(unreachable1.peerBean().holePNumberOfHoles());
 		when(mockedChannelFuture.channel()).thenReturn(mockedChannel);
 		when(mockedChannel.localAddress()).thenReturn(new InetSocketAddress(1337));
 
@@ -49,7 +49,7 @@ public class TestPortGuessing extends AbstractTestHoleP {
 			Constructor constructor = null;
 			constructor = cls.getConstructor(nonPreservingSeqConstructorParam);
 			constructor.setAccessible(true);
-			Object nonPreservingSeqObj = constructor.newInstance(unreachable1, NUMBER_OF_HOLES, IDLE_UDP_SECONDS, originalMessage);
+			Object nonPreservingSeqObj = constructor.newInstance(unreachable1, unreachable1.peerBean().holePNumberOfHoles(), IDLE_UDP_SECONDS, originalMessage);
 
 			Method guessPortsInitiatingPeer = cls.getDeclaredMethod("guessPortsInitiatingPeer", paramInitiatingPeer);
 			guessPortsInitiatingPeer.setAccessible(true);
@@ -57,7 +57,7 @@ public class TestPortGuessing extends AbstractTestHoleP {
 
 			portList = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());
 
-			assertEquals(HolePInitiator.NUMBER_OF_HOLES, originalMessage.intAt(0).intValue());
+			assertEquals(unreachable1.peerBean().holePNumberOfHoles(), originalMessage.intAt(0).intValue());
 			assertEquals(portList.size(), originalMessage.intAt(0).intValue());
 			for (int i = 0; i < portList.size(); i++) {
 				assertEquals(portList.get(i).intValue(), startingPort + 2*i);

@@ -21,7 +21,7 @@ public enum NATType {
 	 */
 	UNKNOWN {
 		@Override
-		public HolePStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
+		public HolePStrategy holePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 			return new PortPreservingStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	},
@@ -30,7 +30,7 @@ public enum NATType {
 	 */
 	NO_NAT {
 		@Override
-		public HolePStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
+		public HolePStrategy holePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 			return new PortPreservingStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	},
@@ -41,7 +41,7 @@ public enum NATType {
 	 */
 	PORT_PRESERVING {
 		@Override
-		public HolePStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
+		public HolePStrategy holePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 			return new PortPreservingStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	},
@@ -51,7 +51,7 @@ public enum NATType {
 	 */
 	NON_PRESERVING_SEQUENTIAL {
 		@Override
-		public HolePStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
+		public HolePStrategy holePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 			return new NonPreservingSequentialStrategy(peer, numberOfHoles, idleUDPSeconds, originalMessage);
 		}
 	},
@@ -61,7 +61,7 @@ public enum NATType {
 	 */
 	NON_PRESERVING_OTHER {
 		@Override
-		public HolePStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
+		public HolePStrategy holePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {
 			return null; //there is currently no strategy which can handle such a NATType
 		}
 	};
@@ -76,5 +76,5 @@ public enum NATType {
 	 * @param originalMessage
 	 * @return holePStrategy
 	 */
-	public abstract HolePStrategy getHolePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage);
+	public abstract HolePStrategy holePuncher(final Peer peer, int numberOfHoles, final int idleUDPSeconds, final Message originalMessage);
 }

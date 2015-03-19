@@ -7,6 +7,7 @@ import java.io.IOException;
 public class HolePTestController {
 
 	private final HolePTestView view;
+	@SuppressWarnings("unused")
 	private final HolePTestApp app;
 	
 	public HolePTestController(String framename, final HolePTestApp app) {

@@ -38,7 +38,7 @@ public class HolePInitiatorImpl implements HolePInitiator {
 			return futureDone.failed("A symmetric NAT can't be traversed. No HolePunching possible!");
 		}
 
-		final HolePStrategy holePuncher = natType().getHolePuncher(peer, HolePInitiator.NUMBER_OF_HOLES, idleUDPSeconds, originalMessage);
+		final HolePStrategy holePuncher = natType().holePuncher(peer, peer.peerBean().holePNumberOfHoles(), idleUDPSeconds, originalMessage);
 		return holePuncher.initiateHolePunch(futureDone, futureResponse);
 	}
 

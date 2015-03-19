@@ -271,6 +271,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 		b.handler(new ChannelInitializer<Channel>() {
 			@Override
 			protected void initChannel(final Channel ch) throws Exception {
+				ch.config().setAllocator(channelServerConfiguration.byteBufAllocator());
 				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : handlers(false).entrySet()) {
 					if (!entry.getValue().isEmpty()) {
 						ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
@@ -302,6 +303,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 		b.childHandler(new ChannelInitializer<Channel>() {
 			@Override
 			protected void initChannel(final Channel ch) throws Exception {
+				ch.config().setAllocator(channelServerConfiguration.byteBufAllocator());
 				// b.option(ChannelOption.SO_BACKLOG, BACKLOG);
 				bestEffortOptions(ch, ChannelOption.SO_LINGER, 0);
 				bestEffortOptions(ch, ChannelOption.TCP_NODELAY, true);
@@ -348,7 +350,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.idleStateHandlerTomP2P()));
 			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.timeHandler()));
 			handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(
-			        channelServerConfiguration.signatureFactory())));
+			        channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator())));
 		} else {
 			// we don't need here a timeout since we receive a packet or
 			// nothing. It is different than with TCP where we
@@ -359,8 +361,8 @@ public final class ChannelServer implements DiscoverNetworkListener{
 			handlers.put("dropconnection", new Pair<EventExecutorGroup, ChannelHandler>(null, udpDropConnectionInboundHandler));
 			handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, udpDecoderHandler));
 		}
-		handlers.put("encoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false,
-		        channelServerConfiguration.signatureFactory())));
+		handlers.put("encoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(
+		        channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator())));
 		handlers.put("dispatcher", new Pair<EventExecutorGroup, ChannelHandler>(null, dispatcher));
 		return channelServerConfiguration.pipelineFilter().filter(handlers, tcp, false);
 	}

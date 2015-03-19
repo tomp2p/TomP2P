@@ -51,6 +51,7 @@ public class TestData {
     	acbb.clear();
     	Assert.assertEquals(0, acbb.readerIndex());
     	Assert.assertEquals(0, acbb.writerIndex());
+    	acbb.release();
     }
     
     @Test

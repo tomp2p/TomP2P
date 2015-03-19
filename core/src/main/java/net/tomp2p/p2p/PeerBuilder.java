@@ -333,6 +333,7 @@ public class PeerBuilder {
 		channelServerConfiguration.behindFirewall(false);
 		channelServerConfiguration.pipelineFilter(new DefaultPipelineFilter());
 		channelServerConfiguration.signatureFactory(new DSASignatureFactory());
+		channelServerConfiguration.byteBufPool(false);
 		return channelServerConfiguration;
 	}
 
@@ -346,6 +347,7 @@ public class PeerBuilder {
 		channelClientConfiguration.signatureFactory(new DSASignatureFactory());
 		channelClientConfiguration.senderTCP(new InetSocketAddress(0).getAddress());
 		channelClientConfiguration.senderUDP(new InetSocketAddress(0).getAddress());
+		channelClientConfiguration.byteBufPool(false);
 		return channelClientConfiguration;
 	}
 

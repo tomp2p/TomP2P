@@ -65,6 +65,59 @@ import org.slf4j.LoggerFactory;
 public class TestDHT {
 	final private static Random rnd = new Random(42L);
 	private static final Logger LOG = LoggerFactory.getLogger(TestDHT.class);
+	
+	@Test
+	public void testPutBig() throws Exception {
+		PeerDHT master = null;
+		try {
+			master = testPutBig1("1");
+			//Thread.sleep(5 * 1000);
+			//master = testPutBig1("2");
+			//Thread.sleep(5 * 1000);
+			//master = testPutBig1("3");
+			//Thread.sleep(5 * 1000);
+			//Thread.sleep(Integer.MAX_VALUE);
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+			System.err.println("done");
+		}
+	}
+	
+	private PeerDHT testPutBig1(String key) throws Exception {
+		
+		
+			Peer[] peers = UtilsDHT2.createRealNodes(10, rnd, 4001, new AutomaticFuture() {
+				@Override
+				public void futureCreated(BaseFuture future) {					}
+			});
+			
+			PeerDHT[] peers2 = new PeerDHT[10];
+			for(int i=0;i<peers.length;i++) {
+				peers2[i] = new PeerBuilderDHT(peers[i]).start();
+			}
+			UtilsDHT2.perfectRouting(peers2);
+			Data data1 = new Data(new byte[10*1024*1024]);
+			RequestP2PConfiguration rp = new RequestP2PConfiguration(1, 0, 0);
+			//for(int i=0;i<10000;i++) {
+			PutBuilder pb = peers2[0].put(Number160.createHash(key)).requestP2PConfiguration(rp).data(data1);
+			FuturePut futurePut = pb.start();
+			futurePut.awaitUninterruptibly();
+			
+			Assert.assertEquals(true, futurePut.isSuccess());
+			
+			System.err.println("stored on "+futurePut.result());
+			
+			FutureRemove fr = peers2[0].remove(Number160.createHash(key)).start().awaitUninterruptibly();
+			System.err.println("removed from "+fr.result());
+			//}
+			return peers2[0];
+			
+			//
+		
+
+	}
 
 	@Test
 	public void testPutTwo() throws Exception {
@@ -1368,9 +1421,6 @@ public class TestDHT {
 		}
 	}
 
-	
-
-	// TODO: make this work
 	@Test
 	public void testTooManyOpenFilesInSystem() throws Exception {
 		Peer master = null;

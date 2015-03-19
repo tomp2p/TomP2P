@@ -224,6 +224,7 @@ public class ChannelCreator {
 		bootstrap.handler(new ChannelInitializer<Channel>() {
 			@Override
 			protected void initChannel(final Channel ch) throws Exception {
+				ch.config().setAllocator(channelClientConfiguration.byteBufAllocator());
 				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : channelHandlers.entrySet()) {
 					if (entry.getKey().equals("handler")) {
 						handlerExecutor = entry.getValue().element0();

@@ -16,6 +16,10 @@
 
 package net.tomp2p.connection;
 
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
+
 import java.net.InetAddress;
 
 /**
@@ -36,6 +40,8 @@ public class ChannelClientConfiguration {
     
     private InetAddress senderUDP;
     private InetAddress senderTCP;
+    
+    private ByteBufAllocator byteBufAllocator;
 
     /**
      * @return The maximum number of permanent (long-lived) connections
@@ -156,4 +162,21 @@ public class ChannelClientConfiguration {
 		this.senderTCP = senderUDP;
 	    return this;
     }
+	
+	public ChannelClientConfiguration byteBufPool() {
+		return byteBufPool(true);
+	}
+	
+	public ChannelClientConfiguration byteBufPool(boolean enable) {
+		if(enable) {
+			byteBufAllocator = PooledByteBufAllocator.DEFAULT;
+		} else {
+			byteBufAllocator = UnpooledByteBufAllocator.DEFAULT;
+		}
+		return this;
+	}
+
+	public ByteBufAllocator byteBufAllocator() {
+		return byteBufAllocator;
+	}
 }

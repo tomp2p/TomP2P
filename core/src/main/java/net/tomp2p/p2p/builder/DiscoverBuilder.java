@@ -275,7 +275,8 @@ public class DiscoverBuilder {
                         fr1.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
                             public void operationComplete(FutureResponse future) throws Exception {
-	                            if(future.isFailed()) {
+	                            if(future.isFailed() && !futureDiscover.isCompleted()) {
+	                            	LOG.warn("FutureDiscover (2): We need at least the TCP connection {} - {}", future, futureDiscover.failedReason());
 	                            	futureDiscover.failed("FutureDiscover (2): We need at least the TCP connection", future);
 	                            }
                             }
@@ -285,8 +286,8 @@ public class DiscoverBuilder {
                         fr2.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
                             public void operationComplete(FutureResponse future) throws Exception {
-	                            if(future.isFailed()) {
-	                            	LOG.warn("FutureDiscover (2): UDP failed connection", future);
+	                            if(future.isFailed() && !futureDiscover.isCompleted()) {
+	                            	LOG.warn("FutureDiscover (2): UDP failed connection {} - {}", future, futureDiscover.failedReason());
 	                            }
                             }
 						});

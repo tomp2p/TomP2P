@@ -1,6 +1,7 @@
 package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -18,12 +19,14 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			.getLogger(TomP2PCumulationTCP.class);
 
 	private final Decoder decoder;
+	private final ByteBufAllocator byteBufAllocator;
 	private AlternativeCompositeByteBuf cumulation = null;
 
 	private int lastId = 0;
 
-	public TomP2PCumulationTCP(final SignatureFactory signatureFactory) {
+	public TomP2PCumulationTCP(final SignatureFactory signatureFactory, ByteBufAllocator byteBufAllocator) {
 		decoder = new Decoder(signatureFactory);
+		this.byteBufAllocator = byteBufAllocator;
 	}
 
 	@Override
@@ -40,7 +43,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 
 		try {
 			if (cumulation == null) {
-				cumulation = AlternativeCompositeByteBuf.compBuffer(buf);
+				cumulation = AlternativeCompositeByteBuf.compDirectBuffer(byteBufAllocator, buf);
 			} else {
 				cumulation.addComponent(buf);
 			}

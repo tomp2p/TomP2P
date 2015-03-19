@@ -1,5 +1,6 @@
 package net.tomp2p.message;
 
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -20,18 +21,12 @@ import org.slf4j.LoggerFactory;
 public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TomP2POutbound.class);
-    private final boolean preferDirect;
     private final Encoder encoder;
-    private final CompByteBufAllocator alloc;
-    
-    public TomP2POutbound(boolean preferDirect, SignatureFactory signatureFactory) {
-    	this(preferDirect, signatureFactory, new CompByteBufAllocator());
-    }
+    private final ByteBufAllocator byteBufAllocator;
 
-    public TomP2POutbound(boolean preferDirect, SignatureFactory signatureFactory, CompByteBufAllocator alloc) {
-        this.preferDirect = preferDirect;
+    public TomP2POutbound(SignatureFactory signatureFactory, ByteBufAllocator byteBufAllocator) {
         this.encoder = new Encoder(signatureFactory);
-        this.alloc = alloc;
+        this.byteBufAllocator = byteBufAllocator;
     }
 
     @Override
@@ -44,12 +39,8 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
     	}
         try {
         	boolean done = false;
-                
-            if (preferDirect) {
-                buf = alloc.compDirectBuffer(); 
-            } else {
-                buf = alloc.compBuffer(); 
-            }
+            buf = AlternativeCompositeByteBuf.compDirectBuffer(byteBufAllocator, buf);
+            
             //null, means create signature
             done = encoder.write(buf, (Message) msg, null);
             

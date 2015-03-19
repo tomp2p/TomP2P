@@ -58,6 +58,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractHolePStrategy implements HolePStrategy {
 
+	private static int counter = 0;
+	private static int replyCounter = 0;
+	
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractHolePStrategy.class);
 	private final int numberOfHoles;
 	private final int idleUDPSeconds;
@@ -205,7 +208,11 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 *         the response Message from the peer we want to contact
 	 */
 	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone, final FutureResponse originalFutureResponse) {
-		checkTestCase(mainFutureDone);
+		//check if testCase == true
+		if (((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).isTestCase()) {
+			mainFutureDone.failed("Gandalf says: You shall not pass!!!");
+			return mainFutureDone;
+		}
 		final FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(prepareHandlers(true, mainFutureDone),
 				mainFutureDone, numberOfHoles);
 		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
@@ -220,6 +227,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 							if (future.isSuccess()) {
 								final Message initMessage = future.object();
 								sendHolePInitMessage(mainFutureDone, originalFutureResponse, futures, initMessage);
+								
 							} else {
 								mainFutureDone.failed("The creation of the initMessage failed!");
 							}
@@ -230,6 +238,8 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				}
 			}
 		});
+		
+		counter++;
 		return mainFutureDone;
 	}
 
@@ -244,6 +254,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		final HolePStrategy thisInstance = this;
 		final FutureDone<List<ChannelFuture>> rmfChannelFutures = createChannelFutures(prepareHandlers(false, replyMessageFuture),
 				replyMessageFuture, numberOfHoles);
+		System.err.println(this.toString() + "passed replyCounter #" + replyCounter);
 		rmfChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 			@Override
 			public void operationComplete(final FutureDone<List<ChannelFuture>> future) throws Exception {
@@ -268,6 +279,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				}
 			}
 		});
+		replyCounter++;
 		return replyMessageFuture;
 	}
 
@@ -309,10 +321,13 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	private void sendHolePInitMessage(final FutureDone<Message> mainFutureDone, final FutureResponse originalFutureResponse,
 			final List<ChannelFuture> futures, final Message initMessage) {
 		final FutureChannelCreator fChannelCreator = peer.connectionBean().reservation().create(1, 0);
+		// TODO jwa HERE IS THE BUG!!!!!
+		System.err.println(this.toString() + " passed counter #" + counter);
 		fChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(final FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
+					System.err.println(this.toString() + " passed counter #" + counter);
 					final FutureResponse holePFutureResponse = new FutureResponse(originalMessage);
 					// we need to know if the setUp failed.
 					holePFutureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -453,7 +468,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	private SimpleChannelInboundHandler<Message> createAfterHolePHandler(final FutureDone<Message> mainFutureDone) {
 		final SimpleChannelInboundHandler<Message> inboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
-			protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) throws Exception {
+			protected synchronized void channelRead0(final ChannelHandlerContext ctx, final Message msg) throws Exception {
 				if (Message.Type.OK == msg.type() && originalMessage.command() == msg.command()) {
 					LOG.debug("Successfully transmitted the original message to peer:[" + msg.sender().toString()
 							+ "]. Now here's the reply:[" + msg.toString() + "]");
@@ -663,9 +678,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @param mainFutureDone
 	 */
 	private void checkTestCase(final FutureDone<Message> mainFutureDone) {
-		if (((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).isTestCase()) {
-			mainFutureDone.failed("Gandalf says: You shall not pass!!!");
-		}
+		
 	}
 
 }

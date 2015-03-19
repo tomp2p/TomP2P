@@ -54,7 +54,6 @@ public class HolePStressTest extends AbstractTestHoleP {
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
 				if (requestString.equals((String) request)) {
-					Assert.assertEquals(requestString, request);
 					System.err.println("received: " + (String) request);
 				}
 				return replyString;

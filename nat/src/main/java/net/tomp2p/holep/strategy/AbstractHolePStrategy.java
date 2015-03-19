@@ -68,8 +68,8 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	private PeerAddress originalSender;
 	protected final Peer peer;
 	protected final Message originalMessage;
-	protected List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>();
-	protected List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
+	protected volatile List<ChannelFuture> channelFutures = new ArrayList<ChannelFuture>();
+	protected volatile List<Pair<Integer, Integer>> portMappings = new ArrayList<Pair<Integer, Integer>>();
 
 	/**
 	 * This constructor should never be called by the user, since it should be

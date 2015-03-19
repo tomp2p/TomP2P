@@ -75,7 +75,7 @@ public class HolePRPC extends DispatchHandler {
 	private void handleHolePunch(final Message message, final Responder responder) {
 		final NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
 		//TODO jwa does this work?
-		final HolePStrategy holePuncher = type.getHolePuncher(peer, message.intAt(0), peer.connectionBean().DEFAULT_UDP_IDLE_SECONDS, message);
+		final HolePStrategy holePuncher = type.holePuncher(peer, message.intAt(0), peer.connectionBean().DEFAULT_UDP_IDLE_SECONDS, message);
 		final FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 

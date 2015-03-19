@@ -35,15 +35,15 @@ public class TestNATType {
 
 	@Test
 	public void testGetHolePuncher() {
-		Assert.assertEquals(PortPreservingStrategy.class, NATType.UNKNOWN.getHolePuncher(peer, numberOfHoles, idleUDPSeconds, msg)
+		Assert.assertEquals(PortPreservingStrategy.class, NATType.UNKNOWN.holePuncher(peer, numberOfHoles, idleUDPSeconds, msg)
 				.getClass());
-		Assert.assertEquals(PortPreservingStrategy.class, NATType.NO_NAT.getHolePuncher(peer, numberOfHoles, idleUDPSeconds, msg)
+		Assert.assertEquals(PortPreservingStrategy.class, NATType.NO_NAT.holePuncher(peer, numberOfHoles, idleUDPSeconds, msg)
 				.getClass());
 		Assert.assertEquals(PortPreservingStrategy.class,
-				NATType.PORT_PRESERVING.getHolePuncher(peer, numberOfHoles, idleUDPSeconds, msg).getClass());
+				NATType.PORT_PRESERVING.holePuncher(peer, numberOfHoles, idleUDPSeconds, msg).getClass());
 		Assert.assertEquals(NonPreservingSequentialStrategy.class,
-				NATType.NON_PRESERVING_SEQUENTIAL.getHolePuncher(peer, numberOfHoles, idleUDPSeconds, msg).getClass());
-		Assert.assertEquals(null, NATType.NON_PRESERVING_OTHER.getHolePuncher(peer, numberOfHoles, idleUDPSeconds, msg));
+				NATType.NON_PRESERVING_SEQUENTIAL.holePuncher(peer, numberOfHoles, idleUDPSeconds, msg).getClass());
+		Assert.assertEquals(null, NATType.NON_PRESERVING_OTHER.holePuncher(peer, numberOfHoles, idleUDPSeconds, msg));
 	}
 	
 	@After

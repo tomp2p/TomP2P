@@ -475,8 +475,9 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	public NavigableMap<Number640, Data> get(Number640 from, Number640 to, SimpleBloomFilter<Number160> contentBloomFilter,
-	        SimpleBloomFilter<Number160> versionBloomFilter, int limit, boolean ascending, boolean isBloomFilterAnd) {
+	public NavigableMap<Number640, Data> get(Number640 from, Number640 to, SimpleBloomFilter<Number160> contentKeyBloomFilter,
+	        SimpleBloomFilter<Number160> versionKeyBloomFilter, SimpleBloomFilter<Number160> contentBloomFilter, 
+	        int limit, boolean ascending, boolean isBloomFilterAnd) {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
@@ -491,20 +492,30 @@ public class StorageLayer implements DigestStorage {
 				}
 
 				if (isBloomFilterAnd) {
-					if (contentBloomFilter != null && !contentBloomFilter.contains(entry.getKey().contentKey())) {
+					if (!contentKeyBloomFilter.contains(entry.getKey().contentKey())) {
 						iterator.remove();
 						continue;
 					}
-					if (versionBloomFilter != null && !versionBloomFilter.contains(entry.getValue().hash())) {
+					if (!versionKeyBloomFilter.contains(entry.getKey().versionKey())) {
 						iterator.remove();
+						continue;
+					}
+					if (!contentBloomFilter.contains(entry.getValue().hash())) {
+						iterator.remove();
+						continue;
 					}
 				} else {
-					if (contentBloomFilter != null && contentBloomFilter.contains(entry.getKey().contentKey())) {
+					if (contentKeyBloomFilter.contains(entry.getKey().contentKey())) {
 						iterator.remove();
 						continue;
 					}
-					if (versionBloomFilter != null && versionBloomFilter.contains(entry.getValue().hash())) {
+					if (versionKeyBloomFilter.contains(entry.getKey().versionKey())) {
 						iterator.remove();
+						continue;
+					}
+					if (contentBloomFilter.contains(entry.getValue().hash())) {
+						iterator.remove();
+						continue;
 					}
 				}
 			}
@@ -615,7 +626,7 @@ public class StorageLayer implements DigestStorage {
 	 */
 	@Override
     public DigestInfo digest(Number320 locationAndDomainKey, SimpleBloomFilter<Number160> keyBloomFilter,
-	        SimpleBloomFilter<Number160> contentBloomFilter, int limit, boolean ascending, boolean isBloomFilterAnd) {
+	        SimpleBloomFilter<Number160> contentKeyBloomFilter, int limit, boolean ascending, boolean isBloomFilterAnd) {
 		DigestInfo digestInfo = new DigestInfo();
 		RangeLock<Number640>.Range lock = lock(locationAndDomainKey);
 		try {
@@ -625,7 +636,7 @@ public class StorageLayer implements DigestStorage {
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
 				if (isBloomFilterAnd) {
 					if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().contentKey())) {
-						if (contentBloomFilter == null || contentBloomFilter.contains(entry.getValue().hash())) {
+						if (contentKeyBloomFilter == null || contentKeyBloomFilter.contains(entry.getValue().hash())) {
 							if (!entry.getValue().hasPrepareFlag()) {
 								digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
 							}
@@ -633,7 +644,7 @@ public class StorageLayer implements DigestStorage {
 					}
 				} else {
 					if (keyBloomFilter == null || !keyBloomFilter.contains(entry.getKey().contentKey())) {
-						if (contentBloomFilter == null || !contentBloomFilter.contains(entry.getValue().hash())) {
+						if (contentKeyBloomFilter == null || !contentKeyBloomFilter.contains(entry.getValue().hash())) {
 							if (!entry.getValue().hasPrepareFlag()) {
 								digestInfo.put(entry.getKey(),entry.getValue().basedOnSet());
 							}

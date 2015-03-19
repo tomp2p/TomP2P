@@ -4,12 +4,10 @@ import net.tomp2p.peers.Number160;
 
 public interface BloomfilterFactory {
 
+	SimpleBloomFilter<Number160> createContentKeyBloomFilter();
+	
+	SimpleBloomFilter<Number160> createVersionKeyBloomFilter();
+    
     SimpleBloomFilter<Number160> createContentBloomFilter();
-
-    SimpleBloomFilter<Number160> createLoctationKeyBloomFilter();
-
-    SimpleBloomFilter<Number160> createDomainKeyBloomFilter();
-
-    SimpleBloomFilter<Number160> createContentKeyBloomFilter();
 
 }

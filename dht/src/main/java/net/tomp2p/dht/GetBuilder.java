@@ -37,7 +37,9 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
 
     private Number160 contentKey;
 
-    private SimpleBloomFilter<Number160> keyBloomFilter;
+    private SimpleBloomFilter<Number160> contentKeyBloomFilter;
+    
+    private SimpleBloomFilter<Number160> versionKeyBloomFilter;
 
     private SimpleBloomFilter<Number160> contentBloomFilter;
 
@@ -109,12 +111,21 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         return this;
     }
 
-    public SimpleBloomFilter<Number160> keyBloomFilter() {
-        return keyBloomFilter;
+    public SimpleBloomFilter<Number160> versionKeyBloomFilter() {
+        return versionKeyBloomFilter;
     }
 
-    public GetBuilder keyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
-        this.keyBloomFilter = keyBloomFilter;
+    public GetBuilder versionKeyBloomFilter(SimpleBloomFilter<Number160> versionKeyBloomFilter) {
+        this.versionKeyBloomFilter = versionKeyBloomFilter;
+        return this;
+    }
+    
+    public SimpleBloomFilter<Number160> contentKeyBloomFilter() {
+        return contentKeyBloomFilter;
+    }
+
+    public GetBuilder contentKeyBloomFilter(SimpleBloomFilter<Number160> contentKeyBloomFilter) {
+        this.contentKeyBloomFilter = contentKeyBloomFilter;
         return this;
     }
 

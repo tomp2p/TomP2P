@@ -213,6 +213,9 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	 */
 	@Override
 	public boolean contains(final Object o) {
+		if(isVoid()) {
+			return false;
+		}
 		Random r = new Random(o.hashCode());
 		for (int x = 0; x < k; x++) {
 			if (!bitSet.get(r.nextInt(bitArraySize))) {
@@ -236,15 +239,29 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 		}
 		return true;
 	}
-
+	
 	/**
-	 * Not implemented.
+	 * Returns if the bloom filter is empty and never can be filled
 	 * 
 	 * @return nothing
 	 */
 	@Override
 	public boolean isEmpty() {
-		throw new UnsupportedOperationException();
+		return bitSet.isEmpty();
+	}
+
+	/**
+	 * Returns if the bloom filter is empty and never can be filled
+	 * 
+	 * @return nothing
+	 */
+	
+	public boolean isVoid() {
+		return byteArraySize == 0 && expectedElements == 0;
+	}
+	
+	public boolean isFull() {
+		return bitSet.cardinality() == bitSet.size();
 	}
 
 	/**
@@ -399,4 +416,9 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 		}
 		return sb.toString();
 	}
+
+	public SimpleBloomFilter<E> setAll() {
+		bitSet.set(0, bitSet.size(), true);
+	    return this;
+    }
 }

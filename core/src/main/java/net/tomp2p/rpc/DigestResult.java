@@ -26,40 +26,49 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 public class DigestResult {
+    final private SimpleBloomFilter<Number160> contentKeyBloomFilter;
+    final private SimpleBloomFilter<Number160> versionKeyBloomFilter;
     final private SimpleBloomFilter<Number160> contentBloomFilter;
-    final private SimpleBloomFilter<Number160> versoinBloomFilter;
 
     final private NavigableMap<Number640, Collection<Number160>> keyDigest;
     
     final private Map<Number640, Data> dataMap;
 
-    public DigestResult(SimpleBloomFilter<Number160> contentBloomFilter, SimpleBloomFilter<Number160> versoinBloomFilter) {
+    public DigestResult(SimpleBloomFilter<Number160> contentKeyBloomFilter, SimpleBloomFilter<Number160> versionKeyBloomFilter, 
+    		SimpleBloomFilter<Number160> contentBloomFilter) {
+        this.contentKeyBloomFilter = contentKeyBloomFilter;
+        this.versionKeyBloomFilter = versionKeyBloomFilter;
         this.contentBloomFilter = contentBloomFilter;
-        this.versoinBloomFilter = versoinBloomFilter;
         this.keyDigest = null;
         this.dataMap = null;
     }
 
     public DigestResult(NavigableMap<Number640, Collection<Number160>> keyDigest) {
         this.keyDigest = keyDigest;
+        this.contentKeyBloomFilter = null;
+        this.versionKeyBloomFilter = null;
         this.contentBloomFilter = null;
-        this.versoinBloomFilter = null;
         this.dataMap = null;
     }
 
     public DigestResult(Map<Number640, Data> dataMap) {
 	    this.dataMap = dataMap;
 	    this.keyDigest = null;
-	    this.contentBloomFilter = null;
-        this.versoinBloomFilter = null;
+	    this.contentKeyBloomFilter = null;
+        this.versionKeyBloomFilter = null;
+        this.contentBloomFilter = null;
     }
 
-	public SimpleBloomFilter<Number160> contentBloomFilter() {
+	public SimpleBloomFilter<Number160> contentKeyBloomFilter() {
+        return contentKeyBloomFilter;
+    }
+
+    public SimpleBloomFilter<Number160> versionKeyBloomFilter() {
+        return versionKeyBloomFilter;
+    }
+    
+    public SimpleBloomFilter<Number160> contentBloomFilter() {
         return contentBloomFilter;
-    }
-
-    public SimpleBloomFilter<Number160> versoinBloomFilter() {
-        return versoinBloomFilter;
     }
 
     public NavigableMap<Number640, Collection<Number160>> keyDigest() {
@@ -77,11 +86,14 @@ public class DigestResult {
         if (keyDigest != null) {
             hashCode ^= keyDigest.hashCode();
         }
+        if (contentKeyBloomFilter != null) {
+            hashCode ^= contentKeyBloomFilter.hashCode();
+        }
+        if (versionKeyBloomFilter != null) {
+            hashCode ^= versionKeyBloomFilter.hashCode();
+        }
         if (contentBloomFilter != null) {
             hashCode ^= contentBloomFilter.hashCode();
-        }
-        if (versoinBloomFilter != null) {
-            hashCode ^= versoinBloomFilter.hashCode();
         }
         if	(dataMap!=null) {
         	hashCode ^= dataMap.hashCode();
@@ -100,8 +112,9 @@ public class DigestResult {
         DigestResult o = (DigestResult) obj;
         
         return 	Utils.equals(keyDigest, o.keyDigest) &&
+        		Utils.equals(contentKeyBloomFilter, o.contentKeyBloomFilter) &&
+        		Utils.equals(versionKeyBloomFilter, o.versionKeyBloomFilter) &&
         		Utils.equals(contentBloomFilter, o.contentBloomFilter) &&
-        		Utils.equals(versoinBloomFilter, o.versoinBloomFilter) &&
         		Utils.equals(dataMap, o.dataMap);
     }
 }

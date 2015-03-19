@@ -51,6 +51,8 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
     private boolean all = false;
 
     private boolean returnBloomFilter = false;
+    
+    private boolean returnAllBloomFilter = false;
 
     private boolean ascending = true;
     
@@ -159,6 +161,20 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
 
     public DigestBuilder returnBloomFilter() {
         this.returnBloomFilter = true;
+        return this;
+    }
+    
+    public boolean isReturnAllBloomFilter() {
+        return returnAllBloomFilter;
+    }
+
+    public DigestBuilder returnAllBloomFilter(boolean returnAllBloomFilter) {
+        this.returnAllBloomFilter = returnAllBloomFilter;
+        return this;
+    }
+
+    public DigestBuilder returnAllBloomFilter() {
+        this.returnAllBloomFilter = true;
         return this;
     }
 

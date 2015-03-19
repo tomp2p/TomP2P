@@ -36,6 +36,57 @@ public class TestBloomFilter {
 
 	private final int bfSize = 40;
     private final int bfSizeLarge = 200;
+    
+    @Test
+    public void testEmptyBloomfilter() {
+    	SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(0, 0);
+    	Number160 hash = new Number160("0x41844ffc9aeea30aefd1e0aff687dacdf1c6f36e");
+    	Assert.assertEquals(true, bloomFilter.isVoid());
+    	Assert.assertEquals(false, bloomFilter.contains(hash));
+    	// convert and back
+    	ByteBuf buf = Unpooled.buffer(SimpleBloomFilter.SIZE_HEADER);
+        bloomFilter.toByteBuf(buf);
+        SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
+        Assert.assertEquals(true, bloomFilter2.isVoid());
+    }
+    
+    @Test
+    public void testFullBloomfilter() {
+    	SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(8, Integer.MAX_VALUE).setAll();
+    	Number160 hash = new Number160("0x41844ffc9aeea30aefd1e0aff687dacdf1c6f36e");
+    	Assert.assertEquals(true, bloomFilter.isFull());
+    	Assert.assertEquals(true, bloomFilter.contains(hash));
+    	// convert and back, minimun size is a long
+    	ByteBuf buf = Unpooled.buffer(8 + SimpleBloomFilter.SIZE_HEADER);
+        bloomFilter.toByteBuf(buf);
+        SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
+        Assert.assertEquals(true, bloomFilter2.isFull());
+    }
+    
+    @Test
+    public void testOneBloomfilter1() {
+    	SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(1024, 1000);
+    	Number160 hash = new Number160("0x41844ffc9aeea30aefd1e0aff687dacdf1c6f36e");
+    	bloomFilter.add(hash);
+    	// convert and back, minimun size is a long
+    	ByteBuf buf = Unpooled.buffer();
+        bloomFilter.toByteBuf(buf);
+        SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
+        Assert.assertEquals(true, bloomFilter2.contains(hash));
+    }
+    
+    @Test
+    public void testOneBloomfilter2() {
+    	SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(0.01d, 1000);
+    	Number160 hash = new Number160("0x41844ffc9aeea30aefd1e0aff687dacdf1c6f36e");
+    	bloomFilter.add(hash);
+    	// convert and back, minimun size is a long
+    	ByteBuf buf = Unpooled.buffer();
+        bloomFilter.toByteBuf(buf);
+        SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
+        Assert.assertEquals(true, bloomFilter2.contains(hash));
+    }
+    
 
     /**
      * Test the serialization and if the bloomfilter works as expected.
@@ -53,7 +104,7 @@ public class TestBloomFilter {
 
         // convert and back
         ByteBuf buf = Unpooled.buffer(filterSize + SimpleBloomFilter.SIZE_HEADER);
-        bloomFilter.toByteBuf(buf);
+        bloomFilter.toByteBuf(buf);       
         SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
         Assert.assertEquals(true, bloomFilter2.contains(Number160.MAX_VALUE));
         Assert.assertEquals(false, bloomFilter2.contains(Number160.ONE));

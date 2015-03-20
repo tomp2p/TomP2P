@@ -8,7 +8,7 @@ import java.io.OutputStreamWriter;
 
 public class Inbox {
 
-	// [bmArg] [repetitions] [resultsPath] [warmupSec] ([suffix])
+	// [bmArg] [repetitions] [resultsDir] [warmupSec] ([suffix])
 	public static void main(String[] args) throws IOException {
 
 		if (args.length < 4) {
@@ -17,10 +17,10 @@ public class Inbox {
 		}
 		String bmArg = args[0];
 		int repetitions = Integer.parseInt(args[1]);
-		String resultsPath = args[2];
+		String resultsDir = args[2];
 		int warmupSec = Integer.parseInt(args[3]);
-		String suffix = args.length >= 4 ? args[4] : "";
-		Arguments arguments = new Arguments(bmArg, repetitions, resultsPath, warmupSec, suffix);
+		String suffix = args.length >= 5 ? args[4] : "";
+		Arguments arguments = new Arguments(bmArg, repetitions, resultsDir, warmupSec, suffix);
 		
 		try {
 			if (repetitions < 1) {
@@ -50,6 +50,9 @@ public class Inbox {
 			switch (args.getBmArg()) {
 				case "bb1":
 					repetitionResult = BootstrapBenchmark.benchmark1(args);
+					break;
+				case "bb2":
+					repetitionResult = BootstrapBenchmark.benchmark2(args);
 					break;
 				default:
 					throw new IllegalArgumentException("No valid benchmark argument.");
@@ -82,7 +85,7 @@ public class Inbox {
 	
 	private static void writeFile(Arguments args, double[] results) throws IOException
 	{
-		File file = new File(args.getResultsPath() + "/" + args.getBmArg() + "_" + args.getSuffix() + ".txt");
+		File file = new File(args.getResultsDir() + "/" + args.getBmArg() + "_java" + args.getSuffix() + ".txt");
 		FileOutputStream fos = new FileOutputStream(file);
 		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 		try {

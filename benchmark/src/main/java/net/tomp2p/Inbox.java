@@ -8,43 +8,48 @@ import java.io.OutputStreamWriter;
 
 public class Inbox {
 
+	// [bmArg] [repetitions] [resultsPath] [warmupSec] ([suffix])
 	public static void main(String[] args) throws IOException {
 
-		if (args.length < 1) {
-			System.err.println("Argument missing.");
-			System.in.read();
+		if (args.length < 4) {
+			System.err.println("Argument(s) missing.");
 			System.exit(-1);
 		}
-		String argument = args[0];
-		int repetitions = args.length >= 2 ? Integer.parseInt(args[1]) : 1;
-
+		String bmArg = args[0];
+		int repetitions = Integer.parseInt(args[1]);
+		String resultsPath = args[2];
+		int warmupSec = Integer.parseInt(args[3]);
+		String suffix = args.length >= 4 ? args[4] : "";
+		Arguments arguments = new Arguments(bmArg, repetitions, resultsPath, warmupSec, suffix);
+		
 		try {
 			if (repetitions < 1) {
 				throw new IllegalArgumentException("Repetitions must be >= 1.");
 			}
-			System.out.println(String.format("Argument: %s ", argument));
-			System.out.println(String.format("Repetitions: %s ", repetitions));
-			execute(argument, repetitions);
+			execute(arguments);
 		} catch (Exception ex) {
 			System.err.println(String.format("Exception occurred:\n%s.", ex));
 			System.out.println("Exiting due to error.");
 			System.exit(-2);
 		}
 		System.out.println("Exiting with success.");
-		System.in.read();
 		System.exit(0);
-
 	}
 
-	private static void execute(String argument, int repetitions) throws Exception {
+	private static void execute(Arguments args) throws Exception {
+		
+		System.out.println(String.format("Argument: %s ", args.getBmArg()));
+		System.out.println(String.format("Repetitions: %s ", args.getRepetitions()));
+		
 		printStopwatchProperties();
-		double[] results = new double[repetitions];
-		for (int i = 0; i < repetitions; i++) {
-			System.out.printf("Executing repetition %s / %s:\n", i + 1, repetitions);
+		
+		double[] results = new double[args.getRepetitions()];
+		for (int i = 0; i < args.getRepetitions(); i++) {
+			System.out.printf("Executing repetition %s / %s:\n", i + 1, args.getRepetitions());
 			double repetitionResult = 0;
-			switch (argument) {
+			switch (args.getBmArg()) {
 				case "bb1":
-					repetitionResult = BootstrapBenchmark.benchmark1();
+					repetitionResult = BootstrapBenchmark.benchmark1(args);
 					break;
 				default:
 					throw new IllegalArgumentException("No valid benchmark argument.");
@@ -55,7 +60,7 @@ public class Inbox {
 		}
 		
 		printResults(results);
-		writeFile(results);
+		writeFile(args, results);
 	}
 
 	private static void printStopwatchProperties() {
@@ -75,15 +80,13 @@ public class Inbox {
         System.out.println("-------------------------------");
     }
 	
-	private static void writeFile(double[] results) throws IOException
+	private static void writeFile(Arguments args, double[] results) throws IOException
 	{
-		String location = System.getProperty("user.home") + "/Desktop/benchmarking/Java/runtimesJava.txt";
-
-		File file = new File(location);
+		File file = new File(args.getResultsPath() + "/" + args.getBmArg() + "_" + args.getSuffix() + ".txt");
 		FileOutputStream fos = new FileOutputStream(file);
 		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 		try {
-			bw.write(String.format("%s, %s", "Repetition", "RuntimeJava"));
+			bw.write(String.format("%s, %s", "Repetition", "Java" + args.getSuffix()));
 			bw.newLine();
 			for (int i = 0; i < results.length; i++)
 			{
@@ -93,6 +96,6 @@ public class Inbox {
 		} finally {
 			bw.close();
 		}
-		System.out.printf("Results written to %s.\n", location);
+		System.out.printf("Results written to %s.\n", file.getAbsolutePath());
 	}
 }

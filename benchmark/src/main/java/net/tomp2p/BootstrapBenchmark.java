@@ -6,7 +6,7 @@ import net.tomp2p.utils.InteropRandom;
 
 public class BootstrapBenchmark {
 
-	public static double benchmark1() throws Exception {
+	public static double benchmark1(Arguments args) throws Exception {
 		
 		// each run should create same IDs
 		InteropRandom rnd = new InteropRandom(42);
@@ -29,17 +29,16 @@ public class BootstrapBenchmark {
 			System.out.printf("Bootstrap environment set up with %s peers.\n", peers.length);
 			
 			// wait for peers to know each other
-			final int delaySec = 10;
-			System.out.printf("Waiting %s seconds...\n", delaySec);
-			Thread.sleep(delaySec*1000);
+			System.out.printf("Waiting %s seconds...\n", args.getWarmupSec());
+			Thread.sleep(args.getWarmupSec()*1000);
 			
 			// bootstrap a new peer, measure time
 			Peer newPeer = BenchmarkUtil.createSlave(master, rnd, true, false);
 			
-			long start = BenchmarkUtil.startBenchmark("benchmark1");
+			long start = BenchmarkUtil.startBenchmark(args.getBmArg());
 			FutureBootstrap future = newPeer.bootstrap().peerAddress(master.peerAddress()).start();
 			future.awaitUninterruptibly();
-			return BenchmarkUtil.stopBenchmark(start, "benchmark1");
+			return BenchmarkUtil.stopBenchmark(start, args.getBmArg());
 			
 		} finally {
 			if (master != null) {

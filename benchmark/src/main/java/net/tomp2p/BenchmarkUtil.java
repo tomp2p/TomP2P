@@ -72,18 +72,18 @@ public class BenchmarkUtil {
 				.connectionTimeoutTCPMillis(0).ports(new Ports(port, port));
 	}
 
-	public static long startBenchmark(String caller) {
+	public static long startBenchmark(String argument) {
 		warmupTimer();
 		reclaimResources();
-		System.out.printf("%s: Starting Benchmarking...\n", caller);
+		System.out.printf("%s: Starting Benchmarking...\n", argument);
 		return System.nanoTime();
 	}
 
-	public static double stopBenchmark(long start, String caller) {
+	public static double stopBenchmark(long start, String argument) {
 		long stop = System.nanoTime();
 		long nanos = stop - start;
-		System.out.printf("%s: Stopped Benchmarking.\n", caller);
-		System.out.printf("%s: %s ns | %s ms | %s s\n", caller, toNanos(nanos), toMillis(nanos),
+		System.out.printf("%s: Stopped Benchmarking.\n", argument);
+		System.out.printf("%s: %s ns | %s ms | %s s\n", argument, toNanos(nanos), toMillis(nanos),
 				toSeconds(nanos));
 		return toMillis(nanos);
 	}

@@ -54,6 +54,37 @@ public class BootstrapBenchmark {
 			}
 		}
 	}
+	
+	public static double benchmark3(Arguments args) throws Exception {
+
+		// each run should create same IDs
+		InteropRandom rnd = new InteropRandom(42);
+		Peer master = null;
+
+		try {
+			Peer[] peers = setupNetwork(args, rnd);
+			master = peers[0];
+			
+			/// benchmark: 20x peer creation, bootstrap
+			long start = BenchmarkUtil.startBenchmark(args.getBmArg());
+			
+			FutureBootstrap[] futures = new FutureBootstrap[20];
+			for (int i = 0; i < futures.length; i++) {
+				Peer newPeer = BenchmarkUtil.createSlave(master, rnd, true, false);
+				futures[i] = newPeer.bootstrap().peerAddress(master.peerAddress()).start();
+			}
+			for (FutureBootstrap future : futures) {
+				future.awaitUninterruptibly();
+			}
+			
+			return BenchmarkUtil.stopBenchmark(start, args.getBmArg());
+
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
 
 	private static Peer[] setupNetwork(Arguments args, InteropRandom rnd) throws Exception {
 		// setup

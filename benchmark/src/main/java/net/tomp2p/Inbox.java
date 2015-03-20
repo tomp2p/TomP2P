@@ -54,6 +54,9 @@ public class Inbox {
 				case "bb2":
 					repetitionResult = BootstrapBenchmark.benchmark2(args);
 					break;
+				case "bb3":
+					repetitionResult = BootstrapBenchmark.benchmark3(args);
+					break;
 				default:
 					throw new IllegalArgumentException("No valid benchmark argument.");
 			}

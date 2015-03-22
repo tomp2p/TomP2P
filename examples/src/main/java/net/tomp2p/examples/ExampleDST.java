@@ -38,6 +38,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 
 /**
@@ -123,6 +124,19 @@ public final class ExampleDST {
         		@Override
         		public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
         			NavigableMap<Number640, Data> tmp = super.get(from, to, limit, ascending);
+        			return wrap(tmp);
+        		}
+        		
+        		@Override
+        		public NavigableMap<Number640, Data> get(Number640 from,
+        				Number640 to,
+        				SimpleBloomFilter<Number160> contentKeyBloomFilter,
+        				SimpleBloomFilter<Number160> versionKeyBloomFilter,
+        				SimpleBloomFilter<Number160> contentBloomFilter,
+        				int limit, boolean ascending, boolean isBloomFilterAnd) {
+        			
+        			NavigableMap<Number640, Data> tmp = super.get(from, to, contentKeyBloomFilter, versionKeyBloomFilter,
+        					contentBloomFilter, limit, ascending, isBloomFilterAnd);
         			return wrap(tmp);
         		}
         		

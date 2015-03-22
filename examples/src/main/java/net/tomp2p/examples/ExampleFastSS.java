@@ -74,7 +74,7 @@ public class ExampleFastSS {
         // done, now search for greet
         for (String deletion : deletion("greet")) {
             FutureGet futureGet = peers1[20].get(Number160.createHash(deletion)).start().awaitUninterruptibly();
-            if (futureGet.isSuccess()) {
+            if (futureGet.isSuccess() && futureGet.data()!=null) {
                 // if we found a match
                 Object[] tmp = (Object[]) futureGet.data().object();
                 Number160 key1 = (Number160) tmp[0];

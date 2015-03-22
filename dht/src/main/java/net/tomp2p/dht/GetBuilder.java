@@ -316,7 +316,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         }
 		if (isGetLatest) {
 			if (contentKey == null) {
-				throw new IllegalArgumentException("Content key must be set.");
+				contentKey = Number160.ZERO;
 			}
 		}
         return peer.distributedHashTable().get(this);

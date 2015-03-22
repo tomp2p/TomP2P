@@ -31,7 +31,7 @@ import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 
 public class ExampleNAT {
 	private final static int PORT_SERVER = 4000;
-	private final static int PORT_CLIENT = 4000;
+	private final static int PORT_CLIENT = 4001;
 	public static void startServer() throws Exception {
 		Random r = new Random(42L);
 		Peer peer = new PeerBuilder(new Number160(r)).ports(PORT_SERVER).start();
@@ -73,6 +73,12 @@ public class ExampleNAT {
 			System.out.println("NAT success: " + fn.peerAddress());
 		} else {
 			System.out.println("failed " + fn.failedReason());
+		}
+		
+		if (frn.isSuccess()) {
+			System.out.println("FutureRelay success");
+		} else {
+			System.out.println("failed " + frn.failedReason());
 		}
 		
 		peer.shutdown();

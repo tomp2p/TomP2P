@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
 public class StorageRPC extends DispatchHandler {
 	
 	public static final SimpleBloomFilter<Number160> EMPTY_FILTER = new SimpleBloomFilter<Number160>(0,0);
-	public static final SimpleBloomFilter<Number160> FULL_FILTER = new SimpleBloomFilter<Number160>(8,Integer.MAX_VALUE).setAll();
+	public static final SimpleBloomFilter<Number160> FULL_FILTER = new SimpleBloomFilter<Number160>(8,1).setAll();
 	
     private static final Logger LOG = LoggerFactory.getLogger(StorageRPC.class);
     private static final Random RND = new Random();

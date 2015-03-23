@@ -21,9 +21,12 @@ import java.io.Serializable;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -110,21 +113,29 @@ public final class ExampleDST {
      */
     private static StorageLayer setupStorage(final int max) {
         	StorageLayer sl = new StorageLayer(new StorageMemory()) {
+    		
         		@Override
-        		public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-        		        boolean domainProtection, boolean selfSend) {
-        			Map<Number640, Data> map = get(key.minContentKey(), key.maxContentKey(), -1, false);
-        			if (map.size() < max) {
-        				return super.put(key, newData, publicKey, putIfAbsent, domainProtection, selfSend);
-        			} else {
-        				return PutStatus.FAILED;
+        		public Map<Number640, Enum<?>> putAll(
+        				NavigableMap<Number640, Data> dataMap,
+        				PublicKey publicKey, boolean putIfAbsent,
+        				boolean domainProtection, boolean sendSelf) {
+        			Set<Number640> full = new HashSet<Number640>();
+        			for(Iterator<Map.Entry<Number640, Data>> iterator = dataMap.entrySet().iterator();iterator.hasNext();) {
+        				Map.Entry<Number640, Data> entry = iterator.next();
+        				Number640 key = entry.getKey();
+        				Map<Number640, Data> map = get(key.minContentKey(), key.maxContentKey(), -1, false);
+        				if (map.size() >= max) {
+        					full.add(key);
+        					iterator.remove();
+        				}
         			}
-        		}
-        		
-        		@Override
-        		public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
-        			NavigableMap<Number640, Data> tmp = super.get(from, to, limit, ascending);
-        			return wrap(tmp);
+        			Map<Number640, Enum<?>> retVal = new HashMap<Number640, Enum<?>>(super.putAll(dataMap, publicKey, putIfAbsent, domainProtection, sendSelf));
+        			//add the failed ones
+        			for(Number640 key:full) {
+        				retVal.put(key, PutStatus.FAILED);
+        			}
+        			return retVal;
+        				
         		}
         		
         		@Override
@@ -290,7 +301,7 @@ public final class ExampleDST {
             Number160 key = Number160.createHash(inter.toString());
             FuturePut futurePut = peer.put(key).data(new Number160(index), new Data(word)).start();
             futurePut.awaitUninterruptibly();
-            System.out.println("stored " + word + " in " + inter + " status: " + futurePut.isSuccess());
+            System.out.println("stored " + word + " in " + inter + " status: " + !futurePut.result().isEmpty());
             inter = inter.split(index);
         }
         System.out.println("for DHT.put() we used " + (height + 1) + " DHT calls");

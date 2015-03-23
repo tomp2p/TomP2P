@@ -116,6 +116,10 @@ public final class ExampleSearch {
 
         // search for a keyword
         Number160 termKey = findReference(peers[peer20], "Communication");
+        if(termKey == null) {
+        	System.out.println("nothing found");
+        	return;
+        }
         // this will return a reference to the term stored in the method exampleSearch(), next, we have to search for
         // that.
         FutureGet futureGet = peers[peer10].get(termKey).start();
@@ -194,6 +198,9 @@ public final class ExampleSearch {
         Number160 keyKeyword = Number160.createHash(keyword);
         FutureGet futureGet = peer.get(keyKeyword).start();
         futureGet.awaitUninterruptibly();
+        if(futureGet.data() == null) {
+        	return null;
+        }
         Number160 termKey = (Number160) futureGet.data().object();
         return termKey;
     }

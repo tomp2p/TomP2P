@@ -72,7 +72,7 @@ public class BenchmarkUtil {
 				.connectionTimeoutTCPMillis(0).ports(new Ports(port, port));
 	}
 
-	public static long startBenchmark(String argument) {
+	/*public static long startBenchmark(String argument) {
 		warmupTimer();
 		reclaimResources();
 		System.out.printf("%s: Starting Benchmarking...\n", argument);
@@ -86,35 +86,22 @@ public class BenchmarkUtil {
 		System.out.printf("%s: %s ns | %s ms | %s s\n", argument, toNanos(nanos), toMillis(nanos),
 				toSeconds(nanos));
 		return toMillis(nanos);
-	}
+	}*/
 
-	private static long warmupTimer() {
-		// force JIT of timer and "use" result
-		// otherwise compiler might comment un-used code
-		long stamp = 0;
+	public static void warmupTimer() {
+		System.out.println("Timer warmup...");
+		long anker = 0;
 		for (int i = 0; i < 100; i++) {
-			stamp = System.nanoTime();
+			anker |= System.nanoTime();
 		}
-		return stamp;
+		ankerTrash(anker);
 	}
 	
-	private static void reclaimResources() {
+	public static void reclaimResources() {
 		// best-effort only
 		System.out.println("Garbage Collection attempted...");
 		System.out.println("Object Finalization attempted...");
 		restoreJvm();
-	}
-
-	private static double toSeconds(long nanos) {
-		return (double) nanos / 1000000000;
-	}
-
-	private static double toMillis(long nanos) {
-		return (double) nanos / 1000000;
-	}
-
-	private static double toNanos(long nanos) {
-		return nanos;
 	}
 
 	private static Number160 createRandomId(InteropRandom rnd) {
@@ -125,6 +112,16 @@ public class BenchmarkUtil {
 		return new Number160(vals);
 	}
 
+	/**
+	 * This helper method receives an "anker object" just to "throw it away".
+	 * This allows such an object to be "used".
+	 * @param anker
+	 * @return
+	 */
+	public static Object ankerTrash(Object anker) {
+		return anker;
+	}
+	
 	// ----------------------------------------------------
 	// Java Specific: Force GC / OF
 	// ----------------------------------------------------

@@ -8,7 +8,7 @@ import java.io.OutputStreamWriter;
 
 public class Inbox {
 
-	// [bmArg] [repetitions] [resultsDir] [warmupSec] ([suffix])
+	// [bmArg] [nrWarmups] [nrRepetitions] [resultsDir] ([suffix])
 	public static void main(String[] args) throws IOException {
 
 		if (args.length < 4) {
@@ -16,16 +16,17 @@ public class Inbox {
 			System.exit(-1);
 		}
 		String bmArg = args[0];
-		int repetitions = Integer.parseInt(args[1]);
-		String resultsDir = args[2];
-		int warmupSec = Integer.parseInt(args[3]);
+		int nrWarmups = Integer.parseInt(args[1]);
+		int nrRepetitions = Integer.parseInt(args[2]);
+		String resultsDir = args[3];
 		String suffix = args.length >= 5 ? args[4] : "";
-		Arguments arguments = new Arguments(bmArg, repetitions, resultsDir, warmupSec, suffix);
-		
+		Arguments arguments = new Arguments(bmArg, nrWarmups, nrRepetitions, resultsDir, suffix);
+
 		try {
-			if (repetitions < 1) {
-				throw new IllegalArgumentException("Repetitions must be >= 1.");
+			if (nrRepetitions < 1) {
+				throw new IllegalArgumentException("NrRepetitions must be >= 1.");
 			}
+			System.out.println(arguments);
 			execute(arguments);
 		} catch (Exception ex) {
 			System.err.println(String.format("Exception occurred:\n%s.", ex));
@@ -37,34 +38,19 @@ public class Inbox {
 	}
 
 	private static void execute(Arguments args) throws Exception {
-		
+
 		System.out.println(String.format("Argument: %s ", args.getBmArg()));
-		System.out.println(String.format("Repetitions: %s ", args.getRepetitions()));
-		
 		printStopwatchProperties();
-		
-		double[] results = new double[args.getRepetitions()];
-		for (int i = 0; i < args.getRepetitions(); i++) {
-			System.out.printf("Executing repetition %s / %s:\n", i + 1, args.getRepetitions());
-			double repetitionResult = 0;
-			switch (args.getBmArg()) {
-				case "bb1":
-					repetitionResult = BootstrapBenchmark.benchmark1(args);
-					break;
-				case "bb2":
-					repetitionResult = BootstrapBenchmark.benchmark2(args);
-					break;
-				case "bb3":
-					repetitionResult = BootstrapBenchmark.benchmark3(args);
-					break;
-				default:
-					throw new IllegalArgumentException("No valid benchmark argument.");
-			}
-			
-			// store repetition result
-			results[i] = repetitionResult;
+
+		double[] results;
+		switch (args.getBmArg()) {
+			case "bootstrap":
+				results = new BootstrapBenchmark().benchmark(args);
+				break;
+			default:
+				throw new IllegalArgumentException("No valid benchmark argument.");
 		}
-		
+
 		printResults(results);
 		writeFile(args, results);
 	}
@@ -72,30 +58,27 @@ public class Inbox {
 	private static void printStopwatchProperties() {
 
 	}
-	
-	private static void printResults(double[] results)
-    {
-		System.out.println("----------- RESULTS -----------");
-        for (double res : results)
-        {
-        	System.out.println(res);
-        }
-        System.out.printf("Mean: %s ms.\n", Statistics.calculateMean(results));
-        System.out.printf("Variance: %s ms.\n", Statistics.calculateVariance(results));
-        System.out.printf("Standard Deviation: %s ms.\n", Statistics.calculateStdDev(results));
-        System.out.println("-------------------------------");
-    }
-	
-	private static void writeFile(Arguments args, double[] results) throws IOException
-	{
-		File file = new File(args.getResultsDir() + "/" + args.getBmArg() + "_java" + args.getSuffix() + ".txt");
+
+	private static void printResults(double[] results) {
+		System.out.println("-------------------- RESULTS --------------------");
+		for (double res : results) {
+			System.out.println(res);
+		}
+		System.out.printf("Mean: %s ms.\n", Statistics.calculateMean(results));
+		System.out.printf("Variance: %s ms.\n", Statistics.calculateVariance(results));
+		System.out.printf("Standard Deviation: %s ms.\n", Statistics.calculateStdDev(results));
+		System.out.println("-------------------------------------------------");
+	}
+
+	private static void writeFile(Arguments args, double[] results) throws IOException {
+		File file = new File(args.getResultsDir() + "/" + args.getBmArg() + "_java" + args.getSuffix()
+				+ ".txt");
 		FileOutputStream fos = new FileOutputStream(file);
 		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 		try {
-			bw.write(String.format("%s, %s", "Repetition", "Java" + args.getSuffix()));
+			bw.write(String.format("%s, %s", "Iteration", "Java" + args.getSuffix()));
 			bw.newLine();
-			for (int i = 0; i < results.length; i++)
-			{
+			for (int i = 0; i < results.length; i++) {
 				bw.write(String.format("%s, %s", i, results[i]));
 				bw.newLine();
 			}

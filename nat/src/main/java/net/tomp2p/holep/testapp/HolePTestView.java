@@ -10,7 +10,7 @@ public class HolePTestView extends JFrame {
 	private static final long serialVersionUID = 1L;
 	// Buttons
 	private JButton getNatPeerAddressButton = new JButton("get peer2 PeerAddress");
-	private JButton punchHoleButton = new JButton("punch a hole on port xy");
+	private JButton punchHoleButton = new JButton("send Message via Hole Punching");
 	private JButton scriptStressTestButton = new JButton("StressTest");
 
 	public HolePTestView(String frameName) {
@@ -21,7 +21,6 @@ public class HolePTestView extends JFrame {
 		add(scriptStressTestButton);
 		
 		setTitle(frameName);
-//		setPreferredSize(new Dimension(500, 500));
 		setSize(300, 400);
 		setVisible(true);
 	}

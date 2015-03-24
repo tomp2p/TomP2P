@@ -45,7 +45,7 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message> {
 				LOG.debug("message with original messageId = " + messageId + " has been received!");
 			} else if (messageId == msg.intAt(POSITION_ZERO)) {
 				LOG.trace("message with original messageId = " + messageId + " has been ignored!");
-//					ctx.close();
+					ctx.close();
 			} else {
 				LOG.debug("Message received via hole punching will be forwarded to the Dispatcher!");
 				dispatcher.channelRead(ctx, msg);

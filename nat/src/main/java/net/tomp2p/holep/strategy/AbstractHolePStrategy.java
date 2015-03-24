@@ -289,8 +289,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		for (int i = 0; i < channelFutures.size(); i++) {
 			final Message dummyMessage = createDummyMessage(i);
 			final FutureResponse futureResponse = new FutureResponse(dummyMessage);
-			//TODO jwa change to debug again
-			LOG.warn("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
+			LOG.debug("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 		}
 	}
@@ -328,8 +327,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 							.sender()
 							.sendUDP(createHolePHandler(futures, mainFutureDone, originalFutureResponse), holePFutureResponse, initMessage,
 									future.channelCreator(), idleUDPSeconds, BROADCAST_VALUE);
-					//TODO jwa change to debug again
-					LOG.warn("ChannelFutures successfully created. Initialization of hole punching started.");
+					LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
 				} else {
 					mainFutureDone.failed("The creation of the channelCreator for to send the initMessage failed!");
 				}

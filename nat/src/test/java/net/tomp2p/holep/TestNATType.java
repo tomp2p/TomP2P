@@ -2,7 +2,6 @@ package net.tomp2p.holep;
 
 import java.io.IOException;
 
-import net.tomp2p.connection.HolePInitiator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.holep.strategy.NonPreservingSequentialStrategy;
 import net.tomp2p.holep.strategy.PortPreservingStrategy;
@@ -25,6 +24,7 @@ public class TestNATType {
 	private int numberOfHoles;
 	private int idleUDPSeconds;
 
+	@SuppressWarnings("static-access")
 	@Before
 	public void setUp() throws IOException {
 		peer = new PeerBuilder(Number160.createHash("test")).start();

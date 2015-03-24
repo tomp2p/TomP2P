@@ -30,6 +30,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.RTT;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
@@ -292,6 +293,12 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			LOG.debug("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 		}
+		
+		// this is a workaround to avoid adding a nat peer to the offline
+		// list of a peer!
+
+		// TODO jwa check this values!!!
+		peer.peerBean().peerMap().peerFound(originalSender, null, null, new RTT(200L, true));
 	}
 
 	/**

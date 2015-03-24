@@ -40,8 +40,7 @@ public class IntegrationTestHolePuncher extends AbstractTestHoleP {
 
 		FutureDirect fd = unreachable1.sendDirect(unreachable2.peerAddress()).object(requestString).forceUDP(true).start();
 		fd.awaitUninterruptibly();
-		//TODO jwa make test work again
-//		Assert.assertTrue(fd.isSuccess());
-//		Assert.assertEquals(replyString, (String) fd.object());
+		Assert.assertTrue(fd.isSuccess());
+		Assert.assertEquals(replyString, (String) fd.object());
 	}
 }

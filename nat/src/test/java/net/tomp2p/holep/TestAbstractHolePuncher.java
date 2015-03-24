@@ -101,8 +101,9 @@ public class TestAbstractHolePuncher {
 				if (!fDone1.isSuccess()) {
 					throw new Exception("This must happen");
 				}
+			// The method call must fail in order to pass the test
 			} catch (Exception e) {
-				System.err.println(atomic.decrementAndGet());
+				atomic.decrementAndGet();
 			}
 
 			FutureDone<List<ChannelFuture>> fDone2;
@@ -123,7 +124,6 @@ public class TestAbstractHolePuncher {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 		Assert.assertEquals(0, atomic.get());
 	}
 	

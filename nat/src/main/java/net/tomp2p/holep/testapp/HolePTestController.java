@@ -18,7 +18,7 @@ public class HolePTestController {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				System.err.println("Button \"getNatPeerAddress pressed!\"");
+				System.err.println("Button \"getNatPeerAddress\" pressed!");
 				try {
 					app.getOtherPeerAddress();
 				} catch (ClassNotFoundException e1) {
@@ -33,7 +33,7 @@ public class HolePTestController {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				System.err.println("Button \"PunchHole pressed!\"");
+				System.err.println("Button \"send Message via Hole Punching\" pressed!");
 				try {
 					app.sendHolePMessage();
 				} catch (Exception e1) {
@@ -46,7 +46,7 @@ public class HolePTestController {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				System.err.println("Button \"Stress Test pressed!\"");
+				System.err.println("Button \"Stress Test\" pressed!");
 				try {
 					app.stressTest();
 				} catch (Exception e1) {

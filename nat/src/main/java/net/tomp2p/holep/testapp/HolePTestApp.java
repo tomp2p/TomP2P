@@ -155,19 +155,9 @@ public class HolePTestApp {
 
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println("SUCCESS HIT");
+				System.out.println("SUCCESSFUL HOLE PUNCH");
 				System.out.println("Sender: " + sender.toString());
 				System.err.println("NATPEER: " + ((String) request));
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println();
-				System.out.println();
 				natPeerAddress = sender;
 				return "Hello Successful TomP2P holepunching request";
 			}
@@ -201,7 +191,7 @@ public class HolePTestApp {
 		setObjectDataReply2();
 	}
 
-	public void sendHolePMessage() throws IOException {
+	public void sendHolePMessage() throws IOException, ClassNotFoundException {
 		setObjectDataReply();
 
 		FutureDirect fd = peer.sendDirect(natPeerAddress).object("Hello World").forceUDP(true).start();
@@ -209,6 +199,7 @@ public class HolePTestApp {
 
 		if (fd.isSuccess()) {
 			System.err.println("WORKS!");
+			System.err.println("RESPONSE: " + ((String) fd.object()));
 		} else {
 			System.err.println("DOES NOT WORK! " + fd.failedReason());
 		}

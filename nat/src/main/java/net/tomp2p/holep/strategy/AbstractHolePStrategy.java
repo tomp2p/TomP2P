@@ -298,7 +298,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		// list of a peer!
 
 		// TODO jwa check this values!!!
-		peer.peerBean().peerMap().peerFound(originalSender, null, null, new RTT(200L, true));
+//		peer.peerBean().peerMap().peerFound(originalSender, null, null, new RTT(200L, true));
 	}
 
 	/**

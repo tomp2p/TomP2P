@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.Dispatcher;
-import net.tomp2p.connection.HolePInitiator;
-import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -32,7 +30,6 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.peers.RTT;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
@@ -58,9 +55,6 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractHolePStrategy implements HolePStrategy {
 
-	private static int counter = 0;
-	private static int replyCounter = 0;
-	
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractHolePStrategy.class);
 	private final int numberOfHoles;
 	private final int idleUDPSeconds;
@@ -168,6 +162,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			final FutureResponse futureResponse = futureResponses.get(i);
 			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = handlersList.get(i);
 			final FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
+			Utils.addReleaseListener(fcc, futureResponse);
 			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override
 				public void operationComplete(final FutureChannelCreator future) throws Exception {
@@ -227,7 +222,6 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 							if (future.isSuccess()) {
 								final Message initMessage = future.object();
 								sendHolePInitMessage(mainFutureDone, originalFutureResponse, futures, initMessage);
-								
 							} else {
 								mainFutureDone.failed("The creation of the initMessage failed!");
 							}
@@ -238,8 +232,6 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				}
 			}
 		});
-		
-		counter++;
 		return mainFutureDone;
 	}
 
@@ -254,7 +246,6 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		final HolePStrategy thisInstance = this;
 		final FutureDone<List<ChannelFuture>> rmfChannelFutures = createChannelFutures(prepareHandlers(false, replyMessageFuture),
 				replyMessageFuture, numberOfHoles);
-		System.err.println(this.toString() + "passed replyCounter #" + replyCounter);
 		rmfChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
 			@Override
 			public void operationComplete(final FutureDone<List<ChannelFuture>> future) throws Exception {
@@ -279,7 +270,6 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				}
 			}
 		});
-		replyCounter++;
 		return replyMessageFuture;
 	}
 
@@ -301,11 +291,6 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			final FutureResponse futureResponse = new FutureResponse(dummyMessage);
 			LOG.debug("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
-			// this is a workaround to avoid adding a nat peer to the offline
-			// list of a peer!
-
-			// TODO jwa check this values!!!
-//			peer.peerBean().peerMap().peerFound(originalSender, null, null, new RTT(200L, true));
 		}
 	}
 
@@ -321,13 +306,10 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	private void sendHolePInitMessage(final FutureDone<Message> mainFutureDone, final FutureResponse originalFutureResponse,
 			final List<ChannelFuture> futures, final Message initMessage) {
 		final FutureChannelCreator fChannelCreator = peer.connectionBean().reservation().create(1, 0);
-		// TODO jwa HERE IS THE BUG!!!!!
-		System.err.println(this.toString() + " passed counter #" + counter);
 		fChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(final FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					System.err.println(this.toString() + " passed counter #" + counter);
 					final FutureResponse holePFutureResponse = new FutureResponse(originalMessage);
 					// we need to know if the setUp failed.
 					holePFutureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -338,6 +320,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 							}
 						}
 					});
+					Utils.addReleaseListener(future, holePFutureResponse);
 					// send the holePInitMessage to one of the target peer
 					// relays
 					peer.connectionBean()
@@ -667,18 +650,4 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		message.type(type);
 		return message;
 	}
-
-	/*
-	 * =============================== TESTING ===============================
-	 */
-
-	/**
-	 * This method exists for junit test cases.
-	 * 
-	 * @param mainFutureDone
-	 */
-	private void checkTestCase(final FutureDone<Message> mainFutureDone) {
-		
-	}
-
 }

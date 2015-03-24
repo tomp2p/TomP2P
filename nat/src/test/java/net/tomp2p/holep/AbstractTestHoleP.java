@@ -87,10 +87,10 @@ public class AbstractTestHoleP {
 		}
 		BaseFuture bf1 = unreachable1.shutdown();
 		bf1.awaitUninterruptibly();
-		System.err.println("shutdown done!");
+		System.err.println("shutdown unreachable1 done!");
 
 		BaseFuture bf2 = unreachable2.shutdown();
 		bf2.awaitUninterruptibly();
-		System.err.println("shutdown done!");
+		System.err.println("shutdown unreachable 2 done!");
 	}
 }

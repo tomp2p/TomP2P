@@ -3,7 +3,6 @@ package net.tomp2p.holep;
 import java.util.ArrayList;
 
 import net.tomp2p.connection.Dispatcher;
-import net.tomp2p.connection.HolePInitiator;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -72,6 +71,7 @@ public class HolePRPC extends DispatchHandler {
 	 * @param message
 	 * @param responder
 	 */
+	@SuppressWarnings("static-access")
 	private void handleHolePunch(final Message message, final Responder responder) {
 		final NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
 		//TODO jwa does this work?

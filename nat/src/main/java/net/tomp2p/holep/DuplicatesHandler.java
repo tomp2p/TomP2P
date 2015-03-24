@@ -1,8 +1,5 @@
 package net.tomp2p.holep;
 
-import java.util.LinkedList;
-import java.util.Queue;
-
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

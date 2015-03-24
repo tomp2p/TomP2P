@@ -458,12 +458,14 @@ public class DistributedHashTable {
 												        Map<Number640, Data> dataMap = future.responseMessage()
 												                .dataMap(0).dataMap();
 												        digest = new DigestResult(dataMap);
-											        } else if (builder.isReturnBloomFilter()) {
+											        } else if (builder.isReturnBloomFilter() || builder.isReturnAllBloomFilter()) {
 												        SimpleBloomFilter<Number160> sbf1 = future.responseMessage()
 												                .bloomFilter(0);
 												        SimpleBloomFilter<Number160> sbf2 = future.responseMessage()
 												                .bloomFilter(1);
-												        digest = new DigestResult(sbf1, sbf2);
+												        SimpleBloomFilter<Number160> sbf3 = future.responseMessage()
+												                .bloomFilter(2);
+												        digest = new DigestResult(sbf1, sbf2, sbf3);
 											        } else {
 												        NavigableMap<Number640, Collection<Number160>> keyDigest = future
 												                .responseMessage().keyMap640Keys(0).keysMap();

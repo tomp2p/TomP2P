@@ -295,7 +295,6 @@ public class DistributedTracker {
 
 					futureTracker.trackers(potentialTrackers, successAsked, peerOnTracker, future.futuresCompleted());
 					if (cancelOnFinish) {
-					    	System.err.println("cancel");
 						cancel(futureResponses);
 					}
 				} else {

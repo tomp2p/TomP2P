@@ -693,7 +693,7 @@ public class TestStorageDHT {
             // get
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.domainKey(Number160.createHash("test"));
-            getBuilder.keyBloomFilter(sbf);
+            getBuilder.contentKeyBloomFilter(sbf);
             getBuilder.versionKey(Number160.ZERO);
 
             fr = smmSender.get(recv1.peerAddress(), getBuilder, cc);

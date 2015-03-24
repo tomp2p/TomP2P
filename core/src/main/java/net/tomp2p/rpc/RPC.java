@@ -29,7 +29,8 @@ public class RPC {
 		GET_LATEST_WITH_DIGEST(),
 		GCM(),
 		LOCAL_ANNOUNCE(),
-		REPLICA_PUT();
+		REPLICA_PUT(), 
+		DIGEST_ALL_BLOOMFILTER();
 	public byte getNr() {
 		return (byte) ordinal();
 	}

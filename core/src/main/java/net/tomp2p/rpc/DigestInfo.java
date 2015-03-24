@@ -112,57 +112,9 @@ public class DigestInfo {
         keyDigest = hashKey;
         contentDigest = hashContent;
     }
-
-    /**
-     * @param factory
-     *            The bloom filter creator
-     * @return The bloom filter of the keys that are on this peer
-     */
-    public SimpleBloomFilter<Number160> locationKeyBloomFilter(final BloomfilterFactory factory) {
-        SimpleBloomFilter<Number160> sbf = factory.createLoctationKeyBloomFilter();
-        for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            sbf.add(entry.getKey().locationKey());
-        }
-        return sbf;
-    }
     
-    /**
-     * @param factory
-     *            The bloom filter creator
-     * @return The bloom filter of the keys that are on this peer
-     */
-    public SimpleBloomFilter<Number160> domainKeyBloomFilter(final BloomfilterFactory factory) {
-        SimpleBloomFilter<Number160> sbf = factory.createDomainKeyBloomFilter();
-        for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            sbf.add(entry.getKey().domainKey());
-        }
-        return sbf;
-    }
-    
-    /**
-     * @param factory
-     *            The bloom filter creator
-     * @return The bloom filter of the keys that are on this peer
-     */
-    public SimpleBloomFilter<Number160> contentKeyBloomFilter(final BloomfilterFactory factory) {
-        SimpleBloomFilter<Number160> sbf = factory.createContentKeyBloomFilter();
-        for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            sbf.add(entry.getKey().contentKey());
-        }
-        return sbf;
-    }
-
-    /**
-     * @param factory
-     *            The bloom filter creator
-     * @return The bloom filter of the content keys that are on this peer
-     */
-    public SimpleBloomFilter<Number160> versionKeyBloomFilter(final BloomfilterFactory factory) {
-        SimpleBloomFilter<Number160> sbf = factory.createContentBloomFilter();
-        for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            sbf.add(entry.getKey().versionKey());
-        }
-        return sbf;
+    public NavigableMap<Number640, Collection<Number160>> mapDigests() {
+    	return mapDigests;
     }
 
     /**

@@ -66,6 +66,10 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public class StorageRPC extends DispatchHandler {
+	
+	public static final SimpleBloomFilter<Number160> EMPTY_FILTER = new SimpleBloomFilter<Number160>(0,0);
+	public static final SimpleBloomFilter<Number160> FULL_FILTER = new SimpleBloomFilter<Number160>(8,1).setAll();
+	
     private static final Logger LOG = LoggerFactory.getLogger(StorageRPC.class);
     private static final Random RND = new Random();
 
@@ -88,7 +92,8 @@ public class StorageRPC extends DispatchHandler {
         		RPC.Commands.ADD.getNr(), 
         		RPC.Commands.REMOVE.getNr(), 
         		RPC.Commands.DIGEST.getNr(), 
-        		RPC.Commands.DIGEST_BLOOMFILTER.getNr(), 
+        		RPC.Commands.DIGEST_BLOOMFILTER.getNr(),
+        		RPC.Commands.DIGEST_ALL_BLOOMFILTER.getNr(),
         		RPC.Commands.PUT_META.getNr(), 
 				RPC.Commands.DIGEST_META_VALUES.getNr(), 
 				RPC.Commands.PUT_CONFIRM.getNr(),
@@ -415,6 +420,8 @@ public class StorageRPC extends DispatchHandler {
         	command = RPC.Commands.DIGEST_BLOOMFILTER.getNr();
         } else if(getBuilder.isReturnMetaValues()) {
         	command = RPC.Commands.DIGEST_META_VALUES.getNr();
+        } else if(getBuilder.isReturnAllBloomFilter()) {
+        	command = RPC.Commands.DIGEST_ALL_BLOOMFILTER.getNr();
         } else {
         	command = RPC.Commands.DIGEST.getNr();
         }
@@ -515,13 +522,35 @@ public class StorageRPC extends DispatchHandler {
                         .domainKey(), getBuilder.versionKey(), getBuilder.contentKeys()));
             } else {
                 message.intValue(getBuilder.returnNr());
-                if (getBuilder.keyBloomFilter() != null || getBuilder.contentBloomFilter() != null) {
-                    if (getBuilder.keyBloomFilter() != null) {
-                        message.bloomFilter(getBuilder.keyBloomFilter());
-                    }
-                    if (getBuilder.contentBloomFilter() != null) {
-                        message.bloomFilter(getBuilder.contentBloomFilter());
-                    }
+               
+                if (getBuilder.contentKeyBloomFilter() != null) {
+                     message.bloomFilter(getBuilder.contentKeyBloomFilter());
+                } else {
+                	if(getBuilder.isBloomFilterAnd()) {
+                		message.bloomFilter(FULL_FILTER);
+                	} else {
+                		message.bloomFilter(EMPTY_FILTER);
+                	}
+                }
+                
+                if (getBuilder.versionKeyBloomFilter() != null) {
+                    message.bloomFilter(getBuilder.versionKeyBloomFilter());
+                } else {
+                	if(getBuilder.isBloomFilterAnd()) {
+                		message.bloomFilter(FULL_FILTER);
+                	} else {
+                		message.bloomFilter(EMPTY_FILTER);
+                	}
+                }
+                
+                if (getBuilder.contentBloomFilter() != null) {
+                    message.bloomFilter(getBuilder.contentBloomFilter());
+                } else {
+                	if(getBuilder.isBloomFilterAnd()) {
+                		message.bloomFilter(FULL_FILTER);
+                	} else {
+                		message.bloomFilter(EMPTY_FILTER);
+                	}
                 }
             }
         } else {
@@ -646,7 +675,8 @@ public class StorageRPC extends DispatchHandler {
 			handleGetLatest(message, responseMessage, true);
         } else if (message.command() == RPC.Commands.DIGEST.getNr() 
         		|| message.command() == RPC.Commands.DIGEST_BLOOMFILTER.getNr()
-        		|| message.command() == RPC.Commands.DIGEST_META_VALUES.getNr()) {
+        		|| message.command() == RPC.Commands.DIGEST_META_VALUES.getNr()
+        		|| message.command() == RPC.Commands.DIGEST_ALL_BLOOMFILTER.getNr()) {
             handleDigest(message, responseMessage);
         } else if (message.command() == RPC.Commands.REMOVE.getNr()) {
             handleRemove(message, responseMessage, message.type() == Type.REQUEST_2);
@@ -836,24 +866,26 @@ public class StorageRPC extends DispatchHandler {
         final Number160 locationKey = message.key(0);
         final Number160 domainKey = message.key(1);
         final KeyCollection contentKeys = message.keyCollection(0);
-        final SimpleBloomFilter<Number160> contentBloomFilter = message.bloomFilter(0);
+        final SimpleBloomFilter<Number160> contentKeyBloomFilter = message.bloomFilter(0);
         final SimpleBloomFilter<Number160> versionBloomFilter = message.bloomFilter(1);
+        final SimpleBloomFilter<Number160> contentBloomFilter = message.bloomFilter(2);
         final Integer returnNr = message.intAt(0);
         final int limit = returnNr == null ? -1 : returnNr;
         final boolean ascending = isAscending(message);
         final boolean isRange = contentKeys != null && returnNr != null;
         final boolean isCollection = contentKeys != null && returnNr == null;
         final boolean isBloomFilterAnd = isBloomFilterAnd(message);
-        final NavigableMap<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
-                versionBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
+        final NavigableMap<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentKeyBloomFilter,
+                versionBloomFilter, contentBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
         responseMessage.setDataMap(new DataMap(result));
         return responseMessage;
     }
 
 	private NavigableMap<Number640, Data> doGet(final Number160 locationKey, final Number160 domainKey,
-            final KeyCollection contentKeys, final SimpleBloomFilter<Number160> contentBloomFilter,
-            final SimpleBloomFilter<Number160> versionBloomFilter, final int limit, final boolean ascending,
-            final boolean isRange, final boolean isCollection, final boolean isBloomFilterAnd) {
+            final KeyCollection contentKeys, final SimpleBloomFilter<Number160> contentKeyBloomFilter,
+            final SimpleBloomFilter<Number160> versionBloomFilter, final SimpleBloomFilter<Number160> contentBloomFilter, 
+            final int limit, final boolean ascending, final boolean isRange, final boolean isCollection, 
+            final boolean isBloomFilterAnd) {
 	    final NavigableMap<Number640, Data> result;
         if (isCollection) {
             result = new TreeMap<Number640, Data>();
@@ -870,10 +902,10 @@ public class StorageRPC extends DispatchHandler {
             Number640 max = iterator.next();
             result = storageLayer.get(min, max, limit, ascending);
 
-        } else if (contentBloomFilter != null || versionBloomFilter != null) {
+        } else if (contentKeyBloomFilter != null && versionBloomFilter != null && contentBloomFilter !=null ) {
             Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
             Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-            result = storageLayer.get(min, max, contentBloomFilter, versionBloomFilter, limit, ascending, isBloomFilterAnd);
+            result = storageLayer.get(min, max, contentKeyBloomFilter, versionBloomFilter, contentBloomFilter, limit, ascending, isBloomFilterAnd);
         } else {
             // get all
             Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
@@ -907,8 +939,9 @@ public class StorageRPC extends DispatchHandler {
         final Number160 locationKey = message.key(0);
         final Number160 domainKey = message.key(1);
         final KeyCollection contentKeys = message.keyCollection(0);
-        final SimpleBloomFilter<Number160> contentBloomFilter = message.bloomFilter(0);
+        final SimpleBloomFilter<Number160> contentKeyBloomFilter = message.bloomFilter(0);
         final SimpleBloomFilter<Number160> versionBloomFilter = message.bloomFilter(1);
+        final SimpleBloomFilter<Number160> contentBloomFilter = message.bloomFilter(2);
         final Integer returnNr = message.intAt(0);
         final int limit = returnNr == null ? -1 : returnNr;
         final boolean ascending = isAscending(message);
@@ -916,18 +949,42 @@ public class StorageRPC extends DispatchHandler {
         final boolean isCollection = contentKeys != null && returnNr == null;
         final boolean isBloomFilterAnd = isBloomFilterAnd(message);
         final boolean isReturnBloomfilter = message.command() == RPC.Commands.DIGEST_BLOOMFILTER.getNr();
+        final boolean isReturnAllBloomfilter = message.command() == RPC.Commands.DIGEST_ALL_BLOOMFILTER.getNr();
         final boolean isReturnMetaValues = message.command() == RPC.Commands.DIGEST_META_VALUES.getNr();
-        if(isReturnMetaValues) {
-        	final NavigableMap<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentBloomFilter,
-                    versionBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
-        	DataMap dataMap = new DataMap(result, true);
-        	responseMessage.setDataMap(dataMap);
+        if(isReturnMetaValues || isReturnAllBloomfilter) {
+        	final NavigableMap<Number640, Data> result = doGet(locationKey, domainKey, contentKeys, contentKeyBloomFilter,
+                    versionBloomFilter, contentBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
+        	if(!isReturnAllBloomfilter) {
+        		DataMap dataMap = new DataMap(result, true);
+        		responseMessage.setDataMap(dataMap);
+        	} else {
+        		SimpleBloomFilter<Number160> sbfContentKey = factory.createContentKeyBloomFilter();
+                SimpleBloomFilter<Number160> sbfVersion = factory.createVersionKeyBloomFilter();
+                SimpleBloomFilter<Number160> sbfContent = factory.createContentBloomFilter();
+                
+                for (Map.Entry<Number640, Data> entry : result.entrySet()) {
+                	sbfContentKey.add(entry.getKey().contentKey());
+                	sbfVersion.add(entry.getKey().versionKey());
+                	sbfContent.add(entry.getValue().hash());
+                }
+                responseMessage.bloomFilter(sbfContentKey);
+                responseMessage.bloomFilter(sbfVersion);
+                responseMessage.bloomFilter(sbfContent);
+        	}
         } else {
-        	final DigestInfo digestInfo = doDigest(locationKey, domainKey, contentKeys, contentBloomFilter,
+        	final DigestInfo digestInfo = doDigest(locationKey, domainKey, contentKeys, contentKeyBloomFilter,
         			versionBloomFilter, limit, ascending, isRange, isCollection, isBloomFilterAnd);
         	if (isReturnBloomfilter) {
-                responseMessage.bloomFilter(digestInfo.contentKeyBloomFilter(factory));
-                responseMessage.bloomFilter(digestInfo.versionKeyBloomFilter(factory));
+        		SimpleBloomFilter<Number160> sbfContentKey = factory.createContentKeyBloomFilter();
+                SimpleBloomFilter<Number160> sbfVersion = factory.createVersionKeyBloomFilter();
+                
+                for (Number640 key : digestInfo.mapDigests().keySet()) {
+                	sbfContentKey.add(key.contentKey());
+                	sbfVersion.add(key.versionKey());
+                }
+                responseMessage.bloomFilter(sbfContentKey);
+                responseMessage.bloomFilter(sbfVersion);
+                responseMessage.bloomFilter(FULL_FILTER);
             } else {
                 responseMessage.keyMap640Keys(new KeyMap640Keys(digestInfo.digests()));
             }
@@ -938,7 +995,7 @@ public class StorageRPC extends DispatchHandler {
 
 	private DigestInfo doDigest(
             final Number160 locationKey, final Number160 domainKey, final KeyCollection contentKeys,
-            final SimpleBloomFilter<Number160> contentBloomFilter,
+            final SimpleBloomFilter<Number160> contentKeyBloomFilter,
             final SimpleBloomFilter<Number160> versionBloomFilter, final int limit, final boolean ascending,
             final boolean isRange, final boolean isCollection, final boolean isBloomFilterAnd) {
 	    final DigestInfo digestInfo;
@@ -950,9 +1007,9 @@ public class StorageRPC extends DispatchHandler {
             Number640 min = iterator.next();
             Number640 max = iterator.next();
             digestInfo = storageLayer.digest(min, max, limit, ascending);
-        } else if (contentBloomFilter != null || versionBloomFilter != null) {
+        } else if (contentKeyBloomFilter != null || versionBloomFilter != null) {
             final Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
-            digestInfo = storageLayer.digest(locationAndDomainKey, contentBloomFilter,
+            digestInfo = storageLayer.digest(locationAndDomainKey, contentKeyBloomFilter,
             		versionBloomFilter, limit, ascending, isBloomFilterAnd);
         } else {
             // get all

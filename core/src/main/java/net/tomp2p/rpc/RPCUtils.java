@@ -13,7 +13,10 @@ public class RPCUtils {
 		byte[] bytes = new byte[(bitSet.length() + 7) / 8];
 		for (int i = 0; i < bitSet.length(); i++) {
 			if (bitSet.get(i)) {
-				bytes[bytes.length - i / 8 - 1] |= 1 << (i % 8);
+				//big endian
+				//bytes[bytes.length - i / 8 - 1] |= 1 << (i % 8);
+				//litle endian
+				bytes[i/8] |= 1 << (7 - i % 8);
 			}
 		}
 		return bytes;
@@ -28,7 +31,10 @@ public class RPCUtils {
 	public static BitSet fromByteArray(byte[] bytes) {
 		BitSet bits = new BitSet();
 		for (int i = 0; i < bytes.length * 8; i++) {
-			if ((bytes[bytes.length - i / 8 - 1] & (1 << (i % 8))) > 0) {
+			//big endian
+			//if ((bytes[bytes.length - i / 8 - 1] & (1 << (i % 8))) > 0) {
+			//litle endian
+			if ((bytes[i/8] & (1 << (7 - i % 8))) > 0) {
 				bits.set(i);
 			}
 		}

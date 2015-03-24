@@ -24,8 +24,8 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message> {
 	private static final int POSITION_ZERO = 0;
 	private static final Logger LOG = LoggerFactory.getLogger(DuplicatesHandler.class);
 	private final Dispatcher dispatcher;
-	private int messageId = 0;
-	private boolean first = true;
+	private volatile int messageId = 0;
+	private volatile boolean first = true;
 
 	public DuplicatesHandler(final Dispatcher dispatcher) {
 		this.dispatcher = dispatcher;

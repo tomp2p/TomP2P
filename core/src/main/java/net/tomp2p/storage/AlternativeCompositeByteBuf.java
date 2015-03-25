@@ -22,6 +22,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufProcessor;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.DuplicatedByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.SlicedByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -59,8 +60,16 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  *
  */
 public class AlternativeCompositeByteBuf extends ByteBuf {
+	
+	public static final PooledByteBufAllocator POOLED_DIRECT =
+            new PooledByteBufAllocator(true);
+	public static final PooledByteBufAllocator POOLED_HEAP =
+            new PooledByteBufAllocator(false);
+	public static final UnpooledByteBufAllocator UNPOOLED_DIRECT =
+            new UnpooledByteBufAllocator(true);
+	public static final UnpooledByteBufAllocator UNPOOLED_HEAP =
+            new UnpooledByteBufAllocator(false);
 
-	private static final ByteBufAllocator ALLOC = UnpooledByteBufAllocator.DEFAULT;
 	private static final ByteBuffer FULL_BYTEBUFFER = (ByteBuffer) ByteBuffer
 			.allocate(1).position(1);
 
@@ -2086,29 +2095,12 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 			boolean direct, ByteBuf... buffers) {
 		return new AlternativeCompositeByteBuf(alloc, direct, buffers);
 	}
-
-	public static AlternativeCompositeByteBuf compBuffer() {
-		return compBuffer(ALLOC, false);
-	}
-
-	public static AlternativeCompositeByteBuf compDirectBuffer() {
-		return compBuffer(ALLOC, true);
-	}
-	
-	public static AlternativeCompositeByteBuf compDirectBuffer(ByteBuf... buffers) {
-		return compBuffer(ALLOC, true, buffers);
-	}
 	
 	public static AlternativeCompositeByteBuf compDirectBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
 		return compBuffer(alloc, true, buffers);
 	}
 
-	public static AlternativeCompositeByteBuf compBuffer(ByteBuf... buffers) {
-		return compBuffer(ALLOC, false, buffers);
-	}
-
 	public static AlternativeCompositeByteBuf compBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
 		return compBuffer(alloc, false, buffers);
 	}
-
 }

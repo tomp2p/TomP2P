@@ -203,7 +203,7 @@ public class SyncRPC extends DispatchHandler {
                     // get the checksums
                 	// TODO: don't copy data, toBytes does a copy!
                     List<Checksum> checksums = RSync.checksums(data.toBytes(), blockSize);
-                    AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
+                    AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
                     DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().versionKey(), data.hash(), abuf);
                     //here we can release this buffer as encodeChecksum calls retain
                     abuf.release();
@@ -217,7 +217,7 @@ public class SyncRPC extends DispatchHandler {
             				get(entry.getKey().minVersionKey(), entry.getKey().maxVersionKey(), 1, false).lastEntry();
             		// TODO: don't copy data, toBytes does a copy!
             		List<Checksum> checksums = RSync.checksums(latest.getValue().toBytes(), blockSize);
-            		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
+            		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
                     DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().versionKey(), 
                     		latest.getValue().hash(), abuf);
                     //here we can release this buffer as encodeChecksum calls retain

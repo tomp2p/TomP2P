@@ -17,10 +17,10 @@
 package net.tomp2p.connection;
 
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.UnpooledByteBufAllocator;
 
 import java.net.InetAddress;
+
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 /**
  * The class that stores the limits for the resource reservation.
@@ -29,6 +29,8 @@ import java.net.InetAddress;
  * 
  */
 public class ChannelClientConfiguration {
+	
+	
 
     private int maxPermitsPermanentTCP;
     private int maxPermitsUDP;
@@ -41,7 +43,8 @@ public class ChannelClientConfiguration {
     private InetAddress senderUDP;
     private InetAddress senderTCP;
     
-    private ByteBufAllocator byteBufAllocator;
+    private boolean enablePool = false;
+    private boolean enableHeap = false;
 
     /**
      * @return The maximum number of permanent (long-lived) connections
@@ -164,19 +167,41 @@ public class ChannelClientConfiguration {
     }
 	
 	public ChannelClientConfiguration byteBufPool() {
-		return byteBufPool(true);
+		byteBufPool(true);
+		return this;
 	}
 	
-	public ChannelClientConfiguration byteBufPool(boolean enable) {
-		if(enable) {
-			byteBufAllocator = PooledByteBufAllocator.DEFAULT;
-		} else {
-			byteBufAllocator = UnpooledByteBufAllocator.DEFAULT;
-		}
+	public ChannelClientConfiguration byteBufPool(boolean enablePool) {
+		this.enablePool = enablePool;
+		return this;
+	}
+	
+	public ChannelClientConfiguration byteBufHeap() {
+		byteBufHeap(true);
+		return this;
+	}
+	
+	public ChannelClientConfiguration byteBufHeap(boolean enableHeap) {
+		this.enableHeap = enableHeap;
+		return this;
+	}
+	
+	
+	public ChannelClientConfiguration byteBufAllocator(boolean enablePool, boolean enableHeap) {
+		this.enableHeap = enableHeap;
+		this.enablePool = enablePool;
 		return this;
 	}
 
 	public ByteBufAllocator byteBufAllocator() {
-		return byteBufAllocator;
+		if(enableHeap && enablePool) {
+			return AlternativeCompositeByteBuf.POOLED_HEAP;
+		} else if (!enableHeap && enablePool) {
+			return AlternativeCompositeByteBuf.POOLED_DIRECT;
+		} else if (enableHeap && !enablePool) {
+			return AlternativeCompositeByteBuf.UNPOOLED_HEAP;
+		}  else {
+			return AlternativeCompositeByteBuf.UNPOOLED_DIRECT;
+		}
 	}
 }

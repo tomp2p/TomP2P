@@ -1,6 +1,7 @@
 package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
@@ -87,9 +88,12 @@ public class Decoder {
 	private Content lastContent = null;
 
 	private final SignatureFactory signatureFactory;
+	
+	private final ByteBufAllocator byteBufAllocator;
 
-	public Decoder(SignatureFactory signatureFactory) {
+	public Decoder(SignatureFactory signatureFactory, final ByteBufAllocator byteBufAllocator) {
 		this.signatureFactory = signatureFactory;
+		this.byteBufAllocator = byteBufAllocator;
 	}
 
 	public boolean decode(ChannelHandlerContext ctx, final ByteBuf buf, InetSocketAddress recipient,
@@ -505,7 +509,7 @@ public class Decoder {
 					}
 				}
 				
-				ByteBuf buf2 = AlternativeCompositeByteBuf.compBuffer(buffer.toByteBufs());
+				ByteBuf buf2 = AlternativeCompositeByteBuf.compBuffer(byteBufAllocator, buffer.toByteBufs());
 				message.buffer(new Buffer(buf2, bufferSize));
 				lastContent = contentTypes.poll();
 				bufferSize = -1;

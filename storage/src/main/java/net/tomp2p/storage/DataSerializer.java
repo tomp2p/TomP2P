@@ -49,7 +49,7 @@ public class DataSerializer implements Serializer<Data>, Serializable {
 	}
 
 	private void serializeMapDB(DataOutput out, Data value) throws IOException {
-	    AlternativeCompositeByteBuf acb = AlternativeCompositeByteBuf.compBuffer();
+	    AlternativeCompositeByteBuf acb = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 	    // store data to disk
 	    // header first
 	    value.encodeHeader(acb, signatureFactory);
@@ -79,7 +79,7 @@ public class DataSerializer implements Serializer<Data>, Serializable {
 	    try {
 	    	file = new RandomAccessFile(new File(path, hash.toString()), "rw");
 	    	rwChannel = file.getChannel();
-	    	AlternativeCompositeByteBuf acb = AlternativeCompositeByteBuf.compBuffer();
+	    	AlternativeCompositeByteBuf acb = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 	    	// store data to disk
 	    	// header first
 	    	value.encodeHeader(acb, signatureFactory);

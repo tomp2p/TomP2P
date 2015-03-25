@@ -25,7 +25,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 	private int lastId = 0;
 
 	public TomP2PCumulationTCP(final SignatureFactory signatureFactory, ByteBufAllocator byteBufAllocator) {
-		decoder = new Decoder(signatureFactory);
+		decoder = new Decoder(signatureFactory, byteBufAllocator);
 		this.byteBufAllocator = byteBufAllocator;
 	}
 

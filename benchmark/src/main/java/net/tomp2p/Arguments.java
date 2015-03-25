@@ -35,4 +35,15 @@ public final class Arguments {
 	public String getSuffix() {
 		return suffix;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder("Arguments [bmArg = ")
+        .append(bmArg)
+        .append(", nrWarmups = ").append(nrWarmups)
+        .append(", nrRepetitions = ").append(nrRepetitions)
+        .append(", resultsDir = ").append(resultsDir)
+        .append(", suffix = ").append(suffix);
+		return sb.toString();
+	}
 }

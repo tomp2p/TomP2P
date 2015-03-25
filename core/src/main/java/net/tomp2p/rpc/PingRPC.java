@@ -296,7 +296,7 @@ public class PingRPC extends DispatchHandler {
 				}
 			}
 		};
-
+		Utils.addReleaseListener(channelCreator, futureResponse);
 		final ChannelFuture cF = channelCreator.createUDP(false,
 				peer.connectionBean().sender().configureHandlers(inbound, futureResponse, 30, false), futureResponse);
 		cF.addListener(new GenericFutureListener<ChannelFuture>() {

@@ -1,8 +1,5 @@
 package net.tomp2p.holep;
 
-import java.util.LinkedList;
-import java.util.Queue;
-
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -27,8 +24,8 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message> {
 	private static final int POSITION_ZERO = 0;
 	private static final Logger LOG = LoggerFactory.getLogger(DuplicatesHandler.class);
 	private final Dispatcher dispatcher;
-	private int messageId = 0;
-	private boolean first = true;
+	private volatile int messageId = 0;
+	private volatile boolean first = true;
 
 	public DuplicatesHandler(final Dispatcher dispatcher) {
 		this.dispatcher = dispatcher;
@@ -48,6 +45,7 @@ public class DuplicatesHandler extends SimpleChannelInboundHandler<Message> {
 				LOG.debug("message with original messageId = " + messageId + " has been received!");
 			} else if (messageId == msg.intAt(POSITION_ZERO)) {
 				LOG.trace("message with original messageId = " + messageId + " has been ignored!");
+					ctx.close();
 			} else {
 				LOG.debug("Message received via hole punching will be forwarded to the Dispatcher!");
 				dispatcher.channelRead(ctx, msg);

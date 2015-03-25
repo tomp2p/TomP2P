@@ -2,20 +2,11 @@ package net.tomp2p.holep.strategy;
 
 import io.netty.channel.ChannelFuture;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.List;
 
-import net.tomp2p.connection.DefaultConnectionConfiguration;
-import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Utils;
 
 public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 
@@ -54,20 +45,20 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 //		});
 	}
 
-	private void guessPortsInitiatingPeer(final Message initMessage, final List<ChannelFuture> channelFutures, int startingPort)
-			throws IOException {
-		final List<Integer> portList = new ArrayList<Integer>(channelFutures.size());
-		for (int i = 0; i < channelFutures.size(); i++) {
-			final int guessedPort = startingPort + (2 * i);
-			final InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
-			portMappings.add(new Pair<Integer, Integer>(guessedPort, inetSocketAddress.getPort()));
-			portList.add(guessedPort);
-		}
-		initMessage.intValue(portList.size());
-
-		// send all ports via Buffer
-		initMessage.buffer(encodePortList(portList));
-	}
+//	private void guessPortsInitiatingPeer(final Message initMessage, final List<ChannelFuture> channelFutures, int startingPort)
+//			throws IOException {
+//		final List<Integer> portList = new ArrayList<Integer>(channelFutures.size());
+//		for (int i = 0; i < channelFutures.size(); i++) {
+//			final int guessedPort = startingPort + (2 * i);
+//			final InetSocketAddress inetSocketAddress = (InetSocketAddress) channelFutures.get(i).channel().localAddress();
+//			portMappings.add(new Pair<Integer, Integer>(guessedPort, inetSocketAddress.getPort()));
+//			portList.add(guessedPort);
+//		}
+//		initMessage.intValue(portList.size());
+//
+//		// send all ports via Buffer
+//		initMessage.buffer(encodePortList(portList));
+//	}
 
 	@Override
 	protected void doPortGuessingTargetPeer(final Message replyMessage, final FutureDone<Message> replyMessageFuture2) {
@@ -98,20 +89,20 @@ public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 //			}
 //		});
 	}
-
-	private void guessPortsTargetPeer(final Message replyMessage, int startingPort) throws ClassNotFoundException, IOException {
-		@SuppressWarnings("unchecked")
-		final List<Integer> remotePorts = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());
-		final List<Integer> replyPorts = new ArrayList<Integer>(channelFutures.size() * 2);
-		for (int i = 0; i < channelFutures.size(); i++) {
-			final int guessedPort = startingPort + (2 * i);
-			portMappings.add(new Pair<Integer, Integer>(remotePorts.get(i), startingPort + i));
-			replyPorts.add(remotePorts.get(i));
-			replyPorts.add(guessedPort);
-		}
-		replyMessage.intValue(replyPorts.size());
-
-		// send all ports via Buffer
-		replyMessage.buffer(encodePortList(replyPorts));
-	}
+//
+//	private void guessPortsTargetPeer(final Message replyMessage, int startingPort) throws ClassNotFoundException, IOException {
+//		@SuppressWarnings("unchecked")
+//		final List<Integer> remotePorts = (List<Integer>) Utils.decodeJavaObject(originalMessage.buffer(0).buffer());
+//		final List<Integer> replyPorts = new ArrayList<Integer>(channelFutures.size() * 2);
+//		for (int i = 0; i < channelFutures.size(); i++) {
+//			final int guessedPort = startingPort + (2 * i);
+//			portMappings.add(new Pair<Integer, Integer>(remotePorts.get(i), startingPort + i));
+//			replyPorts.add(remotePorts.get(i));
+//			replyPorts.add(guessedPort);
+//		}
+//		replyMessage.intValue(replyPorts.size());
+//
+//		// send all ports via Buffer
+//		replyMessage.buffer(encodePortList(replyPorts));
+//	}
 }

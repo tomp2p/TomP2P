@@ -3,7 +3,6 @@ package net.tomp2p.holep;
 import java.util.ArrayList;
 
 import net.tomp2p.connection.Dispatcher;
-import net.tomp2p.connection.HolePInitiator;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -72,16 +71,20 @@ public class HolePRPC extends DispatchHandler {
 	 * @param message
 	 * @param responder
 	 */
+	@SuppressWarnings("static-access")
 	private void handleHolePunch(final Message message, final Responder responder) {
 		final NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
-		//TODO jwa does this work?
 		final HolePStrategy holePuncher = type.holePuncher(peer, message.intAt(0), peer.connectionBean().DEFAULT_UDP_IDLE_SECONDS, message);
 		final FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
+		//TODO jwa change log to debug again
+		LOG.debug("Hole Punch attempt received. Start reply procedure.");
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
 			@Override
 			public void operationComplete(FutureDone<Message> future) throws Exception {
 				if (future.isSuccess()) {
+					//TODO jwa change log to debug again
+					LOG.debug("Reply procedure successfully done. Now replying port information to HolePInitiator.");
 					responder.response(future.object());
 				} else {
 					handleFail(message, responder, "Fail while initiating the hole punching");

@@ -15,6 +15,14 @@
     </encoder>
   </appender>
   
+  <logger name="net.tomp2p.holep.strategy.AbstractHolePStrategy" level="TRACE"/>
+  <logger name="net.tomp2p.holep.strategy.PortPreservingStrategy" level="TRACE"/>
+  <logger name="net.tomp2p.holep.NATTypeDetection" level="TRACE"/>
+  <logger name="net.tomp2p.holep.HolePInitiatorImpl" level="TRACE"/>
+  <logger name="net.tomp2p.holep.HolePRPC" level="TRACE"/>
+  <logger name="net.tomp2p.holep.HolePScheduler" level="TRACE"/>
+  <logger name="net.tomp2p.holep.DuplicatesHandler" level="TRACE"/>
+  
   <!--  <logger name="net" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.connection.ChannelCreator" level="TRACE"/> -->
@@ -68,7 +76,7 @@
   
   <!--  <logger name="net.tomp2p.utils.ConcurrentCacheMap" level="TRACE"/> -->
   
-  <logger name="net.tomp2p.nat.RelayReply" level="DEBUG"/>
+  <!--  <logger name="net.tomp2p.nat.RelayReply" level="DEBUG"/> -->
   
   <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF. 
        See http://logback.qos.ch/manual/architecture.html for more information-->

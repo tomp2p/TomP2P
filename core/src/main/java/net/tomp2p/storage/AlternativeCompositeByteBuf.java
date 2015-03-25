@@ -17,6 +17,7 @@
 
 package net.tomp2p.storage;
 
+import io.netty.buffer.AbstractByteBufAllocator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufProcessor;
@@ -63,12 +64,12 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	
 	public static final PooledByteBufAllocator POOLED_DIRECT =
             new PooledByteBufAllocator(true);
-	public static final PooledByteBufAllocator POOLED_HEAP =
-            new PooledByteBufAllocator(false);
+	public static final PooledHeapByteBufAlloc POOLED_HEAP =
+            new AlternativeCompositeByteBuf.PooledHeapByteBufAlloc();
 	public static final UnpooledByteBufAllocator UNPOOLED_DIRECT =
             new UnpooledByteBufAllocator(true);
-	public static final UnpooledByteBufAllocator UNPOOLED_HEAP =
-            new UnpooledByteBufAllocator(false);
+	public static final UnpooledHeapByteBufAlloc UNPOOLED_HEAP =
+            new AlternativeCompositeByteBuf.UnpooledHeapByteBufAlloc();
 
 	private static final ByteBuffer FULL_BYTEBUFFER = (ByteBuffer) ByteBuffer
 			.allocate(1).position(1);
@@ -2102,5 +2103,75 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 
 	public static AlternativeCompositeByteBuf compBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
 		return compBuffer(alloc, false, buffers);
+	}
+	
+	private static class UnpooledHeapByteBufAlloc extends AbstractByteBufAllocator {
+		
+		private final static UnpooledByteBufAllocator UNPOOLED_HEAP_ORIG = new UnpooledByteBufAllocator(false);
+
+		@Override
+	    protected ByteBuf newHeapBuffer(int initialCapacity, int maxCapacity) {
+	        return UNPOOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
+	    }
+
+	    @Override
+	    protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
+	        return UNPOOLED_HEAP_ORIG.directBuffer(initialCapacity, maxCapacity);
+	    }
+
+	    @Override
+	    public boolean isDirectBufferPooled() {
+	        return false;
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer() {
+	    	return UNPOOLED_HEAP_ORIG.heapBuffer();
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer(int initialCapacity) {
+	    	return UNPOOLED_HEAP_ORIG.heapBuffer(initialCapacity);
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer(int initialCapacity, int maxCapacity) {
+	        return UNPOOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
+	    }		
+	}
+	
+	private static class PooledHeapByteBufAlloc extends AbstractByteBufAllocator {
+		
+		private final static PooledByteBufAllocator POOLED_HEAP_ORIG = new PooledByteBufAllocator(false);
+
+		@Override
+	    protected ByteBuf newHeapBuffer(int initialCapacity, int maxCapacity) {
+	        return POOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
+	    }
+
+	    @Override
+	    protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
+	        return POOLED_HEAP_ORIG.directBuffer(initialCapacity, maxCapacity);
+	    }
+
+	    @Override
+	    public boolean isDirectBufferPooled() {
+	        return true;
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer() {
+	    	return POOLED_HEAP_ORIG.heapBuffer();
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer(int initialCapacity) {
+	    	return POOLED_HEAP_ORIG.heapBuffer(initialCapacity);
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer(int initialCapacity, int maxCapacity) {
+	        return POOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
+	    }		
 	}
 }

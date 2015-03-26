@@ -8,19 +8,20 @@ import java.io.OutputStreamWriter;
 
 public class Inbox {
 
-	// [bmArg] [nrWarmups] [nrRepetitions] [resultsDir] ([suffix])
+	// [bmArg] [type] [nrWarmups] [nrRepetitions] [resultsDir] ([suffix])
 	public static void main(String[] args) throws IOException {
 
-		if (args.length < 4) {
+		if (args.length < 5) {
 			System.err.println("Argument(s) missing.");
 			System.exit(-1);
 		}
 		String bmArg = args[0];
-		int nrWarmups = Integer.parseInt(args[1]);
-		int nrRepetitions = Integer.parseInt(args[2]);
-		String resultsDir = args[3];
-		String suffix = args.length >= 5 ? args[4] : "";
-		Arguments arguments = new Arguments(bmArg, nrWarmups, nrRepetitions, resultsDir, suffix);
+		String type = args[1];
+		int nrWarmups = Integer.parseInt(args[2]);
+		int nrRepetitions = Integer.parseInt(args[3]);
+		String resultsDir = args[4];
+		String suffix = args.length >= 6 ? args[5] : "";
+		Arguments arguments = new Arguments(bmArg, type, nrWarmups, nrRepetitions, resultsDir, suffix);
 
 		try {
 			if (nrRepetitions < 1) {
@@ -40,12 +41,18 @@ public class Inbox {
 	private static void execute(Arguments args) throws Exception {
 
 		System.out.println(String.format("Argument: %s ", args.getBmArg()));
-		printStopwatchProperties();
 
-		double[] results;
+		double[] results = null;
 		switch (args.getBmArg()) {
 			case "bootstrap":
-				results = new BootstrapBenchmark().benchmark(args);
+				switch (args.getType()) {
+					case "cpu":
+						results = new BootstrapProfiler().profileCpu(args);
+						break;
+					case "memory":
+						results = new BootstrapProfiler().profileMemory(args);
+						break;
+				}
 				break;
 			default:
 				throw new IllegalArgumentException("No valid benchmark argument.");
@@ -55,28 +62,25 @@ public class Inbox {
 		writeFile(args, results);
 	}
 
-	private static void printStopwatchProperties() {
-
-	}
-
 	private static void printResults(double[] results) {
 		System.out.println("-------------------- RESULTS --------------------");
 		for (double res : results) {
 			System.out.println(res);
 		}
-		System.out.printf("Mean: %s ms.\n", Statistics.calculateMean(results));
-		System.out.printf("Variance: %s ms.\n", Statistics.calculateVariance(results));
-		System.out.printf("Standard Deviation: %s ms.\n", Statistics.calculateStdDev(results));
+		System.out.printf("Mean: %s\n", Statistics.calculateMean(results));
+		System.out.printf("Variance: %s\n", Statistics.calculateVariance(results));
+		System.out.printf("Standard Deviation: %s\n", Statistics.calculateStdDev(results));
 		System.out.println("-------------------------------------------------");
 	}
 
 	private static void writeFile(Arguments args, double[] results) throws IOException {
-		File file = new File(args.getResultsDir() + "/" + args.getBmArg() + "_java" + args.getSuffix()
-				+ ".txt");
+		
+		String path = String.format("%s/%s-%s_java%s.txt", args.getResultsDir(), args.getBmArg(), args.getType(), args.getSuffix());
+		File file = new File(path);
 		FileOutputStream fos = new FileOutputStream(file);
 		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 		try {
-			bw.write(String.format("%s, %s", "Iteration", "Java" + args.getSuffix()));
+			bw.write(String.format("%s, %s", "Iteration", "Java" + args.getType() + args.getSuffix()));
 			bw.newLine();
 			for (int i = 0; i < results.length; i++) {
 				bw.write(String.format("%s, %s", i, results[i]));
@@ -85,6 +89,6 @@ public class Inbox {
 		} finally {
 			bw.close();
 		}
-		System.out.printf("Results written to %s.\n", file.getAbsolutePath());
+		System.out.printf("Results written to %s.\n", path);
 	}
 }

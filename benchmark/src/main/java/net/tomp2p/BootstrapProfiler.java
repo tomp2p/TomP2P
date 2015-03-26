@@ -8,7 +8,7 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.utils.InteropRandom;
 
-public class BootstrapBenchmark extends BaseBenchmark {
+public class BootstrapProfiler extends Profiler {
 
 	private static final InteropRandom RND = new InteropRandom(42);
 	private final List<FutureBootstrap> futures = new ArrayList<FutureBootstrap>(NETWORK_SIZE * NETWORK_SIZE);

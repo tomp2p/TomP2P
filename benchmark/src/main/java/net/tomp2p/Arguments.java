@@ -3,15 +3,17 @@ package net.tomp2p;
 public final class Arguments {
 
 	private final String bmArg;
-	private final int nrRepetitions;
+	private final String type;
 	private final int nrWarmups;
+	private final int nrRepetitions;
 	private final String resultsDir;
 	private final String suffix;
 	
-	public Arguments(String bmArg, int nrWarmups, int nrRepetitions, String resultsDir, String suffix) {
+	public Arguments(String bmArg, String type, int nrWarmups, int nrRepetitions, String resultsDir, String suffix) {
 		this.bmArg = bmArg;
-		this.nrRepetitions = nrRepetitions;
+		this.type = type;
 		this.nrWarmups = nrWarmups;
+		this.nrRepetitions = nrRepetitions;
 		this.resultsDir = resultsDir;
 		this.suffix = suffix;
 	}
@@ -20,6 +22,10 @@ public final class Arguments {
 		return bmArg;
 	}
 
+	public String getType() {
+		return type;
+	}
+	
 	public int getNrWarmups() {
 		return nrWarmups;
 	}
@@ -40,6 +46,7 @@ public final class Arguments {
 	public String toString() {
 		StringBuilder sb = new StringBuilder("Arguments [bmArg = ")
         .append(bmArg)
+        .append(", type = ").append(type)
         .append(", nrWarmups = ").append(nrWarmups)
         .append(", nrRepetitions = ").append(nrRepetitions)
         .append(", resultsDir = ").append(resultsDir)

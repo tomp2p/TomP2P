@@ -112,6 +112,10 @@ public class BenchmarkUtil {
 		return new Number160(vals);
 	}
 
+	public static void printStopwatchProperties() {
+		// TODO implement
+	}
+	
 	/**
 	 * This helper method receives an "anker object" just to "throw it away".
 	 * This allows such an object to be "used".

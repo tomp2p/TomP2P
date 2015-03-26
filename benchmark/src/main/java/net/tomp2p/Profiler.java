@@ -5,11 +5,13 @@ import java.io.IOException;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.utils.InteropRandom;
 
-public abstract class BaseBenchmark {
+public abstract class Profiler {
 
 	public static final int NETWORK_SIZE = 5;
 	
-	public double[] benchmark(Arguments args) throws Exception {
+	public double[] profileCpu(Arguments args) throws Exception {
+		
+		BenchmarkUtil.printStopwatchProperties();
 		
 		System.out.println("Setting up...");
 		setup();
@@ -19,7 +21,7 @@ public abstract class BaseBenchmark {
 
         BenchmarkUtil.warmupTimer();
         BenchmarkUtil.reclaimResources();
-        System.out.printf("Started Benchmarking with %s warmups, %s repetitions...\n", warmups.length, repetitions.length);
+        System.out.printf("Started benchmarking with %s warmups, %s repetitions...\n", warmups.length, repetitions.length);
         long start;
 
         // warmups
@@ -40,7 +42,7 @@ public abstract class BaseBenchmark {
             repetitions[i] = System.nanoTime() - start;
         }
 
-        System.out.println("Stopped Benchmarking.");
+        System.out.println("Stopped benchmarking.");
 
         // combine warmup and benchmark results
         long[] results = new long[warmups.length + repetitions.length];
@@ -52,6 +54,52 @@ public abstract class BaseBenchmark {
         for (int i = 0; i < results.length; i++)
         {
             resultsD[i] = toMillis(results[i]);
+        }
+        return resultsD;
+	}
+	
+	public double[] profileMemory(Arguments args) throws Exception {
+		
+		Runtime rt = Runtime.getRuntime();
+
+		System.out.println("Setting up...");
+		setup();
+		
+		long[] warmups = new long[args.getNrWarmups()];
+        long[] repetitions = new long[args.getNrRepetitions()];
+
+        BenchmarkUtil.reclaimResources();
+        System.out.printf("Started memory profiling with %s warmups, %s repetitions...\n", warmups.length, repetitions.length);
+
+        // TODO combine memory/repetitions?
+        // warmups
+        for (int i = 0; i < warmups.length; i++)
+        {
+        	System.out.printf("Warmup %s...\n", i);
+            execute();
+            warmups[i] = rt.totalMemory() - rt.freeMemory();
+        }
+        
+        // repetitions
+        for (int i = 0; i < repetitions.length; i++)
+        {
+        	System.out.printf("Repetitions %s...\n", i);
+            execute();
+            repetitions[i] = rt.totalMemory() - rt.freeMemory();
+        }
+
+        System.out.println("Stopped memory profiling.");
+
+        // combine warmup and benchmark results
+        long[] results = new long[warmups.length + repetitions.length];
+        double[] resultsD = new double[results.length];
+        System.arraycopy(warmups, 0, results, 0, warmups.length);
+        System.arraycopy(repetitions, 0, results, warmups.length, repetitions.length);
+        
+        // convert results from bytes to kilobytes
+        for (int i = 0; i < results.length; i++)
+        {
+            resultsD[i] = results[i] / 1000;
         }
         return resultsD;
 	}

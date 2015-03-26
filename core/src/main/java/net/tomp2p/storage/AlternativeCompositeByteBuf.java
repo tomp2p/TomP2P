@@ -78,7 +78,6 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	private final Component EMPTY_COMPONENT = new Component(
 			Unpooled.EMPTY_BUFFER);
 	private final ByteBufAllocator alloc;
-	private final boolean direct;
 
 	private int readerIndex;
 	private int writerIndex;
@@ -107,16 +106,13 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		}
 	}
 
-	public AlternativeCompositeByteBuf(ByteBufAllocator alloc, boolean direct) {
+	public AlternativeCompositeByteBuf(ByteBufAllocator alloc) {
 		this.alloc = alloc;
-		this.direct = direct;
 		leak = leakDetector.open(this);
 	}
 
-	public AlternativeCompositeByteBuf(ByteBufAllocator alloc, boolean direct,
-			ByteBuf... buffers) {
+	public AlternativeCompositeByteBuf(ByteBufAllocator alloc, ByteBuf... buffers) {
 		this.alloc = alloc;
-		this.direct = direct;
 		addComponent(buffers);
 		leak = leakDetector.open(this);
 	}
@@ -286,10 +282,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	private ByteBuf allocBuffer(int capacity) {
-		if (direct) {
-			return alloc().directBuffer(capacity);
-		}
-		return alloc().heapBuffer(capacity);
+		return alloc().buffer(capacity);
 	}
 
 	public AlternativeCompositeByteBuf addComponent(ByteBuf... buffers) {
@@ -361,7 +354,13 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 
 	@Override
 	public boolean isDirect() {
-		return direct;
+		//this is stored in ByteBufAllocator, but I cannot access it
+		if(alloc == UNPOOLED_DIRECT || alloc == POOLED_DIRECT) {
+			return true;
+		} else if (alloc == UNPOOLED_HEAP || alloc == POOLED_HEAP) {
+			return false;
+		}
+		throw new RuntimeException("don't know what to report, Netty does not expose this");
 	}
 
 	@Override
@@ -2092,17 +2091,8 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		return dst.flip().toString();
 	}
 
-	public static AlternativeCompositeByteBuf compBuffer(ByteBufAllocator alloc,
-			boolean direct, ByteBuf... buffers) {
-		return new AlternativeCompositeByteBuf(alloc, direct, buffers);
-	}
-	
-	public static AlternativeCompositeByteBuf compDirectBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
-		return compBuffer(alloc, true, buffers);
-	}
-
 	public static AlternativeCompositeByteBuf compBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
-		return compBuffer(alloc, false, buffers);
+		return new AlternativeCompositeByteBuf(alloc, buffers);
 	}
 	
 	private static class UnpooledHeapByteBufAlloc extends AbstractByteBufAllocator {

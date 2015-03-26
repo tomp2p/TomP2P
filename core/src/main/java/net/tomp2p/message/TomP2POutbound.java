@@ -39,7 +39,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
     	}
         try {
         	boolean done = false;
-            buf = AlternativeCompositeByteBuf.compDirectBuffer(byteBufAllocator, buf);
+            buf = AlternativeCompositeByteBuf.compBuffer(byteBufAllocator, buf);
             
             //null, means create signature
             done = encoder.write(buf, (Message) msg, null);

@@ -43,7 +43,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 
 		try {
 			if (cumulation == null) {
-				cumulation = AlternativeCompositeByteBuf.compDirectBuffer(byteBufAllocator, buf);
+				cumulation = AlternativeCompositeByteBuf.compBuffer(byteBufAllocator, buf);
 			} else {
 				cumulation.addComponent(buf);
 			}

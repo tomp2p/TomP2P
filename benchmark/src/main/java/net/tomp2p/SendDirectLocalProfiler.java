@@ -13,7 +13,7 @@ import net.tomp2p.storage.AlternativeCompositeByteBuf;
 public class SendDirectLocalProfiler extends Profiler {
 
 	private static final int NETWORK_SIZE = 2;
-	private static final int BUFFER_SIZE_BYTES = 64000;
+	private static final int BUFFER_SIZE_BYTES = 1000;
 	private final boolean isForceUdp;
 	private Peer sender;
 	private Peer receiver;
@@ -33,6 +33,7 @@ public class SendDirectLocalProfiler extends Profiler {
 		receiver.rawDataReply(new SampleRawDataReply());
 		FutureChannelCreator fcc = sender.connectionBean().reservation().create(isForceUdp ? 1 : 0, isForceUdp ? 0 : 1);
 		fcc.awaitUninterruptibly();
+		cc = fcc.channelCreator();
 		
 		sendDirectBuilder = new SendDirectBuilder(sender, (PeerAddress) null)
 			.streaming()

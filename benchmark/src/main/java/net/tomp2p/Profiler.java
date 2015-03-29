@@ -53,7 +53,7 @@ public abstract class Profiler {
 	        // convert results from ns to ms
 	        for (int i = 0; i < results.length; i++)
 	        {
-	            resultsD[i] = results[i] / 1000000;
+	            resultsD[i] = (double) (results[i] / (double) 1000000);
 	        }
 	        return resultsD;
 		} finally {
@@ -106,7 +106,7 @@ public abstract class Profiler {
 	        // convert results from bytes to megabytes
 	        for (int i = 0; i < results.length; i++)
 	        {
-	            resultsD[i] = results[i] / 1000000;
+	        	resultsD[i] = (double) (results[i] / (double) 1000000);
 	        }
 	        return resultsD;
 		} finally {

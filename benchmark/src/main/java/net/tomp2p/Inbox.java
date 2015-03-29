@@ -54,6 +54,26 @@ public class Inbox {
 						break;
 				}
 				break;
+			case "send-local-udp":
+				switch (args.getType()) {
+					case "cpu":
+						results = new SendDirectLocalProfiler(true).profileCpu(args);
+						break;
+					case "memory":
+						results = new SendDirectLocalProfiler(true).profileMemory(args);
+						break;
+				}
+				break;
+			case "send-local-tcp":
+				switch (args.getType()) {
+					case "cpu":
+						results = new SendDirectLocalProfiler(false).profileCpu(args);
+						break;
+					case "memory":
+						results = new SendDirectLocalProfiler(false).profileMemory(args);
+						break;
+				}
+				break;
 			default:
 				throw new IllegalArgumentException("No valid benchmark argument.");
 		}

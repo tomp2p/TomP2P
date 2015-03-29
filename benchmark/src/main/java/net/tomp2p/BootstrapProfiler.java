@@ -5,27 +5,31 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.utils.InteropRandom;
 
 public class BootstrapProfiler extends Profiler {
 
-	private static final InteropRandom RND = new InteropRandom(42);
+	private final int NETWORK_SIZE = 5;
 	private final List<FutureBootstrap> futures = new ArrayList<FutureBootstrap>(NETWORK_SIZE * NETWORK_SIZE);
-	private Peer[] network;
 
 	@Override
 	protected void setup() throws IOException {
-		network = setupNetwork(RND);
+		Network = BenchmarkUtil.createNodes(NETWORK_SIZE, Rnd, 9099, false, false);
 	}
 
 	@Override
+	protected void shutdown() throws Exception {
+		if (Network != null && Network[0] != null) {
+			Network[0].shutdown().awaitUninterruptibly();
+		}
+	}
+	
+	@Override
 	protected void execute() {
-		for (int i = 0; i < network.length; i++)
+		for (int i = 0; i < Network.length; i++)
         {
-            for (int j = 0; j < network.length; j++)
+            for (int j = 0; j < Network.length; j++)
             {
-                futures.add(network[i].bootstrap().peerAddress(network[j].peerAddress()).start());
+                futures.add(Network[i].bootstrap().peerAddress(Network[j].peerAddress()).start());
             }
         }
 		for (FutureBootstrap future : futures) {

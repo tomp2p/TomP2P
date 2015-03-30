@@ -250,6 +250,16 @@ public class PeerNAT {
 	}
 
 	public FutureRelayNAT startRelay(final RelayClientConfig relayConfig, BootstrapBuilder bootstrapBuilder) {
+		// TODO jwa discuss with Thomas Bocek
+		
+		// check NAT type for possible Hole Punch
+		if (bootstrapBuilder.bootstrapTo() != null) {
+			PeerAddress[] peerAddresses = bootstrapBuilder.bootstrapTo().toArray(new PeerAddress[bootstrapBuilder.bootstrapTo().size()]);
+			if (peerAddresses.length > 0) {
+				((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).checkNatType(peerAddresses[0]);
+			}
+		}
+		
 		final FutureRelayNAT futureBootstrapNAT = new FutureRelayNAT();
 		return startRelay(relayConfig, futureBootstrapNAT, bootstrapBuilder);
 	}

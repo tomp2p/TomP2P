@@ -4,15 +4,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
-import net.tomp2p.connection.HolePInitiator;
+import net.tomp2p.holep.strategy.NonPreservingSequentialStrategy;
+import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.rpc.RPC;
@@ -20,13 +24,16 @@ import net.tomp2p.utils.Utils;
 
 import org.junit.Test;
 
+// TODO jwa --> maybe delete this class
+
+@SuppressWarnings("rawtypes")
 public class TestPortGuessing extends AbstractTestHoleP {
 
 	private Class[] nonPreservingSeqConstructorParam = new Class[4];
 	private Class[] paramInitiatingPeer = new Class[3];
 	private Class[] paramTargetPeer = new Class[2];
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testHolePunchNonPreservingSequential() {
 
@@ -68,32 +75,32 @@ public class TestPortGuessing extends AbstractTestHoleP {
 		
 		List mockedList2 = mock(List.class);
 		try {
-//			originalMessage = localSetup();
-//			byte[] bytes = Utils.encodeJavaObject(portList);
-//			Buffer byteBuf = new Buffer(Unpooled.wrappedBuffer(bytes));
-//			originalMessage.buffer(byteBuf);
-//			
-//			Class cls = Class.forName("net.tomp2p.holep.strategy.NonPreservingSequentialStrategy");
-//			Constructor constructor = null;
-//			constructor = cls.getConstructor(nonPreservingSeqConstructorParam);
-//			constructor.setAccessible(true);
-//			Object nonPreservingSeqObj = constructor.newInstance(unreachable1, NUMBER_OF_HOLES, IDLE_UDP_SECONDS, originalMessage);
-//			
-//			NonPreservingSequentialStrategy nonPreservingSequentialStrategy = new NonPreservingSequentialStrategy(unreachable1, NUMBER_OF_HOLES, IDLE_UDP_SECONDS, originalMessage);
-//			Class class2 = nonPreservingSequentialStrategy.getClass().getSuperclass();
-//			Field channelF = class2.getDeclaredField("channelFutures");
-//			channelF.setAccessible(true);
-//			channelF.set(class2, (List) new ArrayList<Integer>());
-//			
-//			Class abstractHolePClass = nonPreservingSeqObj.getClass().getSuperclass();
-//			Field channelFutures = abstractHolePClass.getDeclaredField("channelFutures");
-//			channelFutures.setAccessible(true);
-//			Object abstractHolePInstance = abstractHolePClass.newInstance();
-//			channelFutures.set(abstractHolePInstance, mockedList2);
-//			
-//			Method guessPortsTargetPeer = cls.getDeclaredMethod("guessPortsTargetPeer", paramTargetPeer);
-//			guessPortsTargetPeer.setAccessible(true);
-//			guessPortsTargetPeer.invoke(nonPreservingSeqObj, originalMessage, startingPort);
+			originalMessage = localSetup();
+			byte[] bytes = Utils.encodeJavaObject(portList);
+			Buffer byteBuf = new Buffer(Unpooled.wrappedBuffer(bytes));
+			originalMessage.buffer(byteBuf);
+			
+			Class cls = Class.forName("net.tomp2p.holep.strategy.NonPreservingSequentialStrategy");
+			Constructor constructor = null;
+			constructor = cls.getConstructor(nonPreservingSeqConstructorParam);
+			constructor.setAccessible(true);
+			Object nonPreservingSeqObj = constructor.newInstance(unreachable1, unreachable1.peerBean().holePNumberOfHoles(), IDLE_UDP_SECONDS, originalMessage);
+			
+			NonPreservingSequentialStrategy nonPreservingSequentialStrategy = new NonPreservingSequentialStrategy(unreachable1, unreachable1.peerBean().holePNumberOfHoles(), IDLE_UDP_SECONDS, originalMessage);
+			Class class2 = nonPreservingSequentialStrategy.getClass().getSuperclass();
+			Field channelF = class2.getDeclaredField("channelFutures");
+			channelF.setAccessible(true);
+			channelF.set(class2, (List) new ArrayList<Integer>());
+			
+			Class abstractHolePClass = nonPreservingSeqObj.getClass().getSuperclass();
+			Field channelFutures = abstractHolePClass.getDeclaredField("channelFutures");
+			channelFutures.setAccessible(true);
+			Object abstractHolePInstance = abstractHolePClass.newInstance();
+			channelFutures.set(abstractHolePInstance, mockedList2);
+			
+			Method guessPortsTargetPeer = cls.getDeclaredMethod("guessPortsTargetPeer", paramTargetPeer);
+			guessPortsTargetPeer.setAccessible(true);
+			guessPortsTargetPeer.invoke(nonPreservingSeqObj, originalMessage, startingPort);
 //			
 		} catch (Exception e) {
 			handleFail(e);

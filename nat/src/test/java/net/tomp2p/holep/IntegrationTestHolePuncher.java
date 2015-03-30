@@ -23,24 +23,4 @@ public class IntegrationTestHolePuncher extends AbstractTestHoleP {
 		System.err.println("testRelayFallback() start!");
 		doTest();
 	}
-	
-	private void doTest() throws ClassNotFoundException, IOException {
-		final String requestString = "This is a test String";
-		final String replyString = "SUCCESS HIT";
-
-		unreachable2.objectDataReply(new ObjectDataReply() {
-			@Override
-			public Object reply(PeerAddress sender, Object request) throws Exception {
-				if (requestString.equals((String) request)) {
-					System.err.println("received: " + (String) request);
-				}
-				return replyString;
-			}
-		});
-
-		FutureDirect fd = unreachable1.sendDirect(unreachable2.peerAddress()).object(requestString).forceUDP(true).start();
-		fd.awaitUninterruptibly();
-		Assert.assertTrue(fd.isSuccess());
-		Assert.assertEquals(replyString, (String) fd.object());
-	}
 }

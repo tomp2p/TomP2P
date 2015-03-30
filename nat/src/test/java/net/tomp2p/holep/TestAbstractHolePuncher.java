@@ -29,7 +29,7 @@ public class TestAbstractHolePuncher {
 	static final int IDLE_UDP_SECONDS = 30;
 	static final int NUMBER_OF_HOLES = 3;
 	
-	// java reflection parameters
+	// java reflection classes
 	Class noparams[] = {};
 	Class[] paramCCF = new Class[3];
 	Class[] paramHPC = new Class[4];

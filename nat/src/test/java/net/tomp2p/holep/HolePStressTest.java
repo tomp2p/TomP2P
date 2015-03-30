@@ -17,7 +17,7 @@ import ch.qos.logback.classic.Level;
 public class HolePStressTest extends AbstractTestHoleP {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePStressTest.class);
-	private static final int NUMBER_OF_MESSAGES = 1000;
+	private static final int NUMBER_OF_MESSAGES = 10000;
 	
 	@Test
 	public void test() throws ClassNotFoundException, IOException {

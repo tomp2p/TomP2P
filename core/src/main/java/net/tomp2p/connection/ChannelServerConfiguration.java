@@ -17,8 +17,7 @@
 package net.tomp2p.connection;
 
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 
 /**
@@ -55,7 +54,8 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     
     private int heartBeatMillis = PeerConnection.HEART_BEAT_MILLIS;
     
-    private ByteBufAllocator byteBufAllocator;
+    private boolean enablePool = false;
+    private boolean enableHeap = false;
 
     /**
      * @return True if this peer is behind a firewall and cannot be accessed directly
@@ -283,21 +283,43 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
 	public int slowResponseTimeoutSeconds() {
 		return slowResponseTimeoutSeconds;
 	}
-
+	
 	public ChannelServerConfiguration byteBufPool() {
-		return byteBufPool(true);
+		byteBufPool(true);
+		return this;
 	}
 	
-	public ChannelServerConfiguration byteBufPool(boolean enable) {
-		if(enable) {
-			byteBufAllocator = PooledByteBufAllocator.DEFAULT;
-		} else {
-			byteBufAllocator = UnpooledByteBufAllocator.DEFAULT;
-		}
+	public ChannelServerConfiguration byteBufPool(boolean enablePool) {
+		this.enablePool = enablePool;
+		return this;
+	}
+	
+	public ChannelServerConfiguration byteBufHeap() {
+		byteBufHeap(true);
+		return this;
+	}
+	
+	public ChannelServerConfiguration byteBufHeap(boolean enableHeap) {
+		this.enableHeap = enableHeap;
+		return this;
+	}
+	
+	
+	public ChannelServerConfiguration byteBufAllocator(boolean enablePool, boolean enableHeap) {
+		this.enableHeap = enableHeap;
+		this.enablePool = enablePool;
 		return this;
 	}
 
 	public ByteBufAllocator byteBufAllocator() {
-		return byteBufAllocator;
+		if(enableHeap && enablePool) {
+			return AlternativeCompositeByteBuf.POOLED_HEAP;
+		} else if (!enableHeap && enablePool) {
+			return AlternativeCompositeByteBuf.POOLED_DIRECT;
+		} else if (enableHeap && !enablePool) {
+			return AlternativeCompositeByteBuf.UNPOOLED_HEAP;
+		}  else {
+			return AlternativeCompositeByteBuf.UNPOOLED_DIRECT;
+		}
 	}
 }

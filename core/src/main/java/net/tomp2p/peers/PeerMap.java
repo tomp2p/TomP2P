@@ -390,7 +390,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     @Override
     public boolean peerFailed(final PeerAddress remotePeer, final PeerException peerException) {
-        LOG.error("peer {} is offline with reason {}", remotePeer, peerException);
+        LOG.debug("peer {} is offline with reason {}", remotePeer, peerException);
         
         // TB: ignore ZERO peer Id for the moment, but we should filter for the IP address
         if (remotePeer.peerId().isZero() || self().equals(remotePeer.peerId())) {

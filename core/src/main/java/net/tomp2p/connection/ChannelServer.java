@@ -114,7 +114,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 		
 		this.tcpDropConnectionInboundHandler = new DropConnectionInboundHandler(channelServerConfiguration.maxTCPIncomingConnections());
 		this.udpDropConnectionInboundHandler = new DropConnectionInboundHandler(channelServerConfiguration.maxUDPIncomingConnections());
-		this.udpDecoderHandler = new TomP2PSinglePacketUDP(channelServerConfiguration.signatureFactory());
+		this.udpDecoderHandler = new TomP2PSinglePacketUDP(channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator());
 		
 		discoverNetworks.addDiscoverNetworkListener(this);
 		if(timer!=null) {

@@ -17,11 +17,13 @@
 
 package net.tomp2p.storage;
 
+import io.netty.buffer.AbstractByteBufAllocator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufProcessor;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.DuplicatedByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.SlicedByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -59,8 +61,16 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  *
  */
 public class AlternativeCompositeByteBuf extends ByteBuf {
+	
+	public static final PooledByteBufAllocator POOLED_DIRECT =
+            new PooledByteBufAllocator(true);
+	public static final PooledHeapByteBufAlloc POOLED_HEAP =
+            new AlternativeCompositeByteBuf.PooledHeapByteBufAlloc();
+	public static final UnpooledByteBufAllocator UNPOOLED_DIRECT =
+            new UnpooledByteBufAllocator(true);
+	public static final UnpooledHeapByteBufAlloc UNPOOLED_HEAP =
+            new AlternativeCompositeByteBuf.UnpooledHeapByteBufAlloc();
 
-	private static final ByteBufAllocator ALLOC = UnpooledByteBufAllocator.DEFAULT;
 	private static final ByteBuffer FULL_BYTEBUFFER = (ByteBuffer) ByteBuffer
 			.allocate(1).position(1);
 
@@ -68,7 +78,6 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	private final Component EMPTY_COMPONENT = new Component(
 			Unpooled.EMPTY_BUFFER);
 	private final ByteBufAllocator alloc;
-	private final boolean direct;
 
 	private int readerIndex;
 	private int writerIndex;
@@ -97,16 +106,13 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		}
 	}
 
-	public AlternativeCompositeByteBuf(ByteBufAllocator alloc, boolean direct) {
+	public AlternativeCompositeByteBuf(ByteBufAllocator alloc) {
 		this.alloc = alloc;
-		this.direct = direct;
 		leak = leakDetector.open(this);
 	}
 
-	public AlternativeCompositeByteBuf(ByteBufAllocator alloc, boolean direct,
-			ByteBuf... buffers) {
+	public AlternativeCompositeByteBuf(ByteBufAllocator alloc, ByteBuf... buffers) {
 		this.alloc = alloc;
-		this.direct = direct;
 		addComponent(buffers);
 		leak = leakDetector.open(this);
 	}
@@ -276,10 +282,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	private ByteBuf allocBuffer(int capacity) {
-		if (direct) {
-			return alloc().directBuffer(capacity);
-		}
-		return alloc().heapBuffer(capacity);
+		return alloc().buffer(capacity);
 	}
 
 	public AlternativeCompositeByteBuf addComponent(ByteBuf... buffers) {
@@ -351,7 +354,13 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 
 	@Override
 	public boolean isDirect() {
-		return direct;
+		//this is stored in ByteBufAllocator, but I cannot access it
+		if(alloc == UNPOOLED_DIRECT || alloc == POOLED_DIRECT) {
+			return true;
+		} else if (alloc == UNPOOLED_HEAP || alloc == POOLED_HEAP) {
+			return false;
+		}
+		throw new RuntimeException("don't know what to report, Netty does not expose this");
 	}
 
 	@Override
@@ -2082,33 +2091,77 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		return dst.flip().toString();
 	}
 
-	public static AlternativeCompositeByteBuf compBuffer(ByteBufAllocator alloc,
-			boolean direct, ByteBuf... buffers) {
-		return new AlternativeCompositeByteBuf(alloc, direct, buffers);
-	}
-
-	public static AlternativeCompositeByteBuf compBuffer() {
-		return compBuffer(ALLOC, false);
-	}
-
-	public static AlternativeCompositeByteBuf compDirectBuffer() {
-		return compBuffer(ALLOC, true);
-	}
-	
-	public static AlternativeCompositeByteBuf compDirectBuffer(ByteBuf... buffers) {
-		return compBuffer(ALLOC, true, buffers);
-	}
-	
-	public static AlternativeCompositeByteBuf compDirectBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
-		return compBuffer(alloc, true, buffers);
-	}
-
-	public static AlternativeCompositeByteBuf compBuffer(ByteBuf... buffers) {
-		return compBuffer(ALLOC, false, buffers);
-	}
-
 	public static AlternativeCompositeByteBuf compBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
-		return compBuffer(alloc, false, buffers);
+		return new AlternativeCompositeByteBuf(alloc, buffers);
 	}
+	
+	private static class UnpooledHeapByteBufAlloc extends AbstractByteBufAllocator {
+		
+		private final static UnpooledByteBufAllocator UNPOOLED_HEAP_ORIG = new UnpooledByteBufAllocator(false);
 
+		@Override
+	    protected ByteBuf newHeapBuffer(int initialCapacity, int maxCapacity) {
+	        return UNPOOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
+	    }
+
+	    @Override
+	    protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
+	        return UNPOOLED_HEAP_ORIG.directBuffer(initialCapacity, maxCapacity);
+	    }
+
+	    @Override
+	    public boolean isDirectBufferPooled() {
+	        return false;
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer() {
+	    	return UNPOOLED_HEAP_ORIG.heapBuffer();
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer(int initialCapacity) {
+	    	return UNPOOLED_HEAP_ORIG.heapBuffer(initialCapacity);
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer(int initialCapacity, int maxCapacity) {
+	        return UNPOOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
+	    }		
+	}
+	
+	private static class PooledHeapByteBufAlloc extends AbstractByteBufAllocator {
+		
+		private final static PooledByteBufAllocator POOLED_HEAP_ORIG = new PooledByteBufAllocator(false);
+
+		@Override
+	    protected ByteBuf newHeapBuffer(int initialCapacity, int maxCapacity) {
+	        return POOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
+	    }
+
+	    @Override
+	    protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
+	        return POOLED_HEAP_ORIG.directBuffer(initialCapacity, maxCapacity);
+	    }
+
+	    @Override
+	    public boolean isDirectBufferPooled() {
+	        return true;
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer() {
+	    	return POOLED_HEAP_ORIG.heapBuffer();
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer(int initialCapacity) {
+	    	return POOLED_HEAP_ORIG.heapBuffer(initialCapacity);
+	    }
+	    
+	    @Override
+	    public ByteBuf ioBuffer(int initialCapacity, int maxCapacity) {
+	        return POOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
+	    }		
+	}
 }

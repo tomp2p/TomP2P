@@ -89,7 +89,7 @@ public class TestMessage {
 
 	@Test
 	public void compositeBufferTest1() {
-		AlternativeCompositeByteBuf cbuf = AlternativeCompositeByteBuf.compBuffer();
+		AlternativeCompositeByteBuf cbuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		ByteBuf buf = Unpooled.buffer();
 		
 		cbuf.writeInt(1);
@@ -107,7 +107,7 @@ public class TestMessage {
 
 	@Test
 	public void compositeBufferTest2() {
-		AlternativeCompositeByteBuf cbuf = AlternativeCompositeByteBuf.compBuffer();
+		AlternativeCompositeByteBuf cbuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		int len = 8 * 4;
 		for (int i = 0; i < len; i += 4) {
 			ByteBuf buf = Unpooled.buffer().writeInt(i);
@@ -421,9 +421,9 @@ public class TestMessage {
 		Message m1 = Utils2.createDummyMessage();
 		m1.buffer(new Buffer(Unpooled.buffer()));
 		Encoder e = new Encoder(null);
-		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
+		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		e.write(buf, m1, null);
-		Decoder d = new Decoder(null);
+		Decoder d = new Decoder(null, AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		boolean header = d.decodeHeader(buf, new InetSocketAddress(0),
 				new InetSocketAddress(0));
 		boolean payload = d.decodePayload(buf);
@@ -570,11 +570,11 @@ public class TestMessage {
 	 */
 	private Message encodeDecode(final Message m1) throws Exception {
 		AtomicReference<Message> m2 = new AtomicReference<Message>();
-		final AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
+		final AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		Encoder encoder = new Encoder(new DSASignatureFactory());
 		encoder.write(buf, m1, null);
 		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
-		Decoder decoder = new Decoder(new DSASignatureFactory());
+		Decoder decoder = new Decoder(new DSASignatureFactory(), AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		decoder.decode(ctx, buf, m1.recipient().createSocketTCP(), m1
 				.sender().createSocketTCP());
 		buf.release();

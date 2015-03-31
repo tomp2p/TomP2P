@@ -1,6 +1,7 @@
 package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -19,9 +20,11 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TomP2PSinglePacketUDP.class);
 
     private final SignatureFactory signatureFactory;
+    private final ByteBufAllocator byteBufAllocator;
     
-    public TomP2PSinglePacketUDP(final SignatureFactory signatureFactory) {
+    public TomP2PSinglePacketUDP(final SignatureFactory signatureFactory, ByteBufAllocator byteBufAllocator) {
         this.signatureFactory = signatureFactory;
+        this.byteBufAllocator = byteBufAllocator;
     }
 
     @Override
@@ -39,7 +42,7 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
         final InetSocketAddress recipient = d.recipient();
 
         try {
-            Decoder decoder = new Decoder(signatureFactory);
+            Decoder decoder = new Decoder(signatureFactory, byteBufAllocator);
             boolean finished = decoder.decode(ctx, buf, recipient, sender);
             if (finished) {
                 ctx.fireChannelRead(decoder.prepareFinish());

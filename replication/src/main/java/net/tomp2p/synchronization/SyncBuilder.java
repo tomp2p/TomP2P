@@ -260,7 +260,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		List<Instruction> instructions = RSync.instructions(
                                          data2.toBytes(), checksums, blockSize);
                         		
-                        		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
+                        		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
                         		
                         		dataCopy += SyncUtils.encodeInstructions(instructions, versionKey, hash, abuf);
                         		DataBuffer dataBuffer = new DataBuffer(abuf);

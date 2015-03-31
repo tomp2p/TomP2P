@@ -8,6 +8,11 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 
+/**
+ * @since 30.03.2015
+ * @author jonaswagner
+ *
+ */
 public class NonPreservingSequentialStrategy extends AbstractHolePStrategy {
 
 	public NonPreservingSequentialStrategy(final Peer peer, final int numberOfHoles, final int idleUDPSeconds, final Message originalMessage) {

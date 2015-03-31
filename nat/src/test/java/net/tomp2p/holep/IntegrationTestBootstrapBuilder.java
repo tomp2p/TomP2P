@@ -18,7 +18,7 @@ import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class IntegrationTestHolePWithPeerNatBootstrapbuilder extends AbstractTestHoleP {
+public class IntegrationTestBootstrapBuilder extends AbstractTestHoleP {
 
 	@Test
 	public void test() throws ClassNotFoundException, IOException {

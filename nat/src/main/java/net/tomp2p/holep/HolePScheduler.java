@@ -5,7 +5,7 @@ import net.tomp2p.holep.strategy.HolePStrategy;
 /**
  * This class is used as a {@link Thread} specifically for the
  * {@link HolePStrategy}. It calls the tryConnect() method on the
- * {@link HolePStrategy} every second until it reached the given numberOfTrials.
+ * {@link HolePStrategy} every second until it reached the given numberOfPunches.
  * 
  * @author Jonas Wagner
  * 
@@ -14,8 +14,8 @@ public class HolePScheduler implements Runnable {
 
 	private static final int FIVE_MINUTES = 300;
 	private static final int ONE_SECOND_MILLIS = 1000;
-	private int numberOfTrials;
-	private HolePStrategy holePuncher;
+	private int numberOfPunches;
+	private final HolePStrategy holePuncher;
 
 	public HolePScheduler(final int numberOfTrials, final HolePStrategy holePuncher) {
 		// 300 -> 5min
@@ -26,20 +26,20 @@ public class HolePScheduler implements Runnable {
 		} else if (holePuncher == null) {
 			throw new IllegalArgumentException("HolePuncher can't be null!");
 		} else {
-			this.numberOfTrials = numberOfTrials;
+			this.numberOfPunches = numberOfTrials;
 			this.holePuncher = holePuncher;
 		}
 	}
 
 	@Override
 	public void run() {
-		while (numberOfTrials != 0) {
+		while (numberOfPunches != 0) {
 			try {
 				holePuncher.tryConnect();
 			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
-			numberOfTrials--;
+			numberOfPunches--;
 			try {
 				Thread.sleep(ONE_SECOND_MILLIS);
 			} catch (InterruptedException e) {

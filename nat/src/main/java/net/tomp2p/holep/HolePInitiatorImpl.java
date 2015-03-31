@@ -21,7 +21,7 @@ public class HolePInitiatorImpl implements HolePInitiator {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePInitiatorImpl.class);
 	private final NATTypeDetection natTypeDetection;
-	private Peer peer;
+	private final Peer peer;
 	private boolean testCase = false;
 
 	public HolePInitiatorImpl(final Peer peer) {

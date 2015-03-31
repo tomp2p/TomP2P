@@ -51,7 +51,6 @@ public class PortPreservingStrategy extends AbstractHolePStrategy {
 		replyMessage.intValue(replyPorts.size());
 		
 		// send all ports via Buffer
-		// TODO jwa don't use java List
 		replyMessage.buffer(encodePortList(replyPorts));
 		
 		replyMessageFuture2.done(replyMessage);

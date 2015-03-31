@@ -2,11 +2,6 @@ package net.tomp2p.holep;
 
 import java.io.IOException;
 
-import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.ObjectDataReply;
-
-import org.junit.Assert;
 import org.junit.Test;
 
 public class IntegrationTestHolePuncher extends AbstractTestHoleP {

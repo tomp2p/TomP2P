@@ -93,6 +93,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
         }
         final int hopCount = message.intAt(0);
         if (twiceSeen(messageKey)) {
+        	LOG.debug("already forwarded this message in {}", peer.peerID());
             return;
         }
         LOG.debug("got broadcast map {} from {}", dataMap, peer.peerID());
@@ -106,7 +107,10 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
             } else {
                 otherPeer(messageKey, dataMap, hopCount, message.isUdp());
             }
+        } else {
+        	LOG.debug("max hop reached in {}", peer.peerID());
         }
+        
     }
 
     /**

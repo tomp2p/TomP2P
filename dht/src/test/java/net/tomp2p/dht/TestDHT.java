@@ -81,7 +81,7 @@ public class TestDHT {
 			if (master != null) {
 				master.shutdown().await();
 			}
-			System.err.println("done");
+			System.out.println("done");
 		}
 	}
 	
@@ -107,10 +107,10 @@ public class TestDHT {
 			
 			Assert.assertEquals(true, futurePut.isSuccess());
 			
-			System.err.println("stored on "+futurePut.result());
+			System.out.println("stored on "+futurePut.result());
 			
 			FutureRemove fr = peers2[0].remove(Number160.createHash(key)).start().awaitUninterruptibly();
-			System.err.println("removed from "+fr.result());
+			System.out.println("removed from "+fr.result());
 			//}
 			return peers2[0];
 			
@@ -186,7 +186,7 @@ public class TestDHT {
 				fp.futureRequests().awaitUninterruptibly();
 				
 				//long stop = System.currentTimeMillis();
-				//System.err.println("Test " + fp.failedReason() + " / " + (stop - start) + "ms");
+				//System.out.println("Test " + fp.failedReason() + " / " + (stop - start) + "ms");
 				Assert.assertEquals(true, fp.isSuccess());
 			}
 
@@ -216,7 +216,7 @@ public class TestDHT {
 
 			fp.awaitUninterruptibly();
 			fp.futureRequests().awaitUninterruptibly();
-			System.err.println("Test " + fp.failedReason());
+			System.out.println("Test " + fp.failedReason());
 			Assert.assertEquals(true, fp.isSuccess());
 			peers[30].peerBean().peerMap();
 			// search top 3
@@ -228,20 +228,20 @@ public class TestDHT {
 				i++;
 			}
 			Entry<PeerAddress, Integer> e = tmp.pollFirstEntry();
-			System.err.println("1 (" + e.getValue() + ")" + e.getKey());
+			System.out.println("1 (" + e.getValue() + ")" + e.getKey());
 			Assert.assertEquals(peers[e.getValue()].peerAddress(), peers[30].peerAddress());
 			testForArray(peers[e.getValue()], peers[30].peerID(), true);
 			//
 			e = tmp.pollFirstEntry();
-			System.err.println("2 (" + e.getValue() + ")" + e.getKey());
+			System.out.println("2 (" + e.getValue() + ")" + e.getKey());
 			testForArray(peers[e.getValue()], peers[30].peerID(), true);
 			//
 			e = tmp.pollFirstEntry();
-			System.err.println("3 " + e.getKey());
+			System.out.println("3 " + e.getKey());
 			testForArray(peers[e.getValue()], peers[30].peerID(), true);
 			//
 			e = tmp.pollFirstEntry();
-			System.err.println("4 " + e.getKey());
+			System.out.println("4 " + e.getKey());
 			testForArray(peers[e.getValue()], peers[30].peerID(), false);
 		} finally {
 			if (master != null) {
@@ -261,7 +261,7 @@ public class TestDHT {
 			Assert.assertEquals(true, fdht.isSuccess());
 			FutureGet fdht2 = master.get(Number160.ONE).start();
 			fdht2.awaitUninterruptibly();
-			System.err.println(fdht2.failedReason());
+			System.out.println(fdht2.failedReason());
 			Assert.assertEquals(true, fdht2.isSuccess());
 			Data tmp = fdht2.data();
 			Assert.assertEquals("hallo", tmp.object().toString());
@@ -287,7 +287,7 @@ public class TestDHT {
 			Thread.sleep(3000);
 			FutureGet fdht2 = master.get(Number160.ONE).start();
 			fdht2.awaitUninterruptibly();
-			System.err.println(fdht2.failedReason());
+			System.out.println(fdht2.failedReason());
 			//we get an empty result, this means it did not fail, just it did not return anything
 			Assert.assertEquals(true, fdht2.isSuccess());
 			Data tmp = fdht2.data();
@@ -398,7 +398,7 @@ public class TestDHT {
 			        .requestP2PConfiguration(pc).start();
 			fput.awaitUninterruptibly();
 			fput.futureRequests().awaitUninterruptibly();
-			System.err.println(fput.failedReason());
+			System.out.println(fput.failedReason());
 			Assert.assertEquals(true, fput.isSuccess());
 		} finally {
 			if (master != null) {
@@ -537,7 +537,7 @@ public class TestDHT {
 			fput.futureRequests().awaitUninterruptibly();
 			Assert.assertEquals(3, fput.rawResult().size());
 			Assert.assertEquals(true, fput.isSuccess());
-			System.err.println("remove");
+			System.out.println("remove");
 			rc = new RoutingConfiguration(4, 0, 10, 1);
 			pc = new RequestP2PConfiguration(3, 0, 0);
 
@@ -547,7 +547,7 @@ public class TestDHT {
 			frem.awaitUninterruptibly();
 			Assert.assertEquals(true, frem.isSuccess());
 			Assert.assertEquals(3, frem.rawData().size());
-			System.err.println("get");
+			System.out.println("get");
 			rc = new RoutingConfiguration(4, 0, 0, 1);
 			pc = new RequestP2PConfiguration(4, 0, 0);
 
@@ -583,10 +583,10 @@ public class TestDHT {
 			// do testing
 			FutureSend fdir = peers[400].send(new Number160(rnd)).object("hallo").start();
 			fdir.awaitUninterruptibly();
-			System.err.println(fdir.failedReason());
+			System.out.println(fdir.failedReason());
 			Assert.assertEquals(true, fdir.isSuccess());
 			Assert.assertEquals(true, ai.get() >= 3 && ai.get() <= 6);
-			System.err.println("called: " + ai.get());
+			System.out.println("called: " + ai.get());
 			Assert.assertEquals("ja", fdir.object());
 		} finally {
 			if (master != null) {
@@ -685,7 +685,7 @@ public class TestDHT {
 			System.out.println("added: " + toStore3 + " (" + fput.isSuccess() + ")");
 			FutureDigest fget = peers[77].digest(nr).all().start();
 			fget.awaitUninterruptibly();
-			System.err.println(fget.failedReason());
+			System.out.println(fget.failedReason());
 			Assert.assertEquals(true, fget.isSuccess());
 			Assert.assertEquals(3, fget.digest().keyDigest().size());
 			Number160 test = new Number160("0x37bb570100c9f5445b534757ebc613a32df3836d");
@@ -705,40 +705,48 @@ public class TestDHT {
 	@Test
 	public void removeTestLoop() throws IOException, ClassNotFoundException {
 		for(int i=0;i<100;i++) {
-			System.err.println("removeTestLoop() call nr "+i);
+			System.out.println("removeTestLoop() call nr "+i);
 			removeTest();
 		}
 	}
 
 	@Test
 	public void removeTest() throws IOException, ClassNotFoundException {
-		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
-		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
+		PeerDHT p1 = null;
+		PeerDHT p2 = null;
+		try {
+			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
+			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
 		        .start()).start();
 
-		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
+			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 
-		String locationKey = "location";
-		String contentKey = "content";
+			String locationKey = "location";
+			String contentKey = "content";
 
-		String data = "testme";
-		// data.generateVersionKey();
+			String data = "testme";
+			// data.generateVersionKey();
 
-		p2.put(Number160.createHash(locationKey)).data(Number160.createHash(contentKey), new Data(data))
+			p2.put(Number160.createHash(locationKey)).data(Number160.createHash(contentKey), new Data(data))
 		        .versionKey(Number160.ONE).start().awaitUninterruptibly();
 
-		FutureRemove futureRemove = p1.remove(Number160.createHash(locationKey)).domainKey(Number160.ZERO)
+			FutureRemove futureRemove = p1.remove(Number160.createHash(locationKey)).domainKey(Number160.ZERO)
+					.contentKey(Number160.createHash(contentKey)).versionKey(Number160.ONE).start();
+			futureRemove.awaitUninterruptibly();
+
+			FutureDigest futureDigest = p1.digest(Number160.createHash(locationKey)).domainKey(Number160.ZERO)
 		        .contentKey(Number160.createHash(contentKey)).versionKey(Number160.ONE).start();
-		futureRemove.awaitUninterruptibly();
+			futureDigest.awaitUninterruptibly();
 
-		FutureDigest futureDigest = p1.digest(Number160.createHash(locationKey)).domainKey(Number160.ZERO)
-		        .contentKey(Number160.createHash(contentKey)).versionKey(Number160.ONE).start();
-		futureDigest.awaitUninterruptibly();
-
-		Assert.assertTrue(futureDigest.digest().keyDigest().isEmpty());
-
-		p1.shutdown().awaitUninterruptibly();
-		p2.shutdown().awaitUninterruptibly();
+			Assert.assertTrue(futureDigest.digest().keyDigest().isEmpty());
+		} finally {
+			if(p1 != null) {
+				p1.shutdown().awaitUninterruptibly();
+			}
+			if(p2 != null) {
+				p2.shutdown().awaitUninterruptibly();
+			}
+		}
 	}
 
 	@Test
@@ -773,13 +781,13 @@ public class TestDHT {
 			Number640 to = new Number640(nr, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE);
 			FutureDigest fget = peers[77].digest(nr).from(from).to(to).returnNr(1).start();
 			fget.awaitUninterruptibly();
-			System.err.println(fget.failedReason());
+			System.out.println(fget.failedReason());
 			Assert.assertEquals(true, fget.isSuccess());
 			Assert.assertEquals(1, fget.digest().keyDigest().size());
 			Assert.assertEquals(key1, fget.digest().keyDigest().keySet().iterator().next().contentKey());
 			fget = peers[67].digest(nr).from(from).to(to).returnNr(1).descending().start();
 			fget.awaitUninterruptibly();
-			System.err.println(fget.failedReason());
+			System.out.println(fget.failedReason());
 			Assert.assertEquals(true, fget.isSuccess());
 			Assert.assertEquals(1, fget.digest().keyDigest().size());
 			Assert.assertEquals(key3, fget.digest().keyDigest().keySet().iterator().next().contentKey());
@@ -914,7 +922,7 @@ public class TestDHT {
 			peers[50].peer().rawDataReply(new RawDataReply() {
 				@Override
 				public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete) {
-					System.err.println(requestBuffer.buffer().readInt());
+					System.out.println(requestBuffer.buffer().readInt());
 					ByteBuf c = Unpooled.buffer();
 					c.writeInt(88);
 					Buffer ret = new Buffer(c);
@@ -924,12 +932,12 @@ public class TestDHT {
 			FutureDirect fd = master.peer().sendDirect(peers[50].peerAddress()).buffer(b).start();
 			fd.await();
 			if (fd.buffer() == null) {
-				System.err.println("damm");
+				System.out.println("damm");
 				Assert.fail();
 			}
 			int read = fd.buffer().buffer().readInt();
 			Assert.assertEquals(88, read);
-			System.err.println("done");
+			System.out.println("done");
 			// for(FutureBootstrap fb:tmp)
 			// fb.awaitUninterruptibly();
 		} finally {
@@ -954,18 +962,18 @@ public class TestDHT {
 			peers[50].peer().rawDataReply(new RawDataReply() {
 				@Override
 				public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete) {
-					System.err.println("got it");
+					System.out.println("got it");
 					return requestBuffer;
 				}
 			});
 			FutureDirect fd = master.peer().sendDirect(peers[50].peerAddress()).buffer(b).start();
 			fd.await();
-			System.err.println("done1");
+			System.out.println("done1");
 			Assert.assertEquals(true, fd.isSuccess());
 			Assert.assertNull(fd.buffer());
 			// int read = fd.getBuffer().readInt();
 			// Assert.assertEquals(88, read);
-			System.err.println("done2");
+			System.out.println("done2");
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -977,7 +985,7 @@ public class TestDHT {
 	public void testObjectLoop() throws Exception {
 		for (int i = 0; i < 1000; i++) {
 			if(i%10==0) {
-				System.err.println("nr: " + i);
+				System.out.println("nr: " + i);
 			}
 			testObject();
 		}
@@ -997,22 +1005,22 @@ public class TestDHT {
 			String toStore2 = "hallo2";
 			Data data1 = new Data(toStore1);
 			Data data2 = new Data(toStore2);
-			//System.err.println("begin add : ");
+			//System.out.println("begin add : ");
 			FuturePut fput = peers[30].add(nr).data(data1).start();
 			fput.awaitUninterruptibly();
-			//System.err.println("stop added: " + toStore1 + " (" + fput.isSuccess() + ")");
+			//System.out.println("stop added: " + toStore1 + " (" + fput.isSuccess() + ")");
 			fput = peers[50].add(nr).data(data2).start();
 			fput.awaitUninterruptibly();
 			fput.futureRequests().awaitUninterruptibly();
-			//System.err.println("added: " + toStore2 + " (" + fput.isSuccess() + ")");
+			//System.out.println("added: " + toStore2 + " (" + fput.isSuccess() + ")");
 			FutureGet fget = peers[77].get(nr).all().start();
 			fget.awaitUninterruptibly();
 			fget.futureRequests().awaitUninterruptibly();
 			if (!fget.isSuccess())
-				System.err.println(fget.failedReason());
+				System.out.println(fget.failedReason());
 			Assert.assertEquals(true, fget.isSuccess());
 			Assert.assertEquals(2, fget.dataMap().size());
-			//System.err.println("got it");
+			//System.out.println("got it");
 		} finally {
 			if (master != null) {
 				master.shutdown().awaitUninterruptibly();
@@ -1035,7 +1043,7 @@ public class TestDHT {
 			        .nextForMaintenance(new ArrayList<PeerAddress>());
 			Assert.assertNotEquals(master.peerAddress(), peerStatatistic.peerAddress());
 			Thread.sleep(10000);
-			System.err.println("DONE");
+			System.out.println("DONE");
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -1064,7 +1072,7 @@ public class TestDHT {
 				futureDHT.awaitUninterruptibly();
 				Assert.assertEquals(true, futureDHT.isSuccess());
 			}
-			System.err.println("DONE");
+			System.out.println("DONE");
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -1120,7 +1128,7 @@ public class TestDHT {
 			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null, null, null);
 			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null, null, null);
 
-			System.err.println("no more exceptions here!!");
+			System.out.println("no more exceptions here!!");
 
 			fget = master1.get(id).routingConfiguration(rc).requestP2PConfiguration(pc)
 			        .domainKey(Number160.createHash("test")).contentKey(new Number160(5)).start();
@@ -1178,7 +1186,7 @@ public class TestDHT {
 			master = peers[0];
 			UtilsDHT2.perfectRouting(peers);
 			for (int i = 0; i < peers.length; i++) {
-				System.err.println("node " + i);
+				System.out.println("node " + i);
 				peers[i].peer().objectDataReply(new ObjectDataReply() {
 					@Override
 					public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -1193,19 +1201,19 @@ public class TestDHT {
 				});
 			}
 			// do testing
-			System.err.println("round start");
+			System.out.println("round start");
 			Random rnd = new Random(42L);
 			byte[] toStore1 = new byte[10 * 1024];
 			for (int j = 0; j < 5; j++) {
-				System.err.println("round " + j);
+				System.out.println("round " + j);
 				for (int i = 0; i < peers.length - 1; i++) {
 					send1(peers[rnd.nextInt(peers.length)], peers[rnd.nextInt(peers.length)], toStore1, 100);
 					send2(peers[rnd.nextInt(peers.length)], peers[rnd.nextInt(peers.length)],
 					        Unpooled.wrappedBuffer(toStore1), 100);
-					System.err.println("round1 " + i);
+					System.out.println("round1 " + i);
 				}
 			}
-			System.err.println("DONE");
+			System.out.println("DONE");
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -1258,6 +1266,7 @@ public class TestDHT {
 			fget = p2.get(n1).all().start();
 			fget.awaitUninterruptibly();
 			Assert.assertEquals(0, fget.dataMap().size());
+			System.out.println("testKeys done");
 		} finally {
 			if (p1 != null) {
 				p1.shutdown().await();
@@ -1306,6 +1315,7 @@ public class TestDHT {
 			fget = p2.get(n2).start();
 			fget.awaitUninterruptibly();
 			Assert.assertEquals(1, fget.dataMap().size());
+			System.out.println("testKeys2 done");
 		} finally {
 			if (p1 != null) {
 				p1.shutdown().await();
@@ -1382,6 +1392,7 @@ public class TestDHT {
 			FutureBootstrap fb = p2.bootstrap().peerAddress(p1.peerAddress()).start();
 			fb.awaitUninterruptibly();
 			Assert.assertEquals(true, fb.isSuccess());
+			System.out.println("testBindings done");
 		} finally {
 			if (p1 != null) {
 				p1.shutdown().await();
@@ -1409,11 +1420,11 @@ public class TestDHT {
 				Thread.sleep(200);
 				counter++;
 				if (counter > 100) {
-					System.err.println("did not broadcast to 1000 peers, but to " + d.getBroadcastCounter());
+					System.out.println("did not broadcast to 1000 peers, but to " + d.getBroadcastCounter());
 					Assert.fail("did not broadcast to 1000 peers, but to " + d.getBroadcastCounter());
 				}
 			}
-			System.err.println("DONE");
+			System.out.println("DONE");
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -1438,7 +1449,7 @@ public class TestDHT {
 			PeerBuilder slaveMaker = new PeerBuilder(new Number160(rnd)).ports(4002);
 			slave = slaveMaker.enableMaintenance(false).start();
 
-			System.err.println("peers up and running");
+			System.out.println("peers up and running");
 
 			slave.rawDataReply(new RawDataReply() {
 				@Override
@@ -1472,9 +1483,9 @@ public class TestDHT {
 				bf.awaitUninterruptibly();
 				bf.awaitListenersUninterruptibly();
 				if (bf.isFailed()) {
-					System.err.println("WTF " + bf.failedReason());
+					System.out.println("WTF " + bf.failedReason());
 				} else {
-					System.err.print(",");
+					System.out.print(",");
 				}
 				Assert.assertEquals(true, bf.isSuccess());
 			}
@@ -1486,17 +1497,17 @@ public class TestDHT {
 				bf.awaitUninterruptibly();
 				bf.awaitListenersUninterruptibly();
 				if (bf.isFailed()) {
-					System.err.println("WTF " + bf.failedReason());
+					System.out.println("WTF " + bf.failedReason());
 				} else {
-					System.err.print(".");
+					System.out.print(".");
 				}
 				Assert.assertEquals(true, bf.isSuccess());
 			}
-			System.err.println("done!!");
+			System.out.println("done!!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			System.err.println("done!1!");
+			System.out.println("done!1!");
 			if (master != null) {
 				master.shutdown().await();
 			}
@@ -1529,7 +1540,7 @@ public class TestDHT {
 			master.peer().bootstrap().peerAddress(slave.peerAddress()).start().awaitUninterruptibly();
 			slave.peer().bootstrap().peerAddress(master.peerAddress()).start().awaitUninterruptibly();
 
-			System.err.println("peers up and running");
+			System.out.println("peers up and running");
 			
 			final int count = 100;
 			final CountDownLatch latch = new CountDownLatch(count);
@@ -1543,7 +1554,7 @@ public class TestDHT {
 					public void operationComplete(FuturePut future) throws Exception {
 						Thread.sleep(1000);
 						latch.countDown();
-						System.err.println("block in "+Thread.currentThread().getName());
+						System.out.println("block in "+Thread.currentThread().getName());
 						if(!Thread.currentThread().getName().contains("EventExecutorGroup")) {
 							correct.set(false);
 						}
@@ -1554,7 +1565,7 @@ public class TestDHT {
 			Assert.assertTrue(correct.get());
 
 		} finally {
-			System.err.println("done!1!");
+			System.out.println("done!1!");
 			if (master != null) {
 				master.shutdown().await();
 			}
@@ -1568,54 +1579,72 @@ public class TestDHT {
 	
 	@Test
 	public void removeFromToTest3() throws IOException, ClassNotFoundException {
-		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
-		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-		        .start()).start();
-		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
-		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
-		Number160 lKey = Number160.createHash("location");
-		Number160 dKey = Number160.createHash("domain");
-		Number160 cKey = Number160.createHash("content");
-		String data = "test";
-		p2.put(lKey).data(cKey, new Data(data)).domainKey(dKey).start().awaitUninterruptibly();
-		FutureRemove futureRemove = p1.remove(lKey).domainKey(dKey).contentKey(cKey).start();
-		futureRemove.awaitUninterruptibly();
-		// check with a normal digest
-		FutureDigest futureDigest = p1.digest(lKey).contentKey(cKey).domainKey(dKey).start();
-		futureDigest.awaitUninterruptibly();
-		Assert.assertTrue(futureDigest.digest().keyDigest().isEmpty());
-		// check with a from/to digest
-		futureDigest = p1.digest(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
-		        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
-		futureDigest.awaitUninterruptibly();
-		Assert.assertTrue(futureDigest.digest().keyDigest().isEmpty());
-		p1.shutdown().awaitUninterruptibly();
-		p2.shutdown().awaitUninterruptibly();
+		PeerDHT p1 = null;
+		PeerDHT p2 = null;
+		try {
+
+			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
+			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).start()).start();
+
+			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
+			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
+			Number160 lKey = Number160.createHash("location");
+			Number160 dKey = Number160.createHash("domain");
+			Number160 cKey = Number160.createHash("content");
+			String data = "test";
+			p2.put(lKey).data(cKey, new Data(data)).domainKey(dKey).start().awaitUninterruptibly();
+			FutureRemove futureRemove = p1.remove(lKey).domainKey(dKey).contentKey(cKey).start();
+			futureRemove.awaitUninterruptibly();
+			// check with a normal digest
+			FutureDigest futureDigest = p1.digest(lKey).contentKey(cKey).domainKey(dKey).start();
+			futureDigest.awaitUninterruptibly();
+			Assert.assertTrue(futureDigest.digest().keyDigest().isEmpty());
+			// check with a from/to digest
+			futureDigest = p1.digest(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
+			        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
+			futureDigest.awaitUninterruptibly();
+			Assert.assertTrue(futureDigest.digest().keyDigest().isEmpty());
+		} finally {
+			if (p1 != null) {
+				p1.shutdown().awaitUninterruptibly();
+			}
+			if (p2 != null) {
+				p2.shutdown().awaitUninterruptibly();
+			}
+		}
 	}
 	
 
 	@Test
 	public void removeFromToTest4() throws IOException, ClassNotFoundException {
-		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
-		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-		        .start()).start();
-		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
-		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
-		Number160 lKey = Number160.createHash("location");
-		Number160 dKey = Number160.createHash("domain");
-		Number160 cKey = Number160.createHash("content");
-		String data = "test";
-		p2.put(lKey).data(cKey, new Data(data)).domainKey(dKey).start().awaitUninterruptibly();
-		FutureRemove futureRemove = p1.remove(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
-		        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
-		futureRemove.awaitUninterruptibly();
-		FutureDigest futureDigest = p1.digest(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
-		        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
-		futureDigest.awaitUninterruptibly();
-		// should be empty
-		Assert.assertTrue(futureDigest.digest().keyDigest().isEmpty());
-		p1.shutdown().awaitUninterruptibly();
-		p2.shutdown().awaitUninterruptibly();
+		PeerDHT p1 = null;
+		PeerDHT p2 = null;
+		try {
+			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
+			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).start()).start();
+			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
+			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
+			Number160 lKey = Number160.createHash("location");
+			Number160 dKey = Number160.createHash("domain");
+			Number160 cKey = Number160.createHash("content");
+			String data = "test";
+			p2.put(lKey).data(cKey, new Data(data)).domainKey(dKey).start().awaitUninterruptibly();
+			FutureRemove futureRemove = p1.remove(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
+			        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
+			futureRemove.awaitUninterruptibly();
+			FutureDigest futureDigest = p1.digest(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
+			        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
+			futureDigest.awaitUninterruptibly();
+			// should be empty
+			Assert.assertTrue(futureDigest.digest().keyDigest().isEmpty());
+		} finally {
+			if (p1 != null) {
+				p1.shutdown().awaitUninterruptibly();
+			}
+			if (p2 != null) {
+				p2.shutdown().awaitUninterruptibly();
+			}
+		}
 	}
 	
 	@Test
@@ -2228,7 +2257,7 @@ public class TestDHT {
 				peers[i] = new PeerBuilderDHT(peer).start();
 			}
 		}
-		System.err.println("peers created.");
+		System.out.println("peers created.");
 		return peers;
 	}
 
@@ -2242,7 +2271,7 @@ public class TestDHT {
 			@Override
 			public void operationComplete(FutureDirect future) throws Exception {
 				if (future.isFailed()) {
-					// System.err.println(future.getFailedReason());
+					// System.out.println(future.getFailedReason());
 					send2(p1, p2, toStore1, count - 1);
 				}
 			}
@@ -2258,7 +2287,7 @@ public class TestDHT {
 			@Override
 			public void operationComplete(FutureDirect future) throws Exception {
 				if (future.isFailed()) {
-					//System.err.println(future.getFailedReason());
+					//System.out.println(future.getFailedReason());
 					send1(p1, p2, toStore1, count - 1);
 				}
 			}

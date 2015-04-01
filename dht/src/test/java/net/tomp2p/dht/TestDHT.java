@@ -1407,34 +1407,6 @@ public class TestDHT {
 	}
 
 	@Test
-	public void testBroadcast() throws Exception {
-		PeerDHT master = null;
-		try {
-			// setup
-			PeerDHT[] peers = UtilsDHT2.createNodes(1000, rnd, 4001);
-			master = peers[0];
-			UtilsDHT2.perfectRouting(peers);
-			// do testing
-			master.peer().broadcast(Number160.createHash("blub")).udp(false).start();
-			DefaultBroadcastHandler d = (DefaultBroadcastHandler) master.peer().broadcastRPC().broadcastHandler();
-			int counter = 0;
-			while (d.getBroadcastCounter() < 500) {
-				Thread.sleep(200);
-				counter++;
-				if (counter > 100) {
-					System.out.println("did not broadcast to 1000 peers, but to " + d.getBroadcastCounter());
-					Assert.fail("did not broadcast to 1000 peers, but to " + d.getBroadcastCounter());
-				}
-			}
-			System.out.println("DONE");
-		} finally {
-			if (master != null) {
-				master.shutdown().await();
-			}
-		}
-	}
-
-	@Test
 	public void testTooManyOpenFilesInSystem() throws Exception {
 		Peer master = null;
 		Peer slave = null;

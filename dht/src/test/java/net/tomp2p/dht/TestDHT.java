@@ -1572,6 +1572,7 @@ public class TestDHT {
 			if (slave != null) {
 				slave.shutdown().await();
 			}
+			System.out.println("done!2!");
 		}
 	}
 	

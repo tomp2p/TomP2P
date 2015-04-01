@@ -410,6 +410,14 @@ public class PeerBuilder {
 	}
 
 	public PeerBuilder ports(int port) {
+		//debugging to trace error
+		if(port == 4002) {
+			try {
+				throw new RuntimeException("port 4002 requested");
+			} catch (Throwable t) {
+				t.printStackTrace();
+			}
+		}
 		this.udpPort = port;
 		this.tcpPort = port;
 		return this;

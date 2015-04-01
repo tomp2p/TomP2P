@@ -68,9 +68,9 @@ public class TestDHT {
 	
 	@Test
 	public void testPutBig() throws Exception {
-		PeerDHT master = null;
+		PeerDHT[] peers = null;
 		try {
-			master = testPutBig1("1");
+			peers = testPutBig1("1");
 			//Thread.sleep(5 * 1000);
 			//master = testPutBig1("2");
 			//Thread.sleep(5 * 1000);
@@ -78,14 +78,16 @@ public class TestDHT {
 			//Thread.sleep(5 * 1000);
 			//Thread.sleep(Integer.MAX_VALUE);
 		} finally {
-			if (master != null) {
-				master.shutdown().await();
+			for (PeerDHT peerDHT:peers) {
+				if(peerDHT!=null) {
+					peerDHT.shutdown().await();
+				}
 			}
 			System.out.println("done");
 		}
 	}
 	
-	private PeerDHT testPutBig1(String key) throws Exception {
+	private PeerDHT[] testPutBig1(String key) throws Exception {
 		
 		
 			Peer[] peers = UtilsDHT2.createRealNodes(10, rnd, 4001, new AutomaticFuture() {
@@ -112,7 +114,7 @@ public class TestDHT {
 			FutureRemove fr = peers2[0].remove(Number160.createHash(key)).start().awaitUninterruptibly();
 			System.out.println("removed from "+fr.result());
 			//}
-			return peers2[0];
+			return peers2;
 			
 			//
 		

@@ -368,7 +368,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 						i++;
 						final Message sendMessage = createSendOriginalMessage(portList.get(i - 1), portList.get(i));
 						peer.connectionBean().sender().afterConnect(holePFutureResponse, sendMessage, channelFuture, false);
-						LOG.warn("originalMessage has been sent to the other peer! {}", sendMessage);
+						LOG.debug("originalMessage has been sent to the other peer! {}", sendMessage);
 					}
 				}
 			}

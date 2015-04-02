@@ -76,14 +76,12 @@ public class HolePRPC extends DispatchHandler {
 		final NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
 		final HolePStrategy holePuncher = type.holePuncher(peer, message.intAt(0), peer.connectionBean().DEFAULT_UDP_IDLE_SECONDS, message);
 		final FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
-		//TODO jwa change log to debug again
 		LOG.debug("Hole Punch attempt received. Start reply procedure.");
 		replyMessage.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
 			@Override
 			public void operationComplete(FutureDone<Message> future) throws Exception {
 				if (future.isSuccess()) {
-					//TODO jwa change log to debug again
 					LOG.debug("Reply procedure successfully done. Now replying port information to HolePInitiator.");
 					responder.response(future.object());
 				} else {
@@ -109,13 +107,13 @@ public class HolePRPC extends DispatchHandler {
 			final FutureDone<Message> response = forwarder.forwardToUnreachable(forwardMessage);
 			response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 				@Override
-				public void operationComplete(FutureDone<Message> future) throws Exception {
+				public void operationComplete(final FutureDone<Message> future) throws Exception {
 					if (future.isSuccess()) {
 						final Message answerMessage = createAnswerMessage(message, future.object());
 						LOG.debug("Returing from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);
 					} else {
-						responder.failed(Type.DENIED, "Relaying message failed: " + future.failedReason());
+						responder.failed(Type.EXCEPTION, "Relaying message failed: " + future.failedReason());
 					}
 				}
 			});

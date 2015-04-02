@@ -5,6 +5,7 @@ import java.util.Random;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
@@ -16,6 +17,7 @@ import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.UtilsNAT;
 import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 import net.tomp2p.relay.tcp.TCPRelayServerConfig;
+import net.tomp2p.rpc.ObjectDataReply;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -92,5 +94,25 @@ public class AbstractTestHoleP {
 		BaseFuture bf2 = unreachable2.shutdown();
 		bf2.awaitUninterruptibly();
 		System.err.println("shutdown unreachable 2 done!");
+	}
+	
+	public void doTest() throws ClassNotFoundException, IOException {
+		final String requestString = "This is a test String";
+		final String replyString = "SUCCESS HIT";
+
+		unreachable2.objectDataReply(new ObjectDataReply() {
+			@Override
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				if (requestString.equals((String) request)) {
+					System.err.println("received: " + (String) request);
+				}
+				return replyString;
+			}
+		});
+
+		FutureDirect fd = unreachable1.sendDirect(unreachable2.peerAddress()).object(requestString).forceUDP(true).start();
+		fd.awaitUninterruptibly();
+		Assert.assertTrue(fd.isSuccess());
+		Assert.assertEquals(replyString, (String) fd.object());
 	}
 }

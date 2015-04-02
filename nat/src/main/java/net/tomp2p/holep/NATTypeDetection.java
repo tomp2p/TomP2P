@@ -22,10 +22,10 @@ import org.slf4j.LoggerFactory;
  */
 public class NATTypeDetection {
 
-	private static final int SEQ_PORT_TOLERANCE = 5;
-	private NATType natType = null;
 	private static final Logger LOG = LoggerFactory.getLogger(NATTypeDetection.class);
-	private Peer peer;
+	private static final int SEQ_PORT_TOLERANCE = 5;
+	private final Peer peer;
+	private NATType natType = null;
 
 	public NATTypeDetection(final Peer peer) {
 		this.peer = peer;

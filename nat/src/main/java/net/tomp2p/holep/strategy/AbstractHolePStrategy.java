@@ -30,7 +30,6 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.peers.RTT;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
@@ -293,12 +292,6 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			LOG.debug("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 		}
-		
-		// this is a workaround to avoid adding a nat peer to the offline
-		// list of a peer!
-
-		// TODO jwa check this values!!!
-//		peer.peerBean().peerMap().peerFound(originalSender, null, null, new RTT(200L, true));
 	}
 
 	/**
@@ -463,7 +456,6 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 					LOG.debug("Successfully transmitted the original message to peer:[" + msg.sender().toString()
 							+ "]. Now here's the reply:[" + msg.toString() + "]");
 					mainFutureDone.done(msg);
-					// TODO jwa does this work?
 					ctx.close();
 				} else if (Message.Type.REQUEST_3 == msg.type() && Commands.HOLEP.getNr() == msg.command()) {
 					LOG.debug("Holes successfully punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
@@ -519,7 +511,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			// the list with the ports should never be Empty
 			if (!portList.isEmpty()) {
 				final int rawNumberOfHoles = portList.size();
-				// the number of the pairs of port must be even!
+				// the number of ports must be even!
 				if ((rawNumberOfHoles % 2) == 0) {
 					return portList;
 				} else {

@@ -256,7 +256,7 @@ public class PeerBuilder {
 		}
 
 		if (broadcastHandler == null) {
-			broadcastHandler = new DefaultBroadcastHandler(new Random());
+			broadcastHandler = new StructuredBroadcastHandler();
 		}
 		broadcastHandler.init(peer);
 		

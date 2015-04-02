@@ -37,8 +37,8 @@ public class TestRelay {
 		Peer master = null;
 		Peer slave = null;
 		try {
-			master = Utils2.createNodes(1, rnd, 4001, null, false, false)[0];
-			slave = Utils2.createNodes(1, rnd, 4002, null, false, false)[0];
+			master = Utils2.createNodes(1, rnd, 4001, null, false)[0];
+			slave = Utils2.createNodes(1, rnd, 4002, null, false)[0];
 			System.err.println("master is " + master.peerAddress());
 			System.err.println("slave is " + slave.peerAddress());
 

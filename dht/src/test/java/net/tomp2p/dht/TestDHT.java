@@ -38,7 +38,6 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.p2p.AutomaticFuture;
-import net.tomp2p.p2p.DefaultBroadcastHandler;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;

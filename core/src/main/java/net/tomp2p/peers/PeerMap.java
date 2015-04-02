@@ -619,25 +619,25 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return
      */
     public List<PeerAddress> fromEachBag(final int nrNeighbors, final int maxBucket) {
-    	if(nrNeighbors <= 0) {
+    	if(nrNeighbors < 0) {
     		return all();
     	}
     	final List<PeerAddress> fromEachBag = new ArrayList<PeerAddress>();
     	
     	int bucketCounter = 0;
     	for (final Map<Number160, PeerStatistic> map : peerMapVerified) {
+    		if(++bucketCounter > maxBucket) {
+				break;
+			}
     		synchronized (map) {
     			int neighborCounter = 0;
     			for (PeerStatistic peerStatistic : map.values()) {
-    				fromEachBag.add(peerStatistic.peerAddress());
-    				if(neighborCounter++ >= nrNeighbors) {
+    				if(++neighborCounter > nrNeighbors) {
     					break;
     				}
+    				fromEachBag.add(peerStatistic.peerAddress());
     			}
     		}
-    		if(bucketCounter++ >= maxBucket) {
-				break;
-			}
     	}
 	    return fromEachBag;
     }
@@ -911,6 +911,18 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 	public int bagSizeOverflow(int bag) {
 	    return bagSizesOverflow[bag];
     }
+
+	public int nrFilledBags() {
+		int counter = 0;
+		for (final Map<Number160, PeerStatistic> map : peerMapVerified) {
+            synchronized (map) {
+            	if(map.size() > 0) {
+            		counter++;
+            	}
+            }
+        }
+		return counter;
+	}
 
 	
 

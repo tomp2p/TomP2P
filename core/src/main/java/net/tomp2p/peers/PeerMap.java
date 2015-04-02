@@ -45,8 +45,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PeerMap implements PeerStatusListener, Maintainable {
 	
-	public enum Direction {LEFT,RIGHT,DONT_CARE};
-	
     private static final Logger LOG = LoggerFactory.getLogger(PeerMap.class);
 
     // each distance bit has its own bag this is the size of the verified peers (the ones that we know are reachable)
@@ -526,24 +524,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return A sorted set with close peers first in this set. Use set.first() to get the closest peer
      */
     public NavigableSet<PeerStatistic> closePeers(final Number160 id, final int atLeast) {
-    	return closePeers(self, id, atLeast, peerMapVerified, peerStatisticComparator.getComparator(id), Direction.DONT_CARE);
-    }
-    
-    public NavigableSet<PeerStatistic> closePeers(int atLeast, Direction direction) {
-    	return closePeers(self, self, atLeast, peerMapVerified, peerStatisticComparator.getComparator(self), direction);
-    }
-    
-    public static NavigableSet<PeerStatistic> closePeers(final Number160 self, final Number160 other,
-            final int atLeast,
-            List<Map<Number160, PeerStatistic>> peerMap,
-            Comparator<PeerStatistic> comparator) {
-    	return closePeers(self, other, atLeast, peerMap, comparator, Direction.DONT_CARE);
+    	return closePeers(self, id, atLeast, peerMapVerified, peerStatisticComparator.getComparator(id));
     }
 
     public static NavigableSet<PeerStatistic> closePeers(final Number160 self, final Number160 other,
                                                          final int atLeast,
                                                          List<Map<Number160, PeerStatistic>> peerMap,
-                                                         Comparator<PeerStatistic> comparator, Direction direction) {
+                                                         Comparator<PeerStatistic> comparator) {
 
         if (comparator == null) comparator = createXORStatisticComparator(other);
         final NavigableSet<PeerStatistic> set = new TreeSet<PeerStatistic>(comparator);
@@ -552,7 +539,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         if (classMember == -1) {
             for (int j = 0; j < Number160.BITS; j++) {
                 final Map<Number160, PeerStatistic> tmp = peerMap.get(j);
-                if (fillSet(atLeast, set, tmp, direction, self)) {
+                if (fillSet(atLeast, set, tmp)) {
                     return set;
                 }
             }
@@ -560,7 +547,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
 
         Map<Number160, PeerStatistic> tmp = peerMap.get(classMember);
-        if (fillSet(atLeast, set, tmp, direction, self)) {
+        if (fillSet(atLeast, set, tmp)) {
             return set;
         }
 
@@ -568,7 +555,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         boolean last = false;
         for (int i = 0; i < classMember; i++) {
             tmp = peerMap.get(i);
-            last = fillSet(atLeast, set, tmp, direction, self);
+            last = fillSet(atLeast, set, tmp);
         }
         if (last) {
             return set;
@@ -576,7 +563,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // in this case we have to go over all the bags that are larger
         for (int i = classMember + 1; i < Number160.BITS; i++) {
             tmp = peerMap.get(i);
-            fillSet(atLeast, set, tmp, direction, self);
+            fillSet(atLeast, set, tmp);
         }
         return set;
     }
@@ -625,22 +612,32 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         return all;
     }
-    
-    public List<PeerAddress> fromEachBag(int nr) {
-    	if(nr <= 0) {
+    /**
+     * 
+     * @param nrNeighbors
+     * @param maxBucket not inclusive
+     * @return
+     */
+    public List<PeerAddress> fromEachBag(final int nrNeighbors, final int maxBucket) {
+    	if(nrNeighbors <= 0) {
     		return all();
     	}
     	final List<PeerAddress> fromEachBag = new ArrayList<PeerAddress>();
+    	
+    	int bucketCounter = 0;
     	for (final Map<Number160, PeerStatistic> map : peerMapVerified) {
     		synchronized (map) {
-    			int counter = 0;
+    			int neighborCounter = 0;
     			for (PeerStatistic peerStatistic : map.values()) {
     				fromEachBag.add(peerStatistic.peerAddress());
-    				if(counter++ >= nr) {
+    				if(neighborCounter++ >= nrNeighbors) {
     					break;
     				}
     			}
     		}
+    		if(bucketCounter++ >= maxBucket) {
+				break;
+			}
     	}
 	    return fromEachBag;
     }
@@ -721,6 +718,10 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     public static int isKadCloser(final Number160 id, final PeerAddress rn, final PeerAddress rn2) {
         return distance(id, rn.peerId()).compareTo(distance(id, rn2.peerId()));
     }
+    
+    public static int isKadCloser(final Number160 id, final Number160 rn, final Number160 rn2) {
+        return distance(id, rn).compareTo(distance(id, rn2));
+    }
 
     /**
      * Returns -1 if the first remote node is closer to the key, if the secondBITS is closer, then 1 is returned. If
@@ -736,6 +737,14 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         Integer d1 = classMember(ln, rn.peerId());
         Integer d2 = classMember(ln, rn2.peerId());
         return d1.compareTo(d2);
+    }
+    
+    public static Comparator<Number160> createXORNumberComparator(final Number160 location) {
+        return new Comparator<Number160>() {
+            public int compare(final Number160 remotePeer, final Number160 remotePeer2) {
+                return isKadCloser(location, remotePeer, remotePeer2);
+            }
+        };
     }
 
     /**
@@ -886,24 +895,10 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True if the desired size has been reached
      */
     private static boolean fillSet(final int atLeast, final SortedSet<PeerStatistic> set,
-            final Map<Number160, PeerStatistic> tmp, Direction direction, Number160 self) {
+            final Map<Number160, PeerStatistic> tmp) {
         synchronized (tmp) {
             for (final PeerStatistic peerStatistic : tmp.values()) {
-            	switch(direction) {
-            		case DONT_CARE:
-            			set.add(peerStatistic);
-            			break;
-            		case LEFT:
-            			if(peerStatistic.peerAddress().peerId().compareTo(self) > 0) {
-            				set.add(peerStatistic);
-            			}
-            			break;
-            		case RIGHT:
-            			if(peerStatistic.peerAddress().peerId().compareTo(self) < 0) {
-            				set.add(peerStatistic);
-            			}
-            			break;
-            	}
+            	set.add(peerStatistic);
             }
         }
         return set.size() >= atLeast;

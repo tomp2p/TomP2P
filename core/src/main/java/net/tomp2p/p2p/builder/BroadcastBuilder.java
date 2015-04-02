@@ -58,6 +58,7 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
         
         message.key(messageKey);
         message.intValue(0);
+        message.intValue(Number160.BITS);
         message.udp(isUDP());
         
         peer.broadcastRPC().broadcastHandler().receive(message);

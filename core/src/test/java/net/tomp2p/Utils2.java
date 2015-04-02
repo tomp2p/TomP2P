@@ -34,8 +34,6 @@ import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.AutomaticFuture;
-import net.tomp2p.p2p.BroadcastHandler;
-import net.tomp2p.p2p.OneDirectionBroadcastHandler;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.StructuredBroadcastHandler;
@@ -153,7 +151,7 @@ public class Utils2 {
 		PeerBuilder pb = new PeerBuilder(peerId).ports(port).enableMaintenance(maintenance).bindings(bindings)
 		        .peerMap(peerMap);
 		if (structuredBroadcastHandler) {
-			pb.broadcastHandler(new OneDirectionBroadcastHandler(rnd));
+			pb.broadcastHandler(new StructuredBroadcastHandler(rnd));
 		}
 		peers[0] = pb.start();
 		if (automaticFuture != null) {
@@ -167,7 +165,7 @@ public class Utils2 {
         	pb = new PeerBuilder(peerId).enableMaintenance(maintenance)
                         .bindings(bindings).peerMap(peerMap).masterPeer(peers[0]);
         	if (structuredBroadcastHandler) {
-    			pb.broadcastHandler(new OneDirectionBroadcastHandler(rnd));
+    			pb.broadcastHandler(new StructuredBroadcastHandler(rnd));
     		}
         	peers[i] = pb.start();
         	if (automaticFuture != null) {

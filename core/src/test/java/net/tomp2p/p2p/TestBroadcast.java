@@ -11,6 +11,7 @@ import org.junit.Test;
 
 public class TestBroadcast {
 	private final static Random RND = new Random(42);
+
 	@Test
 	public void testBroadcast() throws Exception {
 		
@@ -55,7 +56,7 @@ public class TestBroadcast {
 			DefaultBroadcastHandler d = (DefaultBroadcastHandler) master.broadcastRPC().broadcastHandler();
 			int counter = 0;
 			//TODO: make this work
-			while (d.getBroadcastCounter() < 20) {
+			while (d.getBroadcastCounter() < 1000) {
 				Thread.sleep(200);
 				counter++;
 				if (counter > 100) {

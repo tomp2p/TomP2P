@@ -100,6 +100,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
 			dataMap = null;
 		}
 		final int hopCount = message.intAt(0);
+		final int bucketNr = message.intAt(1);
 		LOG.debug("I {} received a message", peer.peerID());
 		if (twiceSeen(messageKey)) {
 			LOG.debug("already forwarded this message in {}", peer.peerID());
@@ -116,7 +117,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
 				firstPeer(messageKey, dataMap, hopCount, message.isUdp());
 			} else {
 				LOG.debug("more hop");
-				otherPeer(message.sender().peerId(), messageKey, dataMap, hopCount, message.isUdp(), message.type() == Message.Type.REQUEST_FF_1);
+				otherPeer(message.sender().peerId(), messageKey, dataMap, hopCount, message.isUdp(), bucketNr);
 			}
 		} else {
 			LOG.debug("max hop reached in {}", peer.peerID());
@@ -175,7 +176,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
 						broadcastBuilder.hopCounter(hopCounter + 1);
 						broadcastBuilder.udp(isUDP);
 						FutureResponse futureResponse = peer.broadcastRPC().send(peerAddress, broadcastBuilder,
-						        future.channelCreator(), broadcastBuilder, true);
+						        future.channelCreator(), broadcastBuilder, 0);
 						LOG.debug("1st broadcast to {}", peerAddress);
 						Utils.addReleaseListener(future.channelCreator(), futureResponse);
 					} else {
@@ -200,7 +201,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
 	 *            Flag if message can be sent with UDP
 	 */
 	public void otherPeer(Number160 sender, final Number160 messageKey, final NavigableMap<Number640, Data> dataMap,
-	        final int hopCounter, final boolean isUDP, boolean isShortJump) {
+	        final int hopCounter, final boolean isUDP, final int bucketNr) {
 		if(peer == null) {
 			throw new RuntimeException("Init never called. This should be done by the PeerBuilder");
 		}
@@ -222,7 +223,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
 						broadcastBuilder.udp(isUDP);
 
 						futures[i] = peer.broadcastRPC().send(randomAddress, broadcastBuilder, future.channelCreator(),
-						        broadcastBuilder, true);
+						        broadcastBuilder, 0);
 						LOG.debug("2nd broadcast to {} with hop {}", randomAddress, hopCounter + 1);
 					}
 					Utils.addReleaseListener(future.channelCreator(), futures);

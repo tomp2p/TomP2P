@@ -33,5 +33,7 @@ public interface BroadcastHandler {
      * @param message
      *            The message that was received in the broadcast message
      */
-     void receive(Message message);
+	BroadcastHandler receive(Message message);
+
+    BroadcastHandler init(Peer peer);
 }

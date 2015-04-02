@@ -44,6 +44,9 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  */
 public class PeerMap implements PeerStatusListener, Maintainable {
+	
+	public enum Direction {LEFT,RIGHT,DONT_CARE};
+	
     private static final Logger LOG = LoggerFactory.getLogger(PeerMap.class);
 
     // each distance bit has its own bag this is the size of the verified peers (the ones that we know are reachable)
@@ -523,13 +526,24 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return A sorted set with close peers first in this set. Use set.first() to get the closest peer
      */
     public NavigableSet<PeerStatistic> closePeers(final Number160 id, final int atLeast) {
-    	return closePeers(self(), id, atLeast, peerMapVerified, peerStatisticComparator.getComparator(id));
+    	return closePeers(self, id, atLeast, peerMapVerified, peerStatisticComparator.getComparator(id), Direction.DONT_CARE);
+    }
+    
+    public NavigableSet<PeerStatistic> closePeers(int atLeast, Direction direction) {
+    	return closePeers(self, self, atLeast, peerMapVerified, peerStatisticComparator.getComparator(self), direction);
+    }
+    
+    public static NavigableSet<PeerStatistic> closePeers(final Number160 self, final Number160 other,
+            final int atLeast,
+            List<Map<Number160, PeerStatistic>> peerMap,
+            Comparator<PeerStatistic> comparator) {
+    	return closePeers(self, other, atLeast, peerMap, comparator, Direction.DONT_CARE);
     }
 
     public static NavigableSet<PeerStatistic> closePeers(final Number160 self, final Number160 other,
                                                          final int atLeast,
                                                          List<Map<Number160, PeerStatistic>> peerMap,
-                                                         Comparator<PeerStatistic> comparator) {
+                                                         Comparator<PeerStatistic> comparator, Direction direction) {
 
         if (comparator == null) comparator = createXORStatisticComparator(other);
         final NavigableSet<PeerStatistic> set = new TreeSet<PeerStatistic>(comparator);
@@ -538,7 +552,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         if (classMember == -1) {
             for (int j = 0; j < Number160.BITS; j++) {
                 final Map<Number160, PeerStatistic> tmp = peerMap.get(j);
-                if (fillSet(atLeast, set, tmp)) {
+                if (fillSet(atLeast, set, tmp, direction, self)) {
                     return set;
                 }
             }
@@ -546,7 +560,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
 
         Map<Number160, PeerStatistic> tmp = peerMap.get(classMember);
-        if (fillSet(atLeast, set, tmp)) {
+        if (fillSet(atLeast, set, tmp, direction, self)) {
             return set;
         }
 
@@ -554,7 +568,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         boolean last = false;
         for (int i = 0; i < classMember; i++) {
             tmp = peerMap.get(i);
-            last = fillSet(atLeast, set, tmp);
+            last = fillSet(atLeast, set, tmp, direction, self);
         }
         if (last) {
             return set;
@@ -562,7 +576,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // in this case we have to go over all the bags that are larger
         for (int i = classMember + 1; i < Number160.BITS; i++) {
             tmp = peerMap.get(i);
-            fillSet(atLeast, set, tmp);
+            fillSet(atLeast, set, tmp, direction, self);
         }
         return set;
     }
@@ -601,8 +615,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return All neighbors
      */
     public List<PeerAddress> all() {
-        List<PeerAddress> all = new ArrayList<PeerAddress>();
-        for (Map<Number160, PeerStatistic> map : peerMapVerified) {
+        final List<PeerAddress> all = new ArrayList<PeerAddress>();
+        for (final Map<Number160, PeerStatistic> map : peerMapVerified) {
             synchronized (map) {
                 for (PeerStatistic peerStatistic : map.values()) {
                     all.add(peerStatistic.peerAddress());
@@ -610,6 +624,25 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             }
         }
         return all;
+    }
+    
+    public List<PeerAddress> fromEachBag(int nr) {
+    	if(nr <= 0) {
+    		return all();
+    	}
+    	final List<PeerAddress> fromEachBag = new ArrayList<PeerAddress>();
+    	for (final Map<Number160, PeerStatistic> map : peerMapVerified) {
+    		synchronized (map) {
+    			int counter = 0;
+    			for (PeerStatistic peerStatistic : map.values()) {
+    				fromEachBag.add(peerStatistic.peerAddress());
+    				if(counter++ >= nr) {
+    					break;
+    				}
+    			}
+    		}
+    	}
+	    return fromEachBag;
     }
     
     public List<Map<Number160, PeerStatistic>> peerMapVerified() {
@@ -853,10 +886,24 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True if the desired size has been reached
      */
     private static boolean fillSet(final int atLeast, final SortedSet<PeerStatistic> set,
-            final Map<Number160, PeerStatistic> tmp) {
+            final Map<Number160, PeerStatistic> tmp, Direction direction, Number160 self) {
         synchronized (tmp) {
             for (final PeerStatistic peerStatistic : tmp.values()) {
-                set.add(peerStatistic);
+            	switch(direction) {
+            		case DONT_CARE:
+            			set.add(peerStatistic);
+            			break;
+            		case LEFT:
+            			if(peerStatistic.peerAddress().peerId().compareTo(self) > 0) {
+            				set.add(peerStatistic);
+            			}
+            			break;
+            		case RIGHT:
+            			if(peerStatistic.peerAddress().peerId().compareTo(self) < 0) {
+            				set.add(peerStatistic);
+            			}
+            			break;
+            	}
             }
         }
         return set.size() >= atLeast;
@@ -869,4 +916,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 	public int bagSizeOverflow(int bag) {
 	    return bagSizesOverflow[bag];
     }
+
+	
+
+	
 }

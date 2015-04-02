@@ -34,8 +34,11 @@ import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.AutomaticFuture;
+import net.tomp2p.p2p.BroadcastHandler;
+import net.tomp2p.p2p.OneDirectionBroadcastHandler;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
+import net.tomp2p.p2p.StructuredBroadcastHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -111,12 +114,16 @@ public class Utils2 {
     }
 
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
-        return createNodes(nrOfPeers, rnd, port, null);
+        return createNodes(nrOfPeers, rnd, port, false);
+    }
+    
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, boolean broadcastHandler) throws Exception {
+        return createNodes(nrOfPeers, rnd, port, null, broadcastHandler);
     }
 
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture)
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture, boolean broadcastHandler)
             throws Exception {
-        return createNodes(nrOfPeers, rnd, port, automaticFuture, false);
+        return createNodes(nrOfPeers, rnd, port, automaticFuture, false, broadcastHandler);
     }
 
     /**
@@ -134,39 +141,39 @@ public class Utils2 {
      *             If the creation of nodes fail.
      */
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
-            boolean maintenance) throws Exception {
+            boolean maintenance, boolean structuredBroadcastHandler) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Bindings bindings = new Bindings();
         Peer[] peers = new Peer[nrOfPeers];
-        if (automaticFuture != null) {
-        	Number160 peerId = new Number160(rnd);
-        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-            peers[0] = new PeerBuilder(peerId)
-                    .ports(port).enableMaintenance(maintenance)
-                    .bindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
-        } else {
-        	Number160 peerId = new Number160(rnd);
-        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-            peers[0] = new PeerBuilder(peerId).enableMaintenance(maintenance).bindings(bindings)
-                   .peerMap(peerMap).ports(port).start();
-        }
+        
+		Number160 peerId = new Number160(rnd);
+		PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
+		PeerBuilder pb = new PeerBuilder(peerId).ports(port).enableMaintenance(maintenance).bindings(bindings)
+		        .peerMap(peerMap);
+		if (structuredBroadcastHandler) {
+			pb.broadcastHandler(new OneDirectionBroadcastHandler(rnd));
+		}
+		peers[0] = pb.start();
+		if (automaticFuture != null) {
+			peers[0].addAutomaticFuture(automaticFuture);
+		}
 
         for (int i = 1; i < nrOfPeers; i++) {
-            if (automaticFuture != null) {
-            	Number160 peerId = new Number160(rnd);
-            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-                peers[i] = new PeerBuilder(peerId)
-                        .masterPeer(peers[0])
-                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).bindings(bindings).start().addAutomaticFuture(automaticFuture);
-            } else {
-            	Number160 peerId = new Number160(rnd);
-            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
-                peers[i] = new PeerBuilder(peerId).enableMaintenance(maintenance)
-                        .bindings(bindings).peerMap(peerMap).masterPeer(peers[0])
-                        .start();
-            }
+           
+        	peerId = new Number160(rnd);
+        	peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+        	pb = new PeerBuilder(peerId).enableMaintenance(maintenance)
+                        .bindings(bindings).peerMap(peerMap).masterPeer(peers[0]);
+        	if (structuredBroadcastHandler) {
+    			pb.broadcastHandler(new OneDirectionBroadcastHandler(rnd));
+    		}
+        	peers[i] = pb.start();
+        	if (automaticFuture != null) {
+        		peers[i].addAutomaticFuture(automaticFuture);	
+        	}
+		
         }
         System.err.println("peers created.");
         return peers;

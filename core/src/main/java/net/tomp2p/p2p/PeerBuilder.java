@@ -256,8 +256,9 @@ public class PeerBuilder {
 		}
 
 		if (broadcastHandler == null) {
-			broadcastHandler = new DefaultBroadcastHandler(peer, new Random());
+			broadcastHandler = new DefaultBroadcastHandler(new Random());
 		}
+		broadcastHandler.init(peer);
 		
 		//Set/enable RPC
 

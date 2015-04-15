@@ -14,7 +14,7 @@ public abstract class Profiler {
 			BenchmarkUtil.printStopwatchProperties();
 			
 			System.out.println("Setting up...");
-			setup();
+			setup(args);
 			
 			long[] warmups = new long[args.getNrWarmups()];
 	        long[] repetitions = new long[args.getNrRepetitions()];
@@ -70,7 +70,7 @@ public abstract class Profiler {
 			Runtime rt = Runtime.getRuntime();
 
 			System.out.println("Setting up...");
-			setup();
+			setup(args);
 			
 			long[] warmups = new long[args.getNrWarmups()];
 	        long[] repetitions = new long[args.getNrRepetitions()];
@@ -116,7 +116,7 @@ public abstract class Profiler {
 		}
 	}
 	
-	protected abstract void setup() throws Exception;
+	protected abstract void setup(Arguments args) throws Exception;
 	
 	protected abstract void shutdown() throws Exception;
 	

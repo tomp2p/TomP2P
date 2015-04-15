@@ -5,11 +5,12 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.PeerAddress;
 
-public class SendDirectLocalProfiler extends SendDirectProfiler {
+public class SendDirectRemoteProfiler extends SendDirectProfiler {
 
-	private static final int NETWORK_SIZE = 2;
+	private static final int NETWORK_SIZE = 1;
+	private PeerAddress remoteAddress;
 	
-	public SendDirectLocalProfiler(boolean isForceUdp) {
+	public SendDirectRemoteProfiler(boolean isForceUdp) {
 		super(isForceUdp);
 	}
 	
@@ -18,8 +19,8 @@ public class SendDirectLocalProfiler extends SendDirectProfiler {
 
 		Network = BenchmarkUtil.createNodes(NETWORK_SIZE, Rnd, 9099, false, false);
 		sender = Network[0];
-		receiver = Network[1];
-		receiver.rawDataReply(new SampleRawDataReply());
+		remoteAddress = (PeerAddress) args.getParam();
+		
 		FutureChannelCreator fcc = sender.connectionBean().reservation().create(isForceUdp ? 1 : 0, isForceUdp ? 0 : 1);
 		fcc.awaitUninterruptibly();
 		cc = fcc.channelCreator();
@@ -34,7 +35,7 @@ public class SendDirectLocalProfiler extends SendDirectProfiler {
 	@Override
 	protected void execute() throws Exception {
 		
-		FutureResponse fr = sender.directDataRPC().send(receiver.peerAddress(), sendDirectBuilder, cc);
+		FutureResponse fr = sender.directDataRPC().send(remoteAddress, sendDirectBuilder, cc);
 		fr.awaitUninterruptibly();
 		
 		// make buffer reusable

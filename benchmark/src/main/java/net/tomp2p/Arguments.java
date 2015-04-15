@@ -8,6 +8,7 @@ public final class Arguments {
 	private final int nrRepetitions;
 	private final String resultsDir;
 	private final String suffix;
+	private Object param;
 	
 	public Arguments(String bmArg, String type, int nrWarmups, int nrRepetitions, String resultsDir, String suffix) {
 		this.bmArg = bmArg;
@@ -40,6 +41,14 @@ public final class Arguments {
 
 	public String getSuffix() {
 		return suffix;
+	}
+	
+	public Object getParam() {
+		return param;
+	}
+	
+	public void setParam(Object param) {
+		this.param = param;
 	}
 	
 	@Override

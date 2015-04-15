@@ -12,7 +12,7 @@ public class BootstrapProfiler extends Profiler {
 	private final List<FutureBootstrap> futures = new ArrayList<FutureBootstrap>(NETWORK_SIZE * NETWORK_SIZE);
 
 	@Override
-	protected void setup() throws IOException {
+	protected void setup(Arguments args) throws IOException {
 		Network = BenchmarkUtil.createNodes(NETWORK_SIZE, Rnd, 9099, false, false);
 	}
 

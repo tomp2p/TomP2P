@@ -52,6 +52,7 @@
 		<module>storage</module>
 		<module>dht</module>
 		<module>tracker</module>
+		<module>bitcoin</module>
 		<module>social</module>
 		<!-- <module>task</module> -->
 	</modules>

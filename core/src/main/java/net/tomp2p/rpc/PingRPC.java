@@ -15,14 +15,7 @@
  */
 package net.tomp2p.rpc;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.GenericFutureListener;
-
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import net.tomp2p.connection.ChannelCreator;
@@ -34,17 +27,14 @@ import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.p2p.PeerReceivedBroadcastPing;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -267,54 +257,6 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	/**
-	 * Ping a peer, and request the other peer to return the source port of our
-	 * socket used to send the message. This method needs to do the setup of a
-	 * ChannelFuture manually since we need to know the port number of the
-	 * assigned socket.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
-	 * @return The future that will be triggered when we receive an answer or
-	 *         something fails.
-	 */
-	public FutureDone<List<PeerSocketAddress>> pingNATType(final PeerAddress remotePeer,
-			final ChannelCreator channelCreator, final ConnectionConfiguration configuration, final Peer peer) {
-		final FutureDone<List<PeerSocketAddress>> fDone = new FutureDone<List<PeerSocketAddress>>();
-		final List<PeerSocketAddress> peerSocketAddresses = new ArrayList<PeerSocketAddress>(2);
-		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_5);
-		final FutureResponse futureResponse = new FutureResponse(message);
-		final SimpleChannelInboundHandler<Message> inbound = new SimpleChannelInboundHandler<Message>() {
-
-			@Override
-			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-				if (!msg.peerSocketAddresses().isEmpty() && msg.type() == Type.OK) {
-					peerSocketAddresses.add(msg.peerSocketAddresses().get(0));
-					fDone.done(peerSocketAddresses);
-					ctx.close();
-				}
-			}
-		};
-		Utils.addReleaseListener(channelCreator, futureResponse);
-		final ChannelFuture cF = channelCreator.createUDP(false,
-				peer.connectionBean().sender().configureHandlers(inbound, futureResponse, 30, false), futureResponse);
-		cF.addListener(new GenericFutureListener<ChannelFuture>() {
-
-			@Override
-			public void operationComplete(ChannelFuture future) throws Exception {
-				if (future.isSuccess()) {
-					InetSocketAddress srcAddress = (InetSocketAddress) future.channel().localAddress();
-					peerSocketAddresses.add(new PeerSocketAddress(srcAddress.getAddress(), srcAddress.getPort(),
-							srcAddress.getPort()));
-					peer.connectionBean().sender().afterConnect(futureResponse, message, future, false);
-				}
-			}
-		});
-		return fDone;
-	}
-
-	/**
 	 * Create a request handler.
 	 * 
 	 * @param remotePeer
@@ -351,9 +293,11 @@ public class PingRPC extends DispatchHandler {
 	 *            The peer that should be stored in the neighborset
 	 * @return The neighborset with exactly one peer
 	 */
-	private NeighborSet createNeighborSet(final PeerAddress self) {
-		Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
-		tmp.add(self);
+	private NeighborSet createNeighborSet(final PeerAddress... self) {
+		List<PeerAddress> tmp = new ArrayList<PeerAddress>(self.length);
+		for(int i=0;i<self.length;i++) {
+			tmp.add(self[i]);
+		}
 		return new NeighborSet(-1, tmp);
 	}
 
@@ -362,7 +306,7 @@ public class PingRPC extends DispatchHandler {
 			Responder responder) throws Exception {
 		if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
 				|| message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3
-				|| message.type() == Type.REQUEST_4 || message.type() == Type.REQUEST_5) && message.command() == RPC.Commands.PING
+				|| message.type() == Type.REQUEST_4) && message.command() == RPC.Commands.PING
 				.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
@@ -407,7 +351,9 @@ public class PingRPC extends DispatchHandler {
 		} else if (message.type() == Type.REQUEST_2) { // discover
 			LOG.debug("reply to discover, found {}", message.sender());
 			responseMessage = createResponseMessage(message, Type.OK);
+			final int port = message.senderSocket().getPort();
 			responseMessage.neighborsSet(createNeighborSet(message.sender()));
+			responseMessage.intValue(port);
 		} else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4) { // regular
 																							// ping
 			LOG.debug("reply to regular ping {}", message.sender());
@@ -439,24 +385,6 @@ public class PingRPC extends DispatchHandler {
 					}
 				}
 			}
-		} else if (message.type() == Message.Type.REQUEST_5) {
-			LOG.debug("reply to natTypePing {}");
-			// simply sends back the sourceport on which the peer sent the ping
-			// from
-			responseMessage = createResponseMessage(message, Type.OK);
-			int udpPort = -1;
-			int tcpPort = -1;
-			if (message.isUdp()) {
-				udpPort = message.senderSocket().getPort();
-			} else {
-				tcpPort = message.senderSocket().getPort();
-			}
-			PeerSocketAddress pAddress = new PeerSocketAddress(message.senderSocket().getAddress(), tcpPort, udpPort);
-			responseMessage.peerSocketAddresses().clear();
-			Collection<PeerSocketAddress> list = new ArrayList<PeerSocketAddress>(2);
-			list.add(pAddress);
-			responseMessage.peerSocketAddresses(list);
-			responseMessage.intValue(message.sender().peerSocketAddress().udpPort());
 		} else { // fire and forget - if (message.getType() ==
 					// Type.REQUEST_FF_1)
 			// we received a fire and forget ping. This means we are reachable

@@ -1,14 +1,18 @@
 package net.tomp2p.holep;
 
-import java.util.List;
+import java.util.Iterator;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.Futures;
+import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,15 +29,9 @@ public class NATTypeDetection {
 	private static final Logger LOG = LoggerFactory.getLogger(NATTypeDetection.class);
 	private static final int SEQ_PORT_TOLERANCE = 5;
 	private final Peer peer;
-	private NATType natType = null;
 
 	public NATTypeDetection(final Peer peer) {
 		this.peer = peer;
-		this.natType = NATType.UNKNOWN;
-	}
-
-	public NATType natType() {
-		return natType;
 	}
 
 	/**
@@ -48,63 +46,58 @@ public class NATTypeDetection {
 	 * another random port instead. <br />
 	 * UNKNOWN = We don't know anything about the NAT <br />
 	 * 
+	 * This method is always executed twice in a recursive manner. It contacts a
+	 * given relay {@link Peer} on it's {@link PeerAddress}. The relay peer then
+	 * simply returns the port number and the IP address the requesting peer was
+	 * contacting from.
+	 * 
 	 * @param relayPeer
 	 *            The {@link PeerAddress} of a relay peer.
 	 * @return futureDone A FutureDone to check if the method succeded.
 	 */
 	public FutureDone<NATType> checkNATType(final PeerAddress relayPeer) {
 		final FutureDone<NATType> futureDone = new FutureDone<NATType>();
-		pingRelayNATTest(futureDone, relayPeer, null, null);
-		return futureDone;
-	}
-
-	/**
-	 * This method is always executed twice in a recursive manner. It contacts a
-	 * given relay {@link Peer} on it's {@link PeerAddress}. The relay peer then
-	 * simply returns the port number and the IP address the requesting peer was
-	 * contacting from.
-	 * 
-	 * @param fd
-	 *            The corresponding {@link FutureDone}
-	 * @param relayPeer
-	 *            The {@link PeerAddress} of the relay
-	 * @param senderPsa
-	 *            The senders {@link PeerSocketAddress}
-	 * @param recipientPsa
-	 *            The recipients {@link PeerSocketAddress}
-	 */
-	private void pingRelayNATTest(final FutureDone<NATType> fd, final PeerAddress relayPeer, final PeerSocketAddress senderPsa,
-			final PeerSocketAddress recipientPsa) {
-		FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(1, 0);
+		final FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(1, 0);
 		fcc1.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					FutureDone<List<PeerSocketAddress>> fDone = peer.pingRPC().pingNATType(relayPeer, future.channelCreator(),
-							new DefaultConnectionConfiguration(), peer);
-					fDone.addListener(new BaseFutureAdapter<FutureDone<List<PeerSocketAddress>>>() {
+					
+					FutureResponse futureResponse1 =  peer.pingRPC().pingUDPDiscover(relayPeer, future.channelCreator(),
+							new DefaultConnectionConfiguration());
+					FutureResponse futureResponse2 =  peer.pingRPC().pingUDPDiscover(relayPeer, future.channelCreator(),
+							new DefaultConnectionConfiguration());
+					
+					FutureDone<FutureResponse[]> fdd = Futures.whenAllSuccess(futureResponse1, futureResponse2);
+					Utils.addReleaseListener(fcc1, fdd);
+					fdd.addListener(new BaseFutureAdapter<FutureDone<FutureResponse[]>>() {
+
 						@Override
-						public void operationComplete(FutureDone<List<PeerSocketAddress>> future) throws Exception {
-							if (future.isSuccess()) {
-								List<PeerSocketAddress> addresses = future.object();
-								// we need to contact the relay twice in order
-								// to distinguish between a sequential and a
-								// random port assignement
-								if (senderPsa == null || recipientPsa == null) {
-									pingRelayNATTest(fd, relayPeer, addresses.get(0), addresses.get(1));
-								} else {
-									checkNATType(fd, senderPsa, recipientPsa, addresses.get(0), addresses.get(1));
-								}
-							} else {
-								fd.failed("Could not emit NAT type!");
-							}
-						}
+                        public void operationComplete(FutureDone<FutureResponse[]> future) throws Exception {
+	                        if(future.isSuccess()) {
+	                        	if(future.object().length !=2) {
+	                        		futureDone.failed("expected exactly two futures");
+	                        		return;
+	                        	}
+	                        	final int port1 = future.object()[0].responseMessage().intAt(0);
+	                        	final int port2 = future.object()[1].responseMessage().intAt(0);
+	                        	
+	                        	//NATType natType = checkNATType(relayPeer, pa2.peerSocketAddress(), pa4.peerSocketAddress());
+	                        	//futureDone.done(natType);
+	                        	futureDone.failed("not implemented yet");
+	                        } else {
+	                        	futureDone.failed("expected two successful futures", future);
+	                        }
+                        }
 					});
+					
+					
 				} else {
-					fd.failed("Could not emit NAT type!");
+					futureDone.failed("Could not emit NAT type! Channel creation failed", future);
 				}
 			}
 		});
+		return futureDone;
 	}
 
 	/**
@@ -123,31 +116,20 @@ public class NATTypeDetection {
 	 * @param recipientPsa2
 	 *            The recipients {@link PeerSocketAddress} from the second ping.
 	 */
-	private void checkNATType(final FutureDone<NATType> fd, final PeerSocketAddress senderPsa, final PeerSocketAddress recipientPsa,
+	private NATType checkNATType(final PeerSocketAddress senderPsa, final PeerSocketAddress recipientPsa,
 			final PeerSocketAddress senderPsa2, final PeerSocketAddress recipientPsa2) {
 		if (peer.peerAddress().peerSocketAddress().inetAddress().equals(recipientPsa.inetAddress())) {
-			signalNAT("there is no NAT to be traversed!", NATType.NO_NAT, fd);
+			LOG.debug("there is no NAT to be traversed!");
+			return NATType.NO_NAT;
 		} else if (senderPsa.udpPort() == recipientPsa.udpPort() && senderPsa2.udpPort() == recipientPsa2.udpPort()) {
-			signalNAT("Port preserving NAT detected. UDP hole punching is possible", NATType.PORT_PRESERVING, fd);
-		} else if (recipientPsa2.udpPort() - recipientPsa.udpPort() < SEQ_PORT_TOLERANCE) {
-			signalNAT("NAT with sequential port multiplexing detected. UDP hole punching is still possible",
-					NATType.NON_PRESERVING_SEQUENTIAL, fd);
+			LOG.debug("Port preserving NAT detected. UDP hole punching is possible");
+			return NATType.PORT_PRESERVING;
+		} else if (Math.abs(recipientPsa2.udpPort() - recipientPsa.udpPort()) < SEQ_PORT_TOLERANCE) {
+			LOG.debug("NAT with sequential port multiplexing detected. UDP hole punching is still possible");
+			return NATType.NON_PRESERVING_SEQUENTIAL;
 		} else {
-			signalNAT("Symmetric NAT detected (assumed since all other tests failed)", NATType.NON_PRESERVING_OTHER, fd);
+			LOG.debug("Symmetric NAT detected (assumed since all other tests failed)");
+			return NATType.NON_PRESERVING_OTHER;
 		}
-	}
-
-	/**
-	 * This method sets the {@link NATType} on the {@link HolePInitiatorImpl}
-	 * object.
-	 * 
-	 * @param debugMsg
-	 * @param natType
-	 * @param fd
-	 */
-	private void signalNAT(final String debugMsg, final NATType natType, final FutureDone<NATType> fd) {
-		LOG.warn(debugMsg);
-		this.natType = natType;
-		fd.done(natType);
 	}
 }

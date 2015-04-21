@@ -23,6 +23,7 @@ public class HolePInitiatorImpl implements HolePInitiator {
 	private final NATTypeDetection natTypeDetection;
 	private final Peer peer;
 	private boolean testCase = false;
+	private FutureDone<NATType> future;
 
 	public HolePInitiatorImpl(final Peer peer) {
 		this.peer = peer;
@@ -31,15 +32,11 @@ public class HolePInitiatorImpl implements HolePInitiator {
 
 	@Override
 	public FutureDone<Message> handleHolePunch(final int idleUDPSeconds, final FutureResponse futureResponse, final Message originalMessage) {
+		//this is called from the sender, we start hole punching here.
 		final FutureDone<Message> futureDone = new FutureDone<Message>();
-
-		if (natTypeDetection.natType() == NATType.NON_PRESERVING_OTHER) {
-			LOG.error("A symmetric NAT can't be traversed. No HolePunching possible!");
-			return futureDone.failed("A symmetric NAT can't be traversed. No HolePunching possible!");
-		}
-
-		final HolePStrategy holePuncher = natType().holePuncher(peer, peer.peerBean().holePNumberOfHoles(), idleUDPSeconds, originalMessage);
-		return holePuncher.initiateHolePunch(futureDone, futureResponse);
+		//final HolePStrategy holePuncher = natType().holePuncher(peer, peer.peerBean().holePNumberOfHoles(), idleUDPSeconds, originalMessage);
+		//return holePuncher.initiateHolePunch(futureDone, futureResponse);
+		return null;
 	}
 
 	/**
@@ -49,13 +46,11 @@ public class HolePInitiatorImpl implements HolePInitiator {
 	 * 
 	 * @param peerAddress
 	 */
-	public void checkNatType(final PeerAddress peerAddress) {
-		natTypeDetection.checkNATType(peerAddress);
+	public FutureDone<NATType> checkNatType(final PeerAddress peerAddress) {
+		future = natTypeDetection.checkNATType(peerAddress);
+		return future;
 	}
 
-	public NATType natType() {
-		return natTypeDetection.natType();
-	}
 
 	public boolean isTestCase() {
 		return testCase;

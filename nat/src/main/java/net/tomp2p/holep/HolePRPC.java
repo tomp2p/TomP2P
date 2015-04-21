@@ -73,7 +73,7 @@ public class HolePRPC extends DispatchHandler {
 	 */
 	@SuppressWarnings("static-access")
 	private void handleHolePunch(final Message message, final Responder responder) {
-		final NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
+		/*final NATType type = ((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).natType();
 		final HolePStrategy holePuncher = type.holePuncher(peer, message.intAt(0), peer.connectionBean().DEFAULT_UDP_IDLE_SECONDS, message);
 		final FutureDone<Message> replyMessage = holePuncher.replyHolePunch();
 		LOG.debug("Hole Punch attempt received. Start reply procedure.");
@@ -88,7 +88,7 @@ public class HolePRPC extends DispatchHandler {
 					handleFail(message, responder, "Fail while initiating the hole punching");
 				}
 			}
-		});
+		});*/
 	}
 
 	/**

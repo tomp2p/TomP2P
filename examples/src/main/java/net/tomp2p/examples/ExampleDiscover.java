@@ -9,7 +9,6 @@ import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
-import net.tomp2p.connection.StandardProtocolFamily;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
@@ -31,9 +30,7 @@ public class ExampleDiscover {
 
 	public static void startServer() throws Exception {
 		Random rnd = new Random(43L);
-		Bindings b = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(
-		        InetAddress.getByName("127.0.0.1"));
-		// b.addInterface("eth0");
+		Bindings b = new Bindings().listenAny();
 		Peer master = new PeerBuilder(new Number160(rnd)).ports(4000).bindings(b).start();
 		System.out.println("Server started Listening to: " + DiscoverNetworks.discoverInterfaces(b));
 		System.out.println("address visible to outside is " + master.peerAddress());
@@ -70,10 +67,8 @@ public class ExampleDiscover {
 	}
 
 	public static void startClient(String ipAddress) throws Exception {
-		Random rnd = new Random();
-		Bindings b = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(
-		        InetAddress.getByName("127.0.0.1"));
-		// b.addInterface("eth0");
+		Random rnd = new Random(42L);
+		Bindings b = new Bindings().listenAny();
 		Peer client = new PeerBuilder(new Number160(rnd)).ports(4001).bindings(b).start();
 		System.out.println("Client started and Listening to: " + DiscoverNetworks.discoverInterfaces(b));
 		System.out.println("address visible to outside is " + client.peerAddress());
@@ -85,7 +80,7 @@ public class ExampleDiscover {
 		System.out.println("PeerAddress: " + pa);
 		
 		// Future Discover
-		FutureDiscover futureDiscover = client.discover().inetAddress(address).ports(masterPort).start();
+		FutureDiscover futureDiscover = client.discover().expectManualForwarding().inetAddress(address).ports(masterPort).start();
 		futureDiscover.awaitUninterruptibly();
 
 		// Future Bootstrap - slave

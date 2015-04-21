@@ -10,11 +10,10 @@
 	
 	<!-- Loggers -->
 	<logger name="net.tomp2p" level="INFO" />
-	<logger name="net.tomp2p.relay" level="DEBUG" />
 	<logger name="io.netty" level="WARN" /> <!-- mute netty library -->
 	
 	<!-- Examples -->
-	<logger name="net.tomp2p.examples" level="DEBUG" /> <!-- mute netty library -->
+	<logger name="net.tomp2p.examples" level="DEBUG" />
 	
 	<root level="DEBUG">
 		<appender-ref ref="STDOUT" />

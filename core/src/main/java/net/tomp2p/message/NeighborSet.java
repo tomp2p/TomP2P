@@ -7,6 +7,7 @@ import net.tomp2p.peers.PeerAddress;
 
 public class NeighborSet {
     private final int neighborLimit;
+    //this needs to be a collection as we want to process lists *and* sets
     private final Collection<PeerAddress> neighbors;
 
     public NeighborSet(final int neighborLimit, final Collection<PeerAddress> neighbors) {

@@ -667,6 +667,7 @@ public class Sender {
 	private FutureDone<Message> handleHolePunch(final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator, final int idleUDPSeconds, final SimpleChannelInboundHandler<Message> handler,
 			final boolean broadcast, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, final ChannelFuture channelFuture) {
+		// start hole punching
 		FutureDone<Message> fDone = peerBean.holePunchInitiator().handleHolePunch(idleUDPSeconds, futureResponse, message);
 		fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 

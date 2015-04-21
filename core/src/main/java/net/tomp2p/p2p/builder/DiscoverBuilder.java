@@ -59,6 +59,8 @@ public class DiscoverBuilder {
     private ConnectionConfiguration configuration;
     
     private FutureDiscover futureDiscover;
+    
+    private boolean expectManualForwarding;
 
     public DiscoverBuilder(Peer peer) {
         this.peer = peer;
@@ -135,6 +137,19 @@ public class DiscoverBuilder {
 
     public DiscoverBuilder futureDiscover(FutureDiscover futureDiscover) {
         this.futureDiscover = futureDiscover;
+        return this;
+    }
+    
+    public boolean isExpectManualForwarding() {
+        return expectManualForwarding;
+    }
+
+    public DiscoverBuilder expectManualForwarding() {
+        return setExpectManualForwarding(true);
+    }
+    
+    public DiscoverBuilder setExpectManualForwarding(boolean expectManualForwarding) {
+        this.expectManualForwarding = expectManualForwarding;
         return this;
     }
 
@@ -259,7 +274,14 @@ public class DiscoverBuilder {
                                     peer.peerBean().serverPeerAddress(serverAddress);
                                     peer.peerBean().serverPeerAddress().internalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
                                     LOG.info("manual ports, change it to: {}", serverAddress);
-                                } else {
+                                } else if(expectManualForwarding) {
+                                	final PeerAddress serverAddressOrig = serverAddress;
+                                	serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
+                                    peer.peerBean().serverPeerAddress(serverAddress);
+                                    peer.peerBean().serverPeerAddress().internalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
+                                    LOG.info("we were manually forwarding, change it to: {}", serverAddress);
+                                }
+                                else {
                                     // we need to find a relay, because there is a NAT in the way.
                                 	// we cannot use futureResponseTCP.responseMessage().recipient() as this may return also IPv6 addresses
                                 	LOG.info("We are most likely behind NAT, try to UPNP, NATPMP or relay. PeerAddress: {}, ServerAddress: {}, Seen as: {}" + peerAddress, serverAddress.inetAddress(), seenAs.inetAddress());

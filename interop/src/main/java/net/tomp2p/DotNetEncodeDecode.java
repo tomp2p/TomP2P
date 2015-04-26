@@ -4,6 +4,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
@@ -18,7 +20,7 @@ public class DotNetEncodeDecode {
 	public static byte[] encodeByte() throws Exception {
 	
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
-		
+
 		for (int i = Byte.MIN_VALUE; i <= Byte.MAX_VALUE; i++) // -128 ... 127
 		{
 			buf.writeByte(i);

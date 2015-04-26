@@ -64,6 +64,7 @@ public abstract class Profiler {
 		}
 	}
 	
+	@SuppressWarnings("restriction")
 	public double[] profileMemory(Arguments args) throws Exception {
 		
 		try {
@@ -84,7 +85,10 @@ public abstract class Profiler {
 	        {
 	        	System.out.printf("Warmup %s...\n", i);
 	            execute();
+	            // add memory from JVM
 	            warmups[i] = rt.totalMemory() - rt.freeMemory();
+	            // add memory from direct buffers
+				warmups[i] += sun.misc. SharedSecrets.getJavaNioAccess().getDirectBufferPool().getMemoryUsed();
 	        }
 	        
 	        // repetitions
@@ -92,7 +96,10 @@ public abstract class Profiler {
 	        {
 	        	System.out.printf("Repetitions %s...\n", i);
 	            execute();
+	            // add memory from JVM
 	            repetitions[i] = rt.totalMemory() - rt.freeMemory();
+	            // add memory from direct buffers
+	            repetitions[i] += sun.misc. SharedSecrets.getJavaNioAccess().getDirectBufferPool().getMemoryUsed();
 	        }
 
 	        System.out.println("Stopped memory profiling.");

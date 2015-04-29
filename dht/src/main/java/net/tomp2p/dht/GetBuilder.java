@@ -25,47 +25,32 @@ import net.tomp2p.rpc.SimpleBloomFilter;
 
 public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuilder {
 
-    private final static FutureGet FUTURE_SHUTDOWN = new FutureGet(null)
-            .failed("get builder - peer is shutting down");
-
-    // if we don't provide any content key, the default is Number160.ZERO
+    private final static FutureGet FUTURE_GET_SHUTDOWN = new FutureGet(null)
+            .failed("Peer is shutting down.");
     private final static Collection<Number160> NUMBER_ZERO_CONTENT_KEYS = new ArrayList<Number160>(1);
 
     private Collection<Number160> contentKeys;
-
     private Collection<Number640> keys;
-
     private Number160 contentKey;
 
     private SimpleBloomFilter<Number160> contentKeyBloomFilter;
-    
     private SimpleBloomFilter<Number160> versionKeyBloomFilter;
-
     private SimpleBloomFilter<Number160> contentBloomFilter;
 
     private EvaluatingSchemeDHT evaluationScheme;
-
     private Number640 from;
-
     private Number640 to;
 
-    private boolean isGetLatest = false;
-
-    private boolean withDigest = false;
-
-    //
     private boolean all = false;
-
     private boolean returnBloomFilter = false;
-
     private boolean ascending = true;
-    
     private boolean bloomFilterAnd = true;
+    private boolean isGetLatest = false;
+    private boolean withDigest = false;
+    private boolean fastGet = true;
 
     private int returnNr = -1;
     
-    private boolean fastGet = true;
-
     static {
         NUMBER_ZERO_CONTENT_KEYS.add(Number160.ZERO);
     }
@@ -147,115 +132,8 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         return this;
     }
 
-    public boolean isAll() {
-        return all;
-    }
-
-    public GetBuilder all(boolean all) {
-        this.all = all;
-        return this;
-    }
-
-    public GetBuilder all() {
-        this.all = true;
-        return this;
-    }
-
-    public boolean isGetLatest() {
-        return isGetLatest;
-    }
-
-    public GetBuilder getLates(boolean getLatest) {
-        this.isGetLatest = getLatest;
-        return this;
-    }
-
-    public GetBuilder getLatest() {
-        this.isGetLatest = true;
-        return this;
-    }
-
-    public boolean isWithDigest() {
-        return withDigest;
-    }
-
-    public GetBuilder withDigest(boolean withDigest) {
-        this.withDigest = withDigest;
-        return this;
-    }
-
-    public GetBuilder withDigest() {
-        this.withDigest = true;
-        return this;
-    }
-
-    public boolean isReturnBloomFilter() {
-        return returnBloomFilter;
-    }
-
-    public GetBuilder returnBloomFilter(boolean returnBloomFilter) {
-        this.returnBloomFilter = returnBloomFilter;
-        return this;
-    }
-
-    public GetBuilder returnBloomFilter() {
-        this.returnBloomFilter = true;
-        return this;
-    }
-
-    public boolean isAscending() {
-        return ascending;
-    }
-
-    public GetBuilder ascending(boolean ascending) {
-        this.ascending = ascending;
-        return this;
-    }
-
-    public GetBuilder ascending() {
-        this.ascending = true;
-        return this;
-    }
-
-    public boolean isDescending() {
-        return !ascending;
-    }
-
-    public GetBuilder descending() {
-        this.ascending = false;
-        return this;
-    }
-    
-    public boolean isBloomFilterAnd() {
-        return bloomFilterAnd;
-    }
-
-    public GetBuilder bloomFilterAnd(boolean bloomFilterAnd) {
-        this.bloomFilterAnd = bloomFilterAnd;
-        return this;
-    }
-
-    public GetBuilder bloomFilterAnd() {
-        this.bloomFilterAnd = true;
-        return this;
-    }
-    
-    public boolean isBloomFilterIntersect() {
-        return !bloomFilterAnd;
-    }
-    
-    public GetBuilder bloomFilterIntersect() {
-        this.bloomFilterAnd = false;
-        return this;
-    }
-
-    public GetBuilder returnNr(int returnNr) {
-        this.returnNr = returnNr;
-        return this;
-    }
-
-    public int returnNr() {
-        return returnNr;
+    public Number640 from() {
+        return from;
     }
 
     public GetBuilder from(Number640 from) {
@@ -263,8 +141,8 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         return this;
     }
 
-    public Number640 from() {
-        return from;
+    public Number640 to() {
+        return to;
     }
 
     public GetBuilder to(Number640 to) {
@@ -272,31 +150,129 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         return this;
     }
 
-    public Number640 to() {
-        return to;
-    }
-
     public boolean isRange() {
         return from != null && to != null;
+    }
+    
+    public boolean isAll() {
+        return all;
+    }
+
+    public GetBuilder all() {
+        return all(true);
+    }
+    
+    public GetBuilder all(boolean all) {
+        this.all = all;
+        return this;
+    }
+
+    public boolean isGetLatest() {
+        return isGetLatest;
+    }
+
+    public GetBuilder getLatest() {
+        return getLatest(true);
+    }
+    
+    public GetBuilder getLatest(boolean getLatest) {
+        this.isGetLatest = getLatest;
+        return this;
+    }
+
+    public boolean isWithDigest() {
+        return withDigest;
+    }
+
+    public GetBuilder withDigest() {
+        return withDigest(true);
+    }
+    
+    public GetBuilder withDigest(boolean withDigest) {
+        this.withDigest = withDigest;
+        return this;
+    }
+
+    public boolean isReturnBloomFilter() {
+        return returnBloomFilter;
+    }
+
+    public GetBuilder returnBloomFilter() {
+        return returnBloomFilter(true);
+    }
+    
+    public GetBuilder returnBloomFilter(boolean returnBloomFilter) {
+        this.returnBloomFilter = returnBloomFilter;
+        return this;
+    }
+
+    public boolean isAscending() {
+        return ascending;
+    }
+
+    public boolean isDescending() {
+        return !ascending;
+    }
+    
+    public GetBuilder ascending() {
+        return ascending(true);
+    }
+    
+    public GetBuilder descending() {
+        return ascending(false);
+    }
+    
+    public GetBuilder ascending(boolean ascending) {
+        this.ascending = ascending;
+        return this;
+    }
+
+    public boolean isBloomFilterAnd() {
+        return bloomFilterAnd;
+    }
+
+    public boolean isBloomFilterIntersect() {
+        return !bloomFilterAnd;
+    }
+    
+    public GetBuilder bloomFilterAnd() {
+        return bloomFilterAnd(true);
+    }
+    
+    public GetBuilder bloomFilterIntersect() {
+        return bloomFilterAnd(false);
+    }
+    
+    public GetBuilder bloomFilterAnd(boolean bloomFilterAnd) {
+        this.bloomFilterAnd = bloomFilterAnd;
+        return this;
+    }
+
+    public int returnNr() {
+        return returnNr;
+    }
+    
+    public GetBuilder returnNr(int returnNr) {
+        this.returnNr = returnNr;
+        return this;
     }
     
     public boolean isFastGet() {
         return fastGet;
     }
 
+    public GetBuilder fastGet() {
+        return fastGet(true);
+    }
+    
     public GetBuilder fastGet(boolean fastGet) {
         this.fastGet = fastGet;
         return this;
     }
 
-    public GetBuilder fastGet() {
-        this.fastGet = true;
-        return this;
-    }
-
     public FutureGet start() {
         if (peerDht.peer().isShutdown()) {
-            return FUTURE_SHUTDOWN;
+            return FUTURE_GET_SHUTDOWN;
         }
         preBuild();
 

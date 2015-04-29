@@ -64,34 +64,6 @@ public class VotingSchemeDHT implements EvaluationSchemeDHT {
     }
     
     @Override
-    public Collection<Number640> evaluate6(Map<PeerAddress, Map<Number640, Byte>> rawKeys) {
-        Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
-        Set<Number640> result = new HashSet<Number640>();
-
-        int size = rawKeys == null ? 0 : rawKeys.size();
-        int majority = (size + 1) / 2;
-
-        if (rawKeys != null) {
-            for (PeerAddress address : rawKeys.keySet()) {
-                Collection<Number640> num640 = rawKeys.get(address).keySet();
-                if (num640 != null) {
-                    for (Number640 key : num640) {
-                        int c = 1;
-                        Integer count = counter.get(key);
-                        if (count != null)
-                            c = count + 1;
-                        counter.put(key, c);
-                        if (c >= majority)
-                            result.add(key);
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
-
-    @Override
     public Map<Number640, Data> evaluate2(final Map<PeerAddress, Map<Number640, Data>> rawData) {
         if (rawData == null) {
             throw new IllegalArgumentException("cannot evaluate, as no result provided");
@@ -121,13 +93,13 @@ public class VotingSchemeDHT implements EvaluationSchemeDHT {
     }
 
     @Override
-    public Object evaluate3(Map<PeerAddress, Object> rawKeys) {
-        return evaluate0(rawKeys);
+    public Object evaluate3(Map<PeerAddress, Object> rawObjects) {
+        return evaluate0(rawObjects);
     }
 
     @Override
-    public ByteBuf evaluate4(Map<PeerAddress, ByteBuf> rawKeys) {
-        return evaluate0(rawKeys);
+    public ByteBuf evaluate4(Map<PeerAddress, ByteBuf> rawChannels) {
+        return evaluate0(rawChannels);
     }
 
     @Override
@@ -137,7 +109,35 @@ public class VotingSchemeDHT implements EvaluationSchemeDHT {
         return retVal == null ? new DigestResult(emptyMap):retVal;
     }
 
-    private static <K> K evaluate0(Map<PeerAddress, K> raw) {
+    @Override
+	public Collection<Number640> evaluate6(Map<PeerAddress, Map<Number640, Byte>> rawKeys) {
+	    Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
+	    Set<Number640> result = new HashSet<Number640>();
+	
+	    int size = rawKeys == null ? 0 : rawKeys.size();
+	    int majority = (size + 1) / 2;
+	
+	    if (rawKeys != null) {
+	        for (PeerAddress address : rawKeys.keySet()) {
+	            Collection<Number640> num640 = rawKeys.get(address).keySet();
+	            if (num640 != null) {
+	                for (Number640 key : num640) {
+	                    int c = 1;
+	                    Integer count = counter.get(key);
+	                    if (count != null)
+	                        c = count + 1;
+	                    counter.put(key, c);
+	                    if (c >= majority)
+	                        result.add(key);
+	                }
+	            }
+	        }
+	    }
+	
+	    return result;
+	}
+
+	private static <K> K evaluate0(Map<PeerAddress, K> raw) {
         if (raw == null)
             throw new IllegalArgumentException(
                     "cannot evaluate, as no result provided. Most likely you are not using direct messages, but rather put() or add(). For put and add, you have to use getData()");

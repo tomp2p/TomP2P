@@ -193,7 +193,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
     }
 
     public FuturePut start() {
-        if (peer.peer().isShutdown()) {
+        if (peerDht.peer().isShutdown()) {
             return FUTURE_PUT_SHUTDOWN;
         }
         preBuild();
@@ -215,6 +215,6 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         if (versionKey == null) {
             versionKey = Number160.ZERO;
         }
-        return peer.distributedHashTable().put(this);
+        return peerDht.distributedHashTable().put(this);
     }
 }

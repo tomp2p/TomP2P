@@ -253,7 +253,7 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
     }
 
     public FutureDigest start() {
-        if (peer.peer().isShutdown()) {
+        if (peerDht.peer().isShutdown()) {
             return FUTURE_DIGEST_SHUTDOWN;
         }
         preBuild();
@@ -272,6 +272,6 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         if (evaluationScheme == null) {
             evaluationScheme = new VotingSchemeDHT();
         }
-        return peer.distributedHashTable().digest(this);
+        return peerDht.distributedHashTable().digest(this);
     }
 }

@@ -43,23 +43,16 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         BasicBuilder<K>, ConnectionConfiguration, SignatureBuilder<K> {
     // changed this to zero as for the content key its also zero
 
-    protected final PeerDHT peer;
+    protected final PeerDHT peerDht;
 
     protected final Number160 locationKey;
-
     protected Number160 domainKey;
-
     protected Number160 versionKey;
 
     protected RoutingConfiguration routingConfiguration;
-
     protected RequestP2PConfiguration requestP2PConfiguration;
 
     protected FutureChannelCreator futureChannelCreator;
-
-    // private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
-    // private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
-    // private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
 
     private boolean protectDomain = false;
     // private boolean signMessage = false;
@@ -74,7 +67,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     private K self;
 
     public DHTBuilder(PeerDHT peer, Number160 locationKey) {
-        this.peer = peer;
+        this.peerDht = peer;
         this.locationKey = locationKey;
     }
 
@@ -82,9 +75,6 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         this.self = self;
     }
 
-    /**
-     * @return The location key
-     */
     public Number160 locationKey() {
         return locationKey;
     }
@@ -216,7 +206,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      */
     @Override
     public K sign() {
-        this.keyPair = peer.peer().peerBean().keyPair();
+        this.keyPair = peerDht.peer().peerBean().keyPair();
         return self;
     }
     
@@ -305,11 +295,11 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         if (requestP2PConfiguration == null) {
             requestP2PConfiguration = new RequestP2PConfiguration(3, 5, 3);
         }
-        int size = peer.peer().peerBean().peerMap().size() + 1;
+        int size = peerDht.peer().peerBean().peerMap().size() + 1;
         requestP2PConfiguration = requestP2PConfiguration.adjustMinimumResult(size);
         if (futureChannelCreator == null || 
         		(futureChannelCreator.channelCreator()!=null && futureChannelCreator.channelCreator().isShutdown())) {
-            futureChannelCreator = peer.peer().connectionBean().reservation()
+            futureChannelCreator = peerDht.peer().connectionBean().reservation()
                     .create(routingConfiguration, requestP2PConfiguration, this);
         }
     }
@@ -325,6 +315,4 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         routingBuilder.maxSuccess(routingConfiguration.maxSuccess());
         return routingBuilder;
     }
-
-    // public abstract FutureDHT start();
 }

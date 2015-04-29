@@ -295,7 +295,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
     }
 
     public FutureGet start() {
-        if (peer.peer().isShutdown()) {
+        if (peerDht.peer().isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
         preBuild();
@@ -319,6 +319,6 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
 				contentKey = Number160.ZERO;
 			}
 		}
-        return peer.distributedHashTable().get(this);
+        return peerDht.distributedHashTable().get(this);
     }
 }

@@ -87,7 +87,7 @@ public class AddBuilder extends DHTBuilder<AddBuilder> {
     }
 
     public FuturePut start() {
-        if (peer.peer().isShutdown()) {
+        if (peerDht.peer().isShutdown()) {
             return FUTURE_ADD_SHUTDOWN;
         }
         preBuild();
@@ -104,6 +104,6 @@ public class AddBuilder extends DHTBuilder<AddBuilder> {
             rnd = new Random();
         }
 
-        return peer.distributedHashTable().add(this);
+        return peerDht.distributedHashTable().add(this);
     }
 }

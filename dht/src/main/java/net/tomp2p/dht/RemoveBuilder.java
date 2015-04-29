@@ -160,7 +160,7 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
     }
 
     public FutureRemove start() {
-        if (peer.peer().isShutdown()) {
+        if (peerDht.peer().isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
         preBuild();
@@ -174,6 +174,6 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
             contentKeys.add(contentKey);
         }
 
-        return peer.distributedHashTable().remove(this);
+        return peerDht.distributedHashTable().remove(this);
     }
 }

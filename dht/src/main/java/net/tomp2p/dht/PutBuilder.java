@@ -27,18 +27,16 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 public class PutBuilder extends DHTBuilder<PutBuilder> {
-    private final static FuturePut FUTURE_SHUTDOWN = new FuturePut(null, 0, 0)
-            .failed("put builder - peer is shutting down");
-    private Entry<Number640, Data> data;
-
+    
+	private final static FuturePut FUTURE_PUT_SHUTDOWN = new FuturePut(null, 0, 0)
+            .failed("Peer is shutting down.");
+    
+	private Entry<Number640, Data> data;
     private NavigableMap<Number640, Data> dataMap;
-
     private NavigableMap<Number160, Data> dataMapConvert;
 
     private boolean putIfAbsent = false;
-    
     private boolean putMeta = false;
-
     private boolean putConfim = false;
 
     private PublicKey changePublicKey = null;
@@ -196,21 +194,20 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
 
     public FuturePut start() {
         if (peer.peer().isShutdown()) {
-            return FUTURE_SHUTDOWN;
+            return FUTURE_PUT_SHUTDOWN;
         }
         preBuild();
         if (data != null) {
             if (dataMap == null) {
-                dataMap(new TreeMap<Number640, Data>());
+                dataMap = new TreeMap<Number640, Data>();
             }
             dataMap().put(data().getKey(), data().getValue());
         }
         if (!putMeta && !putConfim && dataMap == null && dataMapConvert == null) {
-            throw new IllegalArgumentException(
-                    "You must either set data via setDataMap() or setData(). Cannot add nothing.");
+            throw new IllegalArgumentException("No data set to be put.");
         }
         if (locationKey == null) {
-            throw new IllegalArgumentException("You must provide a location key.");
+            throw new IllegalArgumentException("No location key set.");
         }
         if (domainKey == null) {
             domainKey = Number160.ZERO;
@@ -218,7 +215,6 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         if (versionKey == null) {
             versionKey = Number160.ZERO;
         }
-
         return peer.distributedHashTable().put(this);
     }
 }

@@ -25,10 +25,11 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
 public class AddBuilder extends DHTBuilder<AddBuilder> {
-    private final static FuturePut FUTURE_SHUTDOWN = new FuturePut(null, 0, 0)
-            .failed("add builder - peer is shutting down");
+	
+    private final static FuturePut FUTURE_ADD_SHUTDOWN = new FuturePut(null, 0, 0)
+            .failed("Peer is shutting down.");
+    
     private Collection<Data> dataSet;
-
     private Data data;
 
     private boolean list = false;
@@ -87,7 +88,7 @@ public class AddBuilder extends DHTBuilder<AddBuilder> {
 
     public FuturePut start() {
         if (peer.peer().isShutdown()) {
-            return FUTURE_SHUTDOWN;
+            return FUTURE_ADD_SHUTDOWN;
         }
         preBuild();
         if (dataSet == null) {
@@ -97,8 +98,7 @@ public class AddBuilder extends DHTBuilder<AddBuilder> {
             dataSet.add(data);
         }
         if (dataSet.size() == 0) {
-            throw new IllegalArgumentException(
-                    "You must either set data via setDataMap() or setData(). Cannot add nothing.");
+            throw new IllegalArgumentException("No data set to be added.");
         }
         if (rnd == null) {
             rnd = new Random();

@@ -24,25 +24,19 @@ import net.tomp2p.peers.Number640;
 
 public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements SearchableBuilder {
     
-    private final static FutureRemove FUTURE_SHUTDOWN = new FutureRemove(null)
-            .failed("remove builder - peer is shutting down");
+    private final static FutureRemove FUTURE_REMOVE_SHUTDOWN = new FutureRemove(null)
+            .failed("Peer is shutting down.");
     
     private Collection<Number160> contentKeys;
-
     private Collection<Number640> keys;
-
     private Number160 contentKey;
 
-    private boolean all = false;
-
-    private boolean returnResults = false;
-    
     private Number640 from;
-
     private Number640 to;
-    
+
+    private boolean all = false;
+    private boolean returnResults = false;
     private boolean fastGet = true;
-    
     private boolean failIfNotFound = false;
 
     public RemoveBuilder(PeerDHT peer, Number160 locationKey) {
@@ -77,32 +71,8 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
         return this;
     }
 
-    public boolean isAll() {
-        return all;
-    }
-
-    public RemoveBuilder all(boolean all) {
-        this.all = all;
-        return this;
-    }
-
-    public RemoveBuilder all() {
-        this.all = true;
-        return this;
-    }
-
-    public boolean isReturnResults() {
-        return returnResults;
-    }
-
-    public RemoveBuilder returnResults(boolean returnResults) {
-        this.returnResults = returnResults;
-        return this;
-    }
-
-    public RemoveBuilder returnResults() {
-        this.returnResults = true;
-        return this;
+    public Number640 from() {
+        return from;
     }
     
     public RemoveBuilder from(Number640 from) {
@@ -112,8 +82,8 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
         return this;
     }
 
-    public Number640 from() {
-        return from;
+    public Number640 to() {
+        return to;
     }
 
     public RemoveBuilder to(Number640 to) {
@@ -122,26 +92,47 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
         this.to = to;
         return this;
     }
-
-    public Number640 to() {
-        return to;
-    }
-
+    
     public boolean isRange() {
         return from != null && to != null;
     }
     
+    public boolean isAll() {
+        return all;
+    }
+
+    public RemoveBuilder all() {
+        return all(true);
+    }
+    
+    public RemoveBuilder all(boolean all) {
+        this.all = all;
+        return this;
+    }
+
+    public boolean isReturnResults() {
+        return returnResults;
+    }
+
+    public RemoveBuilder returnResults() {
+        return returnResults(true);
+    }
+    
+    public RemoveBuilder returnResults(boolean returnResults) {
+        this.returnResults = returnResults;
+        return this;
+    }
+
     public boolean isFastGet() {
         return fastGet;
+    }
+    
+    public RemoveBuilder fastGet() {
+        return fastGet(true);
     }
 
     public RemoveBuilder fastGet(boolean fastGet) {
         this.fastGet = fastGet;
-        return this;
-    }
-
-    public RemoveBuilder fastGet() {
-        this.fastGet = true;
         return this;
     }
     
@@ -149,19 +140,18 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
         return failIfNotFound;
     }
 
+    public RemoveBuilder failIfNotFound() {
+        return failIfNotFound(true);
+    }
+    
     public RemoveBuilder failIfNotFound(boolean failIfNotFound) {
         this.failIfNotFound = failIfNotFound;
         return this;
     }
 
-    public RemoveBuilder failIfNotFound() {
-        this.failIfNotFound = true;
-        return this;
-    }
-
     public FutureRemove start() {
         if (peerDht.peer().isShutdown()) {
-            return FUTURE_SHUTDOWN;
+            return FUTURE_REMOVE_SHUTDOWN;
         }
         preBuild();
         if (all) {

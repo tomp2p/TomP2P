@@ -292,7 +292,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     	return postRoutingFilters;
     }
 
-    protected void preBuild(String name) {
+    protected void preBuild() {
         if (domainKey == null) {
             domainKey = Number160.ZERO;
         }

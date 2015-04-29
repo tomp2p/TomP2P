@@ -298,7 +298,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         if (peer.peer().isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
-        preBuild("get-builder");
+        preBuild();
 
         if (all) {
             contentKeys = null;

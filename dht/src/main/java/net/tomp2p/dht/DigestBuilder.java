@@ -278,7 +278,7 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         if (peer.peer().isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
-        preBuild("digest-builder");
+        preBuild();
 
         if (all) {
             contentKeys = null;

@@ -394,7 +394,7 @@ public class TestDHT {
 			Data data = new Data(new byte[44444]);
 			NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
 			tmp.put(new Number160(5), data);
-			FuturePut fput = peers[444].put(peers[30].peerID()).dataMapContent(tmp)
+			FuturePut fput = peers[444].put(peers[30].peerID()).dataMapConvert(tmp)
 			        .domainKey(Number160.createHash("test")).routingConfiguration(rc)
 			        .requestP2PConfiguration(pc).start();
 			fput.awaitUninterruptibly();

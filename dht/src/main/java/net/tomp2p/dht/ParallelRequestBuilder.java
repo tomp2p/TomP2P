@@ -101,7 +101,7 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
 
     public K start() {
 
-        preBuild("parallel-builder");
+        preBuild();
         if (directHits == null || potentialHits == null || potentialHits.size() == 0) {
             throw new IllegalArgumentException("queue cannot be empty");
         }

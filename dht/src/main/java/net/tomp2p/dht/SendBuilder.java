@@ -93,7 +93,7 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         if (peer.peer().isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
-        preBuild("send-builder");
+        preBuild();
         return peer.distributedHashTable().direct(this);
     }
 }

@@ -234,7 +234,7 @@ public class TestStorageDHT {
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
             putBuilder.versionKey(Number160.ZERO);
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
@@ -255,7 +255,7 @@ public class TestStorageDHT {
             test2 = new Data(me2);
             tmp.put(new Number160(77), test);
             tmp.put(new Number160(88), test2);
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
@@ -305,7 +305,7 @@ public class TestStorageDHT {
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.versionKey(Number160.ZERO);
             //putBuilder.set
 
@@ -372,7 +372,7 @@ public class TestStorageDHT {
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
             DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
@@ -429,7 +429,7 @@ public class TestStorageDHT {
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
             DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.forceUDP();
             putBuilder.versionKey(Number160.ZERO);
 
@@ -499,7 +499,7 @@ public class TestStorageDHT {
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
             
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
@@ -569,7 +569,7 @@ public class TestStorageDHT {
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
             DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
@@ -681,7 +681,7 @@ public class TestStorageDHT {
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
@@ -740,7 +740,7 @@ public class TestStorageDHT {
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
@@ -805,7 +805,7 @@ public class TestStorageDHT {
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.idleTCPSeconds(Integer.MAX_VALUE);
             putBuilder.versionKey(Number160.ZERO);
 
@@ -859,7 +859,7 @@ public class TestStorageDHT {
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.idleTCPSeconds(Integer.MAX_VALUE);
             putBuilder.versionKey(Number160.ZERO);
 
@@ -916,7 +916,7 @@ public class TestStorageDHT {
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
@@ -968,7 +968,7 @@ public class TestStorageDHT {
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
-            putBuilder.dataMapContent(tmp);
+            putBuilder.dataMapConvert(tmp);
             putBuilder.idleTCPSeconds(Integer.MAX_VALUE);
             putBuilder.versionKey(Number160.ZERO);
 

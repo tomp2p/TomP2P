@@ -163,7 +163,7 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
         if (peer.peer().isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
-        preBuild("remove-builder");
+        preBuild();
         if (all) {
             contentKeys = null;
         } else if (contentKeys == null && !all && !isRange()) {

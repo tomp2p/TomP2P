@@ -141,7 +141,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         return dataMapConvert;
     }
 
-    public PutBuilder dataMapContent(NavigableMap<Number160, Data> dataMapConvert) {
+    public PutBuilder dataMapConvert(NavigableMap<Number160, Data> dataMapConvert) {
         this.dataMapConvert = dataMapConvert;
         return this;
     }
@@ -185,7 +185,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
 
     public PutBuilder changePublicKey(PublicKey changePublicKey) {
     	this.changePublicKey = changePublicKey;
-    	this.putMeta = true;
+    	putMeta();
     	sign();
     	return this;
     }
@@ -198,7 +198,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         if (peer.peer().isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
-        preBuild("put-builder");
+        preBuild();
         if (data != null) {
             if (dataMap == null) {
                 dataMap(new TreeMap<Number640, Data>());

@@ -89,7 +89,7 @@ public class AddBuilder extends DHTBuilder<AddBuilder> {
         if (peer.peer().isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
-        preBuild("add-builder");
+        preBuild();
         if (dataSet == null) {
             dataSet = new ArrayList<Data>(1);
         }

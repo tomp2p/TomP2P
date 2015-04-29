@@ -25,44 +25,30 @@ import net.tomp2p.rpc.SimpleBloomFilter;
 
 public class DigestBuilder extends DHTBuilder<DigestBuilder> implements SearchableBuilder {
     
-    private final static FutureDigest FUTURE_SHUTDOWN = new FutureDigest(null)
-    .failed("digest builder - peer is shutting down");
-    
-    // if we don't provide any content key, the default is Number160.ZERO
+    private final static FutureDigest FUTURE_DIGEST_SHUTDOWN = new FutureDigest(null)
+    .failed("Peer is shutting down.");
     private final static Collection<Number160> NUMBER_ZERO_CONTENT_KEYS = new ArrayList<Number160>(1);
 
     private Collection<Number160> contentKeys;
-
     private Collection<Number640> keys;
-
     private Number160 contentKey;
 
     private SimpleBloomFilter<Number160> keyBloomFilter;
-
     private SimpleBloomFilter<Number160> contentBloomFilter;
 
     private EvaluatingSchemeDHT evaluationScheme;
-
     private Number640 from;
-
     private Number640 to;
 
-    //
     private boolean all = false;
-
     private boolean returnBloomFilter = false;
-    
     private boolean returnAllBloomFilter = false;
-
     private boolean ascending = true;
-    
     private boolean bloomFilterAnd = true;
+    private boolean returnMetaValues = false;
+    private boolean fastGet = true;
 
     private int returnNr = -1;
-    
-    private boolean returnMetaValues = false;
-    
-    private boolean fastGet = true;
 
     static {
         NUMBER_ZERO_CONTENT_KEYS.add(Number160.ZERO);
@@ -95,7 +81,7 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         return keys;
     }
 
-    public DigestBuilder key(Collection<Number640> keys) {
+    public DigestBuilder keys(Collection<Number640> keys) {
         this.keys = keys;
         return this;
     }
@@ -136,106 +122,8 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         return this;
     }
 
-    public boolean isAll() {
-        return all;
-    }
-
-    public DigestBuilder all(boolean all) {
-        this.all = all;
-        return this;
-    }
-
-    public DigestBuilder all() {
-        this.all = true;
-        return this;
-    }
-
-    public boolean isReturnBloomFilter() {
-        return returnBloomFilter;
-    }
-
-    public DigestBuilder returnBloomFilter(boolean returnBloomFilter) {
-        this.returnBloomFilter = returnBloomFilter;
-        return this;
-    }
-
-    public DigestBuilder returnBloomFilter() {
-        this.returnBloomFilter = true;
-        return this;
-    }
-    
-    public boolean isReturnAllBloomFilter() {
-        return returnAllBloomFilter;
-    }
-
-    public DigestBuilder returnAllBloomFilter(boolean returnAllBloomFilter) {
-        this.returnAllBloomFilter = returnAllBloomFilter;
-        return this;
-    }
-
-    public DigestBuilder returnAllBloomFilter() {
-        this.returnAllBloomFilter = true;
-        return this;
-    }
-
-    public boolean isAscending() {
-        return ascending;
-    }
-
-    public DigestBuilder ascending(boolean ascending) {
-        this.ascending = ascending;
-        return this;
-    }
-
-    public DigestBuilder ascending() {
-        this.ascending = true;
-        return this;
-    }
-    
-    public boolean isDescending() {
-        return !ascending;
-    }
-
-    public DigestBuilder descending() {
-        this.ascending = false;
-        return this;
-    }
-    
-    public boolean isBloomFilterAnd() {
-        return bloomFilterAnd;
-    }
-
-    public DigestBuilder bloomFilterAnd(boolean bloomFilterAnd) {
-        this.bloomFilterAnd = bloomFilterAnd;
-        return this;
-    }
-
-    public DigestBuilder bloomFilterAnd() {
-        this.bloomFilterAnd = true;
-        return this;
-    }
-    
-    public DigestBuilder returnMetaValues(boolean returnMetaValues) {
-        this.returnMetaValues = returnMetaValues;
-        return this;
-    }
-
-    public DigestBuilder returnMetaValues() {
-    	this.returnMetaValues = true;
-        return this;
-    }
-    
-    public boolean isReturnMetaValues() {
-        return returnMetaValues;
-    }
-
-    public DigestBuilder returnNr(int returnNr) {
-        this.returnNr = returnNr;
-        return this;
-    }
-
-    public int returnNr() {
-        return returnNr;
+    public Number640 from() {
+        return from;
     }
 
     public DigestBuilder from(Number640 from) {
@@ -243,8 +131,8 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         return this;
     }
 
-    public Number640 from() {
-        return from;
+    public Number640 to() {
+        return to;
     }
 
     public DigestBuilder to(Number640 to) {
@@ -252,31 +140,121 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         return this;
     }
 
-    public Number640 to() {
-        return to;
-    }
-
     public boolean isRange() {
         return from != null && to != null;
     }
     
+    public boolean isAll() {
+        return all;
+    }
+
+    public DigestBuilder all() {
+        return all(true);
+    }
+    
+    public DigestBuilder all(boolean all) {
+        this.all = all;
+        return this;
+    }
+
+    public boolean isReturnBloomFilter() {
+        return returnBloomFilter;
+    }
+
+    public DigestBuilder returnBloomFilter() {
+        return returnBloomFilter(true);
+    }
+    
+    public DigestBuilder returnBloomFilter(boolean returnBloomFilter) {
+        this.returnBloomFilter = returnBloomFilter;
+        return this;
+    }
+    
+    public boolean isReturnAllBloomFilter() {
+        return returnAllBloomFilter;
+    }
+
+    public DigestBuilder returnAllBloomFilter() {
+    	return returnAllBloomFilter(true);
+    }
+
+    public DigestBuilder returnAllBloomFilter(boolean returnAllBloomFilter) {
+        this.returnAllBloomFilter = returnAllBloomFilter;
+        return this;
+    }
+
+    public boolean isAscending() {
+        return ascending;
+    }
+    
+    public boolean isDescending() {
+        return !ascending;
+    }
+
+    public DigestBuilder ascending() {
+        return ascending(true);
+    }
+    
+    public DigestBuilder descending() {
+        return ascending(false);
+    }
+    
+    public DigestBuilder ascending(boolean ascending) {
+        this.ascending = ascending;
+        return this;
+    }
+
+    public boolean isBloomFilterAnd() {
+        return bloomFilterAnd;
+    }
+
+    public DigestBuilder bloomFilterAnd() {
+        return bloomFilterAnd(true);
+    }
+    
+    public DigestBuilder bloomFilterAnd(boolean bloomFilterAnd) {
+        this.bloomFilterAnd = bloomFilterAnd;
+        return this;
+    }
+    
+    public boolean isReturnMetaValues() {
+        return returnMetaValues;
+    }
+    
+    public DigestBuilder returnMetaValues() {
+    	return returnMetaValues(true);
+    }
+    
+    public DigestBuilder returnMetaValues(boolean returnMetaValues) {
+        this.returnMetaValues = returnMetaValues;
+        return this;
+    }
+
     public boolean isFastGet() {
         return fastGet;
     }
 
+    public DigestBuilder fastGet() {
+        return fastGet(true);
+    }
+    
     public DigestBuilder fastGet(boolean fastGet) {
         this.fastGet = fastGet;
         return this;
     }
 
-    public DigestBuilder fastGet() {
-        this.fastGet = true;
+    public int returnNr() {
+        return returnNr;
+    }
+    
+    public DigestBuilder returnNr(int returnNr) {
+        this.returnNr = returnNr;
         return this;
     }
 
     public FutureDigest start() {
         if (peer.peer().isShutdown()) {
-            return FUTURE_SHUTDOWN;
+            return FUTURE_DIGEST_SHUTDOWN;
         }
         preBuild();
 

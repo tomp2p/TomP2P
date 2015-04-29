@@ -36,18 +36,18 @@ public class VotingSchemeDHT implements EvaluationSchemeDHT {
     private static final NavigableMap<Number640, Collection<Number160>> emptyMap = new TreeMap<Number640, Collection<Number160>>();
     
     @Override
-    public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeysByte) {
+    public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeys) {
         Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
         Set<Number640> result = new HashSet<Number640>();
 
-        int size = rawKeysByte == null ? 0 : rawKeysByte.size();
+        int size = rawKeys == null ? 0 : rawKeys.size();
         int majority = (size + 1) / 2;
 
-        if (rawKeysByte != null) {
-            for (PeerAddress address : rawKeysByte.keySet()) {
-                Collection<Number640> keys480 = rawKeysByte.get(address).keySet();
-                if (keys480 != null) {
-                    for (Number640 key : keys480) {
+        if (rawKeys != null) {
+            for (PeerAddress address : rawKeys.keySet()) {
+                Collection<Number640> num640 = rawKeys.get(address).keySet();
+                if (num640 != null) {
+                    for (Number640 key : num640) {
                         int c = 1;
                         Integer count = counter.get(key);
                         if (count != null)
@@ -64,18 +64,18 @@ public class VotingSchemeDHT implements EvaluationSchemeDHT {
     }
     
     @Override
-    public Collection<Number640> evaluate6(Map<PeerAddress, Map<Number640, Byte>> rawKeys480) {
+    public Collection<Number640> evaluate6(Map<PeerAddress, Map<Number640, Byte>> rawKeys) {
         Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
         Set<Number640> result = new HashSet<Number640>();
 
-        int size = rawKeys480 == null ? 0 : rawKeys480.size();
+        int size = rawKeys == null ? 0 : rawKeys.size();
         int majority = (size + 1) / 2;
 
-        if (rawKeys480 != null) {
-            for (PeerAddress address : rawKeys480.keySet()) {
-                Collection<Number640> keys480 = rawKeys480.get(address).keySet();
-                if (keys480 != null) {
-                    for (Number640 key : keys480) {
+        if (rawKeys != null) {
+            for (PeerAddress address : rawKeys.keySet()) {
+                Collection<Number640> num640 = rawKeys.get(address).keySet();
+                if (num640 != null) {
+                    for (Number640 key : num640) {
                         int c = 1;
                         Integer count = counter.get(key);
                         if (count != null)

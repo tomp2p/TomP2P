@@ -148,13 +148,12 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         return putIfAbsent;
     }
 
+    public PutBuilder putIfAbsent() {
+        return putIfAbsent(true);
+    }
+    
     public PutBuilder putIfAbsent(boolean putIfAbsent) {
         this.putIfAbsent = putIfAbsent;
-        return this;
-    }
-
-    public PutBuilder putIfAbsent() {
-        this.putIfAbsent = true;
         return this;
     }
     
@@ -162,13 +161,12 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         return putMeta;
     }
 
+    public PutBuilder putMeta() {
+        return putMeta(true);
+    }
+    
     public PutBuilder putMeta(boolean putMeta) {
         this.putMeta = putMeta;
-        return this;
-    }
-
-    public PutBuilder putMeta() {
-        this.putMeta = true;
         return this;
     }
 
@@ -177,19 +175,24 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
 	}
 
 	public PutBuilder putConfirm() {
-		this.putConfim = true;
+		return putConfirm(true);
+	}
+	
+	public PutBuilder putConfirm(boolean putConfirm)
+	{
+		this.putConfim = putConfirm;
 		return this;
 	}
 
+    public PublicKey changePublicKey() {
+    	return changePublicKey;
+    }
+    
     public PutBuilder changePublicKey(PublicKey changePublicKey) {
     	this.changePublicKey = changePublicKey;
     	putMeta();
     	sign();
     	return this;
-    }
-    
-    public PublicKey changePublicKey() {
-    	return changePublicKey;
     }
 
     public FuturePut start() {

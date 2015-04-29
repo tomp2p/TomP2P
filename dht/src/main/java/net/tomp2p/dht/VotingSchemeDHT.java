@@ -31,7 +31,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
-public class VotingSchemeDHT implements EvaluatingSchemeDHT {
+public class VotingSchemeDHT implements EvaluationSchemeDHT {
     
     private static final NavigableMap<Number640, Collection<Number160>> emptyMap = new TreeMap<Number640, Collection<Number160>>();
     

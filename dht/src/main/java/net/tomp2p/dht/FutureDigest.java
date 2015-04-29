@@ -33,7 +33,7 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
 
     // Since we receive multiple results, we have an evaluation scheme to
     // simplify the result
-    private final EvaluatingSchemeDHT evaluationScheme;
+    private final EvaluationSchemeDHT evaluationScheme;
 
     // Digest results
     private Map<PeerAddress, DigestResult> rawDigest;
@@ -56,7 +56,7 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureDigest(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FutureDigest(final DHTBuilder<?> builder, final int min, final EvaluationSchemeDHT evaluationScheme) {
         super(builder);
         this.min = min;
         this.evaluationScheme = evaluationScheme;

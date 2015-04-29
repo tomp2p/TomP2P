@@ -36,7 +36,7 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
     private SimpleBloomFilter<Number160> keyBloomFilter;
     private SimpleBloomFilter<Number160> contentBloomFilter;
 
-    private EvaluatingSchemeDHT evaluationScheme;
+    private EvaluationSchemeDHT evaluationScheme;
     private Number640 from;
     private Number640 to;
 
@@ -113,11 +113,11 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         return this;
     }
 
-    public EvaluatingSchemeDHT evaluationScheme() {
+    public EvaluationSchemeDHT evaluationScheme() {
         return evaluationScheme;
     }
 
-    public DigestBuilder evaluationScheme(EvaluatingSchemeDHT evaluationScheme) {
+    public DigestBuilder evaluationScheme(EvaluationSchemeDHT evaluationScheme) {
         this.evaluationScheme = evaluationScheme;
         return this;
     }

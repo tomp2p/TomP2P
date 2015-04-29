@@ -36,7 +36,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
 
     // Since we receive multiple results, we have an evaluation scheme to
     // simplify the result
-    private final EvaluatingSchemeDHT evaluationScheme;
+    private final EvaluationSchemeDHT evaluationScheme;
 
     // Storage of results
     private Map<PeerAddress, Map<Number640, Data>> rawData;
@@ -63,7 +63,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureGet(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FutureGet(final DHTBuilder<?> builder, final int min, final EvaluationSchemeDHT evaluationScheme) {
         super(builder);
         this.min = min;
         this.evaluationScheme = evaluationScheme;

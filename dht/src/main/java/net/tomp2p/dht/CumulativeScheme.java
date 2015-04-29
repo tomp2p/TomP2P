@@ -29,7 +29,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
-public class CumulativeScheme implements EvaluatingSchemeDHT {
+public class CumulativeScheme implements EvaluationSchemeDHT {
     @Override
     public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeys480) {
         Set<Number640> result = new HashSet<Number640>();

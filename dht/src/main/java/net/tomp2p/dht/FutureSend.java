@@ -34,7 +34,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
 
     // Since we receive multiple results, we have an evaluation scheme to
     // simplify the result
-    private final EvaluatingSchemeDHT evaluationScheme;
+    private final EvaluationSchemeDHT evaluationScheme;
 
     // Storage of results
     private Map<PeerAddress, Object> rawObjects;
@@ -58,7 +58,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureSend(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FutureSend(final DHTBuilder<?> builder, final int min, final EvaluationSchemeDHT evaluationScheme) {
         super(builder);
         this.min = min;
         this.evaluationScheme = evaluationScheme;

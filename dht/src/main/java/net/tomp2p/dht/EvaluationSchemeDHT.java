@@ -26,7 +26,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
-public interface EvaluatingSchemeDHT {
+public interface EvaluationSchemeDHT {
     public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeys480);
 
     public Map<Number640, Data> evaluate2(Map<PeerAddress, Map<Number640, Data>> rawData);

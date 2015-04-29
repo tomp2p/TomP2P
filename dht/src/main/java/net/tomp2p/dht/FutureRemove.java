@@ -36,7 +36,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
 
     // Since we receive multiple results, we have an evaluation scheme to
     // simplify the result
-    private final EvaluatingSchemeDHT evaluationScheme;
+    private final EvaluationSchemeDHT evaluationScheme;
 
     // Storage of results
     private Map<PeerAddress, Map<Number640, Byte>> rawKeys640;
@@ -59,7 +59,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureRemove(final DHTBuilder<?> builder, final EvaluatingSchemeDHT evaluationScheme) {
+    public FutureRemove(final DHTBuilder<?> builder, final EvaluationSchemeDHT evaluationScheme) {
         super(builder);
         this.evaluationScheme = evaluationScheme;
         self(this);

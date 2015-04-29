@@ -37,7 +37,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
     private SimpleBloomFilter<Number160> versionKeyBloomFilter;
     private SimpleBloomFilter<Number160> contentBloomFilter;
 
-    private EvaluatingSchemeDHT evaluationScheme;
+    private EvaluationSchemeDHT evaluationScheme;
     private Number640 from;
     private Number640 to;
 
@@ -123,11 +123,11 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         return this;
     }
 
-    public EvaluatingSchemeDHT evaluationScheme() {
+    public EvaluationSchemeDHT evaluationScheme() {
         return evaluationScheme;
     }
 
-    public GetBuilder evaluationScheme(EvaluatingSchemeDHT evaluationScheme) {
+    public GetBuilder evaluationScheme(EvaluationSchemeDHT evaluationScheme) {
         this.evaluationScheme = evaluationScheme;
         return this;
     }

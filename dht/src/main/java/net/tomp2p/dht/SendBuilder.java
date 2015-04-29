@@ -22,16 +22,13 @@ import net.tomp2p.rpc.SendDirectBuilderI;
 
 public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBuilderI {
 
-    private final static FutureSend FUTURE_SHUTDOWN = new FutureSend(null)
-            .failed("send builder - peer is shutting down");
+    private final static FutureSend FUTURE_SEND_SHUTDOWN = new FutureSend(null)
+            .failed("Peer is shutting down.");
 
     private Buffer buffer;
-
     private Object object;
 
-    //
     private boolean cancelOnFinish = false;
-
     private boolean streaming = false;
 
     public SendBuilder(PeerDHT peer, Number160 locationKey) {
@@ -57,26 +54,20 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         return this;
     }
 
+    public boolean isRaw() {
+        return object == null;
+    }
+    
     public boolean isCancelOnFinish() {
         return cancelOnFinish;
     }
 
+    public SendBuilder cancelOnFinish() {
+        return cancelOnFinish(true);
+    }
+    
     public SendBuilder cancelOnFinish(boolean cancelOnFinish) {
         this.cancelOnFinish = cancelOnFinish;
-        return this;
-    }
-
-    public SendBuilder cancelOnFinish() {
-        this.cancelOnFinish = true;
-        return this;
-    }
-
-    public boolean isRaw() {
-        return object == null;
-    }
-
-    public SendBuilder streaming(boolean streaming) {
-        this.streaming = streaming;
         return this;
     }
 
@@ -85,13 +76,17 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
     }
 
     public SendBuilder streaming() {
-        this.streaming = true;
+        return streaming(true);
+    }
+    
+    public SendBuilder streaming(boolean streaming) {
+        this.streaming = streaming;
         return this;
     }
 
     public FutureSend start() {
         if (peerDht.peer().isShutdown()) {
-            return FUTURE_SHUTDOWN;
+            return FUTURE_SEND_SHUTDOWN;
         }
         preBuild();
         return peerDht.distributedHashTable().direct(this);

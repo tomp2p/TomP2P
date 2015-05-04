@@ -5,7 +5,7 @@
 	<parent>
 		<artifactId>tomp2p-parent</artifactId>
 		<groupId>net.tomp2p</groupId>
-		<version>5.0-Beta7-SNAPSHOT</version>
+		<version>5.0-Beta8-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 
@@ -41,9 +41,15 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-jdk14</artifactId>
-			<version>1.7.7</version>
+			<version>1.7.5</version>
 			<scope>runtime</scope>
 			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.4</version>
 		</dependency>
 
 		<!-- For testing -->

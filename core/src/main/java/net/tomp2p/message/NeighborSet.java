@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Utils;
 
 public class NeighborSet {
     private final int neighborLimit;
@@ -45,5 +46,30 @@ public class NeighborSet {
 
     public int neighborLimit() {
         return neighborLimit;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+    	if (!(obj instanceof NeighborSet)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        final NeighborSet other = (NeighborSet) obj;
+
+        boolean t1 = this.neighborLimit == other.neighborLimit;
+        boolean t2 = Utils.isSameSets(this.neighbors, other.neighbors);
+
+        return t1 && t2;
+    }
+
+    @Override
+    public int hashCode() {
+    	// TODO check correctness
+    	int hash = 5;
+        hash = 89 * hash + (this.neighbors != null ? this.neighbors.hashCode() : 0);
+        hash = 89 * hash + (this.neighborLimit ^ (this.neighborLimit >>> 32));
+        return hash;
     }
 }

@@ -68,7 +68,7 @@ public class BroadcastRPC extends DispatchHandler {
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.BROADCAST.getNr())) {
-            throw new IllegalArgumentException("Message content is wrong");
+            throw new IllegalArgumentException("Message content is wrong for this handler.");
         }
         LOG.debug("received BRODACAST message: {}", message);
         broadcastHandler.receive(message);

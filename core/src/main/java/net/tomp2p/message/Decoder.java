@@ -504,7 +504,7 @@ public class Decoder {
 				if (remaining != 0) {
 					int read = buffer.transferFrom(buf, remaining);
 					if(read != remaining) {
-						LOG.debug("Still looking for data. Indicating that its not finished yet. Read = {}, Size = {}.", buffer.alreadyTransferred(), bufferSize);
+						LOG.debug("Still looking for data. Indicating that its not finished yet. Already Transferred = {}, Size = {}.", buffer.alreadyTransferred(), bufferSize);
 						return false;
 					}
 				}
@@ -577,7 +577,7 @@ public class Decoder {
 				receivedPublicKey = signatureFactory.decodePublicKey(buf);
 				if(content == Content.PUBLIC_KEY_SIGNATURE) {
 					if (receivedPublicKey == PeerBuilder.EMPTY_PUBLIC_KEY) {
-						throw new InvalidKeyException("The public key cannot be empty");
+						throw new InvalidKeyException("The public key cannot be empty.");
 					}
 				}
 				if (receivedPublicKey == null) {

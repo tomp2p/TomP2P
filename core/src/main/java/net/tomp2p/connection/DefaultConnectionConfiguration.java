@@ -17,7 +17,7 @@
 package net.tomp2p.connection;
 
 /**
- * The ConnectionConfiguration with default settings.
+ * The connection configuration with the default settings.
  * 
  * @author Thomas Bocek
  * 
@@ -97,8 +97,7 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
      * @return This class
      */
     public DefaultConnectionConfiguration forceTCP() {
-        this.forceTCP = true;
-        return this;
+        return forceTCP(true);
     }
 
     @Override
@@ -122,8 +121,7 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
      * @return This class
      */
     public DefaultConnectionConfiguration forceUDP() {
-        this.forceUDP = true;
-        return this;
+        return forceUDP(true);
     }
     
 

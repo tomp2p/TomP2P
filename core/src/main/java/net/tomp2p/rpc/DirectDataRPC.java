@@ -48,23 +48,11 @@ public class DirectDataRPC extends DispatchHandler {
     }
 
     /**
-     * Send data directly to a peer. Make sure you have set up a reply handler. This is an RPC.
+     * Sends data directly to a peer. Make sure you have set up a reply handler. This is an RPC.
      * 
      * @param remotePeer
      *            The remote peer to store the data
-     * @param buffer
-     *            The data to send to the remote peer
-     * @param raw
-     *            Set to true if a the byte array is expected or if it should be converted to an object
-     * @param channelCreator
-     *            The channel creator
-     * @param idleTCPMillis
-     *            Set the timeout when a connection is considered inactive (idle)
-     * @param forceUDP
-     *            Set to true if the communication should be UDP, default is TCP
-     * @return FutureResponse that stores which content keys have been stored.
      */
-
     public RequestHandler<FutureResponse> sendInternal(final PeerAddress remotePeer,
             final SendDirectBuilderI sendDirectBuilder) {
         final Message message = createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(),
@@ -84,7 +72,7 @@ public class DirectDataRPC extends DispatchHandler {
                 me = Utils.encodeJavaObject(sendDirectBuilder.object());
                 message.buffer(new Buffer(Unpooled.wrappedBuffer(me)));
             } catch (IOException e) {
-                futureResponse.failed("cannot convert object", e);
+                futureResponse.failed("Cannot encode object.", e);
             }       
         }
 
@@ -139,11 +127,11 @@ public class DirectDataRPC extends DispatchHandler {
             responseMessage.type(Type.NOT_FOUND);
         } else {
             final Buffer requestBuffer = message.buffer(0);
-            // the user can reply with null, indicating not found. Or
-            // returning the request buffer, which means nothing is
-            // returned. Or an exception can be thrown
+            // The user can reply with null, indicating not found or returning
+            // the request buffer, which means nothing is returned.
+            // Or an exception can be thrown.
             if (message.type() == Type.REQUEST_1) {
-                LOG.debug("handling request1");
+                LOG.debug("handling REQUEST_1.");
                 final Buffer replyBuffer = rawDataReply2.reply(message.sender(), requestBuffer,
                         message.isDone());
                 if (replyBuffer == null && message.isDone()) {

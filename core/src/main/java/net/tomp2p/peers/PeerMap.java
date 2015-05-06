@@ -152,7 +152,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Add a map change listener. This is thread-safe
+     * Adds a map change listener. This is thread-safe
      * 
      * @param peerMapChangeListener
      *            The listener
@@ -165,7 +165,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Remove a map change listener. This is thread-safe
+     * Removes a map change listener. This is thread-safe
      * 
      * @param peerMapChangeListener
      *            The listener
@@ -180,9 +180,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * Notifies on insert. This is called after the peer has been added to the map.
      * 
      * @param peerAddress
-     *            The address of the inserted peers
+     *            The address of the inserted peer
      * @param verified
-     *            True if the peer was inserted in the verified map
+     *            True if the peer was inserted into the verified map
      */
     private void notifyInsert(final PeerAddress peerAddress, final boolean verified) {
         synchronized (peerMapChangeListeners) {
@@ -193,12 +193,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Notifies on remove. Since listeners are never changed, this is thread safe.
+     * Notifies on remove. This method is thread safe.
      * 
      * @param peerAddress
-     *            The address of the removed peers
+     *            The address of the removed peer
      * @param storedPeerAddress
-     *            Contains information statistical information
+     *            Contains statistical information
      */
     private void notifyRemove(final PeerAddress peerAddress, final PeerStatistic storedPeerAddress) {
         synchronized (peerMapChangeListeners) {
@@ -212,9 +212,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * Notifies on update. This method is thread safe.
      * 
      * @param peerAddress
-     *            The address of the updated peers.
+     *            The address of the updated peer.
      * @param storedPeerAddress
-     *            Contains information statistical information
+     *            Contains statistical information
      */
     private void notifyUpdate(final PeerAddress peerAddress, final PeerStatistic storedPeerAddress) {
         synchronized (peerMapChangeListeners) {
@@ -267,7 +267,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * added. This method is tread-safe
      * 
      * @param remotePeer
-     *            The node that should be added
+     *            The node to be added
      * @param referrer
      *            If we had direct contact and we know for sure that this node is online, we set firsthand to true.
      *            Information from 3rd party peers are always second hand and treated as such
@@ -278,7 +278,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     @Override
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection, RTT roundTripTime) {
-    	LOG.debug("peer {} is online reporter was {}", remotePeer, referrer);
+        LOG.debug("Peer {} is online. Reporter was {}.", remotePeer, referrer);
         boolean firstHand = referrer == null;
         //if we got contacted by this peer, but we did not initiate the connection
         boolean secondHand = remotePeer.equals(referrer);
@@ -305,7 +305,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         	return false;
         }
         
-        //if a peer is relayed but cannot provide any relays, its useless
+        //if a peer is relayed but cannot provide any relays, it is useless
         if (remotePeer.isRelayed() && remotePeer.peerSocketAddresses().isEmpty()) {
         	return false;
         }
@@ -315,7 +315,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         		exceptionMap.containsKey(remotePeer.peerId());
         
         if(thirdHand && probablyDead) {
-        	LOG.debug("don't add {}", remotePeer.peerId());
+        	LOG.debug("Don't add {}.", remotePeer.peerId());
         	return false;
         }
         
@@ -381,17 +381,17 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Remove a peer from the list. In order to not reappear, the node is put for a certain time in a cache list to keep
+     * Removes a peer from the list. In order to not reappear, the node is put for a certain time in a cache list to keep
      * the node removed. This method is thread-safe.
      * 
      * @param remotePeer
-     *            The node that should be removed
-     * @return True if the neighbor was removed and added to a cache list. False if peer has not been removed or is
-     *         already in the peer removed temporarily list.
+     *            The node to be removed
+     * @return True if the neighbor was removed and added to a cache list. False if it has not been removed or is
+     *         already in the temporarily removed list.
      */
     @Override
     public boolean peerFailed(final PeerAddress remotePeer, final PeerException peerException) {
-        LOG.debug("peer {} is offline with reason {}", remotePeer, peerException);
+        LOG.debug("Peer {} is offline with reason {}.", remotePeer, peerException);
         
         // TB: ignore ZERO peer Id for the moment, but we should filter for the IP address
         if (remotePeer.peerId().isZero() || self().equals(remotePeer.peerId())) {
@@ -432,20 +432,20 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         // not forced
         if (updatePeerStatistic(remotePeer, peerMapVerified.get(classMember), offlineCount)) {
-            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "peer failed in verified map"));
+            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "Peer failed in verified map."));
         }
         if (updatePeerStatistic(remotePeer, peerMapOverflow.get(classMember), offlineCount)) {
-            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "peer failed in overflow map"));
+            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "Peer failed in overflow map."));
         }
         return false;
     }
 
     /**
-     * Checks if a peer address in either in the verified map.
+     * Checks if a peer address is in the verified map.
      * 
      * @param peerAddress
      *            The peer address to check
-     * @return True, if the peer address is either in the verified map
+     * @return True, if the peer address is in the verified map
      */
     public boolean contains(final PeerAddress peerAddress) {
         final int classMember = classMember(peerAddress.peerId());
@@ -460,7 +460,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Checks if a peer address in either in the overflow / non-verified map.
+     * Checks if a peer address is in the overflow / non-verified map.
      * 
      * @param peerAddress
      *            The peer address to check
@@ -597,7 +597,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Return all addresses from the neighbor list. The collection is a copy and it is partially sorted. This operation is slow.
+     * Return all addresses from the neighbor list. The collection is a copy and it is partially sorted.
      * 
      * @return All neighbors
      */
@@ -671,7 +671,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * Checks if a peer is in the offline map.
      * 
      * @param peerAddress
-     *            The address to look for
+     *            The peer address to look for
      * @return True if the peer is in the offline map, meaning that we consider this peer offline.
      */
     public boolean isPeerRemovedTemporarly(final PeerAddress peerAddress) {
@@ -686,7 +686,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * ones in the verified peer map. If a certain threshold in a bag is not reached, the unverified becomes important
      * too.
      * 
-     * @return The next most important peer to check if its still alive.
+     * @return The next most important peer to check if it is still alive.
      */
     public PeerStatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
         return maintenance.nextForMaintenance(notInterestedAddresses);
@@ -704,8 +704,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Returns -1 if the first remote node is closer to the key, if the secondBITS is closer, then 1 is returned. If
-     * both are equal, 0 is returned
+     * Returns -1 if the first remote node is closer to the key, if the second is closer, then 1 is returned. If both
+     * are equal, 0 is returned
      * 
      * @param id
      *            The id as a distance reference
@@ -806,7 +806,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The first id
      * @param id2
      *            The second id
-     * @return returns the bit difference and -1 if they are equal
+     * @return The bit difference and -1 if they are equal
      */
     public static int classMember(final Number160 id1, final Number160 id2) {
         return distance(id1, id2).bitLength() - 1;
@@ -819,7 +819,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The first id
      * @param id2
      *            The second id
-     * @return The distance
+     * @return The XOR distance
      */
     static Number160 distance(final Number160 id1, final Number160 id2) {
         return id1.xor(id2);
@@ -883,11 +883,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Fills the set with peer addresses. Fills it until a limit is reach. However, this is a soft limit, as the bag may
+     * Fills the set with peer addresses. Fills it until a limit is reached. However, this is a soft limit, as the bag may
      * contain close peers in a random manner.
      * 
      * @param atLeast
-     *            The number of addresses we want at least. It does not matter if its more.
+     *            The number of addresses we want at least. It does not matter if it is more.
      * @param set
      *            The set where to store the results
      * @param tmp

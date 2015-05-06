@@ -51,11 +51,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Creates the channels. This class is created by
- * {@link net.tomp2p.connection.Reservation.WaitReservationPermanent} and should
- * never be called directly. With this class one can create TCP or UDP channels
- * up to a certain extend. Thus it must be know beforehand how many connections
- * will be created.
+ * Creates the channels. This class is created by {@link Reservation}
+ * and should never be called directly. With this class one can create TCP or
+ * UDP channels up to a certain extent. Thus it must be know beforehand how much
+ * connections will be created.
  * 
  * @author Thomas Bocek
  */
@@ -92,12 +91,11 @@ public class ChannelCreator {
 
 	/**
 	 * Package private constructor, since this is created by
-	 * {@link net.tomp2p.connection.Reservation.WaitReservationPermanent} and
-	 * should never be called directly.
+	 * {@link Reservation} and should never be called directly.
 	 * 
 	 * @param workerGroup
 	 *            The worker group for netty that is shared between TCP and UDP.
-	 *            This worker group is not shutdown if this instance is shutdown
+	 *            This workergroup is not shutdown if this class is shutdown
 	 * @param futureChannelCreationDone
 	 *            We need to set this from the outside as we want to attach
 	 *            listeners to it
@@ -108,8 +106,9 @@ public class ChannelCreator {
 	 * @param channelClientConfiguration
 	 *            The configuration that contains the pipeline filter
 	 */
-	ChannelCreator(final EventLoopGroup workerGroup, final FutureDone<Void> futureChannelCreationDone, final int maxPermitsUDP,
-			final int maxPermitsTCP, final ChannelClientConfiguration channelClientConfiguration) {
+	ChannelCreator(final EventLoopGroup workerGroup, final FutureDone<Void> futureChannelCreationDone,
+			int maxPermitsUDP, int maxPermitsTCP,
+			final ChannelClientConfiguration channelClientConfiguration) {
 		this.workerGroup = workerGroup;
 		this.futureChannelCreationDone = futureChannelCreationDone;
 		this.maxPermitsUDP = maxPermitsUDP;
@@ -126,9 +125,7 @@ public class ChannelCreator {
 	 * @param broadcast
 	 *            Sets this channel to be able to broadcast
 	 * @param channelHandlers
-	 *            The handlers to set
-	 * @param futureResponse
-	 *            The futureResponse
+	 *            The handlers to filter and set
 	 * @return The channel future object or null if we are shut down
 	 */
 	public ChannelFuture createUDP(final boolean broadcast, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers,
@@ -139,8 +136,9 @@ public class ChannelCreator {
 				return null;
 			}
 			if (!semaphoreUPD.tryAcquire()) {
-				LOG.error("Tried to acquire more resources (UDP) than announced! Announced {}", maxPermitsUDP);
-				throw new RuntimeException("Tried to acquire more resources (UDP) than announced!");
+				final String errorMsg = "Tried to acquire more resources (UDP) than announced.";
+				LOG.error(errorMsg);
+				throw new RuntimeException(errorMsg);
 			}
 			final Bootstrap b = new Bootstrap();
 			b.group(workerGroup);
@@ -174,7 +172,7 @@ public class ChannelCreator {
 	 * @param connectionTimeoutMillis
 	 *            The timeout for establishing a TCP connection
 	 * @param channelHandlers
-	 *            The handlers to set
+	 *            The handlers to filter and set
 	 * @param futureResponse
 	 *            the futureResponse
 	 * @return The channel future object or null if we are shut down.
@@ -187,8 +185,9 @@ public class ChannelCreator {
 				return null;
 			}
 			if (!semaphoreTCP.tryAcquire()) {
-				LOG.error("Tried to acquire more resources (TCP) than announced!");
-				throw new RuntimeException("Tried to acquire more resources (TCP) than announced!");
+				final String errorMsg = "Tried to acquire more resources (TCP) than announced.";
+				LOG.error(errorMsg);
+				throw new RuntimeException(errorMsg);
 			}
 			Bootstrap b = new Bootstrap();
 			b.group(workerGroup);
@@ -240,17 +239,14 @@ public class ChannelCreator {
 	}
 
 	/**
-	 * When a channel is closed, the semaphore is released an other channel can
-	 * be created. Also the lock for the channel creating is being released.
-	 * This means that the channelCreator can be shutdown.
+	 * When a channel is closed, the semaphore is released and another channel can
+	 * be created. Also, the lock for the channel creating is being released.
+	 * This means that the ChannelCreator can be shut down.
 	 * 
 	 * @param channelFuture
 	 *            The channel future
 	 * @param semaphore
-	 *            The semaphore to decrease
-	 * @param futureResponse
-	 *            The future response
-	 * 
+	 *            The semaphore to release
 	 * @return The same future that was passed as an argument
 	 */
 	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore,
@@ -261,7 +257,7 @@ public class ChannelCreator {
 				// it is important that the release of the semaphore and the set
 				// of the future happen sequentially. If this is run in this
 				// thread it will be a netty thread, and this is not what the
-				// user may have wanted. The future response should be executed
+				// user may have wanted. The future responses should be executed
 				// in the thread of the handler.
 				Runnable runner = new Runnable() {
 					@Override
@@ -313,14 +309,14 @@ public class ChannelCreator {
 	}
 
 	/**
-	 * Shutdown this channel creator. This means that no TCP or UDP connection
+	 * Shuts down this channel creator. This means that no more TCP or UDP connections
 	 * can be established.
 	 * 
 	 * @return The shutdown future.
 	 */
 	public FutureDone<Void> shutdown() {
-		// set shutdown flag for UDP and TCP, if we acquire a write lock, all
-		// read locks are blocked as well
+		// set shutdown flag for UDP and TCP
+        // if we acquire a write lock, all read locks are blocked as well
 		writeUDP.lock();
 		writeTCP.lock();
 		try {

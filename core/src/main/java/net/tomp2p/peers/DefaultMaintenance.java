@@ -114,12 +114,12 @@ public class DefaultMaintenance implements Maintenance {
      * ones in the verified peer map. If a certain threshold in a bag is not reached, the unverified becomes important
      * too.
      * 
-     * @return The next most important peer to check if its still alive.
+     * @return The next most important peer to check if it is still alive.
      */
     public PeerStatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
         if (peerMapVerified == null || peerMapNonVerified == null || offlineMap == null 
                 || shutdownMap == null || exceptionMap == null) {
-            throw new IllegalArgumentException("did not initialize this maintenance class");
+            throw new IllegalArgumentException("Did not initialize some of the maintenance maps.");
         }
         int peersBefore = 0;
         for (int i = 0; i < Number160.BITS; i++) {
@@ -135,7 +135,7 @@ public class DefaultMaintenance implements Maintenance {
                 final PeerStatistic readyForMaintenance = next(mapNonVerified);
                 if (readyForMaintenance != null
                         && !notInterestedAddresses.contains(readyForMaintenance.peerAddress())) {
-                    LOG.debug("check peer {} from the non verified map",readyForMaintenance.peerAddress());
+                    LOG.debug("check peer {} from the non-verified map.", readyForMaintenance.peerAddress());
                     return readyForMaintenance;
                 }
             }
@@ -157,9 +157,9 @@ public class DefaultMaintenance implements Maintenance {
      */
     private PeerStatistic next(final Map<Number160, PeerStatistic> map) {
         synchronized (map) {
-            for (PeerStatistic peerStatatistic : map.values()) {
-                if (needMaintenance(peerStatatistic, intervalSeconds)) {
-                    return peerStatatistic;
+            for (PeerStatistic peerStatistic : map.values()) {
+                if (needMaintenance(peerStatistic, intervalSeconds)) {
+                    return peerStatistic;
                 }
             }
         }
@@ -185,13 +185,13 @@ public class DefaultMaintenance implements Maintenance {
     /**
      * Indicates if a peer needs a maintenance check.
      * 
-     * @param peerStatatistic
+     * @param peerStatistic
      *            The peer with its statistics
      * @return True if the peer needs a maintenance check
      */
-    public static boolean needMaintenance(final PeerStatistic peerStatatistic, final int[] intervalSeconds) {
-        final long onlineSec = TimeUnit.MILLISECONDS.toSeconds(peerStatatistic.onlineTime()); 
-        final long timeSinceLastCheckMillis = System.currentTimeMillis() - peerStatatistic.lastSeenOnline();
+    public static boolean needMaintenance(final PeerStatistic peerStatistic, final int[] intervalSeconds) {
+        final long onlineSec = TimeUnit.MILLISECONDS.toSeconds(peerStatistic.onlineTime());
+        final long timeSinceLastCheckMillis = System.currentTimeMillis() - peerStatistic.lastSeenOnline();
         if (onlineSec <= 0) {
         	return timeSinceLastCheckMillis > TimeUnit.SECONDS.toMillis(intervalSeconds[0]);
         } else {

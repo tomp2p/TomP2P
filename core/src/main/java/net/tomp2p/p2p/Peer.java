@@ -97,14 +97,14 @@ public class Peer {
     private List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>(5)); 
 
     /**
-     * Create a peer. Please use {@link PeerBuilder} to create a class
+     * Creates a peer. Please use {@link PeerBuilder} to create a {@link Peer} instance.
      * 
      * @param p2pID
      *            The P2P ID
      * @param peerId
-     *            The Id of the peer
+     *            The ID of the peer
      * @param peerCreator
-     *            The peer creator that holds the peer bean and connection bean
+     *            The peer creator that holds the peer bean and the connection bean
      */
     Peer(final int p2pID, final Number160 peerId, final PeerCreator peerCreator) {
         this.p2pId = p2pID;
@@ -118,7 +118,7 @@ public class Peer {
 
     public PingRPC pingRPC() {
         if (pingRCP == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Ping RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return pingRCP;
     }
@@ -130,7 +130,7 @@ public class Peer {
     
     public QuitRPC quitRPC() {
     	if (quitRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Quit RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return quitRPC;    
     }
@@ -142,7 +142,7 @@ public class Peer {
 
     public NeighborRPC neighborRPC() {
         if (neighborRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Neighbor RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return neighborRPC;
     }
@@ -154,7 +154,7 @@ public class Peer {
 
     public DirectDataRPC directDataRPC() {
         if (directDataRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Direct Data RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return directDataRPC;
     }
@@ -166,7 +166,7 @@ public class Peer {
 
     public BroadcastRPC broadcastRPC() {
         if (broadcastRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+            throw new RuntimeException("Broadcast RPC not enabled. Please enable this RPC in the PeerBuilder.");
         }
         return broadcastRPC;
     }
@@ -190,7 +190,7 @@ public class Peer {
 
     public DistributedRouting distributedRouting() {
         if (distributedRouting == null) {
-            throw new RuntimeException("Not enabled, please enable this P2P function in PeerMaker");
+            throw new RuntimeException("DistributedRouting not enabled. Please enable this P2P function in the PeerBuilder.");
         }
         return distributedRouting;
     }
@@ -207,10 +207,18 @@ public class Peer {
         return peerCreator.connectionBean();
     }
 
+    /**
+     * The ID of this peer.
+     * @return
+     */
     public Number160 peerID() {
         return peerId;
     }
 
+    /**
+     * The P2P network identifier. Two different networks can use the same ports.
+     * @return
+     */
     public int p2pId() {
         return p2pId;
     }
@@ -245,7 +253,7 @@ public class Peer {
     /**
      * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the connection
      * gets closed after that time of inactivity. If the other peer goes offline or closes the connection (due to
-     * inactivity), further requests with this connections reopens the connection. This method blocks until a
+     * inactivity), further requests with this connections re-opens the connection. This methods blocks until a
      * connection can be reserved.
      * 
      * @param destination
@@ -320,7 +328,7 @@ public class Peer {
      * @return The future, when shutdown is completed
      */
     public BaseFuture shutdown() {
-        //prevent the shutdown from being called twice
+        // prevent shutdown from being called twice
         if (!shutdown) {
             shutdown = true;
             
@@ -336,12 +344,12 @@ public class Peer {
             futureLateJoin.add(peerCreator.shutdown());
             return futureLateJoin;
         } else {
-            return new FutureDone<Void>().failed("already shutting / shut down");
+            return new FutureDone<Void>().failed("Already shutting / shut down.");
         }
     }
 
     /**
-     * @return True if the peer is about or already has shutdown
+     * @return True, if the peer is about to be shut down or has done so already.
      */
     public boolean isShutdown() {
         return shutdown;

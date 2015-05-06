@@ -47,7 +47,7 @@ public class MaintenanceTask implements Runnable {
     @Override
     public void run() {
         synchronized (lock) {
-            //make sure we only have 5 ping in parallel
+            //make sure we only have 5 pings in parallel
             if (shutdown || COUNTER.get() > MAX_PING) {
                 return;
             }
@@ -59,10 +59,10 @@ public class MaintenanceTask implements Runnable {
                 BaseFuture future;
                 if(peerStatatistic.isLocal()) {
                 	future = peer.localAnnounce().ping().peerAddress(peerStatatistic.peerAddress()).start();
-                	LOG.debug("maintenance local ping from {} to {}", peer.peerAddress(), peerStatatistic.peerAddress());
+                	LOG.debug("Maintenance local ping from {} to {}.", peer.peerAddress(), peerStatatistic.peerAddress());
                 } else { 
                 	future = peer.ping().peerAddress(peerStatatistic.peerAddress()).start();
-                	LOG.debug("maintenance ping from {} to {}", peer.peerAddress(), peerStatatistic.peerAddress());
+                	LOG.debug("Maintenance ping from {} to {}.", peer.peerAddress(), peerStatatistic.peerAddress());
                 }
                 peer.notifyAutomaticFutures(future);
                 runningFutures.put(future, peerStatatistic.peerAddress());

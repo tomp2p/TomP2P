@@ -59,7 +59,7 @@ import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 /**
- * The maker / builder of a {@link Peer} class.
+ * The builder of a {@link Peer} class.
  * 
  * @author Thomas Bocek
  * 
@@ -136,21 +136,21 @@ public class PeerBuilder {
 
 
 	/**
-	 * Creates a PeerBuilder with the peer ID and an empty key pair.
+	 * Creates a peer builder with the provided peer ID and an empty key pair.
 	 * 
 	 * @param peerId
-	 *            The peer Id
+	 *            The peer ID
 	 */
 	public PeerBuilder(final Number160 peerId) {
 		this.peerId = peerId;
 	}
 
 	/**
-	 * Creates a PeerBuilder with the key pair and generates out of this key pair
-	 * the peer ID.
+	 * Creates a peer builder with the provided key pair and a peer ID that is
+	 * generated out of this key pair.
 	 * 
 	 * @param keyPair
-	 *            The public private key
+	 *            The public private key pair
 	 */
 	public PeerBuilder(final KeyPair keyPair) {
 		this.keyPair = keyPair;
@@ -158,7 +158,7 @@ public class PeerBuilder {
 	}
 
 	/**
-	 * Create a peer and start to listen for incoming connections.
+	 * Creates a peer and starts to listen for incoming connections.
 	 * 
 	 * @return The peer that can operate in the P2P network.
 	 * @throws IOException .
@@ -260,7 +260,7 @@ public class PeerBuilder {
 		}
 		broadcastHandler.init(peer);
 		
-		//Set/enable RPC
+		// set/enable RPC
 
 		if (isEnableHandShakeRPC()) {
 			PingRPC pingRPC = new PingRPC(peerBean, connectionBean);
@@ -410,18 +410,36 @@ public class PeerBuilder {
 		return this;
 	}
 
+	/**
+	 * Sets the UDP and TCP ports to the specified value.
+	 *
+	 * @param port
+	 * @return
+	 */
 	public PeerBuilder ports(int port) {
 		this.udpPort = port;
 		this.tcpPort = port;
 		return this;
 	}
 	
+	/**
+	 * Sets the external UDP and TCP ports to the specified value.
+	 *
+	 * @param port
+	 * @return
+	 */
 	public PeerBuilder portsExternal(int port) {
 		this.udpPortForwarding = port;
 		this.tcpPortForwarding = port;
 		return this;
 	}
 
+	/**
+	 * Sets the interface- and external bindings to the specified value.
+	 *
+	 * @param bindings
+	 * @return
+	 */
 	public PeerBuilder bindings(Bindings bindings) {
 		this.bindings = bindings;
 		return this;
@@ -619,7 +637,7 @@ public class PeerBuilder {
 	}
 
 	/**
-	 * Set peer to be behind a firewall and cannot be accessed directly.
+	 * Sets peer to be behind a firewall and not directly accessable.
 	 * 
 	 * @return This class
 	 */

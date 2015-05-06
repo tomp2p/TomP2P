@@ -41,24 +41,22 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     private final RTT roundTripTime = new RTT();
 
     /**
-     * Create the future and set the request message.
+     * Creates a future and sets the request message.
      * 
      * @param requestMessage
-     *            The request message that will be send over the wire.
+     *            The request message that will be sent.
      */
     public FutureResponse(final Message requestMessage) {
         this(requestMessage, new FutureSuccessEvaluatorCommunication());
     }
 
     /**
-     * Create the future and set the request message. This will set the progress listener for streaming support.
+     * Creates a future and sets the request message.
      * 
      * @param requestMessage
-     *            The request message that will be send over the wire.
+     *            The request message that will be sent.
      * @param futureSuccessEvaluator
-     *            Evaluates if the future was a success or failure
-     * @param progressListener
-     *            The progress listener for streaming support
+     *            Evaluates if the future was a success or a failure.
      */
     public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator) {
         this.requestMessage = requestMessage;

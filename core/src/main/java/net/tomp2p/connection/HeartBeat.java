@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Striped down version of the IdleStateHandler.
+ * Stripped-down version of the IdleStateHandler.
  */
 public class HeartBeat extends ChannelDuplexHandler {
 	
@@ -43,7 +43,7 @@ public class HeartBeat extends ChannelDuplexHandler {
      * Creates a new instance firing {@link IdleStateEvent}s.
      * 
      * @param allIdleTime
-     *            a ping will be triggered when neither
+     *            an {@link IdleStateEvent} whose state is {@link IdleState#ALL_IDLE} will be triggered when neither
      *            read nor write was performed for the specified period of time. Specify {@code 0} to disable.
      * @param unit
      *            the {@link TimeUnit} of {@code readerIdleTime}, {@code writeIdleTime}, and {@code allIdleTime}
@@ -184,13 +184,13 @@ public class HeartBeat extends ChannelDuplexHandler {
             long nextDelay = timeToHeartBeatMillis - (currentTime - lastIoTime);
             
             if(peerConnection!=null && nextDelay <= 0) {
-                LOG.debug("sending heart beat to {}, {}", peerConnection.remotePeer(), 
+                LOG.debug("Sending heart beat to {}. Channel: {}.", peerConnection.remotePeer(),
                 		(peerConnection.channelFuture() != null ? peerConnection.channelFuture().channel() : null));
                 PingBuilder builder = pingBuilderFactory.create();
                 BaseFuture baseFuture = builder.peerConnection(peerConnection).start();
                 builder.notifyAutomaticFutures(baseFuture);
             } else {
-            	LOG.debug("Not sending heart beat to {}, {}", peerConnection.remotePeer(), 
+            	LOG.debug("Not sending heart beat to {}. Channel: {}", peerConnection.remotePeer(),
                 		(peerConnection.channelFuture() != null ? peerConnection.channelFuture().channel() : null));
             }
         }

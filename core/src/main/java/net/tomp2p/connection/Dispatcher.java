@@ -50,7 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Used to deliver incoming REQUEST messages to their specific handlers. You can register handlers using the
+ * Used to deliver incoming REQUEST messages to their specific handlers. Handlers can be registered using the
  * {@link registerIoHandler} function.
  * <p>
  * You probably want to add an instance of this class to the end of a pipeline to be able to receive messages. This
@@ -83,11 +83,12 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 
     
     /**
-     * 
+     * Creates a dispatcher.
+     *
      * @param p2pID
-     *             the p2p ID the dispatcher is looking for in messages
+     *            The P2P ID the dispatcher is looking for incoming messages
      * @param peerBeanMaster
-     * @param heartBeatMillis
+     *            .
      */
     public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, final int heartBeatMillis) {
         this.p2pID = p2pID;
@@ -102,15 +103,15 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     /**
      * Registers a handler with this dispatcher. Future received messages adhering to the given parameters will be
      * forwarded to that handler. Note that the dispatcher only handles REQUEST messages. This method is thread-safe,
-     * and uses copy on write as its expected to run this only during initialization.
+     * and uses copy on write as it is expected to run this only during initialization.
      * 
      * @param peerId
      *            Specifies the receiver the dispatcher filters for. This allows to use one dispatcher for several
      *            interfaces or even nodes.
      * @param onBehalfOf
-     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
+     * 			  The ioHandler can be registered for the own use in behalf of another peer. (E.g., in case of a relay node.)
      * @param ioHandler
-     *            the handler which should process the given type of messages
+     *            The handler which should process the given type of messages
      * @param names
      *            The command of the {@link Message} the given handler processes. All messages having that command will
      *            be forwarded to the given handler.<br />
@@ -140,7 +141,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @param peerId
      *            The Id of the peer to remove the handlers .
      * @param onBehalfOf
-     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
+     * 			  The ioHandler can be registered for the own use in behalf of another peer (e.g. in case of relay node).
      */
     public void removeIoHandler(final Number160 peerId, final Number160 onBehalfOf) {
         writeLock.lock();
@@ -153,21 +154,21 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
-        LOG.debug("received request {} from channel {}", message, ctx.channel());
+        LOG.debug("Received request message {} from channel {}", message, ctx.channel());
         if (message.version() != p2pID) {
-            LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
+            LOG.error("Wrong version. We are looking for {}, but we got {}. Received: {}.", p2pID,
                     message.version(), message);
             ctx.close();
             synchronized (peerBeanMaster.peerStatusListeners()) {
             	for (PeerStatusListener peerStatusListener : peerBeanMaster.peerStatusListeners()) {
-                   peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "wrong P2P version"));
+                   peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "Wrong P2P version."));
             	}
             }
             return;
         }
         
         if (!message.isRequest()) {
-        	LOG.debug("handing message to the next handler {}", message);
+            LOG.debug("Handing request message to the next handler. {}", message);
         	ctx.fireChannelRead(message);
         	return;
         }
@@ -176,7 +177,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
-            LOG.debug("about to respond to {}", message);
+			LOG.debug("About to respond to request message {}.", message);
             PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
         } else {
@@ -240,10 +241,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         
         @Override
 		public void responseFireAndForget() {
-            LOG.debug("The reply handler was a fire-and-forget handler, we don't send any message back! {}", requestMessage);    
+            LOG.debug("The reply handler was a fire-and-forget handler. No message is sent back for {}.", requestMessage);
            if (!(ctx.channel() instanceof DatagramChannel)) {
-               LOG.warn("There is no TCP fire and forget, use UDP in that case {}", requestMessage);
-               throw new RuntimeException("There is no TCP fire and forget, use UDP in that case.");
+               String msg = "There is no TCP fire-and-forget. Use UDP in that case. ";
+        	   LOG.warn(msg + requestMessage);
+               throw new RuntimeException(msg);
            } else {
                TimeoutFactory.removeTimeout(ctx);
            }
@@ -251,34 +253,32 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     }
 
     /**
-     * Respond within a session. Keep the connection open if we are asked to do so. Connection is only kept alive for
+     * Responds within a session. Keeps the connection open if told to do so. Connection is only kept alive for
      * TCP data.
      * 
      * @param ctx
      *            The channel context
      * @param response
-     *            The response to send
+     *            The response message to send
      */
     private FutureDone<Void> response(final ChannelHandlerContext ctx, final Message response) {
     	final FutureDone<Void> futureDone = new FutureDone<Void>();
         if (ctx.channel() instanceof DatagramChannel) {
-            // check if channel is still open. If its not, then do not send
-            // anything because
-            // this will cause an exception that will be logged.
+        	// Check, if channel is still open. If not, then do not send anything
+            // because this will cause an exception that will be logged.
             if (!ctx.channel().isOpen()) {
-                LOG.debug("channel UDP is not open, do not reply {}", response);
+				LOG.debug("Channel UDP is not open. Do not reply {}.", response);
                 return futureDone.failed("channel UDP is not open, do not reply");
             }
-            LOG.debug("reply UDP message {}", response);
+            LOG.debug("Response UDP message {}.", response);
         } else {
-            // check if channel is still open. If its not, then do not send
-            // anything because
-            // this will cause an exception that will be logged.
+        	// Check, if channel is still open. If not, then do not send anything
+            // because this will cause an exception that will be logged.
             if (!ctx.channel().isActive()) {
-                LOG.debug("channel TCP is not open, do not reply {}", response);
+				LOG.debug("Channel TCP is not open. Do not reply {}.", response);
                 return futureDone.failed("channel TCP is not open, do not reply");
             }
-            LOG.debug("reply TCP message {} to {}", response, ctx.channel().remoteAddress());
+            LOG.debug("Response TCP message {} to {}", response, ctx.channel().remoteAddress());
         }
         
         ctx.channel().writeAndFlush(response).addListener(new GenericFutureListener<ChannelFuture>() {
@@ -292,15 +292,14 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     }
 
 	/**
-	 * Checks if we have a handler for the given message.
+	 * Returns the registered handler for the provided message, if any.
 	 * 
 	 * @param message
-	 *            the message a handler should be found for
-	 * @return the handler for the given message, null if none has been
-	 *         registered for that message.
+	 *            The message a handler should be found for
+	 * @return The handler for the provided message or null, if none has been registered for that message.
 	 */
 	public DispatchHandler associatedHandler(final Message message) {
-		if (message == null || !(message.isRequest())) {
+		if (message == null || !message.isRequest()) {
 			return null;
 		}
 
@@ -319,8 +318,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 				return handler;
 			}
 
-			// if we could not find a handler that we are responsible for, we
-			// are most likely a relay. Since we have no id of the relay, we
+			// If we could not find a handler that we are responsible for, we
+			// are most likely a relay. Since we have no ID of the relay, we
 			// just take the first one.
 			Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
 			for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
@@ -336,12 +335,12 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * Looks for a registered handler according to the given parameters.
      * 
      * @param recipientID
-     *            The recipient of the message
+     *            The ID of the recipient of the message.
      * @param onBehalfOf
-     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
+     * 			  The ID of the onBehalfOf peer.
      * @param cmd
-     *            The type of the message to be filtered
-     * @return the handler for the given message or null if none has been found
+     *            The command of the message to be filtered for
+     * @return The handler for the provided parameters or null, if none has been found.
      */
     public DispatchHandler searchHandler(final Number160 recipientID, final Number160 onBehalfOf, final int cmd) {
 		final Integer command = Integer.valueOf(cmd);

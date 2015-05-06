@@ -68,7 +68,7 @@ public class Buffer {
             cbb.writerIndex(cbb.writerIndex() + slice.readableBytes());
         } else {
             buffer.writeBytes(slice);
-            LOG.debug("buffer copied. You can use a CompositeByteBuf");
+            LOG.debug("Buffer copied. You can use a CompositeByteBuf");
         }
         return this;
     }

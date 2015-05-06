@@ -64,7 +64,7 @@ public class PeerCreator {
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
 	/**
-	 * Creates a master peer and starts UPD and TCP channels.
+	 * Creates a master peer and starts UDP and TCP channels.
 	 * 
 	 * @param p2pId
 	 *            The id of the network
@@ -139,7 +139,7 @@ public class PeerCreator {
 	 */
 	public FutureDone<Void> shutdown() {
 		if (master) {
-			LOG.debug("shutdown in progress...");
+			LOG.debug("Shutting down...");
 		}
 		// de-register in dispatcher
 		connectionBean.dispatcher().removeIoHandler(peerBean().serverPeerAddress().peerId(), peerBean().serverPeerAddress().peerId());
@@ -158,7 +158,7 @@ public class PeerCreator {
 		// shutdown the timer
 		connectionBean.timer().shutdown();
 		
-		LOG.debug("starting shutdown done in client...");
+		LOG.debug("Shutting down client...");
 		connectionBean.reservation().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
@@ -179,12 +179,12 @@ public class PeerCreator {
 		workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
 			@Override
 			public void operationComplete(final Future future) throws Exception {
-				LOG.debug("shutdown done in client / workerGroup...");
+				LOG.debug("Client / WorkerGroup shut down.");
 				bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(
 				        new GenericFutureListener() {
 					        @Override
 					        public void operationComplete(final Future future) throws Exception {
-						        LOG.debug("shutdown done in client / bossGroup...");
+								LOG.debug("Client / BossGroup shut down.");
 						        futureServerDone.done();
 					        }
 				        });
@@ -200,16 +200,14 @@ public class PeerCreator {
 	}
 
 	/**
-	 * @return The bean that holds information that may be shared amoung peers
+	 * @return The bean that holds information that may be shared among peers
 	 */
 	public ConnectionBean connectionBean() {
 		return connectionBean;
 	}
 
 	/**
-	 * Creates the {@link PeerAddress} based on the network discovery that was
-	 * done in
-	 * {@link #ChannelServer(Bindings, int, int, ChannelServerConfiguration)}.
+	 * Creates the {@link PeerAddress} based on the network discovery.
 	 * 
 	 * @param peerId
 	 *            The id of this peer
@@ -224,12 +222,12 @@ public class PeerCreator {
 				channelClientConfiguration.bindings());
 		final String status = discoverResults.status();
 		if (LOG.isInfoEnabled()) {
-			LOG.info("Status of external search: " + status);
+			LOG.info("Status of external address search: " + status);
 		}
 		//this is just a guess and will be changed once discovery is done
 		InetAddress outsideAddress = discoverResults.foundAddress();
 		if(outsideAddress == null) {
-			throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
+			throw new IOException("Not listening to anything. Maybe the binding information is wrong.");
 		}
 		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConfiguration.
 				ports().tcpPort(), channelServerConfiguration.ports().udpPort());

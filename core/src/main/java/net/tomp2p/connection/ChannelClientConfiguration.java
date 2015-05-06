@@ -98,7 +98,7 @@ public class ChannelClientConfiguration {
     }
 
     /**
-     * @return The filter for the pipeline, where the user can add / remove or change filters
+     * @return Gets the filter for the pipeline, where the user can add / remove or change handlers
      */
     public PipelineFilter pipelineFilter() {
         return pipelineFilter;
@@ -106,7 +106,7 @@ public class ChannelClientConfiguration {
 
     /**
      * @param pipelineFilter
-     *            Set the filter for the pipeline, where the user can add / remove or change filters
+     *            Sets the filter for the pipeline, where the user can add / remove or change handlers
      * @return This class
      */
     public ChannelClientConfiguration pipelineFilter(final PipelineFilter pipelineFilter) {

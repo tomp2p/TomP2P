@@ -46,7 +46,7 @@ public class DigestInfo {
     }
 
     /**
-     * Create a digest with the size only.
+     * Creates a digest with the size only.
      * 
      * @param size
      *            The number of items
@@ -122,7 +122,7 @@ public class DigestInfo {
      * 
      * @param key
      *            The key of the content
-     * @param basedOn
+     * @param basedOnSet
      *            The hash of the content
      */
     public void put(final Number640 key, final Collection<Number160> basedOnSet) {
@@ -147,7 +147,7 @@ public class DigestInfo {
     }
 
     /**
-     * @return True is the digest information has not been provided.
+     * @return True, if the digest information has not been provided.
      */
     public boolean isEmpty() {
         return size <= 0;

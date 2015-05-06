@@ -47,10 +47,10 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
             if (finished) {
                 ctx.fireChannelRead(decoder.prepareFinish());
             } else {
-                LOG.warn("did not get the complete packet!");
+                LOG.warn("Did not get the complete packet!");
             }
         } catch (Throwable t) {
-        	LOG.error("Error in UDP decoding", t);
+        	LOG.error("Error in UDP decoding.", t);
             throw new Exception(t);
         } finally {
             buf.release();

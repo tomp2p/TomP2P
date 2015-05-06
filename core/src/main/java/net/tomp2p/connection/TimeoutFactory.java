@@ -51,12 +51,13 @@ public class TimeoutFactory {
 	private final String name;
 
 	/**
+	 * Creates a factory for timeout handlers.
 	 * @param futureResponse
 	 *            The future that will be called if a timeout occured
 	 * @param timeoutSeconds
 	 *            The time for a timeout
 	 * @param peerStatusListeners
-	 *            The listeners that get notified when a timeout happend
+	 *            The listeners that get notified when a timeout happens
 	 */
 	public TimeoutFactory(final FutureResponse futureResponse, final int timeoutSeconds,
 	        final List<PeerStatusListener> peerStatusListeners, final String name) {
@@ -90,7 +91,7 @@ public class TimeoutFactory {
 	}
 
 	/**
-	 * The timeout handler that gets called form the {@link IdleStateHandler}.
+	 * The timeout handler that gets called from the {@link IdleStateHandlerTomP2P}.
 	 * 
 	 * @author Thomas Bocek
 	 * 
@@ -119,14 +120,14 @@ public class TimeoutFactory {
 		@Override
 		public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
 			if (evt instanceof IdleStateHandlerTomP2P) {
-				LOG.warn("channel timeout for channel {} {}", name, ctx.channel());
+				LOG.warn("Channel timeout for channel {} {}.", name, ctx.channel());
 				final PeerAddress recipient;
 				if (futureResponse != null) {
 					LOG.warn("Request status is {}", futureResponse.request());
 					ctx.channel().close().addListener(new GenericFutureListener<ChannelFuture>() {
 						@Override
 						public void operationComplete(final ChannelFuture future) throws Exception {
-							futureResponse.failed("channel is idle " + evt);
+							futureResponse.failed("Channel is idle " + evt);
 						}
 					});
 
@@ -135,8 +136,8 @@ public class TimeoutFactory {
 					ctx.close();
 					// check if we have set an attribute at least (if we have
 					// already decoded the header)
-					final Attribute<PeerAddress> pa = ctx.attr(Decoder.PEER_ADDRESS_KEY);
-					recipient = pa.get();
+					final Attribute<PeerAddress> attrPeerAddr = ctx.attr(Decoder.PEER_ADDRESS_KEY);
+					recipient = attrPeerAddr.get();
 				}
 
 				if (peerStatusListeners == null) {
@@ -146,7 +147,7 @@ public class TimeoutFactory {
 
 					for (PeerStatusListener peerStatusListener : peerStatusListeners) {
 						if (recipient != null) {
-							peerStatusListener.peerFailed(recipient, new PeerException(AbortCause.TIMEOUT, "timeout!"));
+							peerStatusListener.peerFailed(recipient, new PeerException(AbortCause.TIMEOUT, "Timeout!"));
 						} else {
 							InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
 							if (inetSocketAddress == null) {
@@ -156,9 +157,9 @@ public class TimeoutFactory {
 							if (inetSocketAddress != null) {
 								peerStatusListener.peerFailed(
 								        new PeerAddress(Number160.ZERO, inetSocketAddress.getAddress()),
-								        new PeerException(AbortCause.TIMEOUT, "timeout!"));
+								        new PeerException(AbortCause.TIMEOUT, "Timeout!"));
 							} else {
-								LOG.warn("Cannot determine the address!");
+								LOG.warn("Cannot determine the sender's address!");
 							}
 						}
 					}

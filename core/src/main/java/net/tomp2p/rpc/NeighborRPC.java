@@ -72,6 +72,8 @@ public class NeighborRPC extends DispatchHandler {
      *            The peer bean
      * @param connectionBean
      *            The connection bean
+	 * @param register
+	 *            Whether incoming messages should be registered
      */
     public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean, boolean register) {
         super(peerBean, connectionBean);
@@ -81,11 +83,12 @@ public class NeighborRPC extends DispatchHandler {
     }
 
     /**
-     * Requests close neighbors from the remote peer. The remote peer may idicate if the data is present on that peer.
+	 * Requests close neighbors from the remote peer. The remote peer may indicate if the data is present on
+	 * that peer.
      * This is an RPC.
      * 
      * @param remotePeer
-     *            The remote peer to send this request
+	 *            The remote peer to send this request to
      * @param searchValues
      *            The values to search for in the storage
      * 
@@ -100,7 +103,7 @@ public class NeighborRPC extends DispatchHandler {
      * @param channelCreator
      *            The channel creator that creates connections
      * @param configuration
-     *            The client side connection configuration
+	 *            The client-side connection configuration
      * @return The future response to keep track of future events
      */
     public FutureResponse closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
@@ -167,12 +170,12 @@ public class NeighborRPC extends DispatchHandler {
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws IOException {
         if (message.keyList().size() < 2) {
-            throw new IllegalArgumentException("We need the location and domain key at least");
+			throw new IllegalArgumentException("At least location and domain keys are needed.");
         }
         if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2
                 || message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4)
                 && (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
-            throw new IllegalArgumentException("Message content is wrong");
+			throw new IllegalArgumentException("Message content is wrong for this handler.");
         }
         Number160 locationKey = message.key(0);
         Number160 domainKey = message.key(1);
@@ -189,11 +192,13 @@ public class NeighborRPC extends DispatchHandler {
         // Create response message and set neighbors
         final Message responseMessage = createResponseMessage(message, Type.OK);
         
-        LOG.debug("found the following neighbors {}", neighbors);
+		LOG.debug("Found the following neighbors: {}.", neighbors);
         NeighborSet neighborSet = new NeighborSet(NEIGHBOR_LIMIT, neighbors);
         responseMessage.neighborsSet(neighborSet);
-        // check for fastget, -1 if, no domain provided, so we cannot
-        // check content length, 0 for content not here , > 0 content here
+		// check for fast get:
+		// -1 if no domain provided, so we cannot check content length
+		// 0 for content not here
+		// >0 content here
         // int contentLength = -1;
         Number160 contentKey = message.key(2);
         SimpleBloomFilter<Number160> keyBloomFilter = message.bloomFilter(0);
@@ -228,7 +233,7 @@ public class NeighborRPC extends DispatchHandler {
                     Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
                     digestInfo = peerBean().digestStorage().digest(from, to, -1, true);
                 } else {
-                	LOG.warn("did not search for anything");
+					LOG.warn("Did not search for anything.");
                 	digestInfo = new DigestInfo();
                 }
                 responseMessage.intValue(digestInfo.size());
@@ -242,7 +247,7 @@ public class NeighborRPC extends DispatchHandler {
             	} else {
             		digestInfo = peerBean().digestTracker().digest(locationKey, domainKey, contentKey);
             		if (digestInfo.size() == 0) {	
-            			LOG.debug("No entry found on peer {}", message.recipient());
+						LOG.debug("No entry found on peer {}.", message.recipient());
             		}
             	}
                 responseMessage.intValue(digestInfo.size());
@@ -274,7 +279,8 @@ public class NeighborRPC extends DispatchHandler {
     }
 
     /**
-     * The search values for fast get. You can either provide one content key. If you want to check for multiple keys,
+	 * The search values for fast get. You can either provide one content key. If you want to check for
+	 * multiple keys,
      * use the content key bloom filter. You can also check for values with a bloom filter.
      * 
      * @author Thomas Bocek
@@ -318,7 +324,8 @@ public class NeighborRPC extends DispatchHandler {
          * @param domainKey
          *            The domain key
          * @param contentKey
-         *            For get() and remove() one can provide the a content key and the remote peer indicates if this key
+		 *            For get() and remove() one can provide a content key and the remote peer indicates if
+		 *            this key
          *            is on that peer.
          */
         public SearchValues(final Number160 locationKey, final Number160 domainKey, final Number160 contentKey) {
@@ -349,7 +356,8 @@ public class NeighborRPC extends DispatchHandler {
          * @param domainKey
          *            The domain key
          * @param keyBloomFilter
-         *            For get() and remove() one can provide the a bloom filter of content keys and the remote peer
+		 *            For get() and remove() one can provide a bloom filter of content keys and the remote
+		 *            peer
          *            indicates if those keys are on that peer.
          */
         public SearchValues(final Number160 locationKey, final Number160 domainKey,
@@ -371,10 +379,12 @@ public class NeighborRPC extends DispatchHandler {
          * @param domainKey
          *            The domain key
          * @param keyBloomFilter
-         *            For get() and remove() one can provide the a bloom filter of content keys and the remote peer
+		 *            For get() and remove() one can provide a bloom filter of content keys and the remote
+		 *            peer
          *            indicates if those keys are on that peer.
          * @param contentBloomFilter
-         *            contentBloomFilter For get() and remove() one can provide the a bloom filter of content values and
+		 *            contentBloomFilter For get() and remove() one can provide a bloom filter of content
+		 *            values and
          *            the remote peer indicates if those values are on that peer.
          */
         public SearchValues(final Number160 locationKey, final Number160 domainKey,

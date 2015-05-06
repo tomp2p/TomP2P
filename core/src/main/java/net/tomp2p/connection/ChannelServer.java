@@ -92,13 +92,11 @@ public final class ChannelServer implements DiscoverNetworkListener{
      * @param workerGroup
      * 
      * @param channelServerConfiguration
-     *              The server configuration, that contains e.g. the handlers
+	 *            The server configuration that contains e.g. the handlers
      * @param dispatcher
      *              The shared dispatcher
      * @param peerStatusListeners
-     *              The status listener for offline peers
-     * @param timer
-     * 
+	 *            The status listeners for offline peers
      * @throws IOException
      *               If device discovery failed.
      */

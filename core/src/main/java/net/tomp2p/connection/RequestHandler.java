@@ -28,9 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Is able to send UDP messages (as a request) and processes incoming replies. It is important that this class handles
- * close() because if we shutdown the connections, the we need to notify the futures. In case of error set the peer to
- * offline. A similar class is {@link RequestHandlerTCP}, which is used for TCP.
+ * Is able to send TCP and UDP messages (as a request) and processes incoming responses. It is important that
+ * this class handles
+ * close() because if we shutdown the connections, then we need to notify the futures. In case of errors set
+ * the peer to
+ * offline.
  * 
  * @author Thomas Bocek
  * @param <K>
@@ -39,10 +41,10 @@ import org.slf4j.LoggerFactory;
 public class RequestHandler<K extends FutureResponse> extends SimpleChannelInboundHandler<Message> {
     private static final Logger LOG = LoggerFactory.getLogger(RequestHandler.class);
 
-    // The future response which is currently be waited for
+	// The future response which is currently being waited for
     private final K futureResponse;
 
-    // The node this request handler is associated with
+	// The node with which this request handler is associated with
     private final PeerBean peerBean;
     private final ConnectionBean connectionBean;
 
@@ -56,7 +58,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     private final int connectionTimeoutTCPMillis; // = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
     private final int slowResponseTimeoutSeconds; // = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
     /**
-     * Create a request handler that can send UDP messages.
+	 * Creates a request handler that can send TCP and UDP messages.
      * 
      * @param futureResponse
      *            The future that will be called when we get an answer
@@ -65,7 +67,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      * @param connectionBean
      *            The connection bean
      * @param configuration
-     *            the client side connection configuration
+	 *            the client-side connection configuration
      */
     public RequestHandler(final K futureResponse, final PeerBean peerBean,
             final ConnectionBean connectionBean, final ConnectionConfiguration configuration) {
@@ -130,7 +132,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     }
 
     /**
-     * Send a UDP message and expect a reply.
+     * Sends a UDP message and expects a reply.
      * 
      * @param channelCreator
      *            The channel creator will create a UDP connection
@@ -142,7 +144,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     }
 
     /**
-     * Send a UDP message and don't expect a reply.
+	 * Broadcasts a UDP message (layer 2) and expects a response.
      * 
      * @param channelCreator
      *            The channel creator will create a UDP connection
@@ -166,7 +168,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     }
     
     /**
-     * Broadcast a UDP message (layer 2) and do not expect a reply.
+	 * Sends a UDP message and doesn't expect a response.
      * 
      * @param channelCreator
      *            The channel creator will create a UDP connection
@@ -178,7 +180,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     }
 
     /**
-     * Send a TCP message and expect a reply.
+	 * Sends a TCP message and expects a response.
      * 
      * @param channelCreator
      *            The channel creator will create a TCP connection
@@ -190,6 +192,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         return futureResponse;
     }
     
+	// TODO add JavaDoc
     public K sendTCP(final PeerConnection peerConnection) {
         connectionBean.sender().sendTCP(this, futureResponse, message, null, idleTCPSeconds,
                 connectionTimeoutTCPMillis, peerConnection);
@@ -197,10 +200,11 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     }
     
     /**
-     * Send a TCP message and expect a reply.
+	 * Sends a TCP message and expects a response.
      * 
      * @param channelCreator
      *            The channel creator will create a TCP connection
+	 * @param peerConnection
      * @return The future that was added in the constructor
      */
     public K sendTCP(final ChannelCreator channelCreator, final PeerConnection peerConnection) {
@@ -211,13 +215,13 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
-        LOG.debug("Error originating from: {}, cause {}", futureResponse.request(), cause);
+		LOG.debug("Error originating from {}. Cause {}.", futureResponse.request(), cause);
         if (futureResponse.isCompleted()) {
-            LOG.warn("Got exception, but ignored (future response completed): {}",
+			LOG.warn("Got exception, but ignored it. (FutureResponse completed.): {}.",
                     futureResponse.failedReason());
         } else {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("exception caugth, but handled properly: " + cause.toString());
+				LOG.debug("Exception caught, but handled properly: " + cause.toString());
             }
             if (cause instanceof PeerException) {
                 PeerException pe = (PeerException) cause;
@@ -229,9 +233,9 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 							peerStatusListener.peerFailed(futureResponse.request().recipient(), pe);
 						}
                     }
-                    LOG.debug("removed from map, cause: {} msg: {}", pe.toString(), message);
+					LOG.debug("Removed from map. Cause: {}. Message: {}.", pe.toString(), message);
                 } else {
-                    LOG.warn("error in request", cause);
+					LOG.warn("Error in request.", cause);
                 }
             } else {
             	synchronized (peerBean.peerStatusListeners()) {
@@ -242,7 +246,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             }
         }
         
-        LOG.debug("report failure", cause);
+		LOG.debug("Report failure: ", cause);
         futureResponse.failedLater(cause);
         ctx.close();
     }
@@ -253,25 +257,34 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         MessageID recvMessageID = new MessageID(responseMessage);
         // Error handling
         if (responseMessage.type() == Message.Type.UNKNOWN_ID) {
-            String msg = "Message was not delivered successfully, unknow id (peer may be offline or unknown RPC handler): " + this.message;
+			String msg = "Message was not delivered successfully, unknow ID (peer may be offline or unknown RPC handler): "
+					+ this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
-        } else if (responseMessage.type() == Message.Type.EXCEPTION) {
+		} if (responseMessage.type() == Message.Type.EXCEPTION) {
             String msg = "Message caused an exception on the other side, handle as peer_abort: "
                     + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
-        } else if (responseMessage.isRequest()) {
+		} if (responseMessage.isRequest()) {
             ctx.fireChannelRead(responseMessage);
             return;
-        } else if (!sendMessageID.equals(recvMessageID)) {
-            String msg = "Message [" + responseMessage
+		} if (!sendMessageID.equals(recvMessageID)) {
+			String msg = "Response message [" + responseMessage
                     + "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
-        } else if (responseMessage.command() != RPC.Commands.RCON.getNr() && message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
-        	String msg = "Message [" + responseMessage
-                    + "] sent has a different relay flag than we sent [" + this.message + "]. Recipient ("+message.recipient().isRelayed()+") / Sender ("+responseMessage.sender().isRelayed()+")";
+		}
+		// We need to exclude RCON Messages from the sanity check because we
+		// use this RequestHandler for sending a Type.REQUEST_1,
+		// RPC.Commands.RCON message on top of it. Therefore the response
+		// type will never be the same Type as the one the user initially
+		// used (e.g. DIRECT_DATA).
+		if (responseMessage.command() != RPC.Commands.RCON.getNr()
+				&& message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
+			String msg = "Response message [" + responseMessage + "] sent has a different relay flag than we sent with request message ["
+					+ this.message + "]. Recipient (" + message.recipient().isRelayed() + ") / Sender ("
+					+ responseMessage.sender().isRelayed() + ")";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
         }
@@ -294,7 +307,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         
         // call this for streaming support
         if (!responseMessage.isDone()) {
-            LOG.debug("good message is streaming {}", responseMessage);
+            LOG.debug("Good message is streaming. {}", responseMessage);
             return;
         }
         
@@ -309,13 +322,14 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         }
         
         if (!message.isKeepAlive()) {
-        	LOG.debug("good message, we can close {}, {}", responseMessage, ctx.channel());
+			LOG.debug("Good message {}. Close channel {}.", responseMessage, ctx.channel());
             //set the success now, but trigger the notify when we closed the channel.
             futureResponse.responseLater(responseMessage); 
-            //the channel creater adds a listener that sets futureResponse.setResponseNow, when the channel is closed
+			// the channel creator adds a listener that sets futureResponse.setResponseNow, when the channel
+			// is closed
             ctx.close();
         } else {
-        	LOG.debug("good message, leave open {}", responseMessage);
+			LOG.debug("Good message {}. Leave channel {} open.", responseMessage, ctx.channel());
             futureResponse.response(responseMessage);
         }
     }

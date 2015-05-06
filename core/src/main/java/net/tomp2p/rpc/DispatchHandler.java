@@ -45,14 +45,12 @@ public abstract class DispatchHandler {
     private boolean sign = false;
 
     /**
-     * Creates a handler with a connection and peer bean.
+     * Creates a handler with a peer bean and a connection bean.
      * 
      * @param peerBean
      *            The peer bean
      * @param connectionBean
      *            The connection bean
-     * @param names
-     *            The command names
      */
     public DispatchHandler(final PeerBean peerBean, final ConnectionBean connectionBean) {
         this.peerBean = peerBean;
@@ -69,10 +67,9 @@ public abstract class DispatchHandler {
     }
     
     /**
-     * Registers all names on the dispatcher on behalf of the given peer
+     * Registers all names on the dispatcher on behalf of the provided peer
       * @param onBehalfOf
-     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
-    * @param names
+     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of a relay node).
      */
     public void register(Number160 onBehalfOf, final int... names) {
     	LOG.debug("registering {} for {} with {}", peerBean.serverPeerAddress().peerId(), onBehalfOf, names);
@@ -81,7 +78,7 @@ public abstract class DispatchHandler {
 
     /**
      * @param sign
-     *            Set to true if message is signed
+     *            Set to true if the message is signed
      */
     public void sign(final boolean sign) {
         this.sign = sign;
@@ -102,7 +99,7 @@ public abstract class DispatchHandler {
     }
 
     /**
-     * Create a request message and fills it with connection bean and peer bean parameters.
+     * Creates a request message and fills it with peer bean and connection bean parameters.
      * 
      * @param recipient
      *            The recipient of this message
@@ -110,7 +107,7 @@ public abstract class DispatchHandler {
      *            The commend type
      * @param type
      *            The request type
-     * @return The request message
+     * @return The created request message
      */
     public Message createMessage(final PeerAddress recipient, final byte name, final Type type) {
         return new Message().recipient(recipient).sender(peerBean().serverPeerAddress())
@@ -118,13 +115,13 @@ public abstract class DispatchHandler {
     }
 
     /**
-     * Create a response message and fills it with connection bean and peer bean parameters.
+     * Creates a response message and fills it with peer bean and connection bean parameters.
      * 
      * @param requestMessage
      *            The request message
      * @param replyType
      *            The type of the reply
-     * @return The reply message
+     * @return The response message
      */
     public Message createResponseMessage(final Message requestMessage, final Type replyType) {
         return createResponseMessage(requestMessage, replyType, peerBean().serverPeerAddress());
@@ -151,13 +148,11 @@ public abstract class DispatchHandler {
      * @param requestMessage
      *            The request message
      * @param peerConnection The peer connection that can be used for communication
-     * @param responder 
-     * @return The reply message
+     * @param responder The responder used to respond the response message
      */
     public void forwardMessage(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
-        // here we need a referral, since we got contacted and we don't know
-        // if we can contact the peer with its address. The peer may be
-        // behind a NAT
+        // Here, we need a referral since we got contacted and we don't know if
+        // we can contact the peer with its address. The peer may be behind a NAT.
     	if(requestMessage.command() != RPC.Commands.LOCAL_ANNOUNCE.getNr()) {
     		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection, null);
     	}
@@ -170,7 +165,7 @@ public abstract class DispatchHandler {
 					peerStatusListener.peerFailed(requestMessage.sender(), new PeerException(e));
 				}
         	}
-        	LOG.error("Exception in custom handler", e);
+        	LOG.error("Exception in custom handler.", e);
             responder.failed(Type.EXCEPTION , e.toString());
         }
     }
@@ -184,7 +179,6 @@ public abstract class DispatchHandler {
      * @param peerConnection 
      * @param sign
      *            Flag to indicate if message is signed
-     * @param responder2 
      * @param responder 
      * @return The message from the handler
      * @throws Exception

@@ -34,22 +34,22 @@ public interface PeerStatusListener {
      * 
      * @param remotePeer
      *            The address of the peer that failed
-     * @param force
-     *            The reason, why the peer failed. This is important to understand if we can reenable the peer.
-     * @return False if nothing happened, true if there was a change
+     * @param exception
+     *            The reason why the peer failed. This is important to understand if we can re-enable the peer.
+     * @return False, if nothing happened. True, if there was a change.
      */
     boolean peerFailed(final PeerAddress remotePeer, final PeerException exception);
 
     /**
-     * Called if the peer is online and who reported it. This method may get called many times, for each successful
+     * Called if the peer is online. Provides the referrer who reported it. This method may get called many times, for each successful
      * request.
      * 
      * @param remotePeer
      *            The address of the peer that is online.
      * @param referrer
-     *            the peer that reported the availability of peerAddress
+     *            The peer that reported the availability of the peer address.
      * @param peerConnection 
-     * @return False if nothing happened, true if there was a change
+     * @return False, if nothing happened. True, if there was a change.
      */
     boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, PeerConnection peerConnection, RTT roundTripTime);
 }

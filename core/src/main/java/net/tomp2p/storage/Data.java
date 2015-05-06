@@ -89,19 +89,13 @@ public class Data {
 	}
 
 	/**
-	 * Create a data object that does have the complete data, but not the complete header
+	 * Creates a Data object that does have the complete data, but not the complete header.
 	 * 
+	 * @param buffer
+	 * 			  The buffer containing the data.
 	 * @param length
 	 *            The expected length of the buffer. This does not include the
-	 *            header + size (2, 5, or 9).
-	 * @param version
-	 *            The version of a data object, optional
-	 * @param ttlSeconds
-	 *            The TTL of a data object, optional
-	 * @param hasHash
-	 *            Indication if a hash should also be transmitted
-	 * @param isProtectedEntry
-	 *            True if this entry is protected
+	 *            header + size (2, 5 or 9).
 	 */
 	public Data(final DataBuffer buffer, final int length) {
 		this.length = length;
@@ -115,13 +109,13 @@ public class Data {
 	}
 
 	/**
-	 * Creates an empty data object. The data can be filled at a later stage
-	 * using {@link #append(ByteBuf)}.
+	 * Creates an empty Data object. The data can be filled at a later stage
+	 * using append(ByteBuf).
 	 * 
 	 * @param header
 	 *            The 8 bit header
 	 * @param length
-	 *            The length, which depends on the header values
+	 *            The length, depending on the header values.
 	 */
 	public Data(final int header, final int length) {
 		this.publicKeyFlag = hasPublicKey(header);
@@ -158,18 +152,10 @@ public class Data {
 	}
 
 	/**
-	 * Creates a data object from an already existing byte buffer.
+	 * Creates a Data object from an already existing existing buffer.
 	 * 
 	 * @param buffer
 	 *            The data buffer
-	 * @param version
-	 *            The version of a data object, optional
-	 * @param ttlSeconds
-	 *            The ttl of a data object, optional
-	 * @param hasHash
-	 *            Indication if a hash should also be transmitted
-	 * @param isProtectedEntry
-	 *            True if this entry is protected
 	 */
 	public Data(final byte[] buffer, final int offest, final int length) {
 		if(buffer.length == 0) {
@@ -220,7 +206,7 @@ public class Data {
 		final int header = buf.getUnsignedByte(buf.readerIndex());
 		final Data.Type type = Data.type(header);
 		
-		//Data length
+		// length
 		final int length;
 		final int indexLength = Utils.BYTE_BYTE_SIZE;
 		final int indexTTL;
@@ -237,7 +223,7 @@ public class Data {
 			length = buf.getInt(buf.readerIndex() + indexLength);
 			break;
 		default:
-			throw new IllegalArgumentException("unknown type");
+			throw new IllegalArgumentException("Unknown Type.");
 		}
 		
 		//TTL
@@ -254,13 +240,13 @@ public class Data {
 			indexBasedOnNr = indexTTL;
 		}
 		
-		//Nr BasedOn + basedon
+		// nr basedOn + basedOn
 		final int numBasedOn;
 		final int indexPublicKeySize;
 		final int indexBasedOn;
 		final Set<Number160> basedOn = new HashSet<Number160>();
 		if (hasBasedOn(header)) {
-			// get # of based on keys
+			// get nr of based on keys
 			indexBasedOn = indexBasedOnNr + Utils.BYTE_BYTE_SIZE;
 			if (buf.readableBytes() < indexBasedOn) {
 				return null;
@@ -285,7 +271,7 @@ public class Data {
 			numBasedOn = 0;
 		}
 		
-		//public key and size
+		// public key size + public key
 		final int publicKeySize;
 		final int indexPublicKey;
 		final int indexEnd;
@@ -310,7 +296,7 @@ public class Data {
 			publicKey = null;
 		}
 		
-		//now we have read the header and the length
+		// now, we have read the header and the length
 		final Data data = new Data(header, length);
 		data.ttlSeconds = ttl;
 		data.basedOnSet = basedOn;
@@ -333,8 +319,7 @@ public class Data {
 			return true;
 		}
 		// make sure it gets not garbage collected. But we need to keep track of
-		// it and when this object gets collected,
-		// we need to release the buffer
+		// it and when this object gets collected, we need to release the buffer
 		final int transfered = buffer.transferFrom(buf, remaining);
 		return transfered == remaining;
 	}
@@ -425,7 +410,7 @@ public class Data {
 			buf.writeInt(length);
 			break;
 		default:
-			throw new IllegalArgumentException("unknown size");
+			throw new IllegalArgumentException("Unknown Type.");
 		}
 		if (ttl) {
 			buf.writeInt(ttlSeconds);
@@ -468,7 +453,7 @@ public class Data {
 			} else if (signature == null && messagePrivateKey != null) {
 				signature = signatureFactory.sign(messagePrivateKey, toByteBuffers());
 			} else if (signature == null) {
-				throw new IllegalArgumentException("you need a private key from somewhere");
+				throw new IllegalArgumentException("A private key is required to sign.");
 			}
 			signature.write(buf);
 		}
@@ -649,7 +634,7 @@ public class Data {
 
 	public Data flag1(boolean flag1) {
 		if(flag1 && this.flag2) {
-			throw new IllegalArgumentException("cannot set both flags, this means data is deleted");
+			throw new IllegalArgumentException("Cannot set both flags. This means that data is deleted.");
 		}
 		this.flag1 = flag1;
 		return this;
@@ -665,7 +650,7 @@ public class Data {
 
 	public Data flag2(boolean flag2) {
 		if(flag2 && this.flag1) {
-			throw new IllegalArgumentException("cannot set both flags, this means data is deleted");
+			throw new IllegalArgumentException("Cannot set both flags. This means that data is deleted.");
 		}
 		this.flag2 = flag2;
 		return this;
@@ -695,7 +680,7 @@ public class Data {
 	
 	public Data deleted(boolean deleted) {
 		if(this.flag1 || this.flag2) {
-			throw new IllegalArgumentException("cannot set deleted, as one flag is already set");
+			throw new IllegalArgumentException("Cannot set deleted, because one flag is already set.");
 		}
 		this.flag1 = deleted;
 		this.flag2 = deleted;
@@ -758,8 +743,9 @@ public class Data {
 				.signature(signature).ttlSeconds(ttlSeconds);
 		// duplicate based on keys
 		data.basedOnSet.addAll(basedOnSet);
-		// set all the flags. Although signature, basedOn, and ttlSeconds set a
-		// flag, they will be overwritten with the data from this class
+
+		// duplicate all the flags.
+		// although signature, basedOn, and ttlSeconds set a flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
 		data.flag1 = flag1;
 		data.flag2 = flag2;
@@ -778,8 +764,9 @@ public class Data {
 				.signature(signature).ttlSeconds(ttlSeconds);
 		// duplicate based on keys
 		data.basedOnSet.addAll(basedOnSet);
-		// set all the flags. Although signature, basedOn, and ttlSeconds set a
-		// flag, they will be overwritten with the data from this class
+
+		// duplicate all the flags.
+		// although signature, basedOn, and ttlSeconds set a flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
 		data.flag1 = flag1;
 		data.flag2 = flag2;
@@ -871,7 +858,7 @@ public class Data {
 
 	@Override
 	public int hashCode() {
-		BitSet bs = new BitSet(5);
+		BitSet bs = new BitSet(8);
 		bs.set(0, signed);
 		bs.set(1, ttl);
 		bs.set(2, basedOnFlag);

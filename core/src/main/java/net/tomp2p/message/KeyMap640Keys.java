@@ -44,8 +44,7 @@ public class KeyMap640Keys {
 		final KeyMap640Keys k = (KeyMap640Keys) obj;
 		final boolean test1 = Utils.isSameSets(k.keysMap.keySet(),
 				keysMap.keySet());
-		//TODO: this will not work
-		final boolean test2 = Utils.isSameSets(k.keysMap.values(),
+		final boolean test2 = Utils.isSameCollectionSets(k.keysMap.values(),
 				keysMap.values());
 		return test1 && test2;
 	}

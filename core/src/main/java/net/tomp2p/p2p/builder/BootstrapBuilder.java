@@ -40,29 +40,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Boostraps to a known peer. First channels are reserved, then #discover(PeerAddress) is called to verify this Internet
- * connection settings using the argument peerAddress. Then the routing is initiated to the peers specified in
- * bootstrapTo. Please be aware that in order to boostrap you need to know the peer ID of all peers in the collection
- * bootstrapTo. Passing Number160.ZERO does *not* work.
- * 
- * @param discoveryPeerAddress
- *            The peer address to use for discovery
- * @param bootstrapTo
- *            The peers used to bootstrap
- * @param config
- *            The configuration
- * @return The future bootstrap
+ * Bootstraps to a known peer. First, channels are reserved, then discover(PeerAddress) is called to verify this Internet
+ * connection settings using the "peerAddress" argument . Then the routing is initiated to the peers specified in
+ * "bootstrapTo". Please be aware that in order to boostrap, you need to know the peer ID of all peers in the "bootstrapTo" collection.
+ * Passing Number160.ZERO does *not* work.
  */
 
 public class BootstrapBuilder {
     private static final Logger logger = LoggerFactory.getLogger(BootstrapBuilder.class);
 
     private static final FutureBootstrap FUTURE_BOOTSTRAP_SHUTDOWN = new FutureWrappedBootstrap<FutureBootstrap>()
-            .failed0("Peer is shutting down");
+            .failed0("Peer is shutting down.");
 
     private static final FutureBootstrap FUTURE_BOOTSTRAP_NO_ADDRESS = new FutureWrappedBootstrap<FutureBootstrap>()
-            .failed0("You did not provide information where to bootstrap to. "
-                    + "This could be also caused if you provided a peer address with a peer ID set to zero.");
+            .failed0("No addresses to bootstrap to have been provided. Or maybe, the provided address has peer ID set to zero.");
 
     private final Peer peer;
 
@@ -107,8 +98,7 @@ public class BootstrapBuilder {
      */
     public BootstrapBuilder peerAddress(final PeerAddress peerAddress) {
         if (peerAddress != null && peerAddress.peerId().equals(Number160.ZERO)) {
-            logger.warn("You provided a peer address with peerID zero. "
-                    + "You won't be able to bootstrap since no peer can have a peerID set to zero");
+            logger.warn("Peer address with peer ID zero provided. Bootstrapping is impossible, because no peer with peer ID set to zero is allowed to exist.");
             return this;
         }
         this.peerAddress = peerAddress;
@@ -190,15 +180,14 @@ public class BootstrapBuilder {
             peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
             return bootstrapPing(peerAddress);
 
-        } else if (peerAddress != null && bootstrapTo == null) {
+        } if (peerAddress != null && bootstrapTo == null) {
             bootstrapTo = new ArrayList<PeerAddress>(1);
             bootstrapTo.add(peerAddress);
             return bootstrap();
-        } else if (bootstrapTo != null) {
+        } if (bootstrapTo != null) {
             return bootstrap();
-        } else {
-            return FUTURE_BOOTSTRAP_NO_ADDRESS;
         }
+        return FUTURE_BOOTSTRAP_NO_ADDRESS;
     }
 
     private FutureBootstrap bootstrap() {
@@ -247,7 +236,7 @@ public class BootstrapBuilder {
                     result.bootstrapTo(bootstrapTo);
                     result.waitFor(bootstrap());
                 } else {
-                    result.failed("could not reach anyone with bootstrap");
+                    result.failed("Could not reach anyone with bootstrap");
                 }
             }
         });

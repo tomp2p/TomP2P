@@ -25,7 +25,7 @@ package net.tomp2p.futures;
 public interface BaseFutureListener<F extends BaseFuture> {
     /**
      * Invoked when the operation associated with the {@link BaseFuture} has
-     * been completed. If a operation already completed, then this method is not
+     * been completed. If an operation already completed, then this method is not
      * invoked.
      * 
      * @param future
@@ -34,7 +34,7 @@ public interface BaseFutureListener<F extends BaseFuture> {
     public abstract void operationComplete(F future) throws Exception;
 
     /**
-     * If the operation complete is called and the methed throws an exception
+     * If the #operationComplete() is called and the method throws an exception.
      * 
      * @param t
      *            The exception thrown in #operationComplete(BaseFuture).

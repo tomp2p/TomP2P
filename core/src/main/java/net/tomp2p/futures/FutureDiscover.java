@@ -64,10 +64,11 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     public void timeout(final PeerAddress serverPeerAddress, final ScheduledExecutorService timer, final int delaySec) {
         final DiscoverTimeoutTask task = new DiscoverTimeoutTask(serverPeerAddress);
         final ScheduledFuture<?> scheduledFuture = timer.schedule(task, TimeUnit.SECONDS.toMillis(delaySec), TimeUnit.MILLISECONDS);
+
+        // cancel timeout if we are done
         addListener(new BaseFutureAdapter<FutureDiscover>() {
             @Override
             public void operationComplete(final FutureDiscover future) throws Exception {
-                // cancel timeout if we are done.
             	scheduledFuture.cancel(false);
             }
         });
@@ -123,7 +124,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     	synchronized (lock) {
     		if(this.reporter != null) {
     			if(!this.reporter.equals(reporter)) {
-    				throw new IllegalArgumentException("cannot change reporter once its set");
+    				throw new IllegalArgumentException("Cannot change reporter once it is set.");
     			}
     		}
     		this.reporter = reporter;

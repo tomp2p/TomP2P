@@ -21,7 +21,7 @@ import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 
 /**
- * The the configuration for the server.
+ * The configuration for the server.
  * 
  * @author Thomas Bocek
  * 
@@ -66,7 +66,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
 
     /**
      * @param behindFirewall
-     *            Set to true if this peer is behind a firewall and cannot be accessed directly
+     *            Set to true if this peer is behind a firewall and not directly accessable
      * @return This class
      */
     public ChannelServerConfiguration behindFirewall(final boolean behindFirewall) {
@@ -75,7 +75,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * Set peer to be behind a firewall and cannot be accessed directly.
+     * Sets peer to be behind a firewall and cannot be accessed directly.
      * 
      * @return This class
      */
@@ -85,15 +85,16 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * @return True if the bind to ports should be omited
+     * @return True if the bind to ports should be omitted
      */
     public boolean isDisableBind() {
         return disableBind;
     }
 
     /**
+     * Set to true if the bind to ports should be omitted
      * @param disableBind
-     *            Set to true if the bind to ports should be omited
+     *
      * @return This class
      */
     public ChannelServerConfiguration disableBind(final boolean disableBind) {
@@ -102,7 +103,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * Set the bind to ports should be omited.
+     * Sets that the bind to ports should be omitted.
      * 
      * @return This class
      */
@@ -112,7 +113,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * @return The time that a connection can be idle before its considered not active for short-lived connections
+     * @return The time that a connection can be idle before it is considered not active for short-lived connections
      */
     public int idleTCPSeconds() {
         return idleTCPSeconds;
@@ -146,15 +147,17 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * @return Set the filter for the pipeline, where the user can add / remove or change filters
+     * Gets the filter for the pipeline, where the user can add, remove or change filters.
+     * @return
      */
     public PipelineFilter pipelineFilter() {
         return pipelineFilter;
     }
 
     /**
+     * Sets the filter for the pipeline, where the user can add, remove or change filters.
      * @param pipelineFilter
-     *            Set the filter for the pipeline, where the user can add / remove or change filters
+     *
      * @return This class
      */
     public ChannelServerConfiguration pipelineFilter(final PipelineFilter pipelineFilter) {
@@ -163,7 +166,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     }
 
     /**
-     * @return Set the factory for the signature
+     * @return The factory for the signature
      */
     public SignatureFactory signatureFactory() {
         return signatureFactory;

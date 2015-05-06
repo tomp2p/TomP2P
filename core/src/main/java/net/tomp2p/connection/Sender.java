@@ -86,6 +86,7 @@ public class Sender {
 	private final DataFilter dataFilterTTL = new DataFilterTTL();
 
 	// this map caches all messages which are meant to be sent by a reverse
+	// connection setup
 	private final ConcurrentHashMap<Integer, Pair<FutureResponse, FutureResponse>> cachedRequests = new ConcurrentHashMap<Integer, Pair<FutureResponse, FutureResponse>>();
 
 	private PingBuilderFactory pingBuilderFactory;
@@ -98,7 +99,8 @@ public class Sender {
 	 * @param channelClientConfiguration
 	 *            The configuration used to get the signature factory
 	 * @param dispatcher
-	 * @param concurrentHashMap
+	 * @param sendBehavior
+	 * @param peerBean
 	 */
 	public Sender(final Number160 peerId, final List<PeerStatusListener> peerStatusListeners,
 			final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior, PeerBean peerBean) {
@@ -124,20 +126,22 @@ public class Sender {
 	}
 
 	/**
-	 * Send a message via TCP.
+	 * Sends a message via TCP.
 	 * 
 	 * @param handler
-	 *            The handler to deal with a reply message
+	 *            The handler to deal with a reply message.
 	 * @param futureResponse
-	 *            The future to set the response
+	 *            The future to set the response.
 	 * @param message
 	 *            The message to send
 	 * @param channelCreator
-	 *            The channel creator for the UPD channel
+	 *            The channel creator for the TCP channel.
 	 * @param idleTCPSeconds
-	 *            The idle time of a message until we fail
+	 *            The idle time until message fail.
 	 * @param connectTimeoutMillis
-	 *            The idle we set for the connection setup
+	 *            The idle time for the connection setup.
+	 * @param peerConnection
+	 *
 	 */
 	public void sendTCP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator, final int idleTCPSeconds, final int connectTimeoutMillis,
@@ -359,7 +363,7 @@ public class Sender {
 					});
 
 				} else {
-					futureResponse.failed("no relay could be contacted", futureDone);
+					futureResponse.failed("No relay could be contacted.", futureDone);
 				}
 			}
 		});
@@ -546,20 +550,20 @@ public class Sender {
 	}
 
 	/**
-	 * Send a message via UDP.
+	 * Sends a message via UDP.
 	 * 
 	 * @param handler
-	 *            The handler to deal with a reply message
+	 *            The handler to deal with a response message
 	 * @param futureResponse
 	 *            The future to set the response
 	 * @param message
 	 *            The message to send
 	 * @param channelCreator
-	 *            The channel creator for the UPD channel
+	 *            The channel creator for the UDP channel
 	 * @param idleUDPSeconds
-	 *            The idle time of a message until we fail
+	 *            The idle time of a message until fail
 	 * @param broadcast
-	 *            True to send via layer 2 broadcast
+	 *            True, if the message is to be sent via layer 2 broadcast
 	 */
 	// TODO: if message.getRecipient() is me, than call dispatcher directly
 	// without sending over Internet.
@@ -744,16 +748,16 @@ public class Sender {
 	}
 
 	/**
-	 * Create a timeout handler or null if its a fire and forget. In this case
-	 * we don't expect a reply and we don't need a timeout.
+	 * Creates a timeout handler or null if it is a fire and forget message.
+	 * In this case we don't expect a response and we don't need a timeout.
 	 * 
 	 * @param futureResponse
 	 *            The future to set the response
 	 * @param idleMillis
 	 *            The timeout
 	 * @param fireAndForget
-	 *            True, if we don't expect a message
-	 * @return The timeout creator that will create timeout handlers
+	 *            True, if we don't expect a response
+	 * @return The timeout factory that will create timeout handlers
 	 */
 	private TimeoutFactory createTimeoutHandler(final FutureResponse futureResponse, final int idleMillis, final boolean fireAndForget) {
 		return fireAndForget ? null : new TimeoutFactory(futureResponse, idleMillis, peerStatusListeners, "Sender");
@@ -822,11 +826,11 @@ public class Sender {
 				if (!future.isSuccess()) {
 					futureResponse.failedLater(future.cause());
 					reportFailed(futureResponse, future.channel().close());
-					LOG.warn("Failed to write channel the request {} {}", futureResponse.request(), future.cause());
+					LOG.warn("Failed to write channel the request {} {}.", futureResponse.request(), future.cause());
 				}
 				if (fireAndForget) {
 					futureResponse.responseLater(null);
-					LOG.debug("fire and forget, close channel now {}, {}", futureResponse.request(), future.channel());
+					LOG.debug("fire and forget, close channel {} now. {}", futureResponse.request(), future.channel());
 					reportMessage(futureResponse, future.channel().close());
 				}
 			}
@@ -835,7 +839,7 @@ public class Sender {
 	}
 
 	/**
-	 * Report a failure after the channel was closed.
+	 * Report a the response after the channel was closed.
 	 * 
 	 * @param futureResponse
 	 *            The future to set the response

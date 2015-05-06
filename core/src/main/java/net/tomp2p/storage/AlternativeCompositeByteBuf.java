@@ -297,7 +297,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 			if (b == null) {
 				break;
 			}
-			//We want to use this buffer, so mark is as used
+			//We want to use this buffer, so mark it as used
 			b.retain();
 			addComponentElement(fillBuffer, b);
 		}

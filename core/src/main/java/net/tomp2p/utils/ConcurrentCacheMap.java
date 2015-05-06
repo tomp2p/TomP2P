@@ -69,7 +69,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
     private final AtomicInteger removedCounter = new AtomicInteger();
 
     /**
-     * Creates a new instance of ConcurrentCacheMap using the supplied values and a {@link CacheMap} for the internal
+     * Creates a new instance of ConcurrentCacheMap using the default values and a {@link CacheMap} for the internal
      * data structure.
      */
     public ConcurrentCacheMap() {
@@ -80,10 +80,10 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
      * Creates a new instance of ConcurrentCacheMap using the supplied values and a {@link CacheMap} for the internal
      * data structure.
      * 
-     * @param timeToLive
+     * @param timeToLiveSeconds
      *            The time-to-live value (seconds)
      * @param maxEntries
-     *            Set the maximum number of entries until items gets replaced with LRU
+     *            The maximum number of entries until items gets replaced with LRU
      */
     public ConcurrentCacheMap(final int timeToLiveSeconds, final int maxEntries) {
         this(timeToLiveSeconds, maxEntries, true);
@@ -96,7 +96,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
      * @param timeToLiveSeconds
      *            The time-to-live value (seconds)
      * @param maxEntries
-     *            The maximum entries to keep in cache, default is 1024
+     *            The maximum number of entries until items gets replaced with LRU
      * @param refreshTimeout
      *            If set to true, timeout will be reset in case of {@link #putIfAbsent(Object, Object)}
      */
@@ -105,7 +105,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
         this.segments = new CacheMap[SEGMENT_NR];
         final int maxEntriesPerSegment = maxEntries / SEGMENT_NR;
         for (int i = 0; i < SEGMENT_NR; i++) {
-            // set the cachemap to true, since it should behave as a regular map
+        	// set updateOnInsert to true, since it should behave as a regular map
             segments[i] = new CacheMap<K, ExpiringObject>(maxEntriesPerSegment, true);
         }
         this.timeToLiveSeconds = timeToLiveSeconds;
@@ -176,15 +176,11 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
             if (expire(segment, (K) key, oldValue)) {
                 return null;
             } else {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("get: " + key + ";" + oldValue.getValue());
-                }
+                LOGGER.debug("Get found. Key: {}. Value: {}.", key, oldValue.getValue());
                 return oldValue.getValue();
             }
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("get not found: " + key);
-        }
+        LOGGER.debug("Get not found. Key: {}.", key);
         return null;
     }
 
@@ -335,7 +331,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
 
 					@Override
                     public void remove() {
-						throw new UnsupportedOperationException("cannot remove from values");
+						throw new UnsupportedOperationException("Cannot remove from values.");
                     }
 				};
         	}
@@ -347,9 +343,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                     final ExpiringObject expiringObject = iterator.next();
                     if (expiringObject.isExpired()) {
                         iterator.remove();
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("remove in entrySet " + expiringObject.getValue());
-                        }
+                        LOGGER.debug("Remove in entry set: {}.", expiringObject.getValue());
                         removedCounter.incrementAndGet();
                     } else {
                         retVal.add(expiringObject.getValue());
@@ -401,9 +395,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                     final Map.Entry<K, ExpiringObject> entry = iterator.next();
                     if (entry.getValue().isExpired()) {
                         iterator.remove();
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("remove in entrySet " + entry.getValue().getValue());
-                        }
+                        LOGGER.debug("Removed in entry set: {}.", entry.getValue().getValue());
                         removedCounter.incrementAndGet();
                     } else {
                         retVal.add(new Map.Entry<K, V>() {
@@ -486,9 +478,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                 final ExpiringObject tmp = segment.get(key);
                 if (tmp != null && tmp.equals(value)) {
                     segment.remove(key);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("remove in expire " + value.getValue());
-                    }
+                    LOGGER.debug("Removed in expire: {}.", value.getValue());
                     removedCounter.incrementAndGet();
                 }
             }
@@ -509,9 +499,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
             final ExpiringObject expiringObject = iterator.next();
             if (expiringObject.isExpired()) {
                 iterator.remove();
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("remove in expireAll " + expiringObject.getValue());
-                }
+                LOGGER.debug("Remove in expire segment: {}.", expiringObject.getValue());
                 removedCounter.incrementAndGet();
             } else {
                 break;
@@ -527,7 +515,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
     }
 
     /**
-     * An object that also holds expriation information.
+     * An object that also holds expiration information.
      */
     private class ExpiringObject {
         private final V value;
@@ -538,16 +526,16 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
          * Creates a new expiring object with the given time of access.
          * 
          * @param value
-         *            The value that is wrapped in this class
-         * @param lastAccessTime
-         *            The time of access
+         *            The value that is wrapped in this instance
+         * @param lastAccessTimeMillis
+         *            The time of access in milliseconds.
          */
-        ExpiringObject(final V value, final long lastAccessTime) {
+        ExpiringObject(final V value, final long lastAccessTimeMillis) {
             if (value == null) {
                 throw new IllegalArgumentException("An expiring object cannot be null.");
             }
             this.value = value;
-            this.lastAccessTime = lastAccessTime;
+            this.lastAccessTime = lastAccessTimeMillis;
         }
 
         /**

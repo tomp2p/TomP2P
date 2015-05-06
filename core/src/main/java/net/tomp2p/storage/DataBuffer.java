@@ -71,7 +71,10 @@ public class DataBuffer {
 		return this;
     }
 
-	// from here, work with shallow copies
+	/**
+	 * From here, work with shallow copies.
+	 * @return Shallow copy of this DataBuffer.
+	 */
 	public DataBuffer shallowCopy() {
 		final DataBuffer db;
 		synchronized (buffers) {
@@ -121,8 +124,7 @@ public class DataBuffer {
 	
 	/**
 	 * @return The ByteBuf arrays backed by the buffers stored in here. The buffer is
-	 *         not deep copied here. That means the reference counting is done by this class. 
-	 *         If you want to use it longer than this object, call ByteBuf.retain().
+	 *         not deep copied here.
 	 */
 	public ByteBuf[] toByteBufs() {
 		final DataBuffer copy = shallowCopy();
@@ -133,7 +135,7 @@ public class DataBuffer {
 	 * Transfers the data from this buffer the CompositeByteBuf.
 	 * 
 	 * @param buf
-	 *            The CompositeByteBuf, where the data from this buffer is
+	 *            The AlternativeCompositeByteBuf, where the data from this buffer is
 	 *            transfered to
 	 */
 	public void transferTo(final AlternativeCompositeByteBuf buf) {

@@ -268,7 +268,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      *            Indicates if peer is not reachable via UDP
      * @param firewalledTCP
      *            Indicates if peer is not reachable via TCP
-     * @param isRelay
+     * @param isRelayed
      *            Indicates if peer is used as a relay
      * @param isSlow
      * 			  Indicates if a peer is slow
@@ -332,7 +332,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Facade for {@link #PeerAddress(Number160, InetAddress, int, int, boolean, boolean, PeerSocketAddress[])}.
+     * Facade for PeerAddress(...)
      * 
      * @param id
      *            The id of the peer

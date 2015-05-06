@@ -134,20 +134,19 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     }
 
     /**
-     * @return The search values for the neighbor request, or null if no content key specified
+     * @return The search values for the neighbor request, or null if no content key is specified
      */
     public SearchValues searchValues() {
         if (contentKey() != null) {
         	return new SearchValues(locationKey, domainKey, contentKey());
-        } else if(from !=null && to!=null) {
+        } if(from !=null && to!=null) {
         	return new SearchValues(locationKey, domainKey, from, to);
-        } else if (contentBloomFilter() == null && keyBloomFilter() != null) {
+        } if (contentBloomFilter() == null && keyBloomFilter() != null) {
             return new SearchValues(locationKey, domainKey, keyBloomFilter());
-        } else if (contentBloomFilter() != null && keyBloomFilter() != null) {
+        } if (contentBloomFilter() != null && keyBloomFilter() != null) {
             return new SearchValues(locationKey, domainKey, keyBloomFilter(), contentBloomFilter());
-        } else {
-            return new SearchValues(locationKey, domainKey);
         }
+        return new SearchValues(locationKey, domainKey);
     }
 
     public RoutingBuilder routingOnlyToSelf(boolean isRoutingOnlyToSelf) {

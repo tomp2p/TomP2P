@@ -35,7 +35,7 @@ import net.tomp2p.utils.Utils;
 
 public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI,
         SignatureBuilder<SendDirectBuilder> {
-	private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect("Peer is shutting down");
+	private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect("Peer is shutting down.");
 
 	private final Peer peer;
 
@@ -165,7 +165,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 			keepAlive = true;
 			remotePeer = peerConnection.remotePeer();
 		} else {
-			throw new IllegalArgumentException("either remotePeer or connection has to be set");
+			throw new IllegalArgumentException("Either the recipient address or peer connection has to be set.");
 		}
 
 		if (futureChannelCreator == null) {
@@ -184,7 +184,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 						if (future.isSuccess()) {
 							sendDirectRequest(request, future.peerConnection());
 						} else {
-							request.futureResponse().failed("Could not acquire channel (1)", future);
+							request.futureResponse().failed("Could not acquire channel (1).", future);
 						}
 					}
 				});
@@ -202,7 +202,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 							request.sendTCP(future.channelCreator());
 						}
 					} else {
-						request.futureResponse().failed("could not create channel", future);
+						request.futureResponse().failed("Could not create channel.", future);
 					}
 				}
 			});
@@ -220,7 +220,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 					request.futureResponse().request().keepAlive(true);
 					request.sendTCP(peerConnection.channelCreator(), peerConnection);
 				} else {
-					request.futureResponse().failed("Could not acquire channel (2)", future);
+					request.futureResponse().failed("Could not acquire channel (2).", future);
 				}
 			}
 

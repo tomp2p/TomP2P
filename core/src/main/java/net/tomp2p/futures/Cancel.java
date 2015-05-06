@@ -16,14 +16,14 @@
 package net.tomp2p.futures;
 
 /**
- * A cancelable class should implement this method to use it for future
+ * A cancelable class should implement this interface and use it for future
  * objects.
  * 
  * @author Thomas Bocek
  */
 public interface Cancel {
     /**
-     * This method gets called if a future is cancelled.
+     * Gets called if a future is cancelled.
      */
     void cancel();
 }

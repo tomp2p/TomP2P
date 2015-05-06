@@ -195,7 +195,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	}
 
 	/**
-	 * Clear the Bloom Filter.
+	 * Clears this bloom filter.
 	 */
 	@Override
 	public void clear() {
@@ -228,7 +228,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	/**
 	 * @param c
 	 *            The collection to check
-	 * @return true if all elements of the collection are in this bloom filter
+	 * @return True, if all elements of the collection are in this bloom filter.
 	 */
 	@Override
 	public boolean containsAll(final Collection<?> c) {
@@ -241,7 +241,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	}
 	
 	/**
-	 * Returns if the bloom filter is empty and never can be filled
+	 * Not implemented.
 	 * 
 	 * @return nothing
 	 */
@@ -311,7 +311,9 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	}
 
 	/**
-	 * @return the byte array size of the data (incl. header)
+	 * Not implemented.
+	 *
+	 * @return nothing
 	 */
 	@Override
 	public int size() {
@@ -368,14 +370,14 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 		buf.writeZero(byteArraySize - currentByteArraySize);
 	}
 
-	/**
+	/** Merges this bloom filter with the provided one using OR.
 	 * @param toMerge
-	 *            Merge to bloom filters using OR
+	 *
 	 * @return A new bloom filter that contains both sets.
 	 */
 	public SimpleBloomFilter<E> merge(final SimpleBloomFilter<E> toMerge) {
 		if (toMerge.bitArraySize != bitArraySize) {
-			throw new RuntimeException("this is not supposed to happen");
+			throw new RuntimeException("The two bloomfilters must have the same size.");
 		}
 		BitSet mergedBitSet = (BitSet) bitSet.clone();
 		mergedBitSet.or(toMerge.bitSet);

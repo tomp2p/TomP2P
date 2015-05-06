@@ -87,9 +87,9 @@ public class PeerIPFilter implements PeerMapFilter {
 
 		public static IPv4 fromInetAddress(final InetAddress inetAddress) {
 			if (inetAddress == null) {
-				throw new IllegalArgumentException("can not construct from [null]");
+				throw new IllegalArgumentException("Cannot construct from null.");
 			} else if (!(inetAddress instanceof Inet4Address)) {
-				throw new IllegalArgumentException("must be IPv4");
+				throw new IllegalArgumentException("Must be IPv4.");
 			}
 			byte[] buf = ((Inet4Address) inetAddress).getAddress();
 
@@ -108,6 +108,11 @@ public class PeerIPFilter implements PeerMapFilter {
 			}
 			IPv4 o = (IPv4) obj;
 			return bits == o.bits;
+		}
+
+		@Override
+		public int hashCode() {
+			return bits;
 		}
 	}
 
@@ -135,9 +140,9 @@ public class PeerIPFilter implements PeerMapFilter {
 
 		public static IPv6 fromInetAddress(final InetAddress inetAddress) {
 			if (inetAddress == null) {
-				throw new IllegalArgumentException("can not construct from [null]");
+				throw new IllegalArgumentException("Cannot construct from null.");
 			} else if (!(inetAddress instanceof Inet6Address)) {
-				throw new IllegalArgumentException("must be IPv6");
+				throw new IllegalArgumentException("Must be IPv6.");
 			}
 			byte[] buf = ((Inet6Address) inetAddress).getAddress();
 
@@ -162,6 +167,11 @@ public class PeerIPFilter implements PeerMapFilter {
 			}
 			IPv6 o = (IPv6) obj;
 			return highBits == o.highBits && lowBits == o.lowBits;
+		}
+
+		@Override
+		public int hashCode() {
+			return (int)(highBits ^ lowBits);
 		}
 	}
 }

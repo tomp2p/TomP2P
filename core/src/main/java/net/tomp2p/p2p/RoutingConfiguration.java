@@ -61,7 +61,7 @@ public class RoutingConfiguration {
     public RoutingConfiguration(final int maxDirectHits, final int maxNoNewInfoDiff, final int maxFailures,
             final int maxSuccess, final int parallel, final boolean forceTCP) {
         if (maxDirectHits < 0 || maxNoNewInfoDiff < 0 || maxFailures < 0 || parallel < 0) {
-            throw new IllegalArgumentException("need to be larger or equals zero");
+            throw new IllegalArgumentException("Some arguments need to be larger than or equals to zero.");
         }
         this.maxDirectHits = maxDirectHits;
         this.maxNoNewInfoDiff = maxNoNewInfoDiff;
@@ -71,15 +71,18 @@ public class RoutingConfiguration {
         this.forceTCP = forceTCP;
     }
 
+    /**
+     * Number of direct hits (d):
+     * This is used for fetching data. If d peers have been contacted that have the data stored, routing stops.
+     * @return
+     */
     public int maxDirectHits() {
         return maxDirectHits;
     }
 
     /**
-     * This returns the difference to the min value of P2P configuration. We need to have a difference, because we need
-     * to search at least for min peers in the routing, as otherwise if we find the closest node by chance, then we
-     * don't reach min.
-     * 
+     * Number of no new information (n):
+     * This is mainly used for storing data. It searches the closest peers and if n peers do not report any closer nodes, the routing stops.
      * @return
      */
     public int maxNoNewInfoDiff() {
@@ -90,20 +93,36 @@ public class RoutingConfiguration {
         return maxNoNewInfoDiff + minimumResults;
     }
 
+    /**
+     * Number of failures (f):
+     * The routing stops if f peers fail to respond.
+     * @return
+     */
     public int maxFailures() {
         return maxFailures;
     }
 
+    /**
+     * Number of success (s):
+     * The routing stops if s peers respond.
+     * @return
+     */
     public int maxSuccess() {
         return maxSuccess;
     }
 
+    /**
+     * Number of parallel requests (p):
+     * This tells the routing how many peers to contact in parallel.
+     * @return
+     */
     public int parallel() {
         return parallel;
     }
 
     /**
-     * @return True if the routing should use TCP instead of the default UDP
+     * Flag to indicate that routing should be done with TCP instead of UDP.
+     * @return
      */
     public boolean isForceTCP() {
         return forceTCP;

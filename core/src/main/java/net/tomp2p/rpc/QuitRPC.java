@@ -67,7 +67,7 @@ public class QuitRPC extends DispatchHandler {
 	 * Add a peer status listener that gets notified when a peer is offline.
 	 * 
 	 * @param listener
-	 *            The listener
+	 *            The listener to be added
 	 * @return This class
 	 */
 	public QuitRPC addPeerStatusListener(final PeerStatusListener listener) {
@@ -86,8 +86,6 @@ public class QuitRPC extends DispatchHandler {
 	 *            be signed
 	 * @param channelCreator
 	 *            The channel creator that creates connections
-	 * @param configuration
-	 *            The client side connection configuration
 	 * @return The future response to keep track of future events
 	 */
 	public FutureResponse quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder,
@@ -100,7 +98,7 @@ public class QuitRPC extends DispatchHandler {
 		FutureResponse futureResponse = new FutureResponse(message);
 		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse,
 		        peerBean(), connectionBean(), shutdownBuilder);
-		LOG.debug("send QUIT message {}", message);
+		LOG.debug("send QUIT message {}.", message);
 		if (!shutdownBuilder.isForceTCP()) {
 			return requestHandler.fireAndForgetUDP(channelCreator);
 		} else {
@@ -112,7 +110,7 @@ public class QuitRPC extends DispatchHandler {
 	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
 	        Responder responder) throws Exception {
 		if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.QUIT.getNr())) {
-			throw new IllegalArgumentException("Message content is wrong");
+			throw new IllegalArgumentException("Message content is wrong for this handler.");
 		}
 		LOG.debug("received QUIT message {}", message);
 		synchronized (peerBean().peerStatusListeners()) {

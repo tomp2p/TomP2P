@@ -35,9 +35,9 @@ import net.tomp2p.futures.FutureDone;
 
 /**
  * A class to search for addresses to bind the sockets to. The user first
- * creates a {@link Bindings} class and provides all the necessary information,
- * then calls {@link #discoverInterfaces(Bindings)}. The results are stored in
- * {@link Bindings} as well.
+ * creates a {@link Bindings} instance, provides all the necessary information
+ * and then calls {@link #discoverInterfaces(Bindings)}. The results are stored
+ * in the {@link Bindings} instance as well.
  * 
  * @author Thomas Bocek
  */

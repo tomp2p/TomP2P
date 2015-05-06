@@ -55,9 +55,8 @@ public class CacheMap<K, V> extends LinkedHashMap<K, V> {
     public V put(final K key, final V value) {
         if (updateEntryOnInsert) {
             return super.put(key, value);
-        } else {
-            return putIfAbsent(key, value);
         }
+        return putIfAbsent(key, value);
     }
 
     /**
@@ -80,9 +79,8 @@ public class CacheMap<K, V> extends LinkedHashMap<K, V> {
     public V putIfAbsent(final K key, final V value) {
         if (!containsKey(key)) {
             return super.put(key, value);
-        } else {
-            return super.get(key);
         }
+        return super.get(key);
     };
 
     @Override

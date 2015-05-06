@@ -18,8 +18,8 @@ package net.tomp2p.connection;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * A bean that holds sharable configuration settings for the peer. The non-sharable configurations are stored in
- * {@link PeerBean}.
+ * A bean that holds sharable configuration settings for the peer. The non-sharable configurations are stored
+ * in {@link PeerBean}.
  * 
  * @author Thomas Bocek
  */
@@ -47,11 +47,11 @@ public class ConnectionBean {
     private final ScheduledExecutorService timer;
     
     /**
-     * The connection bean with unmodifiable objects. Once its set you cannot change it. If its required to change, then
-     * shutdown the peer and create a new one.
+	 * The connection bean with unmodifiable objects. Once it is set, it cannot be changed. If it is required
+	 * to change, then the peer must be shut down and a new one created.
      * 
      * @param p2pId
-     *            The P2P id
+	 *            The P2P ID
      * @param dispatcher
      *            The dispatcher object that receives all messages
      * @param sender
@@ -78,7 +78,7 @@ public class ConnectionBean {
     }
 
     /**
-     * @return The P2P id
+	 * @return The P2P ID
      */
     public int p2pId() {
         return p2pId;

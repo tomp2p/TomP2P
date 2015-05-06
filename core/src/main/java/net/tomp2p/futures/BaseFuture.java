@@ -22,7 +22,7 @@ package net.tomp2p.futures;
  */
 public interface BaseFuture extends Cancel {
     /**
-     * The first state is always INIT and will always end in either OK, FAILED, or CANCEL.
+     * The first state is always INIT and will always end in either OK, FAILED, or CANCEl.
      */
     public enum FutureType {
         INIT, OK, FAILED
@@ -151,7 +151,7 @@ public interface BaseFuture extends Cancel {
     /**
      * If the type is not OK, then something unexpected happened.
      * 
-     * @return The type
+     * @return The fail type
      */
     FutureType type();
 

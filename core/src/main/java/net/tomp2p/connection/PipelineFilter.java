@@ -24,22 +24,22 @@ import java.util.Map;
 import net.tomp2p.utils.Pair;
 
 /**
- * The user may modify the filter by adding, removing, or changing the handlers.
+ * The user may modify the filter by adding, removing or changing the handlers.
  * 
  * @author Thomas Bocek
  * 
  */
 public interface PipelineFilter {
     /**
-     * Filter the handlers. If no filtering should happen, return the same array.
+     * Filters the handlers. If no filtering should happen, return the same map.
      * 
      * @param channelHandlers
-     *            The created handlers by tomp2p
+     *            The handlers created by tomp2p
      * @param tcp
-     *            True if the connection is TCP, false for UDP
+     *            True, if the connection is TCP. False, if UDP
      * @param client
-     *            True if this is the client side, false for the server side
-     * @return The same, new, or changed array of handlers. It cannot have null elements
+     *            True, if this is the client side. False if server side
+     * @return The same, new or changed map of handlers
      */
 	Map<String,Pair<EventExecutorGroup,ChannelHandler>> filter(Map<String,Pair<EventExecutorGroup,ChannelHandler>> channelHandlers, boolean tcp, boolean client);
 }

@@ -264,7 +264,7 @@ public class Utils {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         oos.writeObject(attachement);
-        // no need to call close of flush since we use ByteArrayOutputStream
+		// no need to call close or flush since we use ByteArrayOutputStream
         byte[] data = bos.toByteArray();
         return data;
     }
@@ -349,11 +349,13 @@ public class Utils {
     }
 
     /**
-     * Stores the differences of two collections in a result collection. The result will contain items from collection1
+	 * Stores the differences of two collections in a result collection. The result will contain items from
+	 * collection1
      * without those items that are in collection2.
      * 
      * @param collection1
-     *            The first collection (master collection) that will be iterated and checked against duplicates in
+	 *            The first collection (master collection) that will be iterated and checked against
+	 *            duplicates in
      *            collection2.
      * @param result
      *            The collection to store the result
@@ -373,16 +375,18 @@ public class Utils {
     }
 
     /**
-     * Stores the differences of multiple collections in a result collection. The result will contain items from
+	 * Stores the differences of multiple collections in a result collection. The result will contain items
+	 * from
      * collection1 without those items that are in collections2. The calling method might need to provide a
      * 
      * @SuppressWarnings("unchecked") since generics and arrays do not mix well.
      * @param collection1
-     *            The first collection (master collection) that will be iterated and checked against duplicates in
+	 *            The first collection (master collection) that will be iterated and checked against
+	 *            duplicates in
      *            collection2.
      * @param result
      *            The collection to store the result
-     * @param collection2
+     * @param collections2
      *            The second collections that will be searched for duplicates
      * @return Returns the collection the user specified as the resulting collection
      */
@@ -427,8 +431,10 @@ public class Utils {
     }
 
     /**
-     * Returns a random element from a collection. This method is pretty slow O(n), but the Java collection framework
-     * does not offer a better solution. This method puts the collection into a {@link List} and fetches a random
+	 * Returns a random element from a collection. This method is pretty slow O(n), but the Java collection
+	 * framework
+	 * does not offer a better solution. This method puts the collection into a {@link List} and fetches a
+	 * random
      * element using {@link List#get(int)}.
      * 
      * @param collection
@@ -594,7 +600,7 @@ public class Utils {
      * yield the byte array {@code 0x12, 0x13, 0x14, 0x15} .
      * <p>
      * If you need to convert and concatenate several values (possibly even of different types), use a shared
-     * {@link java.nio.ByteBuffer} instance, or use {@link com.google.common.io.ByteStreams#newDataOutput()} to get a
+     * {@link java.nio.ByteBuffer} instance, or use com.google.common.io.ByteStreams#newDataOutput() to get a
      * growable buffer.
      */
     private static byte[] toByteArray(int value) {
@@ -681,7 +687,7 @@ public class Utils {
     /**
      * Converts a byte array to a Inet4Address.
      * 
-     * @param me
+     * @param src
      *            the byte array
      * @param offset
      *            where to start in the byte array
@@ -775,13 +781,13 @@ public class Utils {
     }
 
     /**
-     * Adds a listener to the response future and releases all aquired channels in channel creator.
+	 * Adds a listener to the response futures and releases all aquired channels in the channel creator.
      * 
      * @param channelCreator
      *            The channel creator that will be shutdown and all connections will be closed
      * @param baseFutures
-     *            The futures to listen to. If all the futures finished, then the channel creator is shutdown. If null
-     *            provided, the channel creator is shutdown immediately.
+	 *            The futures to listen to. If all the futures finished, then the channel creator is shut down.
+	 *            If null is provided, then the channel crator is shut down immediately.
      */
     public static void addReleaseListener(final ChannelCreator channelCreator,
             final BaseFuture... baseFutures) {
@@ -849,6 +855,53 @@ public class Utils {
         return true;
     }
     
+	/**
+	 * Compares if two collections of collections have the exact same elements.
+	 *
+	 * @param set1 The first collection of collections.
+	 * @param set2 The second collection of collections.
+	 * @return True if both collections of collections have the exact same elements.
+	 */
+	public static <T> boolean isSameCollectionSets(final Collection<? extends Collection<T>> set1,
+			final Collection<? extends Collection<T>> set2) {
+
+		if (set1 == null ^ set2 == null) {
+			return false;
+		}
+		if (set1 != null && (set1.size() != set2.size())) {
+			return false;
+		}
+		if (set1 != null) {
+
+			for (Collection<T> collection1 : set1) {
+
+				for (Collection<T> collection2 : set2) {
+
+					if (!collectionsContainCollection(set1, collection2)) {
+						return false;
+					}
+					if (!collectionsContainCollection(set2, collection1)) {
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	private static <T> boolean collectionsContainCollection(Collection<? extends Collection<T>> collections,
+			Collection<T> collection) {
+
+		for (Collection<T> col : collections) {
+
+			if (isSameSets(collection, col)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
     public static boolean equals(Object a, Object b) {
     	return (a == b) || (a != null && a.equals(b));
     }

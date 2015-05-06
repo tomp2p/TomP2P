@@ -78,7 +78,7 @@ public class Reservation {
 	private final FutureDone<Void> futureReservationDone = new FutureDone<Void>();
 
 	/**
-	 * Creates a new reservation class with the 3 permits.
+	 * Creates a new reservation class with the 3 permits contained in the provided configuration.
 	 * 
 	 * @param workerGroup
 	 *            The worker group for both UDP and TCP channels. This will not
@@ -109,21 +109,20 @@ public class Reservation {
 	}
 
 	/**
-	 * This will calculate the number of required connection for routing and
-	 * request messages.
+	 * Calculates the number of required connections for routing and request messages.
 	 * 
 	 * @param routingConfiguration
 	 *            Contains the number of routing requests in parallel
 	 * @param requestP2PConfiguration
 	 *            Contains the number of requests for P2P operations in parallel
 	 * @param builder
-	 *            The builder that tells us if we should use TCP or UPD
+	 *            The builder that tells us if we should use TCP or UDP
 	 * @return The future channel creator
 	 */
 	public FutureChannelCreator create(final RoutingConfiguration routingConfiguration,
 	        final RequestConfiguration requestP2PConfiguration, final DefaultConnectionConfiguration builder) {
 		if (routingConfiguration == null && requestP2PConfiguration == null) {
-			throw new IllegalArgumentException("Both routingConfiguration and requestP2PConfiguration cannot be null");
+			throw new IllegalArgumentException("Both routing configuration and request configuration must be set.");
 		}
 
 		int nrConnectionsTCP = 0;
@@ -148,9 +147,9 @@ public class Reservation {
 	}
 
 	/**
-	 * Create a connection creator for short-lived connections. Always call
+	 * Creates a channel creator for short-lived connections. Always call
 	 * {@link ChannelCreator#shutdown()} to release all resources. This needs to
-	 * be done in any case, whetere FutureChannelCreator return failed or
+	 * be done in any case, whether FutureChannelCreator returns failed or
 	 * success!
 	 * 
 	 * @param permitsUDP
@@ -161,25 +160,24 @@ public class Reservation {
 	 */
 	public FutureChannelCreator create(final int permitsUDP, final int permitsTCP) {
 		if (permitsUDP > maxPermitsUDP) {
-			throw new IllegalArgumentException("cannot aquire more UDP connections (" + permitsUDP + ") than maximum "
-			        + maxPermitsUDP);
+			throw new IllegalArgumentException(String.format("Cannot acquire more UDP connections (%s) than maximally allowed (%s).", permitsUDP, maxPermitsUDP));
 		}
 		if (permitsTCP > maxPermitsTCP) {
-			throw new IllegalArgumentException("cannot aquire more TCP connections (" + permitsTCP + ") than maximum "
-			        + maxPermitsTCP);
+			throw new IllegalArgumentException(String.format("Cannot acquire more TCP connections (%s) than maximally allowed (%s).", permitsTCP, maxPermitsTCP));
 		}
 		final FutureChannelCreator futureChannelCreator = new FutureChannelCreator();
 		read.lock();
 		try {
 			if (shutdown) {
-				return futureChannelCreator.failed("shutting down");
+				return futureChannelCreator.failed("Shutting down.");
 			}
 
 			FutureDone<Void> futureChannelCreationDone = new FutureDone<Void>();
 			futureChannelCreationDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 				@Override
 				public void operationComplete(final FutureDone<Void> future) throws Exception {
-					// release the permits in all cases, otherwise we may see inconsistencies
+					// release the permits in all cases
+                    // otherwise, we may see inconsistencies
 					semaphoreUPD.release(permitsUDP);
 					semaphoreTCP.release(permitsTCP);
 				}
@@ -194,7 +192,7 @@ public class Reservation {
 	}
 
 	/**
-	 * Create a connection creator for permanent connections.
+	 * Creates a channel creator for permanent TCP connections.
 	 * 
 	 * @param permitsPermanentTCP
 	 *            The number of long-lived TCP connections
@@ -202,8 +200,7 @@ public class Reservation {
 	 */
 	public FutureChannelCreator createPermanent(final int permitsPermanentTCP) {
 		if (permitsPermanentTCP > maxPermitsPermanentTCP) {
-			throw new IllegalArgumentException("cannot aquire more TCP connections (" + permitsPermanentTCP
-			        + ") than maximum " + maxPermitsPermanentTCP);
+			throw new IllegalArgumentException(String.format("Cannot acquire more permantent TCP connections (%s) than maximally allowed (%s).", permitsPermanentTCP, maxPermitsPermanentTCP));
 		}
 		final FutureChannelCreator futureChannelCreator = new FutureChannelCreator();
 		read.lock();
@@ -215,8 +212,8 @@ public class Reservation {
 			futureChannelCreationDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 				@Override
 				public void operationComplete(final FutureDone<Void> future) throws Exception {
-					// release the permits in all cases, otherwise we may see
-					// inconsitencies
+					// release the permits in all cases
+                    // otherwise, we may see inconsistencies
 					semaphorePermanentTCP.release(permitsPermanentTCP);
 				}
 			});
@@ -229,7 +226,7 @@ public class Reservation {
 	}
 
 	/**
-	 * Shutdown all the channel creators out there.
+	 * Shuts down all the channel creators.
 	 * 
 	 * @return The future when the shutdown is complete
 	 */
@@ -237,25 +234,24 @@ public class Reservation {
 		write.lock();
 		try {
 			if (shutdown) {
-				return futureReservationDone.failed("already shutting down");
+				return futureReservationDone.failed("Already shutting down");
 			}
 			shutdown = true;
 		} finally {
 			write.unlock();
 		}
 
-		// fast shutdown for those that are in the queue is not required. We
-		// could let the executor finish since the
-		// shutdown flag is set and the future will be set as well to
-		// "shutting down":
+		// Fast shutdown for those that are in the queue is not required.
+        // Let the executor finish since the shutdown-flag is set and the
+        // future will be set as well to "shutting down".
 
 		for (Runnable r : executor.shutdownNow()) {
 			if (r instanceof WaitReservation) {
 				WaitReservation wr = (WaitReservation) r;
-				wr.futureChannelCreator().failed("shutting down");
+				wr.futureChannelCreator().failed("Shutting down.");
 			} else {
 				WaitReservationPermanent wr = (WaitReservationPermanent) r;
-				wr.futureChannelCreator().failed("shutting down");
+				wr.futureChannelCreator().failed("Shutting down.");
 			}
 		}
 		
@@ -298,8 +294,7 @@ public class Reservation {
 	}
 
 	/**
-	 * Adds a channel creator to the set and also adds it the the
-	 * shutdownlistener.
+	 * Adds a channel creator to the set and also adds it to the shutdown listener.
 	 * 
 	 * @param channelCreator
 	 *            The channel creator
@@ -315,7 +310,7 @@ public class Reservation {
 	}
 
 	/**
-	 * Tries to reserve a channel creator. If too many channel already created,
+	 * Tries to reserve a channel creator. If too many channels already created,
 	 * wait until channels are closed. This waiter is for the short-lived
 	 * connections.
 	 * 
@@ -336,8 +331,7 @@ public class Reservation {
 		 *            The status of the creating
 		 * @param futureChannelCreationShutdown
 		 *            The {@link ChannelCreator} shutdown feature needs to be
-		 *            passed since we need it for {@link Reservation#shutdown()}
-		 *            .
+		 *            passed since we need it for {@link ChannelCreator#shutdown()}.
 		 * @param permitsUDP
 		 *            The number of permits for UDP
 		 * @param permitsTCP

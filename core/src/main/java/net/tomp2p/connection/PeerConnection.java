@@ -113,7 +113,7 @@ public class PeerConnection {
         channelFuture.channel().closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
             @Override
             public void operationComplete(Future<? super Void> arg0) throws Exception {
-            	LOG.debug("about to close the connection {}, {}",  channelFuture.channel(), initiator ? "initiator" : "from-disptacher");
+            	LOG.debug("About to close the connection {}, {}.",  channelFuture.channel(), initiator ? "initiator" : "from-disptacher");
                 closeFuture.done();
             }
         });
@@ -123,7 +123,7 @@ public class PeerConnection {
         // cc is not null if we opened the connection
     	Channel channel = channelFuture != null ? channelFuture.channel() : null;
         if (cc != null) {
-        	LOG.debug("close connection, we were the initiator {}", channel);
+        	LOG.debug("Close connection {}. We were the initiator.", channel);
             FutureDone<Void> future = cc.shutdown();
             // Maybe done on arrival? Set close future in any case
             future.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
@@ -133,9 +133,9 @@ public class PeerConnection {
                 }
             });        
         } else {
-            // cc is null if its an incoming connection. We can close it here, or it will be closed when the dispatcher
-            // is shutdown
-        	LOG.debug("close connection, not the initiator {}", channel);
+        	// cc is null if it is an incoming connection
+            // we can close it here or it will be closed when the dispatcher is shut down
+        	LOG.debug("Close connection {}. We are not the initiator.", channel);
             channelFuture.channel().close();
         }
         return closeFuture;
@@ -148,9 +148,9 @@ public class PeerConnection {
 
     private FutureChannelCreator acquire(final FutureChannelCreator futureChannelCreator,
             final FutureResponse futureResponse) {
-    	LOG.debug("about to acquire peer connection for {}", remotePeer);
+    	LOG.debug("About to acquire a peer connection for {}.", remotePeer);
         if (oneConnection.tryAcquire()) {
-        	LOG.debug("acquired peer connection for {}", remotePeer);
+        	LOG.debug("Acquired a peer connection for {}.", remotePeer);
             futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                 @Override
                 public void operationComplete(FutureResponse future) throws Exception {

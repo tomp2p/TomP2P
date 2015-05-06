@@ -16,18 +16,20 @@
 package net.tomp2p.peers;
 
 /**
- * This interface can be added to the map, to get notified of peer insertion or removal. This is useful for replication.
+ * This interface can be added to the map to get notified of peer insertion or removal.
+ * This is useful for replication.
  * 
  * @author Thomas Bocek
  */
 public interface PeerMapChangeListener {
     /**
-     * This method is called if a peer is added to the map. The peer is always added to the non-verified map first.
+     * This method is called if a peer is added to the map.
+     * The peer is always added to the non-verified map first.
      * 
      * @param peerAddress
-     *            The peer that has been added.
+     *            The address of the peer that has been added.
      * @param verified
-     *            True if the peer was inserted in the verified map
+     *            True, if the peer was inserted in the verified map
      */
     void peerInserted(PeerAddress peerAddress, boolean verified);
 
@@ -35,9 +37,9 @@ public interface PeerMapChangeListener {
      * This method is called if a peer is removed from the map.
      * 
      * @param peerAddress
-     *            The peer that has been removed and add to the cache.
+     *            The address of the peer that has been removed.
      * @param storedPeerAddress
-     *            Contains information statistical information
+     *            Contains statistical information
      */
     void peerRemoved(PeerAddress peerAddress, PeerStatistic storedPeerAddress);
 
@@ -45,9 +47,9 @@ public interface PeerMapChangeListener {
      * This method is called if a peer is updated.
      * 
      * @param peerAddress
-     *            The peer can change its IP and some statistical data
+     *            The address of the peer that has been updated.
      * @param storedPeerAddress
-     *            Contains information statistical information
+     *            Contains statistical information
      */
     void peerUpdated(PeerAddress peerAddress, PeerStatistic storedPeerAddress);
 }

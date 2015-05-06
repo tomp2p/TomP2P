@@ -34,7 +34,7 @@ public abstract class BaseFutureAdapter<F extends BaseFuture> implements BaseFut
     final private static Logger logger = LoggerFactory.getLogger(BaseFutureAdapter.class);
 
     /**
-     * Prints out the error using the logger.
+     * Prints out the error using the logger and System.err.
      */
     @Override
     public void exceptionCaught(final Throwable t) throws Exception {

@@ -30,7 +30,7 @@ public interface RawDataReply {
      * cases where a custom encoder/decoder is necessary.
      * 
      * @param sender
-     *            The sender to from which the request came
+     *            The sender from which the request came
      * @param requestBuffer
      *            The incoming buffer
      * @param complete
@@ -39,7 +39,7 @@ public interface RawDataReply {
      *         same buffer as requestBuffer is sent back, the message will contain OK, otherwise the payload will be
      *         set.
      * @throws Exception
-     *             In case of an exception, a stacktrack will be printed to System.err and a log output will be
+     *             In case of an exception, a stacktrace will be printed to System.err and a log output will be
      *             generated
      */
     Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete) throws Exception;

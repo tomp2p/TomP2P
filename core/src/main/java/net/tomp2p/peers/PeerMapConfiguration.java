@@ -69,15 +69,17 @@ public class PeerMapConfiguration {
     }
 
     /**
-     * @param bag The bit distance with 0 being the closest, 159 being the most distant
-     * @return The size of the bag of the given bit distance.
+     * Each distance bit has its own bag.
+     * This is the size of the verified peers that are known to be online.
+     * @return
      */
     public int getVerifiedBagSize(final int bag) {
         return bagSizesVerified[bag];
     }
 
     /**
-     * @return The array of sizes for the verified peer bags
+     * Each distance bit has its own bag this is the size of the verified peers are know to be online
+     * @return this class
      */
     public int[] getVerifiedBagSizes() {
         return bagSizesVerified;
@@ -208,7 +210,7 @@ public class PeerMapConfiguration {
     }
 
     /**
-     * @return The number of times that the peer is not reachabel. After that the peer is considered offline
+     * @return The number of times that the peer is not reachable. After that, the peer is considered offline
      */
     public int offlineCount() {
         return offlineCount;
@@ -225,7 +227,7 @@ public class PeerMapConfiguration {
     }
 
     /**
-     * @return This filter can be set to not accept certain peers
+     * @return These filters can be set to not accept certain peers
      */
     public Collection<PeerMapFilter> peerMapFilters() {
         return peerMapFilters;
@@ -242,7 +244,7 @@ public class PeerMapConfiguration {
     }
 
     /**
-     * @return The class that is responsible for maintenance
+     * @return The instance that is responsible for maintenance
      */
     public Maintenance maintenance() {
         return maintenance;
@@ -259,10 +261,10 @@ public class PeerMapConfiguration {
     }
     
     /**
-     * @return The time a peer is considered offline (shutdown) in seconds. This is important, since we see that a peer is offline
-     *         and an other peer reports this peer, we don't want to add it into our map. Thus, there is a map that
-     *         keeps track of such peers. This also means that a fast reconnect is not possible and a peer has to wait
-     *         until the timeout to rejoin
+     * @return The time a peer is considered offline (shutdown) in seconds. This is important, since we see that a peer is
+     *            offline and an other peer reports this peer, we don't want to add it into our map. Thus, there is a
+     *            map that keeps track of such peers. This also means that a fast reconnect is not possible and a peer
+     *            has to wait until the timeout to rejoin
      */
     public int shutdownTimeout() {
         return shutdownTimeout;
@@ -282,7 +284,7 @@ public class PeerMapConfiguration {
     }
     
     /**
-     * @return The time a peer is considered offline (exception) in seconds. This is important, since we see that a peer is offline
+     * @return The time, in seconds, a peer is considered offline (exception). This is important, since we see that a peer is offline
      *         and an other peer reports this peer, we don't want to add it into our map. Thus, there is a map that
      *         keeps track of such peers. This also means that a fast reconnect is not possible and a peer has to wait
      *         until the timeout to rejoin
@@ -293,7 +295,7 @@ public class PeerMapConfiguration {
 
     /**
      * @param exceptionTimeout
-     *            The time a peer is considered offline (exception) in seconds. This is important, since we see that a peer is
+     *            The time, in seconds, a peer is considered offline (exception). This is important, since we see that a peer is
      *            offline and an other peer reports this peer, we don't want to add it into our map. Thus, there is a
      *            map that keeps track of such peers. This also means that a fast reconnect is not possible and a peer
      *            has to wait until the timeout to rejoin

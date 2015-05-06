@@ -261,15 +261,18 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 					+ this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
-		} if (responseMessage.type() == Message.Type.EXCEPTION) {
+		} 
+        if (responseMessage.type() == Message.Type.EXCEPTION) {
             String msg = "Message caused an exception on the other side, handle as peer_abort: "
                     + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
-		} if (responseMessage.isRequest()) {
+		} 
+        if (responseMessage.isRequest()) {
             ctx.fireChannelRead(responseMessage);
             return;
-		} if (!sendMessageID.equals(recvMessageID)) {
+		} 
+        if (!sendMessageID.equals(recvMessageID)) {
 			String msg = "Response message [" + responseMessage
                     + "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));

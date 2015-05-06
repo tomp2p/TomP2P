@@ -63,13 +63,4 @@ public class NeighborSet {
 
         return t1 && t2;
     }
-
-    @Override
-    public int hashCode() {
-    	// TODO check correctness
-    	int hash = 5;
-        hash = 89 * hash + (this.neighbors != null ? this.neighbors.hashCode() : 0);
-        hash = 89 * hash + (this.neighborLimit ^ (this.neighborLimit >>> 32));
-        return hash;
-    }
 }

@@ -5,12 +5,12 @@ public interface ConnectionConfiguration {
     /**
      * @return The time that a TCP connection can be idle before it is considered not active for short-lived connections.
      */
-    int idleTCPSeconds();
+    int idleTCPMillis();
 
     /**
      * @return The time that a UDP connection can be idle before it is considered not active for short-lived connections.
      */
-    int idleUDPSeconds();
+    int idleUDPMillis();
 
     /**
      * @return The time a TCP connection is allowed to be established.

@@ -337,7 +337,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	 * @return The channel handlers that may have been modified by the user
 	 */
 	private Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers(final boolean tcp) {
-		TimeoutFactory timeoutFactory = new TimeoutFactory(null, channelServerConfiguration.idleTCPSeconds(),
+		TimeoutFactory timeoutFactory = new TimeoutFactory(null, channelServerConfiguration.idleTCPMillis(),
 		        peerStatusListeners, "Server");
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 		if (tcp) {

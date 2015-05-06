@@ -31,8 +31,8 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     private boolean behindFirewall = false;
     private boolean disableBind = false;
 
-    private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
-    private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
+    private int idleTCPMillis = ConnectionBean.DEFAULT_TCP_IDLE_MILLIS;
+    private int idleUDPMillis = ConnectionBean.DEFAULT_UDP_IDLE_MILLIS;
     private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
     private int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
 
@@ -115,8 +115,8 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     /**
      * @return The time that a connection can be idle before it is considered not active for short-lived connections
      */
-    public int idleTCPSeconds() {
-        return idleTCPSeconds;
+    public int idleTCPMillis() {
+        return idleTCPMillis;
     }
 
     /**
@@ -124,16 +124,16 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
      *            The time that a connection can be idle before its considered not active for short-lived connections
      * @return This class
      */
-    public ChannelServerConfiguration idleTCPSeconds(final int idleTCPSeconds) {
-        this.idleTCPSeconds = idleTCPSeconds;
+    public ChannelServerConfiguration idleTCPMillis(final int idleTCPMillis) {
+        this.idleTCPMillis = idleTCPMillis;
         return this;
     }
 
     /**
      * @return The time that a connection can be idle before its considered not active for short-lived connections
      */
-    public int idleUDPSeconds() {
-        return idleUDPSeconds;
+    public int idleUDPMillis() {
+        return idleUDPMillis;
     }
 
     /**
@@ -141,8 +141,8 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
      *            The time that a connection can be idle before its considered not active for short-lived connections
      * @return This class
      */
-    public ChannelServerConfiguration idleUDPSeconds(final int idleUDPSeconds) {
-        this.idleUDPSeconds = idleUDPSeconds;
+    public ChannelServerConfiguration idleUDPMillis(final int idleUDPMillis) {
+        this.idleUDPMillis = idleUDPMillis;
         return this;
     }
 

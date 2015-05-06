@@ -168,7 +168,7 @@ public class TestDirect {
             ccohUDP.reset();
 
             FutureDirect fd1 = sender.sendDirect(peerConnection).object("test")
-                    .connectionTimeoutTCPMillis(2000).idleTCPSeconds(10 * 1000).start();
+                    .connectionTimeoutTCPMillis(2000).idleTCPMillis(10 * 1000).start();
             fd1.awaitUninterruptibly();
             fd1.awaitListenersUninterruptibly();
             Assert.assertEquals(true, fd1.isSuccess());
@@ -231,13 +231,14 @@ public class TestDirect {
             ccohUDP.reset();
 
             FutureDirect fd1 = sender.sendDirect(peerConnection).object("test")
-                    .connectionTimeoutTCPMillis(2000).idleTCPSeconds(5).start();
+                    .connectionTimeoutTCPMillis(2000).idleTCPMillis(5 * 1000).start();
             fd1.awaitUninterruptibly();
+            Assert.assertTrue(fd1.isSuccess());
 
             Assert.assertEquals(1, ccohTCP.total());
 
             Thread.sleep(7000);
-
+            System.out.println("request 2");
             FutureDirect fd2 = sender.sendDirect(peerConnection).object("test").start();
             fd2.awaitUninterruptibly();
             peerConnection.close().await();

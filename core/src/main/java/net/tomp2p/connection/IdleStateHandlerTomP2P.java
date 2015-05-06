@@ -5,7 +5,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.concurrent.EventExecutor;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -32,9 +31,9 @@ public class IdleStateHandlerTomP2P extends ChannelDuplexHandler {
      *            an {@link IdleStateEvent} whose state is {@link IdleState#ALL_IDLE} will be triggered when neither
      *            read nor write was performed for the specified period of time. Specify {@code 0} to disable.
      */
-    public IdleStateHandlerTomP2P(int allIdleTimeSeconds) {
+    public IdleStateHandlerTomP2P(int allIdleTimeMillis) {
 
-        this(allIdleTimeSeconds, TimeUnit.SECONDS);
+        this(allIdleTimeMillis, TimeUnit.MILLISECONDS);
     }
 
     /**

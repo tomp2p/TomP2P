@@ -56,8 +56,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
 	private KeyPair keyPair = null;
 
-	private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
-	private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
+	private int idleTCPMillis = ConnectionBean.DEFAULT_TCP_IDLE_MILLIS;
+	private int idleUDPMillis = ConnectionBean.DEFAULT_UDP_IDLE_MILLIS;
 	private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
 	private int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
 
@@ -247,8 +247,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 * @see net.tomp2p.p2p.builder.ConnectionConfiguration#idleTCPSeconds()
 	 */
 	@Override
-	public int idleTCPSeconds() {
-		return idleTCPSeconds;
+	public int idleTCPMillis() {
+		return idleTCPMillis;
 	}
 
 	/**
@@ -257,8 +257,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 *            not active for short-lived connections
 	 * @return This class
 	 */
-	public SendDirectBuilder idleTCPSeconds(final int idleTCPSeconds) {
-		this.idleTCPSeconds = idleTCPSeconds;
+	public SendDirectBuilder idleTCPMillis(final int idleTCPMillis) {
+		this.idleTCPMillis = idleTCPMillis;
 		return this;
 	}
 
@@ -268,8 +268,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 * @see net.tomp2p.p2p.builder.ConnectionConfiguration#idleUDPSeconds()
 	 */
 	@Override
-	public int idleUDPSeconds() {
-		return idleUDPSeconds;
+	public int idleUDPMillis() {
+		return idleUDPMillis;
 	}
 
 	/**
@@ -278,8 +278,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 *            not active for short-lived connections
 	 * @return This class
 	 */
-	public SendDirectBuilder idleUDPSeconds(final int idleUDPSeconds) {
-		this.idleUDPSeconds = idleUDPSeconds;
+	public SendDirectBuilder idleUDPMillis(final int idleUDPMillis) {
+		this.idleUDPMillis = idleUDPMillis;
 		return this;
 	}
 

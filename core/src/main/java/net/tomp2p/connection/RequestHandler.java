@@ -53,8 +53,8 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     private final MessageID sendMessageID;
 
     // modifiable variables
-    private final int idleTCPSeconds; // = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
-    private final int idleUDPSeconds; // = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
+    private final int idleTCPMillis; // = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
+    private final int idleUDPMillis; // = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
     private final int connectionTimeoutTCPMillis; // = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
     private final int slowResponseTimeoutSeconds; // = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
     /**
@@ -76,8 +76,8 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         this.futureResponse = futureResponse;
         this.message = futureResponse.request();
         this.sendMessageID = new MessageID(message);
-        this.idleTCPSeconds = configuration.idleTCPSeconds();
-        this.idleUDPSeconds = configuration.idleUDPSeconds();
+        this.idleTCPMillis = configuration.idleTCPMillis();
+        this.idleUDPMillis = configuration.idleUDPMillis();
         this.connectionTimeoutTCPMillis = configuration.connectionTimeoutTCPMillis();
         this.slowResponseTimeoutSeconds = configuration.slowResponseTimeoutSeconds();
     }
@@ -106,15 +106,15 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     /**
      * @return The time that a TCP connection can be idle
      */
-    public int idleTCPSeconds() {
-        return idleTCPSeconds;
+    public int idleTCPMillis() {
+        return idleTCPMillis;
     }
 
     /**
      * @return The time that a UDP connection can be idle
      */
-    public int idleUDPSeconds() {
-        return idleUDPSeconds;
+    public int idleUDPMillis() {
+        return idleUDPMillis;
     }
 
     /**
@@ -139,7 +139,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      * @return The future that was added in the constructor
      */
     public K sendUDP(final ChannelCreator channelCreator) {
-        connectionBean.sender().sendUDP(this, futureResponse, message, channelCreator, idleUDPSeconds, false);
+        connectionBean.sender().sendUDP(this, futureResponse, message, channelCreator, idleUDPMillis, false);
         return futureResponse;
     }
 
@@ -163,7 +163,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      * @return The future that was added in the constructor
      */
     public K sendBroadcastUDP(final ChannelCreator channelCreator) {
-        connectionBean.sender().sendUDP(this, futureResponse, message, channelCreator, idleUDPSeconds, true);
+        connectionBean.sender().sendUDP(this, futureResponse, message, channelCreator, idleUDPMillis, true);
         return futureResponse;
     }
     
@@ -187,14 +187,14 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      * @return The future that was added in the constructor
      */
     public K sendTCP(final ChannelCreator channelCreator) {
-        connectionBean.sender().sendTCP(this, futureResponse, message, channelCreator, idleTCPSeconds,
+        connectionBean.sender().sendTCP(this, futureResponse, message, channelCreator, idleTCPMillis,
                 connectionTimeoutTCPMillis, null);
         return futureResponse;
     }
     
 	// TODO add JavaDoc
     public K sendTCP(final PeerConnection peerConnection) {
-        connectionBean.sender().sendTCP(this, futureResponse, message, null, idleTCPSeconds,
+        connectionBean.sender().sendTCP(this, futureResponse, message, null, idleTCPMillis,
                 connectionTimeoutTCPMillis, peerConnection);
         return futureResponse;
     }
@@ -208,7 +208,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      * @return The future that was added in the constructor
      */
     public K sendTCP(final ChannelCreator channelCreator, final PeerConnection peerConnection) {
-        connectionBean.sender().sendTCP(this, futureResponse, message, channelCreator, idleTCPSeconds,
+        connectionBean.sender().sendTCP(this, futureResponse, message, channelCreator, idleTCPMillis,
                 connectionTimeoutTCPMillis, peerConnection);
         return futureResponse;
     }

@@ -46,7 +46,7 @@ public class TimeoutFactory {
 	private static final Logger LOG = LoggerFactory.getLogger(TimeoutFactory.class);
 
 	private final FutureResponse futureResponse;
-	private final int timeoutSeconds;
+	private final int timeoutMillis;
 	private final List<PeerStatusListener> peerStatusListeners;
 	private final String name;
 
@@ -59,10 +59,10 @@ public class TimeoutFactory {
 	 * @param peerStatusListeners
 	 *            The listeners that get notified when a timeout happens
 	 */
-	public TimeoutFactory(final FutureResponse futureResponse, final int timeoutSeconds,
+	public TimeoutFactory(final FutureResponse futureResponse, final int timeoutMillis,
 	        final List<PeerStatusListener> peerStatusListeners, final String name) {
 		this.futureResponse = futureResponse;
-		this.timeoutSeconds = timeoutSeconds;
+		this.timeoutMillis = timeoutMillis;
 		this.peerStatusListeners = peerStatusListeners;
 		this.name = name;
 	}
@@ -71,7 +71,7 @@ public class TimeoutFactory {
 	 * @return Two handlers, one default Netty that will call the second handler
 	 */
 	public ChannelHandler idleStateHandlerTomP2P() {
-		return new IdleStateHandlerTomP2P(timeoutSeconds);
+		return new IdleStateHandlerTomP2P(timeoutMillis);
 	}
 
 	/**

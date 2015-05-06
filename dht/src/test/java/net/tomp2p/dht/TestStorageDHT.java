@@ -786,7 +786,7 @@ public class TestStorageDHT {
         try {
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
             ChannelServerConfiguration css = PeerBuilder.createDefaultChannelServerConfiguration();
-            css.idleTCPSeconds(Integer.MAX_VALUE);
+            css.idleTCPMillis(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
             sender = new PeerBuilderDHT(pm1.start()).storage(storeSender).start();
 
@@ -806,7 +806,7 @@ public class TestStorageDHT {
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
             putBuilder.dataMapContent(tmp);
-            putBuilder.idleTCPSeconds(Integer.MAX_VALUE);
+            putBuilder.idleTCPMillis(Integer.MAX_VALUE);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
@@ -840,7 +840,7 @@ public class TestStorageDHT {
         try {
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
             ChannelServerConfiguration css = PeerBuilder.createDefaultChannelServerConfiguration();
-            css.idleTCPSeconds(Integer.MAX_VALUE);
+            css.idleTCPMillis(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
             sender = new PeerBuilderDHT(pm1.start()).storage(storeSender).start();
 
@@ -860,7 +860,7 @@ public class TestStorageDHT {
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
             putBuilder.dataMapContent(tmp);
-            putBuilder.idleTCPSeconds(Integer.MAX_VALUE);
+            putBuilder.idleTCPMillis(Integer.MAX_VALUE);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
@@ -871,7 +871,7 @@ public class TestStorageDHT {
 
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.domainKey(Number160.createHash("test"));
-            getBuilder.idleTCPSeconds(Integer.MAX_VALUE);
+            getBuilder.idleTCPMillis(Integer.MAX_VALUE);
             getBuilder.versionKey(Number160.ZERO);
 
             fr = smmSender.get(recv1.peerAddress(), getBuilder, cc);
@@ -949,7 +949,7 @@ public class TestStorageDHT {
 
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
             ChannelServerConfiguration css = PeerBuilder.createDefaultChannelServerConfiguration();
-            css.idleTCPSeconds(Integer.MAX_VALUE);
+            css.idleTCPMillis(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
             sender = new PeerBuilderDHT(pm1.start()).storage(storeSender).start();
 
@@ -969,7 +969,7 @@ public class TestStorageDHT {
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.domainKey(Number160.createHash("test"));
             putBuilder.dataMapContent(tmp);
-            putBuilder.idleTCPSeconds(Integer.MAX_VALUE);
+            putBuilder.idleTCPMillis(Integer.MAX_VALUE);
             putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);

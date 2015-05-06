@@ -144,7 +144,7 @@ public class Sender {
 	 *
 	 */
 	public void sendTCP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int idleTCPSeconds, final int connectTimeoutMillis,
+			final ChannelCreator channelCreator, final int idleTCPMillis, final int connectTimeoutMillis,
 			final PeerConnection peerConnection) {
 		// no need to continue if we already finished
 		if (futureResponse.isCompleted()) {
@@ -170,7 +170,7 @@ public class Sender {
 			channelFuture = sendTCPPeerConnection(peerConnection, handler, channelCreator, futureResponse);
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		} else if (channelCreator != null) {
-			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
+			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPMillis, handler == null);
 
 			switch (sendBehavior.tcpSendBehavior(message)) {
 			case DIRECT:
@@ -180,7 +180,7 @@ public class Sender {
 				handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler);
 				break;
 			case RELAY:
-				handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection,
+				handleRelay(handler, futureResponse, message, channelCreator, idleTCPMillis, connectTimeoutMillis, peerConnection,
 						timeoutHandler);
 				break;
 			case SELF:
@@ -324,7 +324,7 @@ public class Sender {
 	 * @param timeoutHandler
 	 */
 	private void handleRelay(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
-			final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds, final int connectTimeoutMillis,
+			final Message message, final ChannelCreator channelCreator, final int idleTCPMillis, final int connectTimeoutMillis,
 			final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
 		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses());
 		futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
@@ -343,7 +343,7 @@ public class Sender {
 								if (future.responseMessage() != null && future.responseMessage().type() != Message.Type.DENIED) {
 									// remove the failed relay and try again
 									clearInactivePeerSocketAddress(futureDone);
-									sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
+									sendTCP(handler, futureResponse, message, channelCreator, idleTCPMillis, connectTimeoutMillis,
 											peerConnection);
 								}
 							}
@@ -568,7 +568,7 @@ public class Sender {
 	// TODO: if message.getRecipient() is me, than call dispatcher directly
 	// without sending over Internet.
 	public void sendUDP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int idleUDPSeconds, final boolean broadcast) {
+			final ChannelCreator channelCreator, final int idleUDPMillis, final boolean broadcast) {
 
 		// no need to continue if we already finished
 		if (futureResponse.isCompleted()) {
@@ -593,7 +593,7 @@ public class Sender {
 
 		boolean isFireAndForget = handler == null;
 
-		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPSeconds,
+		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPMillis,
 				isFireAndForget);
 
 		// RTT calculation
@@ -607,7 +607,7 @@ public class Sender {
 				break;
 			case HOLEP:
 				if (peerBean.holePunchInitiator() != null) {
-					handleHolePunch(futureResponse, message, channelCreator, idleUDPSeconds, handler, broadcast, handlers, channelFuture);
+					handleHolePunch(futureResponse, message, channelCreator, idleUDPMillis, handler, broadcast, handlers, channelFuture);
 					// all the send mechanics are done in a
 					// AbstractHolePuncherStrategy class.
 					// Therefore we must execute this return statement.
@@ -669,10 +669,10 @@ public class Sender {
 	}
 
 	private FutureDone<Message> handleHolePunch(final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int idleUDPSeconds, final SimpleChannelInboundHandler<Message> handler,
+			final ChannelCreator channelCreator, final int idleUDPMillis, final SimpleChannelInboundHandler<Message> handler,
 			final boolean broadcast, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, final ChannelFuture channelFuture) {
 		// start hole punching
-		FutureDone<Message> fDone = peerBean.holePunchInitiator().handleHolePunch(idleUDPSeconds, futureResponse, message);
+		FutureDone<Message> fDone = peerBean.holePunchInitiator().handleHolePunch(idleUDPMillis, futureResponse, message);
 		fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 
 			@Override
@@ -722,7 +722,7 @@ public class Sender {
 	 * @return handlers
 	 */
 	public Map<String, Pair<EventExecutorGroup, ChannelHandler>> configureHandlers(final SimpleChannelInboundHandler<Message> handler,
-			final FutureResponse futureResponse, final int idleUDPSeconds, boolean isFireAndForget) {
+			final FutureResponse futureResponse, final int idleUDPMillis, boolean isFireAndForget) {
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 		if (isFireAndForget) {
 			final int nrTCPHandlers = 3; // 2 / 0.75
@@ -730,7 +730,7 @@ public class Sender {
 		} else {
 			final int nrTCPHandlers = 7; // 5 / 0.75
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
-			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds, isFireAndForget);
+			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPMillis, isFireAndForget);
 			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
 			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
 		}

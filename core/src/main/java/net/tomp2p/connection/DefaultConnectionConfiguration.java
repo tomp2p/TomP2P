@@ -26,14 +26,14 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
 
 	protected boolean forceUDP = false;
     protected boolean forceTCP = false;
-    protected int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
-    protected int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
+    protected int idleTCPMillis = ConnectionBean.DEFAULT_TCP_IDLE_MILLIS;
+    protected int idleUDPMillis = ConnectionBean.DEFAULT_UDP_IDLE_MILLIS;
     protected int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
     protected int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
 
     @Override
-    public int idleTCPSeconds() {
-        return idleTCPSeconds;
+    public int idleTCPMillis() {
+        return idleTCPMillis;
     }
 
     /**
@@ -41,14 +41,14 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
      *            The time that a connection can be idle before its considered not active for short-lived connections
      * @return This class
      */
-    public DefaultConnectionConfiguration idleTCPSeconds(final int idleTCPSeconds) {
-        this.idleTCPSeconds = idleTCPSeconds;
+    public DefaultConnectionConfiguration idleTCPMillis(final int idleTCPMillis) {
+        this.idleTCPMillis = idleTCPMillis;
         return this;
     }
 
     @Override
-    public int idleUDPSeconds() {
-        return idleUDPSeconds;
+    public int idleUDPMillis() {
+        return idleUDPMillis;
     }
 
     /**
@@ -56,8 +56,8 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
      *            The time that a connection can be idle before its considered not active for short-lived connections
      * @return This class
      */
-    public DefaultConnectionConfiguration idleUDPSeconds(final int idleUDPSeconds) {
-        this.idleUDPSeconds = idleUDPSeconds;
+    public DefaultConnectionConfiguration idleUDPMillis(final int idleUDPMillis) {
+        this.idleUDPMillis = idleUDPMillis;
         return this;
     }
 

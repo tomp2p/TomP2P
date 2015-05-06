@@ -109,11 +109,6 @@ public class PeerIPFilter implements PeerMapFilter {
 			IPv4 o = (IPv4) obj;
 			return bits == o.bits;
 		}
-
-		@Override
-		public int hashCode() {
-			return bits;
-		}
 	}
 
 	private static class IPv6 {
@@ -167,11 +162,6 @@ public class PeerIPFilter implements PeerMapFilter {
 			}
 			IPv6 o = (IPv6) obj;
 			return highBits == o.highBits && lowBits == o.lowBits;
-		}
-
-		@Override
-		public int hashCode() {
-			return (int)(highBits ^ lowBits);
 		}
 	}
 }

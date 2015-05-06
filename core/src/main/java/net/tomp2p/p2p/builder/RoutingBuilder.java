@@ -139,11 +139,14 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     public SearchValues searchValues() {
         if (contentKey() != null) {
         	return new SearchValues(locationKey, domainKey, contentKey());
-        } if(from !=null && to!=null) {
+        } 
+        if(from !=null && to!=null) {
         	return new SearchValues(locationKey, domainKey, from, to);
-        } if (contentBloomFilter() == null && keyBloomFilter() != null) {
+        } 
+        if (contentBloomFilter() == null && keyBloomFilter() != null) {
             return new SearchValues(locationKey, domainKey, keyBloomFilter());
-        } if (contentBloomFilter() != null && keyBloomFilter() != null) {
+        } 
+        if (contentBloomFilter() != null && keyBloomFilter() != null) {
             return new SearchValues(locationKey, domainKey, keyBloomFilter(), contentBloomFilter());
         }
         return new SearchValues(locationKey, domainKey);

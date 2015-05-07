@@ -30,7 +30,7 @@ public class TestNATType {
 		peer = new PeerBuilder(Number160.createHash("test")).start();
 		msg = new Message().type(Type.OK).command(Commands.DIRECT_DATA.getNr()).sender(peer.peerAddress());
 		numberOfHoles = 3;
-		idleUDPSeconds = peer.connectionBean().DEFAULT_UDP_IDLE_SECONDS;
+		idleUDPSeconds = peer.connectionBean().DEFAULT_UDP_IDLE_MILLIS * 1000;
 	}
 
 	@Test

@@ -27,11 +27,11 @@ public class HolePInitiatorImpl implements HolePInitiator {
 
 	public HolePInitiatorImpl(final Peer peer) {
 		this.peer = peer;
-		this.natTypeDetection = new NATTypeDetection(peer);
+		this.natTypeDetection = null;
 	}
 
 	@Override
-	public FutureDone<Message> handleHolePunch(final int idleUDPSeconds, final FutureResponse futureResponse, final Message originalMessage) {
+	public FutureDone<Message> handleHolePunch(final int idleUDPMillis, final FutureResponse futureResponse, final Message originalMessage) {
 		//this is called from the sender, we start hole punching here.
 		final FutureDone<Message> futureDone = new FutureDone<Message>();
 		//final HolePStrategy holePuncher = natType().holePuncher(peer, peer.peerBean().holePNumberOfHoles(), idleUDPSeconds, originalMessage);
@@ -47,8 +47,9 @@ public class HolePInitiatorImpl implements HolePInitiator {
 	 * @param peerAddress
 	 */
 	public FutureDone<NATType> checkNatType(final PeerAddress peerAddress) {
-		future = natTypeDetection.checkNATType(peerAddress);
-		return future;
+		//future = natTypeDetection.checkNATType(peerAddress);
+		return null;
+		//return future;
 	}
 
 

@@ -77,6 +77,8 @@ start () {
   ip netns exec "nat$1" ifconfig "nat$1_wan" "$NAT_WAN"/24 up
   ip netns exec "nat$1" ifconfig "nat$1_lan" "$NAT_LAN"/24 up
   ip netns exec "unr$1" ifconfig "unr$1_lan" "$UNR_LAN"/24 up
+  # loopback is important or getLocalHost() will hang for a long time!
+  ip netns exec "unr$1" ifconfig "lo" 127.0.0.1 up
   # add, modify routing
   route del -net "$NAT_REAL_NET"/24 dev "nat$1_real"
   route add -net "$NAT_WAN_NET"/24 dev "nat$1_real"

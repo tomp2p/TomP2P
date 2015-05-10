@@ -35,6 +35,7 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 	private static final int FROM_EACH_BAG = 3;
 	
 	private static final AtomicInteger broadcastCounter = new AtomicInteger(0);
+	private static final AtomicInteger messageCounter = new AtomicInteger(0);
 	private final ConcurrentCacheMap<Number160, Boolean> cache = new ConcurrentCacheMap<Number160, Boolean>();
 	private volatile Peer peer;
 
@@ -48,8 +49,12 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 	 * 
 	 * @return Return the number of peer in the debug set
 	 */
-	public int getBroadcastCounter() {
+	public int broadcastCounter() {
 		return broadcastCounter.get();
+	}
+	
+	public int messageCounter() {
+		return messageCounter.get();
 	}
 
 	@Override
@@ -185,7 +190,7 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 									future.channelCreator(), broadcastBuilder,
 									bucketNr);
 					LOG.debug("send to {}", peerAddress);
-					System.err.println("send to " + peerAddress);
+					messageCounter.incrementAndGet();
 					Utils.addReleaseListener(future.channelCreator(),
 							futureResponse);
 				} else {

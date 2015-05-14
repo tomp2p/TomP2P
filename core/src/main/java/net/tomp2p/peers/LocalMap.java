@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 public class LocalMap implements Maintainable, PeerStatusListener {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(LocalMap.class);
+	final private Number160 self;
 	
     // the storage for the peers that are verified
     private final ConcurrentCacheMap<Number160, PeerStatistic> localMap;
@@ -19,15 +20,16 @@ public class LocalMap implements Maintainable, PeerStatusListener {
     private final ConcurrentCacheMap<Number160, Boolean> offlineMap;
     private final int[] intervalSeconds;
     
-    public LocalMap() {
-    	this(new LocalMapConf());
+    public LocalMap(Number160 self) {
+    	this(self, new LocalMapConf());
     }
     
-    public LocalMap(LocalMapConf localMapConf) {
+    public LocalMap(Number160 self, LocalMapConf localMapConf) {
     	localMap = new ConcurrentCacheMap<Number160, PeerStatistic>(localMapConf.localMapTimout(), localMapConf.localMapSize());
     	localMapRev = new ConcurrentCacheMap<Number160, PeerAddress>(localMapConf.localMapRevTimeout(), localMapConf.localMapRevSize());
     	offlineMap = new ConcurrentCacheMap<Number160, Boolean>(localMapConf.offlineMapTimout(), localMapConf.offlineMapSize());
     	intervalSeconds = localMapConf.intervalSeconds();
+    	this.self = self;
     }
 
 	@Override
@@ -56,7 +58,15 @@ public class LocalMap implements Maintainable, PeerStatusListener {
 	
     public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer) {
     	//this is called from the RPC method, here we only get the local peers
-		LOG.debug("local peer {} is online reporter was {}", remotePeer, referrer);
+    	LOG.debug("local peer {} is online reporter was {}", remotePeer, referrer);
+		//we don't need to store our peerId
+		if(remotePeer.peerId().equals(self)) {
+			return false;
+		}
+		if(remotePeer.peerId().equals(Number160.ZERO)) {
+			return false;
+		}
+		
         boolean firstHand = referrer == null;
         //if we got contacted by this peer, but we did not initiate the connection
         boolean secondHand = remotePeer.equals(referrer);

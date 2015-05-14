@@ -90,7 +90,8 @@ public class AnnounceBuilder implements Builder {
 		return repetitions;
 	}
 	
-	public AnnounceBuilder ping() {    
+	public AnnounceBuilder ping() {
+		this.ping = true;
 	    return this;
     }
 	

@@ -20,7 +20,7 @@ public class TestLocalMap {
 	
 	@Test
 	public void testMap() {
-		LocalMap map = new LocalMap();
+		LocalMap map = new LocalMap(Number160.ZERO);
 		boolean added = map.peerFound(addresses[0], addresses[0]);
 		Assert.assertTrue(added);
 		boolean offline = map.peerFailed(addresses[0], null);
@@ -31,7 +31,7 @@ public class TestLocalMap {
 	
 	@Test
 	public void testMapMaintenance() throws InterruptedException {
-		LocalMap map = new LocalMap();
+		LocalMap map = new LocalMap(Number160.ZERO);
 		boolean added = map.peerFound(addresses[0], addresses[0]);
 		Assert.assertTrue(added);
 		PeerStatistic ps = map.nextForMaintenance(Collections.<PeerAddress>emptyList());
@@ -44,7 +44,7 @@ public class TestLocalMap {
 	
 	@Test
 	public void testMapTranslate() {
-		LocalMap map = new LocalMap();
+		LocalMap map = new LocalMap(Number160.ZERO);
 		boolean added = map.peerFound(addresses[0], addresses[0]);
 		Assert.assertTrue(added);
 		PeerStatistic addr = map.translate(addresses[1]);

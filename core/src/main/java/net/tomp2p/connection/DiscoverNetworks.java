@@ -26,6 +26,7 @@ import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -175,16 +176,15 @@ public final class DiscoverNetworks {
 			if (bindings.anyInterfaces()) {
 				sb.append(" ++").append(networkInterface.getName());
 				DiscoverResults discoverResults = discoverNetwork(networkInterface, existingAddressesOld, 
-						existingBroadcastAddressesOld, bindings.isIPv4(), bindings.isIPv6());
+						existingBroadcastAddressesOld, bindings.isIPv4(), bindings.isIPv6(), bindings.addresses());
 				sb.append(discoverResults.status()).append(",");
 				addIfNotPresent(existingAddresses, discoverResults.existingAddresses());
 				addIfNotPresent(existingBroadcastAddresses, discoverResults.existingBroadcastAddresses());
-				
 			} else {
 				if (bindings.containsInterface(networkInterface.getName())) {
 					sb.append(" +").append(networkInterface.getName());
 					DiscoverResults discoverResults = discoverNetwork(networkInterface, existingAddressesOld, 
-							existingBroadcastAddressesOld, bindings.isIPv4(), bindings.isIPv6()); 
+							existingBroadcastAddressesOld, bindings.isIPv4(), bindings.isIPv6(), bindings.addresses()); 
 					sb.append(discoverResults.status()).append(",");
 					addIfNotPresent(existingAddresses, discoverResults.existingAddresses());
 					addIfNotPresent(existingBroadcastAddresses, discoverResults.existingBroadcastAddresses());
@@ -256,7 +256,7 @@ public final class DiscoverNetworks {
      */
 	public static DiscoverResults discoverNetwork(final NetworkInterface networkInterface,
 	        final Collection<InetAddress> foundAddresses, Collection<InetAddress> foundBroadcastAddresses,
-	        boolean isIPv4, boolean isIPv6) {
+	        boolean isIPv4, boolean isIPv6, List<InetAddress> requestedInetAddress) {
 		final Collection<InetAddress> foundAddresses2 = new ArrayList<InetAddress>(foundAddresses);
 		final Collection<InetAddress> foundBroadcastAddresses2 = new ArrayList<InetAddress>(
 		        foundBroadcastAddresses);
@@ -286,12 +286,16 @@ public final class DiscoverNetworks {
 			if (inet instanceof Inet4Address && isIPv4) {
 				sb.append(inet).append(",");
 				if(!foundAddresses2.contains(inet)) {
-					foundAddresses2.add(inet);
+					if(requestedInetAddress.isEmpty() || requestedInetAddress.contains(inet)) {
+						foundAddresses2.add(inet);
+					}
 				}
 			} else if (inet instanceof Inet6Address && isIPv6) {
 				sb.append(inet).append(",");
 				if(!foundAddresses2.contains(inet)) {
-					foundAddresses2.add(inet);
+					if(requestedInetAddress.isEmpty() || requestedInetAddress.contains(inet)) {
+						foundAddresses2.add(inet);
+					}
 				}
 			}
 		}

@@ -240,7 +240,7 @@ public class PeerBuilder {
 
 		PeerBean peerBean = peerCreator.peerBean();
 		
-		LocalMap localMap = new LocalMap();
+		LocalMap localMap = new LocalMap(peerId);
 		peerBean.localMap(localMap);
 		peerBean.addPeerStatusListener(localMap);
 		

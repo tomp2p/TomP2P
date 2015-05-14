@@ -99,7 +99,10 @@ public class AnnounceRPC extends DispatchHandler {
 			peerBean().localMap().peerFound(message.sender(), message.sender());
 			//this will eventually trigger maintenance
 		} else if(message.type() == Type.REQUEST_1) {
-			responder.response(createResponseMessage(message, Type.OK));
+			//only reply if we are the intended recipient for this broadcast message
+			if(message.recipient().peerId().equals(peerBean().serverPeerAddress().peerId())) {
+				responder.response(createResponseMessage(message, Type.OK));
+			}
 			//add to local map
 			peerBean().localMap().peerFound(message.sender(), message.sender());
 		}

@@ -5,7 +5,9 @@ import java.net.InetAddress;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.futures.FutureAnnounce;
+import net.tomp2p.futures.FuturePing;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -60,31 +62,55 @@ public class TestNATLocal {
 			Bindings b0 = new Bindings();
 			int nr = Integer.parseInt(args[0]);
 			int ip = Integer.parseInt(args[2]);
-			Random rnd = new Random(args[2].hashCode());
-			b0.addAddress(InetAddress.getByName("10.0." + nr + "." + ip));
-			peer = new PeerBuilder(new Number160(rnd)).ports(4000).bindings(b0).start();
+			Random rnd = new Random(ip);
+			InetAddress inet = InetAddress.getByName("10.0." + nr + "." + ip);
+			b0.addAddress(inet);
+			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
+			ccc.senderTCP(inet);
+			ccc.senderUDP(inet);
+			peer = new PeerBuilder(new Number160(rnd)).ports(4000+ip).channelClientConfiguration(ccc).bindings(b0).start();
 			System.out.println("started " + peer.peerID());
 			System.err.println("started " + peer.peerID());
 			String command = LocalNATUtils.read(System.in, "command");
-			if (command.equals("announce")) {
+			
+			while(command!=null && !command.equals("quit")) { 
+				if (command.equals("announce")) {
 				
-				FutureAnnounce res = peer.localAnnounce().port(4000).start();
-				res.awaitUninterruptibly();
-				int size = peer.peerBean().localMap().size();
+					FutureAnnounce res;
+					res = peer.localAnnounce().port(4002).start().awaitUninterruptibly();
+					res = peer.localAnnounce().port(4003).start().awaitUninterruptibly();
+					
+					Thread.sleep(3000);
+					res = peer.localAnnounce().port(4002).start().awaitUninterruptibly();
+					res = peer.localAnnounce().port(4003).start().awaitUninterruptibly();
+					int size = peer.peerBean().localMap().size();
 				
-				
-				for(int i=0;i<10;i++) {
+					
 					System.err.println("bootstrap to "+ args[1]);
 					PeerAddress relayP = new PeerAddress(relayPeerId, args[1], 5002, 5002);
 					peer.bootstrap().peerAddress(relayP).start().awaitUninterruptibly();
-					Thread.sleep(10*1000);
+					Thread.sleep(2000);
+					
+					System.out.println("done " + size);
+					
+				
+				} else if(command.startsWith("ping")) { 
+					String pingNr = command.split(" ")[1];
+					String pingIp = command.split(" ")[2];
+					Random rnd1 = new Random(Integer.parseInt(pingIp));
+					InetAddress pingInet = InetAddress.getByName("10.0." + pingNr + "." + pingIp);
+					Number160 ping160 = new Number160(rnd1);
+					PeerAddress pa = new PeerAddress(ping160, pingInet, 4000+Integer.parseInt(pingIp), 4000+Integer.parseInt(pingIp));
+					FuturePing fp = peer.ping().peerAddress(pa).start().awaitUninterruptibly();
+					System.out.println("done "+fp.remotePeer().inetAddress());
 				}
-				
-				System.out.println("done " + size);
-				
-			} else {
-				System.out.println("empty");
+				else {
+					System.out.println("empty");
+				}
+				command = LocalNATUtils.read(System.in, "command");
 			}
+			System.out.println("done");
+			
 		} finally {
 			System.out.println("finish");
 			if(peer != null) {
@@ -105,9 +131,14 @@ public class TestNATLocal {
 			unr2 = LocalNATUtils.executePeer(TestNATLocal.class, "0", relayAddress.getHostAddress(), "3");
 			String result1 = LocalNATUtils.waitForLineOrDie(unr1, "done", "command announce");
 			String result2 = LocalNATUtils.waitForLineOrDie(unr2, "done", "command announce");
+			//
 			
 			Assert.assertEquals("1", result1);
-			Assert.assertEquals("2", result2);
+			Assert.assertEquals("1", result2);
+			
+			String result3 = LocalNATUtils.waitForLineOrDie(unr1, "done", "command ping 0 3");
+			Assert.assertEquals("/10.0.0.3", result3);
+			
 			
 		} finally {
 			System.err.print("shutdown.");

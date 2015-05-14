@@ -85,27 +85,27 @@ public final class ExampleMultiColumn {
 
         Number160 locationKey = Number160.createHash("users");
         System.out.println("storing data in table (identified by locationKey) " + locationKey);
-        final int peerAdd = 11;
-        multiAdd(peers[peerAdd], rowKey1, col1, "thomas");
-        multiAdd(peers[peerAdd], rowKey1, col2, "bocek");
-        multiAdd(peers[peerAdd], rowKey1, col3, "zuerich");
-        multiAdd(peers[peerAdd], rowKey1, col4, "77");
+        
+        multiAdd(peers[11], rowKey1, col1, "thomas");
+        multiAdd(peers[11], rowKey1, col2, "bocek");
+        multiAdd(peers[11], rowKey1, col3, "zuerich");
+        multiAdd(peers[11], rowKey1, col4, "77");
         //
-        multiAdd(peers[peerAdd], rowKey2, col1, "fabio");
-        multiAdd(peers[peerAdd], rowKey2, col2, "hecht");
-        multiAdd(peers[peerAdd], rowKey2, col3, "zuerich");
+        multiAdd(peers[11], rowKey2, col1, "fabio");
+        multiAdd(peers[11], rowKey2, col2, "hecht");
+        multiAdd(peers[11], rowKey2, col3, "zuerich");
         //
-        multiAdd(peers[peerAdd], rowKey3, col1, "guilherme");
-        multiAdd(peers[peerAdd], rowKey3, col2, "machado");
-        multiAdd(peers[peerAdd], rowKey3, col3, "zuerich");
+        multiAdd(peers[11], rowKey3, col1, "guilherme");
+        multiAdd(peers[11], rowKey3, col2, "machado");
+        multiAdd(peers[11], rowKey3, col3, "zuerich");
         //
-        multiAdd(peers[peerAdd], rowKey4, col1, "christos");
-        multiAdd(peers[peerAdd], rowKey4, col2, "tsiaras");
-        multiAdd(peers[peerAdd], rowKey4, col3, "zuerich");
+        multiAdd(peers[11], rowKey4, col1, "christos");
+        multiAdd(peers[11], rowKey4, col2, "tsiaras");
+        multiAdd(peers[11], rowKey4, col3, "zuerich");
         //
-        multiAdd(peers[peerAdd], rowKey5, col1, "burkhard");
-        multiAdd(peers[peerAdd], rowKey5, col2, "stiller");
-        multiAdd(peers[peerAdd], rowKey5, col3, "zuerich");
+        multiAdd(peers[11], rowKey5, col1, "burkhard");
+        multiAdd(peers[11], rowKey5, col2, "stiller");
+        multiAdd(peers[11], rowKey5, col3, "zuerich");
         //
         // search
 

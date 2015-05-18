@@ -11,7 +11,8 @@
 	<!-- Loggers -->
 	<logger name="net.tomp2p" level="INFO" />
 	<logger name="io.netty" level="WARN" /> <!-- mute netty library -->
-	
+	<logger name="org.bitcoinj" level="WARN" /> <!-- mute bitcoinj library -->
+
 	<!-- Examples -->
 	<logger name="net.tomp2p.examples" level="DEBUG" />
 	

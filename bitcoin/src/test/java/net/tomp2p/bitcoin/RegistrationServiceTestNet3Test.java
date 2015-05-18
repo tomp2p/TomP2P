@@ -2,7 +2,8 @@ package net.tomp2p.bitcoin;
 
 import net.tomp2p.peers.Number160;
 import org.bitcoinj.params.TestNet3Params;
-import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.nio.file.Files;
@@ -17,40 +18,46 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class WalletServiceTest {
-    private static WalletService ws;
+public class RegistrationServiceTestNet3Test {
+    private static RegistrationService rs;
     private static KeyPair keyPair;
+    private static final Logger LOG = LoggerFactory.getLogger(RegistrationServiceTestNet3Test.class);
 
     @org.junit.BeforeClass
     static public void setUp() throws Exception {
-        ws = new WalletService(TestNet3Params.get(), "tomP2P-bitcoin");
+        rs = new RegistrationService(TestNet3Params.get(), new java.io.File("."), "tomP2P-bitcoin");
         KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
         keyPair = gen.generateKeyPair();
     }
 
     @org.junit.Test
     public void testStart() throws Exception {
-        ws.start();
-        System.out.println("Wallet balance: " + ws.kit.wallet().getBalance());
-        assertTrue(ws.kit.peerGroup().getConnectedPeers().size() >= 3);
+        rs.start();
+        System.out.println("Wallet balance: " + rs.kit.wallet().getBalance());
+        assertTrue(rs.kit.peerGroup().getConnectedPeers().size() >= 1);
     }
 
     @org.junit.Test
     public void testRegisterNode() throws Exception {
-        ws.registerNode(keyPair);
+        rs.registerPeer(keyPair);
     }
 
     @org.junit.Test
     public void testVerify() throws Exception {
-        Registration reg = ws.registration;
-//        Values of a previous transaction:
+        Registration reg = rs.registration.object();
+//        As an alternative: values of a previous transaction
 //        Registration reg = new Registration(
 //                new Number160("0x55f38ce1"),
 //                new Sha256Hash("0000000000007d6ef50291d344a070ffa934fa5decfa771df373639ba4d3c068"),
 //                new Sha256Hash("2e2e1a9fe348a7a85b26161cf2b839cf429d288796efe8da3515c227e875e2c6")
 //        );
-        assertTrue(ws.verify(reg.getPeerId(), reg.getBlockId(), reg.getTransactionId()));
-        assertFalse(ws.verify(new Number160(new Random()), reg.getBlockId(), reg.getTransactionId()));
+        assertTrue(rs.verify(reg));
+        assertFalse(rs.verify(new Registration(
+                        new Number160(new Random()),
+                        reg.getBlockId(),
+                        reg.getTransactionId(),
+                        reg.getPublicKey())
+        ));
     }
 
     @org.junit.Test
@@ -60,7 +67,7 @@ public class WalletServiceTest {
         byte[] key = keyPair.getPublic().getEncoded();
 
         // loading public key from test resources
-        URL resource = WalletServiceTest.class.getResource("/pubKey.key");
+        URL resource = RegistrationServiceTestNet3Test.class.getResource("/pubKey.key");
         Path path = Paths.get(resource.getPath());
         byte[] encKey = Files.readAllBytes(path);
         System.out.println("Reading public key from " + resource);
@@ -69,12 +76,12 @@ public class WalletServiceTest {
         PublicKey pubKey = keyFactory.generatePublic(pubKeySpec);
 //        System.out.println(Arrays.toString(pubKey.getEncoded()));
         Long nonce = new Long("4032432432");
-        Number160 peerId = ws.generatePeerId(pubKey, nonce);
+        Number160 peerId = rs.generatePeerId(pubKey, nonce);
         assertTrue(peerId.equals(new Number160("0xb223e7b712e8880775c237cf0009f5abd06c68bd")));
     }
 
     @org.junit.AfterClass
     static public void tearDown() {
-        ws.stop();
+        rs.stop();
     }
 }

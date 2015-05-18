@@ -1,31 +1,25 @@
 package net.tomp2p.bitcoin;
 
-import com.google.common.util.concurrent.AbstractIdleService;
 import net.tomp2p.peers.Number160;
 import org.bitcoinj.core.Sha256Hash;
 
-public class Registration extends AbstractIdleService {
+import java.security.PublicKey;
+
+public class Registration {
     private Number160 peerId;
     private Sha256Hash transactionId;
     private Sha256Hash blockId;
+    private PublicKey publicKey;
 
     public Registration() {
     }
 
-    @Override
-    protected void startUp() throws Exception {
-
-    }
-
-    @Override
-    protected void shutDown() throws Exception {
-
-    }
-
-    public Registration(Number160 peerId, Sha256Hash blockId, Sha256Hash transactionId) {
+    // constructor for testing
+    public Registration(Number160 peerId, Sha256Hash blockId, Sha256Hash transactionId, PublicKey publicKey) {
         this.peerId = peerId;
         this.transactionId = transactionId;
         this.blockId = blockId;
+        this.publicKey = publicKey;
     }
 
     public Number160 getPeerId() {
@@ -51,4 +45,13 @@ public class Registration extends AbstractIdleService {
     public void setBlockId(Sha256Hash blockId) {
         this.blockId = blockId;
     }
+
+    public PublicKey getPublicKey() {
+        return publicKey;
+    }
+
+    public void setPublicKey(PublicKey publicKey) {
+        this.publicKey = publicKey;
+    }
+
 }

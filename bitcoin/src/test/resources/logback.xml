@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+ 
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>p2p.log</file>
+    <append>false</append>
+    <encoder>
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  
+  <!--  <logger name="net" level="TRACE"/> -->
+  <!-- <logger name="net.tomp2p.dht.StorageLayer" level="TRACE"/> -->
+  <!-- <logger name="net.tomp2p.dht.StorageMemory" level="TRACE"/> -->
+  
+  <!-- Disable Netty Warning that I'm aware of -->
+  <logger name="io.netty.util.concurrent.SingleThreadEventExecutor" level="OFF"/>
+
+  <logger name="org.bitcoinj" level="INFO" /> <!-- mute bitcoinj library -->
+
+  <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF. 
+       See http://logback.qos.ch/manual/architecture.html for more information-->
+  <root level="DEBUG">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>

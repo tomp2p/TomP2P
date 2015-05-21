@@ -33,7 +33,6 @@ public class RegistrationService {
 
     public RegistrationService(NetworkParameters params, File dir, String filename) {
         this.kit = new WalletAppKit(params, dir, filename);
-        this.registration = new FutureDone<Registration>();
     }
 
     public RegistrationService start() throws ExecutionException, InterruptedException {
@@ -60,8 +59,10 @@ public class RegistrationService {
      * @param keyPair
      */
     public FutureDone<Registration> registerPeer(final KeyPair keyPair) throws InterruptedException, ExecutionException {
+        registration = new FutureDone<Registration>();
         Number160 peerId = null;
         final Registration reg = new Registration();
+        reg.setKeyPair(keyPair);
         Coin value = Coin.parseCoin("0.001");
 
         LOG.info("Wallet Balance: " + kit.wallet().getBalance() + " Satoshis");

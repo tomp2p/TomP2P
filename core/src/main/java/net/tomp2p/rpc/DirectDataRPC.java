@@ -65,7 +65,6 @@ public class DirectDataRPC extends DispatchHandler {
         if (sendDirectBuilder.isSign()) {
             message.publicKeyAndSign(sendDirectBuilder.keyPair());
         }
-        message.streaming(sendDirectBuilder.isStreaming());
 
         if (sendDirectBuilder.isRaw()) {
         	Buffer buffer = new Buffer(sendDirectBuilder.dataBuffer().toByteBuf());
@@ -145,9 +144,6 @@ public class DirectDataRPC extends DispatchHandler {
                     responseMessage.type(Type.NOT_FOUND);
                 } else if (replyBuffer != requestBuffer) {
                     // can be partial as well
-                    if (!replyBuffer.isComplete()) {
-                        responseMessage.streaming();
-                    }
                     responseMessage.buffer(replyBuffer);
                 }
             } else { // no streaming here when we deal with objects

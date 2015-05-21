@@ -14,10 +14,10 @@ public class RegistrationBuilder {
         this.keyPair = keyPair;
     }
 
-    public Number160 start() throws InterruptedException, ExecutionException {
+    public Registration start() throws InterruptedException, ExecutionException {
         // start registration
         Registration reg = rs.registerPeer(keyPair).object();
         // get peerId from new registration
-        return reg.getPeerId();
+        return reg;
     }
 }

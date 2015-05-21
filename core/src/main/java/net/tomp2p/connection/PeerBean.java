@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.tomp2p.p2p.MaintenanceTask;
+import net.tomp2p.p2p.Registration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -54,7 +55,8 @@ public class PeerBean {
     private HolePInitiator holePunchInitiator;
     private int holePNumberOfHoles;
     private int holePNumberOfPunches;
-    
+    private Registration registration;
+
 	/**
 	 * This map is used for all open PeerConnections which are meant to stay
 	 * open. {@link Number160} = peer ID.
@@ -245,7 +247,7 @@ public class PeerBean {
 			return null;
 		}
 	}
-	
+
 	public PeerBean holePNumberOfHoles(final int holePNumberOfHoles) {
 		this.holePNumberOfHoles = holePNumberOfHoles;
 		return this;
@@ -263,4 +265,14 @@ public class PeerBean {
 	public int holePNumberOfPunches() {
 		return this.holePNumberOfPunches;
 	}
+
+    public PeerBean registration(Registration registration) {
+        this.registration = registration;
+        return this;
+    }
+
+    public Registration registration() {
+        return registration;
+    }
+
 }

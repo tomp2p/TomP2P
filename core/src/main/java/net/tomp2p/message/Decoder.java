@@ -104,15 +104,21 @@ public class Decoder {
 			final Attribute<InetSocketAddress> attributeInet = ctx.attr(INET_ADDRESS_KEY);
 			attributeInet.set(sender);
 
-			if (message == null && !headerDone) {
-				headerDone = decodeHeader(buf, recipient, sender);
+            if (message == null && !headerDone) {
+	            headerDone = decodeHeader(buf, recipient, sender);
 				if (headerDone) {
-					// store the sender as an attribute
-					final Attribute<PeerAddress> attributePeerAddress = ctx.attr(PEER_ADDRESS_KEY);
-					attributePeerAddress.set(message.sender());
-					message.udp(ctx.channel() instanceof DatagramChannel);
-					if (message.isFireAndForget() && message.isUdp()) {
-						TimeoutFactory.removeTimeout(ctx);
+					boolean doneHeaderExtension = decodeHeaderExtension(buf, recipient, sender);
+					if(doneHeaderExtension) {
+						// store the sender as an attribute
+						final Attribute<PeerAddress> attributePeerAddress = ctx.attr(PEER_ADDRESS_KEY);
+						attributePeerAddress.set(message.sender());
+						message.udp(ctx.channel() instanceof DatagramChannel);
+						if (message.isFireAndForget() && message.isUdp()) {
+							TimeoutFactory.removeTimeout(ctx);
+
+						}
+					} else {
+						return false;
 					}
 				} else {
 					return false;
@@ -208,6 +214,20 @@ public class Decoder {
 			contentTypes.offer(content);
 		}
 		LOG.debug("Parsed message {}.", message);
+		return true;
+	}
+
+	public boolean decodeHeaderExtension(final ByteBuf buf, InetSocketAddress recipient, final InetSocketAddress sender) {
+		if (message.hasHeaderExtension()) {
+			if (buf.readableBytes() < MessageHeaderCodec.HEADER_EXTENSION_SIZE) {
+				// we don't have the header extension yet, we need the full extension first
+				// wait for more data
+				return false;
+			}
+			byte[] headerExtension = new byte[64];
+			buf.readBytes(headerExtension);
+			message.headerExtension(headerExtension);
+		}
 		return true;
 	}
 

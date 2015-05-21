@@ -169,6 +169,9 @@ public class Message {
     private transient PeerAddress recipientRelay;
     private int options = 0;
 
+    // Header Extension
+    private byte[] headerExtension; // 2x 256 bits = 64 bytes
+
     // Payload:
     // we can send 8 types
     private Content[] contentTypes = new Content[CONTENT_TYPE_LENGTH];
@@ -488,7 +491,7 @@ public class Message {
     // Types of requests
 
     /**
-     * @return True if this is a request, a regural or a fire and forget
+     * @return True if this is a request, a regular or a fire and forget
      */
     public boolean isRequest() {
 		return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3 || type == Type.REQUEST_4
@@ -549,6 +552,24 @@ public class Message {
         return options;
     }
 
+
+    /**
+     * @param headerExtension
+     *               header extension for registration info
+     * @return  This class
+     */
+    public Message headerExtension(byte[] headerExtension) {
+        this.headerExtension = headerExtension;
+        return this;
+    }
+
+    /**
+     * @return The header extension for registration info
+     */
+    public byte[] headerExtension() {
+        return headerExtension;
+    }
+
     /**
      * 
      * @param isKeepAlive
@@ -571,13 +592,13 @@ public class Message {
     public boolean isKeepAlive() {
         return (options & 1) > 0;
     }
-    
-    public Message streaming() {
-        return streaming(true);
+
+    public boolean hasHeaderExtension() {
+        return (options & 2) > 0;
     }
 
-    public Message streaming(boolean streaming) {
-        if (streaming) {
+    public Message hasHeaderExtension(boolean hasHeaderExtension) {
+        if (hasHeaderExtension) {
             options |= 2;
         } else {
             options &= ~2;
@@ -585,10 +606,6 @@ public class Message {
         return this;
     }
 
-    public boolean isStreaming() {
-        return (options & 2) > 0;
-    }
-    
     public Message expectDuplicate(boolean expectDuplicate) {
         if (expectDuplicate) {
             options |= 4;

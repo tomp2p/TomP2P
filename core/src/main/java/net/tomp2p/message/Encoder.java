@@ -204,9 +204,6 @@ public class Encoder {
                 buf.writeBytes(buffer.buffer(), readable);
                 if (buffer.incRead(readable) == buffer.length()) {
                     message.contentReferences().poll();
-                } else if (message.isStreaming()) {
-                    LOG.debug("Partial message of lengt {} sent.", readable);
-                    return false;
                 } else {
                 	final String description = "Larger buffer has been announced, but not in message streaming mode. This is wrong.";
                     LOG.error(description);

@@ -46,14 +46,15 @@ public final class MessageHeaderCodec {
 
     public static final int HEADER_SIZE = 59;
     public static final int HEADER_PRIVATE_ADDRESS_SIZE = 8;
+    public static final int HEADER_EXTENSION_SIZE = 64;
 
     /**
      * Encodes a message object.
      * 
-     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit message id - 8bit message command - 160bit
-     * sender id - 16bit sender tcp port - 16bit sender udp port - 160bit recipient id - 32bit content types - 8bit sender options - 8bit message options. It total,
-     * the header is of size 59 bytes.
-     * 
+     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit message id - 8bit message command -
+     * 160bit sender id - 16bit sender tcp port - 16bit sender udp port - 160bit recipient id - 32bit content types -
+     * 8bit sender options - 8 bit message options. In total the header is of size 59 bytes.
+     *
      * @param buffer
      *            The buffer to encode to
      * @param message
@@ -77,15 +78,18 @@ public final class MessageHeaderCodec {
         	byte[] ext = message.sender().strip().toByteArray();
         	buffer.writeBytes(ext);
         }
+        if(message.hasHeaderExtension()) {
+            buffer.writeBytes(message.headerExtension());
+        }
     }
 
     /**
      * Decodes a message object.
-     * 
-     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit message id - 8bit message command - 160bit
-     * sender id - 16bit sender tcp port - 16bit sender udp port - 160bit recipient id - 32bit content types - 8bit options. It total,
-     * the header is of size 58 bytes.
-     * 
+     *
+     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit message id - 8bit message command -
+     * 160bit sender id - 16bit sender tcp port - 16bit sender udp port - 160bit recipient id - 32bit content types -
+     * 8bit sender options - 8 bit message options. In total the header is of size 59 bytes.
+     *
      * @param buffer
      *            The buffer to decode from
      * @param recipientSocket
@@ -115,7 +119,7 @@ public final class MessageHeaderCodec {
         // set the address as we see it, important for port forwarding
         // identification
         final int senderOptions = buffer.readUnsignedByte();
-        final PeerAddress peerAddress = new PeerAddress(senderID, 
+        final PeerAddress peerAddress = new PeerAddress(senderID,
         		senderSocket.getAddress(), tcpPort, udpPort, senderOptions);
         final int messageOptions = buffer.readUnsignedByte();
         message.options(messageOptions);
@@ -123,7 +127,6 @@ public final class MessageHeaderCodec {
         message.sender(peerAddress);
         message.senderSocket(senderSocket);
         message.recipientSocket(recipientSocket);
-        
         return message;
     }
 

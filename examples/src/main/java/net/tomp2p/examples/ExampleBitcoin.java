@@ -16,6 +16,8 @@
 
 package net.tomp2p.examples;
 
+import net.tomp2p.bitcoin.MessageFilterRegistered;
+import net.tomp2p.bitcoin.Registration;
 import net.tomp2p.bitcoin.RegistrationBuilder;
 import net.tomp2p.bitcoin.RegistrationService;
 import net.tomp2p.dht.FutureGet;
@@ -23,6 +25,7 @@ import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.message.MessageFilter;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
@@ -68,6 +71,11 @@ public final class ExampleBitcoin {
         RegistrationService rs =  new RegistrationService(networkParameters, dir, walletFileName).start();
 
         PeerDHT[] peers = registerAndAttachPeersDHT(rs, 3, port);
+
+        for (PeerDHT peer : peers) {
+            System.out.println("Successfully registered and connected peer " + peer.peerID());
+        }
+        examplePutGet(peers, peers[2].peerID());
     }
 
 
@@ -78,15 +86,37 @@ public final class ExampleBitcoin {
             KeyPair keyPair = gen.generateKeyPair();
             // start registration builder to get peerId
             RegistrationBuilder registrationBuilder = new RegistrationBuilder(rs, keyPair);
-            Number160 peerId = registrationBuilder.start();
-            System.out.println(peerId.toString());
+            Registration registration = registrationBuilder.start();
+            // setup filter to only accept messages from registered peers
+            MessageFilter messageFilter = new MessageFilterRegistered(rs, null);
             // start dht peer builder with registered peerId
             if ( i == 0 ) {
-                peers[0] = new PeerBuilderDHT(new PeerBuilder( peerId ).ports( port ).start()).start();
+                peers[0] = new PeerBuilderDHT(new PeerBuilder( registration ).messageFilter( messageFilter ).ports(port).start()).start();
             } else {
-                peers[i] = new PeerBuilderDHT(new PeerBuilder( peerId ).masterPeer( peers[0].peer() ).start()).start();
+                peers[i] = new PeerBuilderDHT(new PeerBuilder( registration ).messageFilter( messageFilter ).masterPeer(peers[0].peer()).start()).start();
             }
         }
         return peers;
+    }
+
+    /**
+     * Basic example for storing and retrieving content.
+     *
+     * @param peers The peers in this P2P network
+     * @param nr The number where the data is stored
+     * @throws IOException e.
+     * @throws ClassNotFoundException .
+     */
+    private static void examplePutGet(final PeerDHT[] peers, final Number160 nr)
+            throws IOException, ClassNotFoundException {
+        FuturePut futurePut = peers[1].put(nr).data(new Data("hallo")).start();
+        futurePut.awaitUninterruptibly();
+        System.out.println("peer " + peers[1].peerID() + " stored [key: " + nr + ", value: \"hallo\"]");
+//        FutureGet futureGet = peers[PEER_NR_2].get(nr).start();
+//        futureGet.awaitUninterruptibly();
+//        System.out.println("peer " + PEER_NR_2 + " got: \"" + futureGet.data().object() + "\" for the key " + nr);
+        // the output should look like this:
+        // peer 30 stored [key: 0xba419d350dfe8af7aee7bbe10c45c0284f083ce4, value: "hallo"]
+        // peer 77 got: "hallo" for the key 0xba419d350dfe8af7aee7bbe10c45c0284f083ce4
     }
 }

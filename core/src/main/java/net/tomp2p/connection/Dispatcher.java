@@ -38,6 +38,7 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.message.MessageFilter;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
@@ -46,12 +47,13 @@ import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 
+import net.tomp2p.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Used to deliver incoming REQUEST messages to their specific handlers. Handlers can be registered using the
- * {@link registerIoHandler} function.
+ * {@link #registerIoHandler(Number160, Number160, DispatchHandler, int...)} function.
  * <p>
  * You probably want to add an instance of this class to the end of a pipeline to be able to receive messages. This
  * class is able to cover several channels but only one P2P network!
@@ -67,6 +69,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     private final int p2pID;
     private final PeerBean peerBeanMaster;
     private final int heartBeatMillis;
+	private MessageFilter messageFilter = null;
 
     //use locks instead copy on write as testcases became really slow
     final private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
@@ -88,14 +91,14 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @param p2pID
      *            The P2P ID the dispatcher is looking for incoming messages
      * @param peerBeanMaster
-     *            .
+     * @param heartBeatMillis
      */
     public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, final int heartBeatMillis) {
         this.p2pID = p2pID;
         this.peerBeanMaster = peerBeanMaster;
         this.heartBeatMillis = heartBeatMillis;
     }
-    
+
     public PeerBean peerBean() {
     	return peerBeanMaster;
     }
@@ -152,7 +155,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     	}
     }
 
-    @Override
+	public void setMessageFilter(MessageFilter messageFilter) {
+		this.messageFilter = messageFilter;
+	}
+
+	@Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
         LOG.debug("Received request message {} from channel {}", message, ctx.channel());
         if (message.version() != p2pID) {
@@ -173,12 +180,22 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         	ctx.fireChannelRead(message);
         	return;
         }
-        
         //NAT reflection, translate back
         if(message.sender().isNet4Private()) {
         	//message.sender().
         }
- 
+	    // check for message filter
+	    if(messageFilter != null) {
+		    LOG.debug("Apply filter to incoming request");
+		    Pair<Boolean, Message> filterResult = messageFilter.rejectPreDispatch(message);
+		    //send response message if message rejected
+		    if(filterResult.element0()) {
+			    Message responseMessage = filterResult.element1();
+			    responseMessage.sender(peerBeanMaster.serverPeerAddress());
+			    response(ctx, responseMessage);
+			    return;
+		    }
+	    }
         Responder responder = new DirectResponder(ctx, message);
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {

@@ -85,8 +85,6 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 					finished = true;
 					moreData = cumulation.readableBytes() > 0;
 					ctx.fireChannelRead(decoder.prepareFinish());
-				} else if (decoder.message().isStreaming()) {
-					ctx.fireChannelRead(decoder.message());
 				}
 			}
 		}

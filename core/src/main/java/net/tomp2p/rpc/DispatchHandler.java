@@ -110,8 +110,13 @@ public abstract class DispatchHandler {
      * @return The created request message
      */
     public Message createMessage(final PeerAddress recipient, final byte name, final Type type) {
-        return new Message().recipient(recipient).sender(peerBean().serverPeerAddress())
+        Message message = new Message().recipient(recipient).sender(peerBean().serverPeerAddress())
                 .command(name).type(type).version(connectionBean().p2pId());
+        // add Header extension if registration in peerBean available
+        if(peerBean().registration() != null)
+            message.headerExtension(peerBean().registration().encodeHeaderExtension());
+            message.hasHeaderExtension(true);
+        return message;
     }
 
     /**
@@ -124,12 +129,17 @@ public abstract class DispatchHandler {
      * @return The response message
      */
     public Message createResponseMessage(final Message requestMessage, final Type replyType) {
-        return createResponseMessage(requestMessage, replyType, peerBean().serverPeerAddress());
+        Message replyMessage =  createResponseMessage(requestMessage, replyType, peerBean().serverPeerAddress());
+        if(peerBean().registration() != null)
+            replyMessage.headerExtension(peerBean().registration().encodeHeaderExtension());
+            replyMessage.hasHeaderExtension(true);
+        return  replyMessage;
     }
-    
+
+    //TODO: static method problematic for headerExtension
     public static Message createResponseMessage(final Message requestMessage, final Type replyType, final PeerAddress peerAddress) {
         Message replyMessage = new Message();
-        // this will have the ports > 40'000 that we need to know for sendig the reply
+        // this will have the ports > 40'000 that we need to know for sending the reply
         replyMessage.senderSocket(requestMessage.senderSocket());
         replyMessage.recipientSocket(requestMessage.recipientSocket());
         replyMessage.recipient(requestMessage.sender());

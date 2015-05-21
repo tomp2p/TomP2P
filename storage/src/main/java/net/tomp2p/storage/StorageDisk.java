@@ -109,7 +109,7 @@ public class StorageDisk implements Storage {
     }
     
     @Override
-    public NavigableMap<Number640, Data> remove(Number640 from, Number640 to, boolean returnData) {
+    public NavigableMap<Number640, Data> remove(Number640 from, Number640 to) {
 		NavigableMap<Number640, Data> tmp = dataMap.subMap(from, true, to, true);
 		
 		// new TreeMap<Number640, Data>(tmp); is not possible as this may lead to no such element exception:

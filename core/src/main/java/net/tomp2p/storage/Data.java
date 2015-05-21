@@ -83,6 +83,7 @@ public class Data {
 	private SignatureFactory signatureFactory;
 	private Number160 hash;
 	private boolean meta;
+	private boolean releaseAfterSend;
 	
 	public Data(final DataBuffer buffer) {
 		this(buffer, buffer.length());
@@ -312,7 +313,7 @@ public class Data {
 	 * @return True if we are done reading
 	 */
 	public boolean decodeBuffer(final ByteBuf buf) {
-		final int already = buffer.alreadyTransferred();
+		final int already = buffer.length();
 		final int remaining = length() - already;
 		// already finished
 		if (remaining == 0) {
@@ -431,15 +432,8 @@ public class Data {
 	}
 	
 	public boolean encodeBuffer(final AlternativeCompositeByteBuf buf) {
-		int already = buffer.alreadyTransferred();
-
-		int remaining = length() - already;
-		// already finished
-		if (remaining == 0) {
-			return true;
-		}
-		buffer.transferTo(buf);
-		return buffer.alreadyTransferred() == length();
+		final int transferred = buffer.transferTo(buf);
+		return transferred == length();
 	}
 	
 	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
@@ -718,6 +712,20 @@ public class Data {
 		this.meta = true;
 		return this;
 	}
+	
+	public boolean isReleaseAfterSend() {
+		return releaseAfterSend;
+	}
+
+	public Data releaseAfterSend(boolean releaseAfterSend) {
+		this.releaseAfterSend = releaseAfterSend;
+		return this;
+	}
+
+	public Data releaseAfterSend() {
+		this.releaseAfterSend = true;
+		return this;
+	}
 
 	@Override
 	public String toString() {
@@ -728,10 +736,6 @@ public class Data {
 		sb.append(publicKey != null).append(",h:");
 		sb.append(signature).append("]");
 		return sb.toString();
-	}
-
-	public void resetAlreadyTransferred() {
-		buffer.resetAlreadyTransferred();
 	}
 
 	/**
@@ -756,6 +760,7 @@ public class Data {
 		data.privateKey = privateKey;
 		data.validFromMillis = validFromMillis;
 		data.prepareFlag = prepareFlag;
+		data.releaseAfterSend = releaseAfterSend;
 		return data;
 	}
 	
@@ -777,6 +782,7 @@ public class Data {
 		data.privateKey = privateKey;
 		data.validFromMillis = validFromMillis;
 		data.prepareFlag = prepareFlag;
+		data.releaseAfterSend = releaseAfterSend;
 		return data;
 	}
 

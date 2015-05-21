@@ -12,8 +12,6 @@ public class DataBuffer {
 
 	private final List<ByteBuf> buffers;
 
-	private int alreadyTransferred = 0;
-
 	public DataBuffer() {
 		this(1);
 	}
@@ -138,23 +136,26 @@ public class DataBuffer {
 	 *            The AlternativeCompositeByteBuf, where the data from this buffer is
 	 *            transfered to
 	 */
-	public void transferTo(final AlternativeCompositeByteBuf buf) {
+	public int transferTo(final AlternativeCompositeByteBuf buf) {
 		final DataBuffer copy = shallowCopy();
+		int transferred = 0;
 		for (final ByteBuf buffer : copy.buffers) {
 			buf.addComponent(buffer);
-			alreadyTransferred += buffer.readableBytes();
+			transferred += buffer.readableBytes();
 		}
+		return transferred;
 	}
 
-	public int transferFrom(final ByteBuf buf, final int remaining) {
+	public int transferFrom(final ByteBuf buf, final int max) {
 		final int readable = buf.readableBytes();
 		final int index = buf.readerIndex();
-		final int length = Math.min(remaining, readable);
+		final int length = Math.min(max, readable);
 
 		if (length == 0) {
 			return 0;
 		}
 
+		int transferred = 0;
 		if (buf instanceof AlternativeCompositeByteBuf) {
 			final List<ByteBuf> decoms = ((AlternativeCompositeByteBuf) buf)
 					.decompose(index, length);
@@ -165,6 +166,7 @@ public class DataBuffer {
 						// this is already a slice
 						buffers.add(decom);
 					}
+					transferred += decom.readableBytes();
 					decom.retain();
 				}
 			}
@@ -175,21 +177,13 @@ public class DataBuffer {
 				synchronized (buffers) {
 					buffers.add(slice);
 				}
+				transferred += slice.readableBytes();
 				slice.retain();
 			}
 		}
 
-		alreadyTransferred += length;
-		buf.readerIndex(buf.readerIndex() + length);
-		return length;
-	}
-
-	public int alreadyTransferred() {
-		return alreadyTransferred;
-	}
-
-	public void resetAlreadyTransferred() {
-		alreadyTransferred = 0;
+		buf.skipBytes(length);
+		return transferred;
 	}
 
 	@Override

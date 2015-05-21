@@ -91,7 +91,10 @@ public class StorageMemory implements Storage {
 			        && versions.firstKey().versionKey().timestamp() + maxVersions <= versions.lastKey().versionKey()
 			                .timestamp()) {
 				Map.Entry<Number640, Data> entry = versions.pollFirstEntry();
-				remove(entry.getKey(), false);
+				Data removed = remove(entry.getKey(), false);
+				if(removed != null) {
+					removed.release();
+				}
 				removeTimeout(entry.getKey());
 			}
         }
@@ -120,7 +123,7 @@ public class StorageMemory implements Storage {
     }
 
     @Override
-    public NavigableMap<Number640, Data> remove(Number640 fromKey, Number640 toKey, boolean returnData) {
+    public NavigableMap<Number640, Data> remove(Number640 fromKey, Number640 toKey) {
         NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
         
         // new TreeMap<Number640, Data>(tmp); is not possible as this may lead to no such element exception:

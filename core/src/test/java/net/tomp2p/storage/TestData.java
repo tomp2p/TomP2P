@@ -95,8 +95,6 @@ public class TestData {
         ByteBuf pa1 = Unpooled.wrappedBuffer(new byte[50000]);
         boolean done1 = data.decodeBuffer(pa1);
         Assert.assertEquals(true, done1);
-        //now we need to reset, since our data is complete now
-        data.resetAlreadyTransferred();
         
         data.encodeBuffer(transfer);
         data.encodeDone(transfer, factory);

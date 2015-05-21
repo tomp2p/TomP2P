@@ -246,6 +246,9 @@ public class Encoder {
 		copyData.encodeHeader(buf, signatureFactory);
 		copyData.encodeBuffer(buf);
 		copyData.encodeDone(buf, signatureFactory, message.privateKey());
+		if(copyData.isReleaseAfterSend()) {
+			copyData.release();
+		}
     }
 
     public Message message() {

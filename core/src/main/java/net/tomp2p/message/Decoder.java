@@ -79,6 +79,7 @@ public class Decoder {
 	private KeyMapByte keyMapByte = null;
 
 	private int bufferSize = -1;
+	private int bufferTransferred = 0;
 	private DataBuffer buffer = null;
 
 	private int trackerDataSize = -1;
@@ -498,21 +499,19 @@ public class Decoder {
 					buffer = new DataBuffer();
 				}
 				
-				final int already = buffer.alreadyTransferred();
-				final int remaining = bufferSize - already;
-				// already finished
-				if (remaining != 0) {
-					int read = buffer.transferFrom(buf, remaining);
-					if(read != remaining) {
-						LOG.debug("Still looking for data. Indicating that its not finished yet. Already Transferred = {}, Size = {}.", buffer.alreadyTransferred(), bufferSize);
-						return false;
-					}
+				final int remaining = bufferSize - bufferTransferred;
+				bufferTransferred += buffer.transferFrom(buf, remaining);
+				
+				if(bufferTransferred < bufferSize) {
+					LOG.debug("Still looking for data. Indicating that its not finished yet. Already Transferred = {}, Size = {}.", bufferTransferred, bufferSize);
+					return false;
 				}
 				
 				ByteBuf buf2 = AlternativeCompositeByteBuf.compBuffer(byteBufAllocator, buffer.toByteBufs());
 				message.buffer(new Buffer(buf2, bufferSize));
 				lastContent = contentTypes.poll();
 				bufferSize = -1;
+				bufferTransferred = 0;
 				buffer = null;
 				break;
 			case SET_TRACKER_DATA:
@@ -618,6 +617,7 @@ public class Decoder {
 		keyMap640KeysSize = -1;
 		keyMap640Keys = null;
 		bufferSize = -1;
+		bufferTransferred = 0;
 		buffer = null;
 		signature = null;
 		return ret;

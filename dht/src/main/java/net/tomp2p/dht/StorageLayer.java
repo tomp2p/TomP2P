@@ -240,6 +240,9 @@ public class StorageLayer implements DigestStorage {
 						retVal.put(key, PutStatus.OK);
 					}
 				}
+				if(oldData != null) {
+					oldData.release();
+				}
 			}
 			//now check for forks
 			for(Number480 key:keysToCheck) {
@@ -275,69 +278,6 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	@Deprecated
-	public Enum<?> putOld(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-	        boolean domainProtection, boolean sendSelf) {
-		RangeLock<Number640>.Range lock = lock(key.locationAndDomainAndContentKey());
-		try {
-			if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
-				return PutStatus.FAILED_SECURITY;
-			}
-			
-			// We need this check in case we did not use the encoder/deconder,
-			// which is the case if we send the message to ourself. In that
-			// case, the public key of the data is never set to the message
-			// publick key, if the publick key of the data was null.
-			final PublicKey dataKey;
-			if(sendSelf && newData.publicKey() == null) {
-				dataKey = publicKey;
-			} else {
-				dataKey = newData.publicKey();
-			}
-			
-			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, dataKey,
-			        newData.isProtectedEntry())) {
-				return PutStatus.FAILED_SECURITY;
-			}
-
-			boolean contains = backend.contains(key);
-			if (contains) {
-				if(putIfAbsent) {
-					return PutStatus.FAILED_NOT_ABSENT;
-				}
-				final Data oldData = backend.get(key);
-				if(oldData.isDeleted()) {
-					return PutStatus.DELETED;
-				}
-			}
-				
-			//since we also have timeouts, we need to go through all the versions to see if we have a version fork
-			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
-			tmp.put(key, newData);
-			boolean versionFork = getLatestInternal(tmp).size() > 1;
-			
-
-			final Data oldData = backend.put(key, newData);
-			
-			long expiration = newData.expirationMillis();
-			// handle timeout
-			backend.addTimeout(key, expiration);
-			
-
-			if (versionFork) {
-				return PutStatus.VERSION_FORK;
-			} else {
-				if(newData.equals(oldData)) {
-					return PutStatus.OK_UNCHANGED;
-				} else {
-					return PutStatus.OK;
-				}
-			}
-		} finally {
-			lock.unlock();
-		}
-	}
-
 	public Pair<Data, Enum<?>> remove(Number640 key, PublicKey publicKey, boolean returnData) {
 		RangeLock<Number640>.Range lock = lock(key);
 		try {
@@ -351,7 +291,13 @@ public class StorageLayer implements DigestStorage {
 				return new Pair<Data, Enum<?>>(null, PutStatus.NOT_FOUND);
 			}
 			backend.removeTimeout(key);
-			return new Pair<Data, Enum<?>>(backend.remove(key, returnData), PutStatus.OK);
+			Data removed = backend.remove(key, returnData);
+			if(removed != null && returnData) {
+				removed.releaseAfterSend();
+			} else if(removed != null) {
+				removed.release();
+			}
+			return new Pair<Data, Enum<?>>(removed, PutStatus.OK);
 		} finally {
 			lock.unlock();
 		}
@@ -530,22 +476,23 @@ public class StorageLayer implements DigestStorage {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
+			NavigableMap<Number640, Data> result = new TreeMap<Number640, Data>();
 
 			for (Number640 key : tmp.keySet()) {
 				// fail fast, as soon as we want to remove 1 domain that we
 				// cannot, abort
 				if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
-					return null;
-				}
-				if (!canClaimEntry(key.locationAndDomainAndContentKey(), publicKey)) {
-					return null;
-				}
-			}
-			NavigableMap<Number640, Data> result = backend.remove(from, to, true);
-			for (Map.Entry<Number640, Data> entry : result.entrySet()) {
-				Data data = entry.getValue();
-				if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
-					backend.removeTimeout(entry.getKey());
+					result.put(key, null);
+				} else if (!canClaimEntry(key.locationAndDomainAndContentKey(), publicKey)) {
+					result.put(key, null);
+				} else {
+					Data toRemove = backend.get(key);
+					if (toRemove!= null && (toRemove.publicKey() == null || toRemove.publicKey().equals(publicKey))) {
+						backend.removeTimeout(key);
+						Data removed = backend.remove(key, true);
+						removed.releaseAfterSend();
+						result.put(key, removed);
+					}
 				}
 			}
 			return result;
@@ -561,6 +508,9 @@ public class StorageLayer implements DigestStorage {
 			SortedMap<Number640, Byte> result = new TreeMap<Number640, Byte>();
 			for (Number640 key : tmp.keySet()) {
 				Pair<Data, Enum<?>> pair = remove(key, publicKey, false);
+				if(pair.element0() != null) {
+					pair.element0().release();
+				}
 				result.put(key, (byte) pair.element1().ordinal());
 			}
 			return result;
@@ -575,7 +525,10 @@ public class StorageLayer implements DigestStorage {
 		for (Number640 key : toRemove) {
 			RangeLock<Number640>.Range lock = lock(key);
 			try {
-				backend.remove(key, false);
+				Data oldData = backend.remove(key, false);
+				if(oldData != null) {
+					oldData.release();
+				}
 				backend.removeTimeout(key);
 				// remove responsibility if we don't have any data stored under
 				// locationkey
@@ -831,10 +784,12 @@ public class StorageLayer implements DigestStorage {
 				try {
 					final NavigableMap<Number640, Data> removed = backend.remove(
 						new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO),
-						new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE),
-						false);
-					for(Number640 rem:removed.keySet()) {
-						backend.removeTimeout(rem);
+						new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE));
+					for(Map.Entry<Number640,Data> entry:removed.entrySet()) {
+						if(entry.getValue() != null) {
+							entry.getValue().release();
+						}
+						backend.removeTimeout(entry.getKey());
 					}
 				} finally {
 					lock.unlock();
@@ -892,6 +847,7 @@ public class StorageLayer implements DigestStorage {
 				long expiration = data.expirationMillis();
 				// handle timeout
 				backend.addTimeout(key, expiration);
+				// no release of old data, as we just update it
 				backend.put(key, data);
 				return PutStatus.OK;
 			} else {
@@ -925,7 +881,10 @@ public class StorageLayer implements DigestStorage {
 				long expiration = data.expirationMillis();
 				// handle timeout
 				backend.addTimeout(key, expiration);
-				backend.put(key, data);
+				Data oldData = backend.put(key, data);
+				if(oldData != null) {
+					oldData.release();
+				}
 				return PutStatus.OK;
 			} else {
 				return PutStatus.NOT_FOUND;

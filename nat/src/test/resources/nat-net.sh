@@ -44,6 +44,9 @@
 # stop NAT
 # > nat-net.sh stop 0
 #
+# port forwarding, will forward the port in the natX namespace
+# > nat-net.sh forward 4000 10.0.0.2
+#
 # Using the default values, your relay/rendez-vous peer should listen on address 192.168.1.50,
 # while the unreachable peer should listen on address 10.0.0.2. The unreachable peer needs to
 # be called using the unrX namespace, e.g., "ip netns exec unr1 java PeerClass".
@@ -117,6 +120,13 @@ stop () {
   ip link del "nat$1_real"
 }
 
+forward () {
+  ip netns exec "nat$1" iptables -t nat -A PREROUTING -i nat$1_wan -p tcp --dport $2 -j DNAT --to-destination $3:$2
+  ip netns exec "nat$1" iptables -t nat -A PREROUTING -i nat$1_wan -p udp --dport $2 -j DNAT --to-destination $3:$2
+  ip netns exec "nat$1" iptables -A FORWARD -d $3 -p tcp --dport $2 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+  ip netns exec "nat$1" iptables -A FORWARD -d $3 -p udp --dport $2 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+}
+
 case "$1" in
   start)
     start $2 $3
@@ -130,7 +140,11 @@ case "$1" in
     stop $2
     start $2 $3
   ;;
-
+  
+  forward)
+    forward $2 $3 $4
+  ;;
+  
   *)
     echo $"Usage: $0 {start|stop|restart} nr [sym]"
     exit 1

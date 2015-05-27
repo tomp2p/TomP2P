@@ -312,17 +312,21 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
 
     @Override
     public void run() {
-        // we get called every x seconds for content we are responsible for. So
-        // we need to make sure that there are enough copies. The easy way is to
-        // publish it again... The good way is to do a diff
-        Collection<Number160> locationKeys = peer.storageLayer().findContentForResponsiblePeerID(peer.peerID());
+    	try {
+    		// we get called every x seconds for content we are responsible for. So
+    		// we need to make sure that there are enough copies. The easy way is to
+    		// publish it again... The good way is to do a diff
+    		Collection<Number160> locationKeys = peer.storageLayer().findContentForResponsiblePeerID(peer.peerID());
         
-        for (Number160 locationKey : locationKeys) {
-            synchronizeData(locationKey);
-        }
-        // recalculate replication factor
-        int replicationFactor = IndirectReplication.this.replicationFactor.replicationFactor();
-        replication.replicationFactor(replicationFactor);
+    		for (Number160 locationKey : locationKeys) {
+    			synchronizeData(locationKey);
+    		}
+    		// recalculate replication factor
+    		int replicationFactor = IndirectReplication.this.replicationFactor.replicationFactor();
+    		replication.replicationFactor(replicationFactor);
+    	} catch (Throwable t) {
+    		t.printStackTrace();
+    	}
     }
 
 	public static String getVersionKeysFromMap(Map<Number640, Data> dataMap) {
@@ -359,7 +363,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
      *            The data to store
      * @return The future of the put
      */
-    protected FutureDone<?> send(final Number160 locationKey, final NavigableMap<Number640, Data> dataMapConverted) {
+    protected FutureDone<?> send(final Number160 locationKey, final NavigableMap<Number640, Data> dataMap) {
         int replicationFactor = replication.replicationFactor() - 1;
         List<PeerAddress> closePeers = new ArrayList<PeerAddress>();
         SortedSet<PeerStatistic> sortedSet = peer.peerBean().peerMap()
@@ -373,7 +377,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         	
             count++;
             closePeers.add(peerStatistic.peerAddress());
-            retVal.add(replicationSender.sendDirect(peerStatistic.peerAddress(), locationKey, dataMapConverted));
+            retVal.add(replicationSender.sendDirect(peerStatistic.peerAddress(), locationKey, dataMap));
             if (count == replicationFactor) {
                 break;
             }

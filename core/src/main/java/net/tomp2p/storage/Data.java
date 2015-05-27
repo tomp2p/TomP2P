@@ -84,6 +84,7 @@ public class Data {
 	private Number160 hash;
 	private boolean meta;
 	private boolean releaseAfterSend;
+	private boolean released = false;
 	
 	public Data(final DataBuffer buffer) {
 		this(buffer, buffer.length());
@@ -913,8 +914,19 @@ public class Data {
 	}
 	
 	public Data release() {
-		buffer.release();
+		synchronized (buffer.lockObject()) {
+			released = true;
+			buffer.release();    
+        }
 		return this;
+	}
+	
+	public Object lockObject() {
+		return buffer.lockObject();
+	}
+	
+	public boolean isReleased() {
+		return released;
 	}
 
 }

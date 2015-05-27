@@ -146,10 +146,16 @@ public class Encoder {
                 if (dataMap.isConvert()) {
                     for (Entry<Number160, Data> entry : dataMap.dataMapConvert().entrySet()) {
                     	buf.writeBytes(dataMap.locationKey().toByteArray());
-                        buf.writeBytes(dataMap.domainKey().toByteArray());
-                        buf.writeBytes(entry.getKey().toByteArray());
-                        buf.writeBytes(dataMap.versionKey().toByteArray());
-                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
+                    	buf.writeBytes(dataMap.domainKey().toByteArray());
+                    	buf.writeBytes(entry.getKey().toByteArray());
+                    	buf.writeBytes(dataMap.versionKey().toByteArray());
+                    	synchronized (entry.getValue().lockObject()) {
+                    		if(entry.getValue().isReleased()) {
+                    			encodeData(buf, new Data(), dataMap.isConvertMeta(), !message.isRequest());
+                    		} else {
+                    			encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
+                    		}
+                    	}
                     }
                 } else {
                     for (Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
@@ -157,7 +163,13 @@ public class Encoder {
                         buf.writeBytes(entry.getKey().domainKey().toByteArray());
                         buf.writeBytes(entry.getKey().contentKey().toByteArray());
                         buf.writeBytes(entry.getKey().versionKey().toByteArray());
-                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
+                        synchronized (entry.getValue().lockObject()) {
+                        	if(entry.getValue().isReleased()) {
+                        		encodeData(buf, new Data(), dataMap.isConvertMeta(), !message.isRequest());
+                        	} else {
+                        		encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
+                        	}
+                        }
                     }
                 }
                 message.contentReferences().poll();

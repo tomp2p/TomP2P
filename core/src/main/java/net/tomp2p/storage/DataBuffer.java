@@ -257,4 +257,8 @@ public class DataBuffer {
 		}
 		return retVal;
 	}
+	
+	public Object lockObject() {
+		return buffers;
+	}
 }

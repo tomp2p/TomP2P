@@ -222,7 +222,7 @@ public class Decoder {
 		PublicKey receivedPublicKey;
 		while (contentTypes.size() > 0) {
 			Content content = contentTypes.peek();
-			LOG.debug("Go for content: {}.", content);
+			LOG.debug("Parse content: {} in message {}", content, message);
 			switch (content) {
 			case INTEGER:
 				if (buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
@@ -382,18 +382,22 @@ public class Decoder {
 						Number160 versionKey = new Number160(me3);
 						key = new Number640(locationKey, domainKey, contentKey, versionKey);
 					}
+					LOG.debug("Key decoded in message {}, remaining {}", message, buf.readableBytes());
 					data = Data.decodeHeader(buf, signatureFactory);
 					if (data == null) {
 						return false;
 					}
+					LOG.debug("Header decoded in message {}, remaining {}", message, buf.readableBytes());
 					dataMap.dataMap().put(key, data);
 
 					if (!data.decodeBuffer(buf)) {
 						return false;
 					}
+					LOG.debug("Buffer decoded in message {}", message);
 					if (!data.decodeDone(buf, message.publicKey(0), signatureFactory)) {
 						return false;
 					}
+					LOG.debug("Done decoded in message {}", message);
 					// if we have signed the message, set the public key anyway, but only if we indicated so
 					inheritPublicKey(message, data);
 					data = null;
@@ -590,6 +594,7 @@ public class Decoder {
 				break;
 			}
 		}
+		LOG.debug("Parsed content in message {}", message);
 		if (message.isSign()) {
 			size = signatureFactory.signatureSize();
 			if(buf.readableBytes() < size) {

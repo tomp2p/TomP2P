@@ -882,9 +882,7 @@ public class StorageLayer implements DigestStorage {
 				// handle timeout
 				backend.addTimeout(key, expiration);
 				Data oldData = backend.put(key, data);
-				if(oldData != null) {
-					oldData.release();
-				}
+				//don't release data as we just update
 				return PutStatus.OK;
 			} else {
 				return PutStatus.NOT_FOUND;

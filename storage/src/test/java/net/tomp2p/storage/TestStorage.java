@@ -10,6 +10,7 @@ import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.concurrent.CountDownLatch;
 
+import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.dht.Storage;
 import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.dht.StorageLayer.PutStatus;
@@ -355,6 +356,27 @@ public class TestStorage {
         Enum<?> result2 = storage.put(key3, new Data("test5"),
                 pair2.getPublic(), false, true, false);
         Assert.assertEquals(PutStatus.FAILED_SECURITY, result2);
+    }
+    
+    @Test
+    public void testSecurity() throws Exception {
+        Storage storageM = createStorage();
+        testSecurity(new StorageLayer(storageM));
+        storageM.close();
+    }
+
+    private void testSecurity(StorageLayer storage) throws Exception {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+        KeyPair pair1 = gen.generateKeyPair();
+        Data test = new Data("test-security");
+        test.signNow(pair1.getPrivate(), new DSASignatureFactory());
+        
+        Enum<?> result1 = storage.put(key3, test,
+                pair1.getPublic(), false, false, false);
+        Assert.assertEquals(PutStatus.OK, result1);
+        Data data = storage.get(key3);
+        		
+        Assert.assertEquals(test, data);
     }
     
     @Test

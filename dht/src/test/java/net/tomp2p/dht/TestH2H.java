@@ -514,10 +514,10 @@ public class TestH2H {
 			// create peers which accept only two versions
 			KeyPair keyPairPeer1 = gen.generateKeyPair();
 			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).keyPair(keyPairPeer1).start())
-			        .storage(new StorageMemory(1000, 2)).start();
+			        .storageLayer(new StorageLayer(new StorageMemory(1000), 2)).start();
 			KeyPair keyPairPeer2 = gen.generateKeyPair();
 			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-			        .keyPair(keyPairPeer2).start()).storage(new StorageMemory(1000, 2)).start();
+			        .keyPair(keyPairPeer2).start()).storageLayer(new StorageLayer(new StorageMemory(1000), 2)).start();
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 			KeyPair keyPair1 = gen.generateKeyPair();

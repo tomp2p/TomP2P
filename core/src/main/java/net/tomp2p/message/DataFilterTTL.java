@@ -9,8 +9,9 @@ public class DataFilterTTL implements DataFilter {
 		final Data copyData;
 		if(isConvertMeta) {
 			copyData = data.duplicateMeta();
+			data.release();
 		} else {
-			copyData = data.duplicate();
+			copyData = data;
 		}
 		if(isReply) {
 			int ttl = (int) ((copyData.expirationMillis() - System.currentTimeMillis()) / 1000);

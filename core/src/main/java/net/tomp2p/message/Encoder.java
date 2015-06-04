@@ -149,13 +149,7 @@ public class Encoder {
                     	buf.writeBytes(dataMap.domainKey().toByteArray());
                     	buf.writeBytes(entry.getKey().toByteArray());
                     	buf.writeBytes(dataMap.versionKey().toByteArray());
-                    	synchronized (entry.getValue().lockObject()) {
-                    		if(entry.getValue().isReleased()) {
-                    			encodeData(buf, new Data(), dataMap.isConvertMeta(), !message.isRequest());
-                    		} else {
-                    			encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
-                    		}
-                    	}
+                    	encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
                     }
                 } else {
                     for (Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
@@ -163,13 +157,7 @@ public class Encoder {
                         buf.writeBytes(entry.getKey().domainKey().toByteArray());
                         buf.writeBytes(entry.getKey().contentKey().toByteArray());
                         buf.writeBytes(entry.getKey().versionKey().toByteArray());
-                        synchronized (entry.getValue().lockObject()) {
-                        	if(entry.getValue().isReleased()) {
-                        		encodeData(buf, new Data(), dataMap.isConvertMeta(), !message.isRequest());
-                        	} else {
-                        		encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
-                        	}
-                        }
+                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
                     }
                 }
                 message.contentReferences().poll();
@@ -254,13 +242,10 @@ public class Encoder {
     }
 
 	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
-		Data copyData = dataFilterTTL.filter(data, isConvertMeta, isReply);
-		copyData.encodeHeader(buf, signatureFactory);
-		copyData.encodeBuffer(buf);
-		copyData.encodeDone(buf, signatureFactory, message.privateKey());
-		if(copyData.isReleaseAfterSend()) {
-			copyData.release();
-		}
+		Data filteredData = dataFilterTTL.filter(data, isConvertMeta, isReply);
+		filteredData.encodeHeader(buf, signatureFactory);
+		filteredData.encodeBuffer(buf);
+		filteredData.encodeDone(buf, signatureFactory, message.privateKey());
     }
 
     public Message message() {

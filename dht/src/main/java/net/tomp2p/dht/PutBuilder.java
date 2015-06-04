@@ -219,6 +219,20 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
             versionKey = Number160.ZERO;
         }
 
-        return peer.distributedHashTable().put(this);
+        final FuturePut futurePut = new FuturePut(this, requestP2PConfiguration().minimumResults(), dataSize());
+        return peer.distributedHashTable().put(this, futurePut);
+    }
+    
+    private int dataSize() {
+    	if(isPutMeta() && changePublicKey()!=null) {
+    		//we only send a marker
+    		return 1;
+    	} else if (isPutConfirm()) {
+    		return 1;
+    	} else if(dataMap()!=null) {
+            return dataMap().size();
+        } else { 
+            return dataMapContent().size();
+        }
     }
 }

@@ -15,12 +15,11 @@
  */
 package net.tomp2p.dht;
 
-import io.netty.buffer.ByteBuf;
-
 import java.util.Map;
 
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.storage.DataBuffer;
 
 /**
  * The future object for put() operations including routing.
@@ -38,10 +37,12 @@ public class FutureSend extends FutureDHT<FutureSend> {
 
     // Storage of results
     private Map<PeerAddress, Object> rawObjects;
-    private Map<PeerAddress, ByteBuf> rawChannels;
+    private Map<PeerAddress, DataBuffer> rawChannels;
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
+    
+    private boolean convertToHeapBuffer = true;
 
     /**
      * Default constructor.
@@ -72,12 +73,19 @@ public class FutureSend extends FutureDHT<FutureSend> {
      *            The raw data that have been sent directly with information on which peer it has been sent
      * @param futuresCompleted 
      */
-    public void directData1(final Map<PeerAddress, ByteBuf> rawChannels, FutureDone<Void> futuresCompleted) {
+    public void directData1(final Map<PeerAddress, DataBuffer> rawChannels, FutureDone<Void> futuresCompleted) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
             }
             this.rawChannels = rawChannels;
+            
+            if(convertToHeapBuffer) {
+           		for(DataBuffer data:rawChannels.values()) {
+           			data.bytes();
+           		}
+            }
+            
             this.futuresCompleted = futuresCompleted;
             final int size = rawChannels.size();
             this.minReached = size >= min;
@@ -116,7 +124,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * 
      * @return The raw data from send_dircet and the information which peer has been contacted
      */
-    public Map<PeerAddress, ByteBuf> rawDirectData1() {
+    public Map<PeerAddress, DataBuffer> rawDirectData1() {
         synchronized (lock) {
             return rawChannels;
         }
@@ -151,7 +159,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * 
      * @return The data that have been received.
      */
-    public ByteBuf channelBuffer() {
+    public DataBuffer channelBuffer() {
         synchronized (lock) {
             return this.evaluationScheme.evaluate4(rawChannels);
         }

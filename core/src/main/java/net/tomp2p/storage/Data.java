@@ -83,8 +83,6 @@ public class Data {
 	private SignatureFactory signatureFactory;
 	private Number160 hash;
 	private boolean meta;
-	private boolean releaseAfterSend;
-	private boolean released = false;
 	
 	public Data(final DataBuffer buffer) {
 		this(buffer, buffer.length());
@@ -469,7 +467,11 @@ public class Data {
 	}
 
 	public Object object() throws ClassNotFoundException, IOException {
-		return Utils.decodeJavaObject(buffer);
+		if(buffer.isHeapBuffer()) {
+			return Utils.decodeJavaObject(buffer.bytes(), 0, buffer.bytes().length);
+		} else {
+			return Utils.decodeJavaObject(buffer);
+		}
 	}
 
 	public long validFromMillis() {
@@ -713,20 +715,6 @@ public class Data {
 		this.meta = true;
 		return this;
 	}
-	
-	public boolean isReleaseAfterSend() {
-		return releaseAfterSend;
-	}
-
-	public Data releaseAfterSend(boolean releaseAfterSend) {
-		this.releaseAfterSend = releaseAfterSend;
-		return this;
-	}
-
-	public Data releaseAfterSend() {
-		this.releaseAfterSend = true;
-		return this;
-	}
 
 	@Override
 	public String toString() {
@@ -761,7 +749,6 @@ public class Data {
 		data.privateKey = privateKey;
 		data.validFromMillis = validFromMillis;
 		data.prepareFlag = prepareFlag;
-		data.releaseAfterSend = releaseAfterSend;
 		return data;
 	}
 	
@@ -783,7 +770,6 @@ public class Data {
 		data.privateKey = privateKey;
 		data.validFromMillis = validFromMillis;
 		data.prepareFlag = prepareFlag;
-		data.releaseAfterSend = releaseAfterSend;
 		return data;
 	}
 
@@ -915,18 +901,16 @@ public class Data {
 	
 	public Data release() {
 		synchronized (buffer.lockObject()) {
-			released = true;
 			buffer.release();    
         }
 		return this;
 	}
-	
-	public Object lockObject() {
-		return buffer.lockObject();
-	}
-	
-	public boolean isReleased() {
-		return released;
-	}
 
+	public String refcnt() {
+	    return buffer.refcnt();
+    }
+
+	public boolean isHeapBuffer() {
+	    return buffer.isHeapBuffer();
+    }
 }

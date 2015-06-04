@@ -21,12 +21,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -42,7 +40,6 @@ import org.slf4j.LoggerFactory;
 public class StorageMemory implements Storage {
 
 	public static final int DEFAULT_STORAGE_CHECK_INTERVAL= 60 * 1000;
-	public static final int DEFAULT_MAX_VERSIONS= -1;
 
     private static final Logger LOG = LoggerFactory.getLogger(StorageMemory.class);
     
@@ -63,42 +60,20 @@ public class StorageMemory implements Storage {
     final private Map<Number160, Set<Number160>> responsibilityMapRev = new ConcurrentHashMap<Number160, Set<Number160>>();
     
     final int storageCheckIntervalMillis;
-    final int maxVersions;
+    
     
     public StorageMemory() {
-    	this(DEFAULT_STORAGE_CHECK_INTERVAL, DEFAULT_MAX_VERSIONS);
-    }
-    
-    public StorageMemory(int storageCheckIntervalMillis) {
-    	this(storageCheckIntervalMillis, DEFAULT_MAX_VERSIONS);
+    	this(DEFAULT_STORAGE_CHECK_INTERVAL);
     }
 
-    public StorageMemory(int storageCheckIntervalMillis, int maxVersions) {
+    public StorageMemory(int storageCheckIntervalMillis) {
     	this.storageCheckIntervalMillis = storageCheckIntervalMillis;
-		this.maxVersions = maxVersions;
 	}
 
 	// Core
     @Override
     public Data put(Number640 key, Data value) {
-        final Data oldData = dataMap.put(key, value);
-        if (maxVersions > 0) {
-        	NavigableMap<Number640, Data> versions = dataMap.subMap(
-				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.ZERO), true,
-				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.MAX_VALUE), true);
-			
-			while (!versions.isEmpty()
-			        && versions.firstKey().versionKey().timestamp() + maxVersions <= versions.lastKey().versionKey()
-			                .timestamp()) {
-				Map.Entry<Number640, Data> entry = versions.pollFirstEntry();
-				Data removed = remove(entry.getKey(), false);
-				if(removed != null) {
-					removed.release();
-				}
-				removeTimeout(entry.getKey());
-			}
-        }
-        return oldData;
+    	return dataMap.put(key, value);
     }
 
     @Override
@@ -124,107 +99,20 @@ public class StorageMemory implements Storage {
 
     @Override
     public NavigableMap<Number640, Data> remove(Number640 fromKey, Number640 toKey) {
-        NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
-        
-        // new TreeMap<Number640, Data>(tmp); is not possible as this may lead to no such element exception:
-        //
-        //      java.util.NoSuchElementException: null
-        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapIter.advance(ConcurrentSkipListMap.java:3030) ~[na:1.7.0_60]
-        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3100) ~[na:1.7.0_60]
-        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3096) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2394) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2344) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.<init>(TreeMap.java:195) ~[na:1.7.0_60]
-        //    	at net.tomp2p.dht.StorageMemory.subMap(StorageMemory.java:119) ~[classes/:na]
-        // 
-        // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
-        // then you will call next() that returns null and an exception is thrown.
-        
-        final NavigableMap<Number640, Data> retVal = new ConcurrentSkipListMap<Number640, Data>(tmp);
+    	ConcurrentSkipListMap<Number640, Data> tmp = (ConcurrentSkipListMap<Number640, Data>) dataMap.subMap(fromKey, true, toKey, true);
+        final NavigableMap<Number640, Data> retVal = tmp.clone();
         tmp.clear();
         return retVal;
     }
 
     @Override
-    public NavigableMap<Number640, Data> subMap(Number640 fromKey, Number640 toKey, int limit,
-            boolean ascending) {
-    	
-    	final NavigableMap<Number640, Data> clone = ((ConcurrentSkipListMap<Number640, Data>)dataMap).clone();
-    	final NavigableMap<Number640, Data> tmp = clone.subMap(fromKey, true, toKey, true);
-        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
-        if (limit < 0) {
-        	
-        	// new TreeMap<Number640, Data>(tmp); is not possible as this may lead to no such element exception:
-            //
-            //      java.util.NoSuchElementException: null
-            //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapIter.advance(ConcurrentSkipListMap.java:3030) ~[na:1.7.0_60]
-            //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3100) ~[na:1.7.0_60]
-            //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3096) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2394) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2344) ~[na:1.7.0_60]
-            //    	at java.util.TreeMap.<init>(TreeMap.java:195) ~[na:1.7.0_60]
-            //    	at net.tomp2p.dht.StorageMemory.subMap(StorageMemory.java:119) ~[classes/:na]
-            // 
-            // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
-            // then you will call next() that returns null and an exception is thrown.
-        	//for(Map.Entry<Number640, Data> entry:(ascending ? tmp : tmp.descendingMap()).entrySet()) {
-            //	retVal.put(entry.getKey(), entry.getValue());
-            //}
-        	return ascending ? tmp : tmp.descendingMap();
-        } else {
-            Iterator<Map.Entry<Number640, Data>> iterator = ascending ? tmp.entrySet().iterator() : tmp
-                    .descendingMap().entrySet().iterator();
-            for (int i = 0; iterator.hasNext() && i < limit; i++) {
-                Map.Entry<Number640, Data> entry = iterator.next();
-                retVal.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return retVal;
+    public NavigableMap<Number640, Data> subMap(Number640 fromKey, Number640 toKey) {	
+    	return dataMap.subMap(fromKey, true, toKey, true);
     }
 
     @Override
-    public NavigableMap<Number640, Data> map() {
-    	
-    	// new TreeMap<Number640, Data>(tmp); is not possible as this may lead to no such element exception:
-        //
-        //      java.util.NoSuchElementException: null
-        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapIter.advance(ConcurrentSkipListMap.java:3030) ~[na:1.7.0_60]
-        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3100) ~[na:1.7.0_60]
-        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3096) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2394) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2344) ~[na:1.7.0_60]
-        //    	at java.util.TreeMap.<init>(TreeMap.java:195) ~[na:1.7.0_60]
-        //    	at net.tomp2p.dht.StorageMemory.subMap(StorageMemory.java:119) ~[classes/:na]
-        // 
-        // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
-        // then you will call next() that returns null and an exception is thrown.
-        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
-        for(final Map.Entry<Number640, Data> entry:dataMap.entrySet()) {
-        	retVal.put(entry.getKey(), entry.getValue());
-        }
-    	
-        return retVal;
+    public NavigableMap<Number640, Data> map() {    	
+        return dataMap;
     }
 
     // Maintenance
@@ -238,6 +126,12 @@ public class StorageMemory implements Storage {
             return;
         }
         removeRevTimeout(key, oldExpiration);
+    }
+    
+    //TODO: unnecessary creation of object
+    private Set<Number640> putIfAbsent2(long expiration, Set<Number640> hashSet) {
+        Set<Number640> timeouts = timeoutMapRev.putIfAbsent(expiration, hashSet);
+        return timeouts == null ? hashSet : timeouts;
     }
 
     @Override
@@ -288,10 +182,7 @@ public class StorageMemory implements Storage {
         return retVal;
     }
 
-    private Set<Number640> putIfAbsent2(long expiration, Set<Number640> hashSet) {
-        Set<Number640> timeouts = timeoutMapRev.putIfAbsent(expiration, hashSet);
-        return timeouts == null ? hashSet : timeouts;
-    }
+    
 
 	@Override
 	public Number160 findPeerIDsForResponsibleContent(Number160 locationKey) {

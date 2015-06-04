@@ -27,10 +27,10 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SendDirectBuilderI;
+import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
 
 public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI,
@@ -41,7 +41,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
 	private final PeerAddress recipientAddress;
 
-	private Buffer buffer;
+	private DataBuffer dataBuffer;
 
 	private FuturePeerConnection recipientConnection;
 	private PeerConnection peerConnection;
@@ -85,12 +85,12 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return recipientAddress;
 	}
 
-	public Buffer buffer() {
-		return buffer;
+	public DataBuffer dataBuffer() {
+		return dataBuffer;
 	}
 
-	public SendDirectBuilder buffer(Buffer buffer) {
-		this.buffer = buffer;
+	public SendDirectBuilder dataBuffer(DataBuffer dataBuffer) {
+		this.dataBuffer = dataBuffer;
 		return this;
 	}
 

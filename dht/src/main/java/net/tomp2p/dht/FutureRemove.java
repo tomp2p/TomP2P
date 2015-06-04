@@ -44,6 +44,8 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     
     private Map<Number640, Integer> result;
     
+    private boolean convertToHeapBuffer = true;
+    
     /**
      * Default constructor.
      */
@@ -124,6 +126,15 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
                 return;
             }
             this.rawData = rawData;
+            
+            if(convertToHeapBuffer) {
+            	for(Map<Number640, Data> map:rawData.values()) {
+            		for(Data data:map.values()) {
+            			data.toBytes();
+            		}
+            	}
+            }
+            
             this.futuresCompleted = futuresCompleted;
             final int size = rawData.size();
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;

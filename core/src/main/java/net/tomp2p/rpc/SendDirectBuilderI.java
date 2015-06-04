@@ -3,7 +3,7 @@ package net.tomp2p.rpc;
 import java.security.KeyPair;
 
 import net.tomp2p.connection.ConnectionConfiguration;
-import net.tomp2p.message.Buffer;
+import net.tomp2p.storage.DataBuffer;
 
 public interface SendDirectBuilderI extends ConnectionConfiguration {
 
@@ -13,7 +13,7 @@ public interface SendDirectBuilderI extends ConnectionConfiguration {
 
     boolean isStreaming();
 
-    Buffer buffer();
+    DataBuffer dataBuffer();
 
     Object object();
 

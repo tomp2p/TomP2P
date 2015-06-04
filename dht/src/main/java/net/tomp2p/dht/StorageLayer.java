@@ -82,9 +82,16 @@ public class StorageLayer implements DigestStorage {
 	final private RangeLock<Number640> responsibilityLock = new RangeLock<Number640>();
 	
 	final private Storage backend;
+	final int maxVersions;
 
 	public StorageLayer(Storage backend) {
 		this.backend = backend;
+		this.maxVersions = -1;
+	}
+	
+	public StorageLayer(Storage backend, int maxVersions) {
+		this.backend = backend;
+		this.maxVersions = maxVersions;
 	}
 
 	public void protection(ProtectionEnable protectionDomainEnable, ProtectionMode protectionDomainMode,
@@ -188,6 +195,7 @@ public class StorageLayer implements DigestStorage {
 				Data newData = entry.getValue();
 				if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
 					retVal.put(key, PutStatus.FAILED_SECURITY);
+					entry.getValue().release();
 					continue;
 				}
 				
@@ -205,6 +213,7 @@ public class StorageLayer implements DigestStorage {
 				if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, dataKey,
 				        newData.isProtectedEntry())) {
 					retVal.put(key, PutStatus.FAILED_SECURITY);
+					entry.getValue().release();
 					continue;
 				}
 				
@@ -212,15 +221,18 @@ public class StorageLayer implements DigestStorage {
 				if (contains) {
 					if(putIfAbsent) {
 						retVal.put(key, PutStatus.FAILED_NOT_ABSENT);
+						entry.getValue().release();
 						continue;
 					}
 					final Data oldData = backend.get(key);
 					if(oldData.isDeleted()) {
 						retVal.put(key, PutStatus.DELETED);
+						entry.getValue().release();
 						continue;
 					}
 					if(!oldData.basedOnSet().equals(newData.basedOnSet())) {
 						retVal.put(key, PutStatus.VERSION_FORK);
+						entry.getValue().release();
 						continue;
 					}
 				}
@@ -234,21 +246,20 @@ public class StorageLayer implements DigestStorage {
 				if(newData.hasPrepareFlag()) {
 					retVal.put(key, PutStatus.OK_PREPARED);
 				} else {
-					if(newData.equals(oldData)) {
-						retVal.put(key, PutStatus.OK_UNCHANGED);
-					} else {
-						retVal.put(key, PutStatus.OK);
-					}
+					retVal.put(key, PutStatus.OK);
 				}
-				if(oldData != null) {
+				if(oldData != null && oldData != newData) {
 					oldData.release();
 				}
 			}
-			//now check for forks
+			
 			for(Number480 key:keysToCheck) {
+				
+				//now check for forks
 				Number640 minVersion = new Number640(key, Number160.ZERO);
 				Number640 maxVersion = new Number640(key, Number160.MAX_VALUE);
-				NavigableMap<Number640, Data> tmp = backend.subMap(minVersion, maxVersion, -1, true);
+				NavigableMap<Number640, Data> tmp = backend.subMap(minVersion, maxVersion);
+				tmp = filterCopy(tmp, -1, true);
 				NavigableMap<Number640, Data> heads = getLatestInternal(tmp);
 				if(heads.size() > 1) {
 					for(Number640 fork:heads.keySet()) {
@@ -257,7 +268,23 @@ public class StorageLayer implements DigestStorage {
 						}
 					}
 				}
-			}
+				
+				//now remove versions
+				if (maxVersions > 0) {
+		        	NavigableMap<Number640, Data> versions = backend.subMap(minVersion, maxVersion);
+					
+					while (!versions.isEmpty()
+					        && versions.firstKey().versionKey().timestamp() + maxVersions <= versions.lastKey().versionKey()
+					                .timestamp()) {
+						Map.Entry<Number640, Data> entry = versions.pollFirstEntry();
+						Data removed = backend.remove(entry.getKey(), true);
+						if(removed != null) {
+							removed.release();
+						}
+						backend.removeTimeout(entry.getKey());
+					}
+				}
+			}			
 			return retVal;
 			
 		} finally {
@@ -292,11 +319,10 @@ public class StorageLayer implements DigestStorage {
 			}
 			backend.removeTimeout(key);
 			Data removed = backend.remove(key, returnData);
-			if(removed != null && returnData) {
-				removed.releaseAfterSend();
-			} else if(removed != null) {
+			if(removed != null && !returnData) {
 				removed.release();
 			}
+			// else -> it will be removed in the encoder 
 			return new Pair<Data, Enum<?>>(removed, PutStatus.OK);
 		} finally {
 			lock.unlock();
@@ -306,7 +332,8 @@ public class StorageLayer implements DigestStorage {
 	public Data get(Number640 key) {
 		RangeLock<Number640>.Range lock = lock(key);
 		try {
-			return getInternal(key);
+			Data tmp = getInternal(key);
+			return tmp == null? null:tmp.duplicate();
 		} finally {
 			lock.unlock();
 		}
@@ -324,9 +351,8 @@ public class StorageLayer implements DigestStorage {
 	public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
-			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
-			removePrepared(tmp);
-
+			NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
+			tmp = filterCopy(tmp, limit, ascending);
 			return tmp;
 		} finally {
 			lock.unlock();
@@ -336,8 +362,8 @@ public class StorageLayer implements DigestStorage {
 	public NavigableMap<Number640, Data> getLatestVersion(Number640 key) {
 		RangeLock<Number640>.Range lock = lock(key.locationAndDomainAndContentKey());
 		try {
-			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
-			removePrepared(tmp);
+			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey());
+			tmp = filterCopy(tmp, -1, true);
 			return getLatestInternal(tmp);
 		} finally {
 			lock.unlock();
@@ -358,33 +384,19 @@ public class StorageLayer implements DigestStorage {
 	    return result;
     }
 
-	private void removePrepared(final NavigableMap<Number640, Data> tmp) {
-		final Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
-	    while (iterator.hasNext()) {
-	    	final Map.Entry<Number640, Data> entry = iterator.next();
-	    	if (entry.getValue().hasPrepareFlag()) {
-	    		iterator.remove();
+	private NavigableMap<Number640, Data> filterCopy(final NavigableMap<Number640, Data> tmp, int limit, boolean ascending) {
+		NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
+		int counter = 0;
+		for(Map.Entry<Number640, Data> entry : tmp.entrySet()) {
+	    	if (!entry.getValue().hasPrepareFlag()) {
+	    		retVal.put(entry.getKey(), entry.getValue().duplicate());
+	    		if(limit >= 0 && counter++ >= limit) {
+	    			break;
+	    		}
 	    	} 
 	    }
+		return ascending? retVal : retVal.descendingMap();
     }
-
-	//recursive version
-	@Deprecated
-	private void deletePredecessors2(Number640 key, NavigableMap<Number640, Data> sortedMap) {
-		Data version = sortedMap.remove(key);
-		// check if version has been already deleted
-		if (version == null) {
-			return;
-		}
-		// check if version is initial version
-		if (version.basedOnSet().isEmpty()) {
-			return;
-		}
-		// remove all predecessor versions recursively
-		for (Number160 basedOnKey : version.basedOnSet()) {
-			deletePredecessors(new Number640(key.locationAndDomainAndContentKey(), basedOnKey), sortedMap);
-		}
-	}
 	
 	//iterative version
 	private void deletePredecessors(Number640 key, NavigableMap<Number640, Data> sortedMap) {
@@ -394,10 +406,13 @@ public class StorageLayer implements DigestStorage {
 		while(!toRemove.isEmpty()) {
 			//System.err.println("counter: "+ (counter++));
 			final Data version = sortedMap.remove(toRemove.remove(0));
-			// check if version has been already deleted && // check if version is initial version
-			if(version != null && !version.basedOnSet().isEmpty()) {
-				for (final Number160 basedOnKey : version.basedOnSet()) {
-					toRemove.add(new Number640(key.locationAndDomainAndContentKey(), basedOnKey));
+			if(version != null) {
+				version.release();
+				// check if version has been already deleted && // check if version is initial version
+				if(!version.basedOnSet().isEmpty()) {
+					for (final Number160 basedOnKey : version.basedOnSet()) {
+						toRemove.add(new Number640(key.locationAndDomainAndContentKey(), basedOnKey));
+					}
 				}
 			}
 		}
@@ -406,7 +421,7 @@ public class StorageLayer implements DigestStorage {
 	public NavigableMap<Number640, Data> get() {
 		RangeLock<Number640>.Range lock = lock();
 		try {
-			return backend.map();
+			return filterCopy(backend.map(), -1, true);
 		} finally {
 			lock.unlock();
 		}
@@ -426,40 +441,48 @@ public class StorageLayer implements DigestStorage {
 	        int limit, boolean ascending, boolean isBloomFilterAnd) {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
-			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
+			NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
+			tmp = filterCopy(tmp, limit, ascending);
 			Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
 
 			while (iterator.hasNext()) {
 				Map.Entry<Number640, Data> entry = iterator.next();
 
 				if (entry.getValue().hasPrepareFlag()) {
+					entry.getValue().release();
 					iterator.remove();
 					continue;
 				}
 
 				if (isBloomFilterAnd) {
 					if (!contentKeyBloomFilter.contains(entry.getKey().contentKey())) {
+						entry.getValue().release();
 						iterator.remove();
 						continue;
 					}
 					if (!versionKeyBloomFilter.contains(entry.getKey().versionKey())) {
+						entry.getValue().release();
 						iterator.remove();
 						continue;
 					}
 					if (!contentBloomFilter.contains(entry.getValue().hash())) {
+						entry.getValue().release();
 						iterator.remove();
 						continue;
 					}
 				} else {
 					if (contentKeyBloomFilter.contains(entry.getKey().contentKey())) {
+						entry.getValue().release();
 						iterator.remove();
 						continue;
 					}
 					if (versionKeyBloomFilter.contains(entry.getKey().versionKey())) {
+						entry.getValue().release();
 						iterator.remove();
 						continue;
 					}
 					if (contentBloomFilter.contains(entry.getValue().hash())) {
+						entry.getValue().release();
 						iterator.remove();
 						continue;
 					}
@@ -475,7 +498,7 @@ public class StorageLayer implements DigestStorage {
 	public NavigableMap<Number640, Data> removeReturnData(Number640 from, Number640 to, PublicKey publicKey) {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
-			Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
+			Map<Number640, Data> tmp = backend.subMap(from, to);
 			NavigableMap<Number640, Data> result = new TreeMap<Number640, Data>();
 
 			for (Number640 key : tmp.keySet()) {
@@ -490,7 +513,6 @@ public class StorageLayer implements DigestStorage {
 					if (toRemove!= null && (toRemove.publicKey() == null || toRemove.publicKey().equals(publicKey))) {
 						backend.removeTimeout(key);
 						Data removed = backend.remove(key, true);
-						removed.releaseAfterSend();
 						result.put(key, removed);
 					}
 				}
@@ -504,7 +526,7 @@ public class StorageLayer implements DigestStorage {
 	public SortedMap<Number640, Byte> removeReturnStatus(Number640 from, Number640 to, PublicKey publicKey) {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
-			Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
+			Map<Number640, Data> tmp = backend.subMap(from, to);
 			SortedMap<Number640, Byte> result = new TreeMap<Number640, Byte>();
 			for (Number640 key : tmp.keySet()) {
 				Pair<Data, Enum<?>> pair = remove(key, publicKey, false);
@@ -550,7 +572,7 @@ public class StorageLayer implements DigestStorage {
 	private boolean isEmpty(Number160 locationKey) {
 		Number640 from = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
 		Number640 to = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE);
-		Map<Number640, Data> tmp = backend.subMap(from, to, 1, false);
+		Map<Number640, Data> tmp = backend.subMap(from, to);
 		return tmp.size() == 0;
 	}
 
@@ -562,7 +584,8 @@ public class StorageLayer implements DigestStorage {
 		DigestInfo digestInfo = new DigestInfo();
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
-			Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
+			NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
+			tmp = filterCopy(tmp, limit, ascending);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
 				if (!entry.getValue().hasPrepareFlag()) {
 					digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
@@ -585,7 +608,8 @@ public class StorageLayer implements DigestStorage {
 		try {
 			Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
 			Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-			Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
+			NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
+			tmp = filterCopy(tmp, limit, ascending);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
 				if (isBloomFilterAnd) {
 					if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().contentKey())) {
@@ -881,7 +905,7 @@ public class StorageLayer implements DigestStorage {
 				long expiration = data.expirationMillis();
 				// handle timeout
 				backend.addTimeout(key, expiration);
-				Data oldData = backend.put(key, data);
+				backend.put(key, data);
 				//don't release data as we just update
 				return PutStatus.OK;
 			} else {

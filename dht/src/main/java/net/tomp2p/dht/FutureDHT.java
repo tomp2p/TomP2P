@@ -71,6 +71,12 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
         }
         return self();
     }
+    
+    public List<FutureResponse> requests() {
+    	synchronized (lock) {
+    		return requests;
+    	}
+    }
 
     /**
      * Adds a listener to the response future and releases all aquired channels in channel creator.

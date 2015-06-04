@@ -418,13 +418,12 @@ public class Sender {
 		Message copy = message.duplicate(new DataFilter() {
 			@Override
 			public Data filter(Data data, boolean isConvertMeta, boolean isReply) {
-				Data copyData = data.duplicate();
-				if (copyData.isSigned() && copyData.signature() == null) {
-					copyData.protectEntry(message.privateKey());
+				if (data.isSigned() && data.signature() == null) {
+					data.protectEntry(message.privateKey());
 				}
 				// set new valid from as this data item might have an old one
-				copyData.validFromMillis(System.currentTimeMillis());
-				return copyData;
+				data.validFromMillis(System.currentTimeMillis());
+				return data;
 			}
 		});
 

@@ -15,8 +15,6 @@
  */
 package net.tomp2p.dht;
 
-import io.netty.buffer.ByteBuf;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -51,6 +49,7 @@ import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -164,7 +163,7 @@ public class DistributedHashTable {
                                 		EMPTY_NAVIGABLE_SET, futureRouting.potentialHits(), futureDHT,
                                         builder.isCancelOnFinish(), future.channelCreator(),
                                         new OperationMapper<FutureSend>() {
-                                            Map<PeerAddress, ByteBuf> rawChannels = new HashMap<PeerAddress, ByteBuf>();
+                                            Map<PeerAddress, DataBuffer> rawChannels = new HashMap<PeerAddress, DataBuffer>();
 
                                             Map<PeerAddress, Object> rawObjects = new HashMap<PeerAddress, Object>();
 
@@ -189,7 +188,7 @@ public class DistributedHashTable {
                                                 if (future.isSuccess() && future.responseMessage().isOk()) {
                                                     if (builder.isRaw()) {
                                                         rawChannels.put(future.request().recipient(),
-                                                                future.responseMessage().buffer(0).buffer());
+                                                        		new DataBuffer(future.responseMessage().buffer(0).buffer()));
                                                     } else {
                                                         try {
                                                             rawObjects.put(
@@ -223,10 +222,7 @@ public class DistributedHashTable {
         return futureDHT;
     }
 
-    public FuturePut put(final PutBuilder putBuilder) {
-        final int dataSize = UtilsDHT.dataSize(putBuilder);
-        final FuturePut futureDHT = new FuturePut(putBuilder, putBuilder.requestP2PConfiguration()
-                .minimumResults(), dataSize);
+    public FuturePut put(final PutBuilder putBuilder, final FuturePut futurePut) {
         putBuilder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
@@ -235,7 +231,7 @@ public class DistributedHashTable {
                 	final RoutingBuilder routingBuilder = createBuilder(putBuilder);
                 	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_1, future.channelCreator());
                 	
-                    futureDHT.futureRouting(futureRouting);
+                    futurePut.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
                         public void operationComplete(final FutureRouting futureRouting) throws Exception {
@@ -244,7 +240,7 @@ public class DistributedHashTable {
                                         futureRouting.potentialHits());
 
                                 parallelRequests(putBuilder.requestP2PConfiguration(),
-                                		EMPTY_NAVIGABLE_SET, futureRouting.potentialHits(), futureDHT, false,
+                                		EMPTY_NAVIGABLE_SET, futureRouting.potentialHits(), futurePut, false,
                                         future.channelCreator(), new OperationMapper<FuturePut>() {
 
                                             Map<PeerAddress, Map<Number640, Byte>> rawData = new HashMap<PeerAddress, Map<Number640, Byte>>();
@@ -290,17 +286,17 @@ public class DistributedHashTable {
                                             }
                                         });
                             } else {
-                                futureDHT.failed(futureRouting);
+                            	futurePut.failed(futureRouting);
                             }
                         }
                     });
-                    futureDHT.addFutureDHTReleaseListener(future.channelCreator());
+                    futurePut.addFutureDHTReleaseListener(future.channelCreator());
                 } else {
-                    futureDHT.failed(future);
+                	futurePut.failed(future);
                 }
             }
         });
-        return futureDHT;
+        return futurePut;
     }
 
     public FutureGet get(final GetBuilder builder) {

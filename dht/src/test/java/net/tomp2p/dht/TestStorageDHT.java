@@ -166,7 +166,7 @@ public class TestStorageDHT {
             // Set<Number480> tofetch = new HashSet<Number480>();
             Number640 from = new Number640(key, Number160.ZERO, Number160.ZERO);
             Number640 to = new Number640(key, Number160.MAX_VALUE, Number160.MAX_VALUE);
-            SortedMap<Number640, Data> c = storeRecv.subMap(from, to, -1, true);
+            SortedMap<Number640, Data> c = storeRecv.subMap(from, to);
             Assert.assertEquals(1, c.size());
             for (Data data : c.values()) {
                 Assert.assertEquals((Integer) 1, (Integer) data.object());
@@ -186,7 +186,7 @@ public class TestStorageDHT {
             // Set<Number480> tofetch = new HashSet<Number480>();
             from = new Number640(key, Number160.ZERO, Number160.ZERO);
             to = new Number640(key, Number160.MAX_VALUE, Number160.MAX_VALUE);
-            c = storeRecv.subMap(from, to, -1, true);
+            c = storeRecv.subMap(from, to);
             Assert.assertEquals(2, c.size());
             for (Data data : c.values()) {
                 Assert.assertEquals((Integer) 1, (Integer) data.object());
@@ -260,7 +260,7 @@ public class TestStorageDHT {
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
-            Map<Number640, Data> result2 = storeRecv.subMap(key1.minContentKey(), key1.maxContentKey(), -1, true);
+            Map<Number640, Data> result2 = storeRecv.subMap(key1.minContentKey(), key1.maxContentKey());
             Assert.assertEquals(result2.size(), 2);
             //Number480 search = new Number480(key, new Number160(88));
             Number640 key2 = new Number640(new Number160(33), Number160.createHash("test"), new Number160(88), Number160.ZERO);

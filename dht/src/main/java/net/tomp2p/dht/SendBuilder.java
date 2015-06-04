@@ -16,16 +16,16 @@
 
 package net.tomp2p.dht;
 
-import net.tomp2p.message.Buffer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SendDirectBuilderI;
+import net.tomp2p.storage.DataBuffer;
 
 public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBuilderI {
 
     private final static FutureSend FUTURE_SHUTDOWN = new FutureSend(null)
             .failed("send builder - peer is shutting down");
 
-    private Buffer buffer;
+    private DataBuffer dataBuffer;
 
     private Object object;
 
@@ -39,12 +39,12 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         self(this);
     }
 
-    public Buffer buffer() {
-        return buffer;
+    public DataBuffer dataBuffer() {
+        return dataBuffer;
     }
 
-    public SendBuilder buffer(Buffer buffer) {
-        this.buffer = buffer;
+    public SendBuilder dataBuffer(DataBuffer dataBuffer) {
+        this.dataBuffer = dataBuffer;
         return this;
     }
 

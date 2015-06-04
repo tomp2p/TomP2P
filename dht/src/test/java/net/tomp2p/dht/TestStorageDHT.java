@@ -313,9 +313,10 @@ public class TestStorageDHT {
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             Number640 key = new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO);
-            Data c = storeRecv.get(key);
+            Data c = storeRecv.get(key).duplicate();
 
             Assert.assertEquals(c, test);
+            c.release();
             //
             tmp.clear();
             byte[] me3 = new byte[] { 5, 6, 7 };

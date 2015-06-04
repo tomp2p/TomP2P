@@ -54,4 +54,24 @@ public class Buffer {
 		read = 0;
 		buffer.resetReaderIndex();
 	}
+	
+	@Override
+    public int hashCode() {
+        return buffer.duplicate().readerIndex(0).hashCode() ^ length;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof Buffer)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        final Buffer b = (Buffer) obj;
+        if(b.length != length) {
+            return false;
+        }
+        return b.buffer.duplicate().readerIndex(0).equals(buffer.duplicate().readerIndex(0));
+    }
 }

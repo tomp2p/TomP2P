@@ -319,6 +319,9 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
 				contentKey = Number160.ZERO;
 			}
 		}
-        return peer.distributedHashTable().get(this);
+		
+		final FutureGet futureGet = new FutureGet(this, requestP2PConfiguration()
+                .minimumResults(), evaluationScheme);
+        return peer.distributedHashTable().get(this, futureGet);
     }
 }

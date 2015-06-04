@@ -94,6 +94,8 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
             return FUTURE_SHUTDOWN;
         }
         preBuild("send-builder");
-        return peer.distributedHashTable().direct(this);
+        
+        final FutureSend futureSend = new FutureSend(this, requestP2PConfiguration().minimumResults(), new VotingSchemeDHT());
+        return peer.distributedHashTable().direct(this, futureSend);
     }
 }

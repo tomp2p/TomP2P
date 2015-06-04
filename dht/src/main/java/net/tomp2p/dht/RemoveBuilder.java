@@ -44,6 +44,8 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
     private boolean fastGet = true;
     
     private boolean failIfNotFound = false;
+    
+    private EvaluatingSchemeDHT evaluationScheme;
 
     public RemoveBuilder(PeerDHT peer, Number160 locationKey) {
         super(peer, locationKey);
@@ -158,6 +160,15 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
         this.failIfNotFound = true;
         return this;
     }
+    
+    public EvaluatingSchemeDHT evaluationScheme() {
+        return evaluationScheme;
+    }
+
+    public RemoveBuilder evaluationScheme(EvaluatingSchemeDHT evaluationScheme) {
+        this.evaluationScheme = evaluationScheme;
+        return this;
+    }
 
     public FutureRemove start() {
         if (peer.peer().isShutdown()) {
@@ -173,7 +184,12 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
             }
             contentKeys.add(contentKey);
         }
+        
+        if (evaluationScheme == null) {
+            evaluationScheme = new VotingSchemeDHT();
+        }
 
-        return peer.distributedHashTable().remove(this);
+        final FutureRemove futureRemove = new FutureRemove(this, evaluationScheme);
+        return peer.distributedHashTable().remove(this, futureRemove);
     }
 }

@@ -104,6 +104,7 @@ public class AddBuilder extends DHTBuilder<AddBuilder> {
             rnd = new Random();
         }
 
-        return peer.distributedHashTable().add(this);
+        final FuturePut futureDHT = new FuturePut(this, requestP2PConfiguration().minimumResults(), dataSet().size());
+        return peer.distributedHashTable().add(this, futureDHT);
     }
 }

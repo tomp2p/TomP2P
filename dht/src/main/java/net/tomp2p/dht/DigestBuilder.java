@@ -294,6 +294,9 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         if (evaluationScheme == null) {
             evaluationScheme = new VotingSchemeDHT();
         }
-        return peer.distributedHashTable().digest(this);
+        
+        final FutureDigest futureDigest = new FutureDigest(this, requestP2PConfiguration()
+                .minimumResults(), evaluationScheme);
+        return peer.distributedHashTable().digest(this, futureDigest);
     }
 }

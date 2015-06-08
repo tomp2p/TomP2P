@@ -1,14 +1,13 @@
 package net.tomp2p.storage;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import net.tomp2p.utils.Utils;
 
 public class DataBuffer {
 
@@ -244,7 +243,7 @@ public class DataBuffer {
 		if(isHeapBuffer() && m.isHeapBuffer()) {
 			return Arrays.equals(m.bytes(), bytes());
 		} else if(!isHeapBuffer() && !m.isHeapBuffer()) {
-			return Utils.isSameSets(buffers, m.buffers);
+			return ByteBufUtil.equals(toByteBuf(), m.toByteBuf());
 		} else {
 			throw new RuntimeException("cannot compare head with direct");
 		}

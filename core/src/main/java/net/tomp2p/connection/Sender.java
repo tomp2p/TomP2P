@@ -423,7 +423,7 @@ public class Sender {
 				}
 				// set new valid from as this data item might have an old one
 				data.validFromMillis(System.currentTimeMillis());
-				return data;
+				return data.duplicate();
 			}
 		});
 

@@ -387,15 +387,15 @@ public class StorageLayer implements DigestStorage {
 	private NavigableMap<Number640, Data> filterCopy(final NavigableMap<Number640, Data> tmp, int limit, boolean ascending) {
 		NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
 		int counter = 0;
-		for(Map.Entry<Number640, Data> entry : tmp.entrySet()) {
+		for(Map.Entry<Number640, Data> entry : ascending ? tmp.entrySet() : tmp.descendingMap().entrySet()) {
 	    	if (!entry.getValue().hasPrepareFlag()) {
-	    		retVal.put(entry.getKey(), entry.getValue().duplicate());
 	    		if(limit >= 0 && counter++ >= limit) {
 	    			break;
 	    		}
+	    		retVal.put(entry.getKey(), entry.getValue().duplicate());
 	    	} 
 	    }
-		return ascending? retVal : retVal.descendingMap();
+		return retVal;
     }
 	
 	//iterative version

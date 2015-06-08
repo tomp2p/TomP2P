@@ -379,7 +379,13 @@ public class StorageLayer implements DigestStorage {
 	    	// store in results list
 	    	result.put(latest.getKey(), latest.getValue());
 	    	// delete all predecessors of latest entry
-	    	deletePredecessors(latest.getKey(), tmp);
+	    	NavigableMap<Number640, Data> removed = deletePredecessors(latest.getKey(), tmp);
+	    	//only release the keys we have removed, the data we put in result will be released when sent
+	    	for(Map.Entry<Number640, Data> entry:removed.entrySet()) {
+	    		if(!entry.getKey().equals(latest.getKey())) {
+	    			entry.getValue().release();
+	    		}
+	    	}
 	    }
 	    return result;
     }
@@ -399,15 +405,15 @@ public class StorageLayer implements DigestStorage {
     }
 	
 	//iterative version
-	private void deletePredecessors(Number640 key, NavigableMap<Number640, Data> sortedMap) {
+	private NavigableMap<Number640, Data> deletePredecessors(Number640 key, NavigableMap<Number640, Data> sortedMap) {
 		final List<Number640> toRemove = new ArrayList<Number640>();
+		final NavigableMap<Number640, Data> removed = new TreeMap<Number640, Data>();
 		toRemove.add(key);
-		//int counter = 0;
 		while(!toRemove.isEmpty()) {
-			//System.err.println("counter: "+ (counter++));
-			final Data version = sortedMap.remove(toRemove.remove(0));
+			final Number640 key2 = toRemove.remove(0);
+			final Data version = sortedMap.remove(key2);
 			if(version != null) {
-				version.release();
+				removed.put(key2, version);
 				// check if version has been already deleted && // check if version is initial version
 				if(!version.basedOnSet().isEmpty()) {
 					for (final Number160 basedOnKey : version.basedOnSet()) {
@@ -416,6 +422,7 @@ public class StorageLayer implements DigestStorage {
 				}
 			}
 		}
+		return removed;
 	}
 
 	public NavigableMap<Number640, Data> get() {

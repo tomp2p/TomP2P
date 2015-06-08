@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import net.tomp2p.utils.Utils;
+
 public class DataBuffer {
 
 	private final Object lock = new Object();
@@ -219,8 +221,15 @@ public class DataBuffer {
 
 	@Override
 	public int hashCode() {
-		//convert to heap buffer
-		return Arrays.hashCode(bytes());
+		if(isHeapBuffer()) {
+			return Arrays.hashCode(heapBuffer);
+		} else {
+			int hash = 42;
+			for(ByteBuf buf:buffers) {
+				hash ^= buf.hashCode();
+			}
+			return hash;
+		}
 	}
 
 	@Override
@@ -232,8 +241,13 @@ public class DataBuffer {
 			return true;
 		}
 		final DataBuffer m = (DataBuffer) obj;
-		//convert to heap buffer
-		return Arrays.equals(m.bytes(), bytes());
+		if(isHeapBuffer() && m.isHeapBuffer()) {
+			return Arrays.equals(m.bytes(), bytes());
+		} else if(!isHeapBuffer() && !m.isHeapBuffer()) {
+			return Utils.isSameSets(buffers, m.buffers);
+		} else {
+			throw new RuntimeException("cannot compare head with direct");
+		}
 	}
 
 	/*@Override
@@ -272,10 +286,15 @@ public class DataBuffer {
 	}
 	
 	private DataBuffer releaseIntern() {
+		boolean allReleased = true;
 		for (ByteBuf buf : buffers) {
-			buf.release();
+			if(!buf.release() && allReleased) {
+				allReleased = false;
+			}
 		}
-		buffers.clear();
+		if(allReleased) {
+			buffers.clear();
+		}
 		return this;
 	}
 	

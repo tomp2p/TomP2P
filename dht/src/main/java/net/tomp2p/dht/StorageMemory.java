@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -99,8 +100,9 @@ public class StorageMemory implements Storage {
 
     @Override
     public NavigableMap<Number640, Data> remove(Number640 fromKey, Number640 toKey) {
-    	ConcurrentSkipListMap<Number640, Data> tmp = (ConcurrentSkipListMap<Number640, Data>) dataMap.subMap(fromKey, true, toKey, true);
-        final NavigableMap<Number640, Data> retVal = tmp.clone();
+    	NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
+        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
+        retVal.putAll(tmp);
         tmp.clear();
         return retVal;
     }

@@ -92,7 +92,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
             if(convertToHeapBuffer) {
             	for(Map<Number640, Data> map:rawData.values()) {
             		for(Data data:map.values()) {
-            			data.toBytes();
+            			data.convertToHeapBuffer();
             		}
             	}
             }

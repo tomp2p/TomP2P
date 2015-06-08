@@ -467,11 +467,7 @@ public class Data {
 	}
 
 	public Object object() throws ClassNotFoundException, IOException {
-		if(buffer.isHeapBuffer()) {
-			return Utils.decodeJavaObject(buffer.bytes(), 0, buffer.bytes().length);
-		} else {
-			return Utils.decodeJavaObject(buffer);
-		}
+		return Utils.decodeJavaObject(buffer);
 	}
 
 	public long validFromMillis() {
@@ -813,7 +809,7 @@ public class Data {
 	 * @return The byte array that is the payload. Here we copy the buffer
 	 */
 	public byte[] toBytes() {
-		return buffer.bytes();
+		return buffer.convertToHeapBuffer();
 	}
 
 	/**
@@ -900,17 +896,15 @@ public class Data {
 	}
 	
 	public Data release() {
-		synchronized (buffer.lockObject()) {
-			buffer.release();    
-        }
-		return this;
+		buffer.release();    
+        return this;
 	}
 
-	public String refcnt() {
-	    return buffer.refcnt();
-    }
+	public void convertToHeapBuffer() {
+		buffer.convertToHeapBuffer();
+	}
 
 	public boolean isHeapBuffer() {
-	    return buffer.isHeapBuffer();
-    }
+		return buffer.isHeapBuffer();
+	}
 }

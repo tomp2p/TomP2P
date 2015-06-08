@@ -7,13 +7,15 @@ import io.netty.buffer.Unpooled;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class DataBuffer {
 
 	private final Object lock = new Object();
+	
 	private final List<ByteBuf> buffers;
-	private byte[] heapBuffer = null;
+	private volatile byte[] heapBuffer;
 
 	public DataBuffer() {
 		this(1);
@@ -60,20 +62,12 @@ public class DataBuffer {
 		}
 	}
 	
-	public DataBuffer add(DataBuffer dataBuffer) {
-		if(isHeapBuffer()) {
-			throw new RuntimeException("Already a heap buffer, cannot transfer data to it!");
-		}
-		synchronized (dataBuffer.lock) {
-			for (final ByteBuf buf : dataBuffer.buffers) {
-				if(buf.isReadable()) {
-					this.buffers.add(buf.duplicate());
-					buf.retain();
-				}
-			}
+	public DataBuffer add(byte[] array, int offset, int length) {
+		synchronized (lock) {
+			buffers.add(Unpooled.wrappedBuffer(array, offset, length));
 		}
 		return this;
-    }
+	}
 
 	/**
 	 * From here, work with shallow copies.
@@ -81,13 +75,11 @@ public class DataBuffer {
 	 */
 	public DataBuffer shallowCopy() {
 		if(isHeapBuffer()) {
-			throw new RuntimeException("Already a heap buffer, cannot transfer data to it!");
+			throw new RuntimeException("This is now a heapbuffer, cannot copy");
 		}
-		final DataBuffer db;
 		synchronized (lock) {
-			db = new DataBuffer(buffers);
+			return new DataBuffer(buffers);
 		}
-		return db;
 	}
 
 	/**
@@ -148,7 +140,7 @@ public class DataBuffer {
 	 */
 	public ByteBuf[] toByteBufs() {
 		if(isHeapBuffer()) {
-			return new ByteBuf[]{toByteBuf()};
+			return new ByteBuf[]{Unpooled.wrappedBuffer(heapBuffer)};
 		} else {
 			final DataBuffer copy = shallowCopy();
 			return copy.buffers.toArray(new ByteBuf[0]);
@@ -164,7 +156,7 @@ public class DataBuffer {
 	 */
 	public int transferTo(final AlternativeCompositeByteBuf buf) {
 		if(isHeapBuffer()) {
-			throw new RuntimeException("Already a heap buffer, cannot transfer data to it!");
+			throw new RuntimeException("This is now a heapbuffer, cannot transfer");
 		}
 		final DataBuffer copy = shallowCopy();
 		int transferred = 0;
@@ -177,7 +169,7 @@ public class DataBuffer {
 
 	public int transferFrom(final ByteBuf buf, final int max) {
 		if(isHeapBuffer()) {
-			throw new RuntimeException("Already a heap buffer, cannot transfer data to it!");
+			throw new RuntimeException("This is now a heapbuffer, cannot transfer");
 		}
 		final int readable = buf.readableBytes();
 		final int index = buf.readerIndex();
@@ -224,8 +216,10 @@ public class DataBuffer {
 			return Arrays.hashCode(heapBuffer);
 		} else {
 			int hash = 42;
-			for(ByteBuf buf:buffers) {
-				hash ^= buf.hashCode();
+			synchronized (lock) {
+				for(ByteBuf buf:buffers) {
+					hash ^= buf.hashCode();
+				}
 			}
 			return hash;
 		}
@@ -241,28 +235,13 @@ public class DataBuffer {
 		}
 		final DataBuffer m = (DataBuffer) obj;
 		if(isHeapBuffer() && m.isHeapBuffer()) {
-			return Arrays.equals(m.bytes(), bytes());
+			return Arrays.equals(heapBuffer, m.heapBuffer);
 		} else if(!isHeapBuffer() && !m.isHeapBuffer()) {
 			return ByteBufUtil.equals(toByteBuf(), m.toByteBuf());
 		} else {
-			throw new RuntimeException("cannot compare head with direct");
+			throw new RuntimeException("Cannot compare, as DataBuffer is of mixed type: head and direct buffer");
 		}
 	}
-
-	/*@Override
-	protected void finalize() throws Throwable {
-		// work on the original buffer, no worries about threading as we are the
-		// finalizer
-		try {
-			for (ByteBuf buf : buffers) {
-				buf.release();
-			}
-		} catch (Throwable t) {
-			throw t;
-		} finally {
-			super.finalize();
-		}
-	}*/
 	
 	/**
 	 * If you plan to use PooledByteBufAlloc, then its important to release the
@@ -279,28 +258,12 @@ public class DataBuffer {
 	 */
 	public DataBuffer release() {
 		synchronized (lock) {
-			releaseIntern();
-		}
-		return this;
-	}
-	
-	private DataBuffer releaseIntern() {
-		boolean allReleased = true;
-		for (ByteBuf buf : buffers) {
-			if(!buf.release() && allReleased) {
-				allReleased = false;
+			for (ByteBuf buf : buffers) {
+				buf.release();
 			}
-		}
-		if(allReleased) {
 			buffers.clear();
 		}
 		return this;
-	}
-	
-	public boolean isHeapBuffer() {
-		synchronized (lock) {
-			return heapBuffer != null && buffers.size() == 0;
-        }
 	}
 
 	/**
@@ -308,39 +271,43 @@ public class DataBuffer {
 	 * its converted it most of the methods for manipulating the data in this
 	 * class will not work
 	 */
-	public byte[] bytes() {
-		final List<ByteBuffer> bufs = bufferList();
-		int size = 0;
-		for (ByteBuffer buf : bufs) {
-			size += buf.remaining();
+	public byte[] convertToHeapBuffer() {
+		if(heapBuffer != null) {
+			return heapBuffer;
 		}
+		final byte[] heapBuffer;
 		synchronized (lock) {
-			if (isHeapBuffer()) {
-				return heapBuffer;
+			int length = 0;
+			for (final ByteBuf buffer : buffers) {
+				length += buffer.writerIndex();
 			}
-			
-			heapBuffer = new byte[size];
+			heapBuffer = new byte[length];
 			int offset = 0;
-			for (ByteBuffer bb : bufs) {
-				final int length = bb.remaining();
-				bb.get(heapBuffer, offset, length);
-				offset += length;
+			for (final ByteBuf buffer : buffers) {
+				final int len = buffer.readableBytes();
+				buffer.readBytes(heapBuffer, offset, len);
+				offset += len;
 			}
-			releaseIntern();
+		
+			//release
+			for (ByteBuf buf : buffers) {
+				buf.release();
+			}
+			buffers.clear();
+			
+			//create new
+			this.heapBuffer = heapBuffer;
 			return heapBuffer;
 		}
 	}
-	
-	public Object lockObject() {
-		return lock;
-	}
 
-	public String refcnt() {
-		ByteBuf b = buffers.get(0);
-	    if(b != null) {
-	    	return ""+b.refCnt();
-	    			
-	    }
-	    return "";
-    }
+	public boolean isHeapBuffer() {
+		synchronized (lock) {
+			return heapBuffer != null && buffers.size() == 0;
+		}
+	}
+	
+	public byte[] heapBuffer() {
+		return heapBuffer;
+	}
 }

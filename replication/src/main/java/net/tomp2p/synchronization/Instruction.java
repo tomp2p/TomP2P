@@ -18,8 +18,6 @@ package net.tomp2p.synchronization;
 
 import java.io.Serializable;
 
-import net.tomp2p.storage.DataBuffer;
-
 /**
  * Class that holds the instructions what to do with the differences.
  * 
@@ -31,14 +29,14 @@ public class Instruction implements Serializable {
 
     private static final long serialVersionUID = 112641683009283845L;
     private final int reference;
-    private final DataBuffer literal;
+    private final RArray literal;
     
     public Instruction(int reference) {
         this.reference = reference;
         this.literal = null;
     }
 
-    public Instruction (DataBuffer literal) {
+    public Instruction (RArray literal) {
     	this.reference = -1;
         this.literal = literal;
     }
@@ -47,7 +45,7 @@ public class Instruction implements Serializable {
         return reference;
     }
 
-    public DataBuffer literal() {
+    public RArray literal() {
         return literal;
     }
     

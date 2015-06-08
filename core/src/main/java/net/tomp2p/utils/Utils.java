@@ -148,12 +148,11 @@ public class Utils {
             return new Number160();
         }
     }
-
-    public static Number160 makeSHAHash(DataBuffer buffer) {
+    
+    public static Number160 makeSHAHash(List<ByteBuffer> bufferList) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
-            DataBuffer copy = buffer.shallowCopy();
-            for (ByteBuffer byteBuffer : copy.bufferList()) {
+            for (ByteBuffer byteBuffer : bufferList) {
                 md.update(byteBuffer);
             }
             byte[] digest = md.digest();
@@ -161,6 +160,15 @@ public class Utils {
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
             return new Number160();
+        }
+    }
+
+    public static Number160 makeSHAHash(DataBuffer buffer) {
+        if(buffer.isHeapBuffer()) {
+        	return makeSHAHash(buffer.heapBuffer());
+        } else {
+        	DataBuffer copy = buffer.shallowCopy();
+        	return makeSHAHash(copy.bufferList());
         }
     }
 
@@ -276,44 +284,27 @@ public class Utils {
         ois.close();
         return obj;
     }
-
-    public static synchronized Object decodeJavaObject(DataBuffer dataBuffer) throws ClassNotFoundException, IOException {
-        
-        List<ByteBuffer> buffers = dataBuffer.shallowCopy().bufferList();
-        int count = buffers.size();
+    
+    public static synchronized Object decodeJavaObject(List<ByteBuffer> buffers) throws ClassNotFoundException, IOException {
+    	int count = buffers.size();
         Vector<InputStream> is = new Vector<InputStream>(count);
         for (ByteBuffer byteBuffer : buffers) {
             is.add(createInputStream(byteBuffer));
         }
         SequenceInputStream sis = new SequenceInputStream(is.elements());
         ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(sis));
-        //TODO: investigate this issue
-        /*ObjectInputStream ois = null;
-        try {
-         ois = new ObjectInputStream(new BufferedInputStream(sis));
-        } catch (Throwable t) {
-            for (ByteBuffer byteBuffer : buffers) {
-                byteBuffer.rewind();
-                int read  = byteBuffer.capacity();
-                byteBuffer.limit(read);
-                byte me[] = new byte[read];
-                byteBuffer.get(me);
-                System.err.println("wrong array1 ("+System.identityHashCode(byteBuffer)+"): "+Arrays.toString(me));
-                
-                if(dataBuffer.test!=null) {
-                dataBuffer.test.readerIndex(0);
-                dataBuffer.test.writerIndex(dataBuffer.test.capacity());
-                me = new byte[dataBuffer.test.readableBytes()];
-                dataBuffer.test.readBytes(me);
-                System.err.println("wrong array2 ("+System.identityHashCode(byteBuffer)+"): "+Arrays.toString(me));
-                }
-                
-            }
-            t.printStackTrace();
-        }*/
         Object obj = ois.readObject();
         ois.close();
         return obj;
+    }
+
+    public static synchronized Object decodeJavaObject(DataBuffer dataBuffer) throws ClassNotFoundException, IOException {
+        
+    	if(dataBuffer.isHeapBuffer()) {
+    		return decodeJavaObject(dataBuffer.heapBuffer(), 0, dataBuffer.length());
+    	} else {
+    		return decodeJavaObject(dataBuffer.shallowCopy().bufferList());
+    	}
     }
 
     public static InputStream createInputStream(final ByteBuffer buf) {

@@ -94,7 +94,7 @@ public class SynchronizationTest {
 		List<Checksum> checksums = RSync.checksums(oldValue, size);
 		List<Instruction> instructions = RSync.instructions(newValue, checksums, size);
 		DataBuffer reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
-		Assert.assertArrayEquals(newValue, reconstructedValue.bytes());
+		Assert.assertArrayEquals(newValue, reconstructedValue.convertToHeapBuffer());
 	}
 	
 	@Test
@@ -106,7 +106,7 @@ public class SynchronizationTest {
 		List<Checksum> checksums = RSync.checksums(oldValue, size);
 		List<Instruction> instructions = RSync.instructions(newValue, checksums, size);
 		DataBuffer reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
-		Assert.assertArrayEquals(newValue, reconstructedValue.bytes());
+		Assert.assertArrayEquals(newValue, reconstructedValue.convertToHeapBuffer());
 	}
 	
 	@Test
@@ -118,7 +118,7 @@ public class SynchronizationTest {
 		List<Checksum> checksums = RSync.checksums(oldValue, size);
 		List<Instruction> instructions = RSync.instructions(newValue, checksums, size);
 		DataBuffer reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
-		Assert.assertArrayEquals(newValue, reconstructedValue.bytes());
+		Assert.assertArrayEquals(newValue, reconstructedValue.convertToHeapBuffer());
 	}
 
 	@Test
@@ -132,7 +132,7 @@ public class SynchronizationTest {
 
 		Assert.assertEquals(4, instructions.size());
 		DataBuffer reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
-		Assert.assertArrayEquals(newValue, reconstructedValue.bytes());
+		Assert.assertArrayEquals(newValue, reconstructedValue.convertToHeapBuffer());
 	}
 
 	@Test
@@ -186,7 +186,7 @@ public class SynchronizationTest {
 
 		DataBuffer reconstructedValue = RSync.reconstruct(oldValue.getBytes(), instructions, size);
 
-		Assert.assertArrayEquals(newValue.getBytes(), reconstructedValue.bytes());
+		Assert.assertArrayEquals(newValue.getBytes(), reconstructedValue.convertToHeapBuffer());
 	}
 
 	@Test

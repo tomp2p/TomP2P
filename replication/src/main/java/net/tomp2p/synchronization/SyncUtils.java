@@ -41,7 +41,7 @@ public class SyncUtils {
 	    		final int remaining = Math.min(length, buf.readableBytes());
 	    		DataBuffer literal = new DataBuffer(buf.slice(buf.readerIndex(), remaining));
 	    		buf.skipBytes(remaining);
-	    		result.add(new Instruction(literal));
+	    		result.add(new Instruction(new RArray(literal)));
 	    	}
 	    }
 	    return result;

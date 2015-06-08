@@ -82,7 +82,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
             
             if(convertToHeapBuffer) {
            		for(DataBuffer data:rawChannels.values()) {
-           			data.bytes();
+           			data.convertToHeapBuffer();
            		}
             }
             

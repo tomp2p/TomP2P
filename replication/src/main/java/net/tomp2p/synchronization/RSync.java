@@ -122,7 +122,7 @@ final public class RSync {
 			final int reference = matches(wcs, array, offset, remaining, checksums);
 			if (reference != -1) {
 				if (offset > lastRefFound) {
-					result.add(new Instruction(new DataBuffer(array, lastRefFound, offset - lastRefFound)));
+					result.add(new Instruction(new RArray(array, lastRefFound, offset - lastRefFound)));
 				}
 				result.add(new Instruction(reference));
 
@@ -143,7 +143,7 @@ final public class RSync {
 		}
 
 		if (length > lastRefFound) {
-			result.add(new Instruction(new DataBuffer(array, lastRefFound, length - lastRefFound)));
+			result.add(new Instruction(new RArray(array, lastRefFound, length - lastRefFound)));
 		}
 
 		return result;
@@ -168,9 +168,9 @@ final public class RSync {
 			if (ref != -1) {
 				int offset = blockSize * ref;
 				int remaining = Math.min(blockSize, value.length - offset);
-				result.add(new DataBuffer(value, offset, remaining));
+				result.add(value, offset, remaining);
 			} else {
-				result.add(instruction.literal());
+				result.add(instruction.literal().array(), instruction.literal().offset(), instruction.literal().length());
 			}
 		}
 		return result;

@@ -160,6 +160,7 @@ public class DirectDataRPC extends DispatchHandler {
                     responseMessage.buffer(new Buffer(Unpooled.wrappedBuffer(me)));
                 }
             }
+            requestBuffer.buffer().release();
         }
         responder.response(responseMessage);
     }

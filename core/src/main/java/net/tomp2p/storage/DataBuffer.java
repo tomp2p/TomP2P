@@ -7,7 +7,6 @@ import io.netty.buffer.Unpooled;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class DataBuffer {
@@ -52,12 +51,14 @@ public class DataBuffer {
 		}
 	}
 
-	private DataBuffer(final List<ByteBuf> buffers) {
+	private DataBuffer(final List<ByteBuf> buffers, boolean retain) {
 		this.buffers = new ArrayList<ByteBuf>(buffers.size());
 		for (final ByteBuf buf : buffers) {
 			if(buf.isReadable()) {
 				this.buffers.add(buf.duplicate());
-				buf.retain();
+				if(retain) {
+					buf.retain();
+				}
 			}
 		}
 	}
@@ -68,20 +69,49 @@ public class DataBuffer {
 		}
 		return this;
 	}
-
+	
 	/**
-	 * From here, work with shallow copies.
-	 * @return Shallow copy of this DataBuffer.
+	 * Shallow copy, needs to be released!
+	 * @return
 	 */
 	public DataBuffer shallowCopy() {
 		if(isHeapBuffer()) {
 			throw new RuntimeException("This is now a heapbuffer, cannot copy");
 		}
 		synchronized (lock) {
-			return new DataBuffer(buffers);
+			return new DataBuffer(buffers, true);
 		}
 	}
 
+	/**
+	 * From here, work with shallow copies.
+	 * @return Shallow copy of this DataBuffer.
+	 */
+	private DataBuffer shallowCopyIntern() {
+		if(isHeapBuffer()) {
+			throw new RuntimeException("This is now a heapbuffer, cannot copy");
+		}
+		synchronized (lock) {
+			return new DataBuffer(buffers, false);
+		}
+	}
+
+	/**
+	 * @return The length of the data that is backed by the data buffer
+	 */
+	public int length() {
+		if(isHeapBuffer()) {
+			return heapBuffer.length;
+		} else {
+			int length = 0;
+			final DataBuffer copy = shallowCopyIntern();
+			for (final ByteBuf buffer : copy.buffers) {
+				length += buffer.writerIndex();
+			}
+			return length;
+		}
+	}
+	
 	/**
 	 * Always make a copy with shallowCopy before using the buffer directly.
 	 * This buffer is not thread safe!
@@ -94,7 +124,7 @@ public class DataBuffer {
 			nioBuffers = new ArrayList<ByteBuffer>(1);
 			nioBuffers.add(ByteBuffer.wrap(heapBuffer));
 		} else {
-			final DataBuffer copy = shallowCopy();
+			final DataBuffer copy = shallowCopyIntern();
 			nioBuffers = new ArrayList<ByteBuffer>(copy.buffers.size());
 			for (final ByteBuf buf : copy.buffers) {
 				for (final ByteBuffer bb : buf.nioBuffers()) {
@@ -103,22 +133,6 @@ public class DataBuffer {
 			}
 		}	
 		return nioBuffers;
-	}
-	
-	/**
-	 * @return The length of the data that is backed by the data buffer
-	 */
-	public int length() {
-		if(isHeapBuffer()) {
-			return heapBuffer.length;
-		} else {
-			int length = 0;
-			final DataBuffer copy = shallowCopy();
-			for (final ByteBuf buffer : copy.buffers) {
-				length += buffer.writerIndex();
-			}
-			return length;
-		}
 	}
 
 	/**
@@ -129,21 +143,9 @@ public class DataBuffer {
 		if(isHeapBuffer()) {
 			return Unpooled.wrappedBuffer(heapBuffer);
 		} else {
-			final DataBuffer copy = shallowCopy();
+			final DataBuffer copy = shallowCopyIntern();
+			//wrap does a slice, so a derived buffer, not increasing ref count
 			return Unpooled.wrappedBuffer(copy.buffers.toArray(new ByteBuf[0]));
-		}
-	}
-	
-	/**
-	 * @return The ByteBuf arrays backed by the buffers stored in here. The buffer is
-	 *         not deep copied here.
-	 */
-	public ByteBuf[] toByteBufs() {
-		if(isHeapBuffer()) {
-			return new ByteBuf[]{Unpooled.wrappedBuffer(heapBuffer)};
-		} else {
-			final DataBuffer copy = shallowCopy();
-			return copy.buffers.toArray(new ByteBuf[0]);
 		}
 	}
 
@@ -158,7 +160,7 @@ public class DataBuffer {
 		if(isHeapBuffer()) {
 			throw new RuntimeException("This is now a heapbuffer, cannot transfer");
 		}
-		final DataBuffer copy = shallowCopy();
+		final DataBuffer copy = shallowCopyIntern();
 		int transferred = 0;
 		for (final ByteBuf buffer : copy.buffers) {
 			buf.addComponent(buffer);

@@ -112,6 +112,7 @@ public class TestDirect {
                         // the future object might be null if the future failed,
                         // e.g due to shutdown
                         System.err.println(future.responseMessage().buffer(0).object());
+                        future.responseMessage().buffer(0).buffer().release();
                     }
                 });
             }

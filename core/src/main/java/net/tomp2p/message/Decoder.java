@@ -35,7 +35,6 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
@@ -511,8 +510,7 @@ public class Decoder {
 					return false;
 				}
 				
-				ByteBuf buf2 = AlternativeCompositeByteBuf.compBuffer(byteBufAllocator, buffer.toByteBufs());
-				message.buffer(new Buffer(buf2, bufferSize));
+				message.buffer(new Buffer(buffer.toByteBuf(), bufferSize));
 				lastContent = contentTypes.poll();
 				bufferSize = -1;
 				bufferTransferred = 0;

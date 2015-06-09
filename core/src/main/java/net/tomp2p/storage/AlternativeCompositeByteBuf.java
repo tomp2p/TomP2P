@@ -293,7 +293,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		if (buffers == null) {
 			throw new NullPointerException("buffers");
 		}
-		for (ByteBuf b : buffers) {
+		for (final ByteBuf b : buffers) {
 			if (b == null) {
 				break;
 			}

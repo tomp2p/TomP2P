@@ -177,12 +177,14 @@ public class DistributedHashTable {
                                                     if (builder.isRaw()) {
                                                         rawChannels.put(future.request().recipient(),
                                                         		new DataBuffer(future.responseMessage().buffer(0).buffer()));
+                                                        future.responseMessage().buffer(0).buffer().release();
                                                     } else {
                                                         try {
                                                             rawObjects.put(
                                                                     future.request().recipient(),
                                                                     future.responseMessage().buffer(0)
                                                                             .object());
+                                                            future.responseMessage().buffer(0).buffer().release();
                                                         } catch (ClassNotFoundException e) {
                                                             rawObjects.put(
                                                                     future.request().recipient(), e);
@@ -633,9 +635,8 @@ public class DistributedHashTable {
             }
             return;
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug("fork/join status: " + min + "/" + active + " (" + parallelDiff + ")");
-        }
+        logger.debug("fork/join status: {}/{} ({})", min, active, parallelDiff);
+        
         FutureForkJoin<FutureResponse> fp = new FutureForkJoin<FutureResponse>(Math.min(min, active), false,
                 futures);
         fp.addListener(new BaseFutureAdapter<FutureForkJoin<FutureResponse>>() {

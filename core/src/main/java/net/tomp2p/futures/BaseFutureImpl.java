@@ -93,8 +93,8 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
             while (!completed) {
                 lock.wait();
             }
-            return self;
         }
+        return self;
     }
 
     @Override
@@ -108,8 +108,8 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
                    LOG.debug("interrupted, but ignoring", e);
                 }
             }
-            return self;
         }
+        return self;
     }
 
     @Override
@@ -270,24 +270,36 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     public K awaitListeners() throws InterruptedException {
     	boolean wait = false;
     	synchronized (lock) {
-    		if(listeners.size() > 0) {
+            checkDeadlock();
+            while (!completed) {
+                lock.wait();
+            }
+            if(listeners.size() > 0) {
     			wait = true;
     		}
-    	}
+        }
     	if(wait) {
     		listenersFinished.await();
     	}
-        return self;
+    	return self;
     }
     
     @Override
     public K awaitListenersUninterruptibly() {
     	boolean wait = false;
     	synchronized (lock) {
-    		if(listeners.size() > 0) {
+            checkDeadlock();
+            while (!completed) {
+                try {
+                    lock.wait();
+                } catch (final InterruptedException e) {
+                   LOG.debug("interrupted, but ignoring", e);
+                }
+            }
+            if(listeners.size() > 0) {
     			wait = true;
-    		}
-    	}
+    		}   
+        }
     	while(wait) {
     		try {
     			listenersFinished.await();
@@ -296,7 +308,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
                 LOG.debug("interrupted, but ignoring", e);
             }
     	}
-        return self;
+    	return self;
     }
     
     @Override
@@ -360,8 +372,11 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
         for (final BaseFutureListener<? extends BaseFuture> listener : listeners) {
             callOperationComplete(listener);
         }
+        
+        synchronized (lock) {
+        	listeners.clear();
+        }
         listenersFinished.countDown();
-        listeners.clear();
         // all events are one time events. It cannot happen that you get
         // notified twice
     }

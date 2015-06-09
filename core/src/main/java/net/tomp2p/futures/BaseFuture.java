@@ -156,7 +156,7 @@ public interface BaseFuture extends Cancel {
     FutureType type();
 
     /**
-     * Waits until all the listener finished. This may include the release of resources.
+     * Waits until the operation is complete and all the listener finished. This may include the release of resources.
      * 
      * @return this
      * @throws InterruptedException
@@ -165,7 +165,7 @@ public interface BaseFuture extends Cancel {
     BaseFuture awaitListeners() throws InterruptedException;
     
     /**
-     * Waits uninterruptedly until all the listener finished. This may include the release of resources.
+     * Waits uninterruptedly until the operation is complete and all the listener finished. This may include the release of resources.
      * 
      * @return this
      */

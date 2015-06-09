@@ -66,12 +66,7 @@ public class TestRelay {
 
 			FutureDirect futureResponse = master.sendDirect(pcMaster)
 					.object("test").start().awaitUninterruptibly();
-			System.err.println("testPeerConnection: "+futureResponse);
-			System.err.println("testPeerConnection: "+futureResponse.failedReason());
-			System.err.println("testPeerConnection: "+futureResponse.futureResponse());
-			if(futureResponse.futureResponse() != null) {
-				System.err.println("testPeerConnection: "+futureResponse.futureResponse().responseMessage());
-			}
+			
 			Assert.assertEquals("yoo!", futureResponse.object());
 
 			FuturePeerConnection pcSlave = myDirectDataRPC.peerConnection();

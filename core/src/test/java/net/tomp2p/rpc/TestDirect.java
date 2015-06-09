@@ -65,6 +65,8 @@ public class TestDirect {
 
             Object ret = fd1.responseMessage().buffer(0).object();
             Assert.assertEquals("yes", ret);
+            fd1.release();
+            fd2.release();
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -103,7 +105,7 @@ public class TestDirect {
                 SendDirectBuilder sendDirectBuilder = new SendDirectBuilder(sender, (PeerAddress) null);
                 sendDirectBuilder.object((Object) Integer.valueOf(i));
 
-                FutureResponse futureData = sender.directDataRPC().send(recv1.peerAddress(),
+                final FutureResponse futureData = sender.directDataRPC().send(recv1.peerAddress(),
                         sendDirectBuilder, cc);
                 Utils.addReleaseListener(cc, futureData);
                 futureData.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -112,9 +114,9 @@ public class TestDirect {
                         // the future object might be null if the future failed,
                         // e.g due to shutdown
                         System.err.println(future.responseMessage().buffer(0).object());
-                        future.responseMessage().buffer(0).buffer().release();
+                        futureData.release();
                     }
-                });
+                });         
             }
             System.err.println("done");
             Thread.sleep(2000);

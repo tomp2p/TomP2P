@@ -276,18 +276,18 @@ public class TestRelay {
 
 			FutureDirect fd = unreachablePeer2.sendDirect(unreachablePeer1.peerAddress()).object(request).start()
 					.awaitUninterruptibly();
-			System.err.println("got msg from: " + fd.futureResponse().responseMessage().sender());
+			System.err.println("got msg from: " + fd.responseMessage().sender());
 			Assert.assertEquals(response, fd.object());
 			// make sure we did not receive it from the unreachable peer with port 13337
 			// System.err.println(fd.getWrappedFuture());
 			// TODO: this case is true for relay
 			// Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
 			// TODO: this case is true for rcon
-			Assert.assertEquals(unreachablePeer1.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
+			Assert.assertEquals(unreachablePeer1.peerID(), fd.responseMessage().sender().peerId());
 
 			Assert.assertTrue(test1.get());
 			Assert.assertFalse(test2.get());
-			Assert.assertEquals(clientConfig.type().maxRelayCount(), fd.futureResponse().responseMessage().sender()
+			Assert.assertEquals(clientConfig.type().maxRelayCount(), fd.responseMessage().sender()
 					.peerSocketAddresses().size());
 		} finally {
 			if (unreachablePeer1 != null) {
@@ -343,7 +343,7 @@ public class TestRelay {
 			Assert.assertEquals(response, fd.object());
 
 			// make sure we did receive it from the unreachable peer with id
-			Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
+			Assert.assertEquals(unreachablePeer.peerID(), fd.responseMessage().sender().peerId());
 		} finally {
 			if (unreachablePeer != null) {
 				unreachablePeer.shutdown().await();
@@ -395,7 +395,7 @@ public class TestRelay {
 			Assert.assertEquals(response, fd.object());
 
 			// make sure we did receive it from the unreachable peer with id
-			Assert.assertEquals(receiver.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
+			Assert.assertEquals(receiver.peerID(), fd.responseMessage().sender().peerId());
 		} finally {
 			if (unreachablePeer != null) {
 				unreachablePeer.shutdown().await();

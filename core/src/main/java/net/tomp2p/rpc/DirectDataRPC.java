@@ -46,6 +46,12 @@ public class DirectDataRPC extends DispatchHandler {
         super(peerBean, connectionBean);
         register(RPC.Commands.DIRECT_DATA.getNr());
     }
+    
+    public Message sendInternal0(final PeerAddress remotePeer,
+            final SendDirectBuilderI sendDirectBuilder) {
+    	 return createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(),
+                 sendDirectBuilder.isRaw() ? Type.REQUEST_1 : Type.REQUEST_2);
+    }
 
     /**
      * Sends data directly to a peer. Make sure you have set up a reply handler. This is an RPC.
@@ -53,12 +59,9 @@ public class DirectDataRPC extends DispatchHandler {
      * @param remotePeer
      *            The remote peer to store the data
      */
-    public RequestHandler<FutureResponse> sendInternal(final PeerAddress remotePeer,
-            final SendDirectBuilderI sendDirectBuilder) {
-        final Message message = createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(),
-                sendDirectBuilder.isRaw() ? Type.REQUEST_1 : Type.REQUEST_2);
-        final FutureResponse futureResponse = new FutureResponse(message);
-
+    public RequestHandler<FutureResponse> sendInternal(final FutureResponse futureResponse,
+            final SendDirectBuilderI sendDirectBuilder) {        
+    	Message message = futureResponse.request();
         if (sendDirectBuilder.isSign()) {
             message.publicKeyAndSign(sendDirectBuilder.keyPair());
         }
@@ -83,7 +86,9 @@ public class DirectDataRPC extends DispatchHandler {
 
     public FutureResponse send(final PeerAddress remotePeer, final SendDirectBuilderI sendDirectBuilder,
             final ChannelCreator channelCreator) {
-        final RequestHandler<FutureResponse> requestHandler = sendInternal(remotePeer, sendDirectBuilder);
+    	Message message = sendInternal0(remotePeer, sendDirectBuilder);
+    	final FutureResponse futureResponse = new FutureResponse(message);
+        final RequestHandler<FutureResponse> requestHandler = sendInternal(futureResponse, sendDirectBuilder);
         if (!sendDirectBuilder.isForceUDP()) {
             return requestHandler.sendTCP(channelCreator);
         } else {

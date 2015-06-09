@@ -27,6 +27,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SendDirectBuilderI;
@@ -35,7 +36,7 @@ import net.tomp2p.utils.Utils;
 
 public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI,
         SignatureBuilder<SendDirectBuilder> {
-	private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect("Peer is shutting down.");
+	private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect(null, false).failed("Peer is shutting down.");
 
 	private final Peer peer;
 
@@ -172,8 +173,11 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 			futureChannelCreator = peer.connectionBean().reservation()
 			        .create(isForceUDP() ? 1 : 0, isForceUDP() ? 0 : 1);
 		}
+		
+		Message message = peer.directDataRPC().sendInternal0(remotePeer, this);
+    	final FutureDirect futureResponse = new FutureDirect(message, isRaw());
 
-		final RequestHandler<FutureResponse> request = peer.directDataRPC().sendInternal(remotePeer, this);
+		final RequestHandler<FutureResponse> request = peer.directDataRPC().sendInternal(futureResponse, this);
 		if (keepAlive) {
 			if (peerConnection != null) {
 				sendDirectRequest(request, peerConnection);
@@ -208,7 +212,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 			});
 		}
 
-		return new FutureDirect(request.futureResponse());
+		return futureResponse;
 	}
 
 	private static void sendDirectRequest(final RequestHandler<FutureResponse> request, final PeerConnection peerConnection) {

@@ -261,15 +261,18 @@ public class StorageLayer implements DigestStorage {
 				NavigableMap<Number640, Data> tmp = backend.subMap(minVersion, maxVersion);
 				tmp = filterCopy(tmp, -1, true);
 				NavigableMap<Number640, Data> heads = getLatestInternal(tmp);
-				if(heads.size() > 1) {
-					for(Number640 fork:heads.keySet()) {
-						if(retVal.containsKey(fork)) {
-							retVal.put(fork, PutStatus.VERSION_FORK);
+				
+				final boolean forked = heads.size() > 1; 
+				for(final Map.Entry<Number640, Data> entry:heads.entrySet()) {
+					if(forked) {
+						if(retVal.containsKey(entry.getKey())) {
+							retVal.put(entry.getKey(), PutStatus.VERSION_FORK);
 						}
 					}
+					entry.getValue().release();
 				}
 				
-				//now remove versions
+				//now remove old versions
 				if (maxVersions > 0) {
 		        	NavigableMap<Number640, Data> versions = backend.subMap(minVersion, maxVersion);
 					

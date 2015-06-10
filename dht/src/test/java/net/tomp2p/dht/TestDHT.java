@@ -2328,7 +2328,11 @@ public class TestDHT {
 			        test.get(
 			                new Number640(new Number320(locationKey, Number160.createHash("test")), new Number160(5),
 			                        Number160.ZERO)).length());
-		} else
+		} else {
 			Assert.assertEquals(0, test.size());
+		}
+		for(Map.Entry<Number640, Data> entry: test.entrySet()) {
+			entry.getValue().release();
+		}
 	}
 }

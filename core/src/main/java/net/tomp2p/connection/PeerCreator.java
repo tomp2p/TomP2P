@@ -25,8 +25,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.KeyPair;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -53,8 +51,6 @@ public class PeerCreator {
 
 	private final ConnectionBean connectionBean;
 	private final PeerBean peerBean;
-
-	private final List<PeerCreator> childConnections = new ArrayList<PeerCreator>();
 
 	private final EventLoopGroup workerGroup;
 	private final EventLoopGroup bossGroup;
@@ -121,7 +117,6 @@ public class PeerCreator {
 	 *            The key pair or null
 	 */
 	public PeerCreator(final PeerCreator parent, final Number160 peerId, final KeyPair keyPair) {
-		parent.childConnections.add(this);
 		this.workerGroup = parent.workerGroup;
 		this.bossGroup = parent.bossGroup;
 		this.connectionBean = parent.connectionBean;
@@ -150,9 +145,6 @@ public class PeerCreator {
 		
 		// shutdown all children
 		if (!master) {
-			for (PeerCreator peerCreator : childConnections) {
-				peerCreator.shutdown();
-			}
 			return futureServerDone.done();
 		}
 		// shutdown the timer

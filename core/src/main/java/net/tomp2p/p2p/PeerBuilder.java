@@ -42,6 +42,7 @@ import net.tomp2p.connection.PingBuilderFactory;
 import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.SendBehavior;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.LocalMap;
 import net.tomp2p.peers.Number160;
@@ -237,6 +238,15 @@ public class PeerBuilder {
 		}
 
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
+		//add shutdown hook to master peer
+		if (masterPeer != null) {
+			masterPeer.addShutdownListener(new Shutdown() {
+				@Override
+				public BaseFuture shutdown() {
+					return peer.shutdown();
+				}
+			});
+		}
 
 		PeerBean peerBean = peerCreator.peerBean();
 		

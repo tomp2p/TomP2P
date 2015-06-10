@@ -846,6 +846,7 @@ public class TestStorageDHT {
                     .get(new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO));
             Assert.assertEquals(true, data != null);
             fr.release();
+            data.release();
 
         }
         finally {

@@ -242,6 +242,9 @@ public class StorageMemory implements Storage {
     // Misc
     @Override
     public void close() {
+    	for(Data data:dataMap.values()) {
+    		data.release();
+    	}
         dataMap.clear();
         protectedMap.clear();
         timeoutMap.clear();

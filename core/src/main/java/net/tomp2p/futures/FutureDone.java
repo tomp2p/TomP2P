@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @param <K>
  */
 public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
+	
+	public static FutureDone<Void> SUCCESS = new FutureDone<Void>().done();
 
     private K object;
 

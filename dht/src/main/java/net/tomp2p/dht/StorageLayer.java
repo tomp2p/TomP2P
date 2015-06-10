@@ -195,7 +195,7 @@ public class StorageLayer implements DigestStorage {
 				Data newData = entry.getValue();
 				if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
 					retVal.put(key, PutStatus.FAILED_SECURITY);
-					entry.getValue().release();
+					newData.release();
 					continue;
 				}
 				
@@ -213,7 +213,7 @@ public class StorageLayer implements DigestStorage {
 				if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, dataKey,
 				        newData.isProtectedEntry())) {
 					retVal.put(key, PutStatus.FAILED_SECURITY);
-					entry.getValue().release();
+					newData.release();
 					continue;
 				}
 				
@@ -221,18 +221,18 @@ public class StorageLayer implements DigestStorage {
 				if (contains) {
 					if(putIfAbsent) {
 						retVal.put(key, PutStatus.FAILED_NOT_ABSENT);
-						entry.getValue().release();
+						newData.release();
 						continue;
 					}
 					final Data oldData = backend.get(key);
 					if(oldData.isDeleted()) {
 						retVal.put(key, PutStatus.DELETED);
-						entry.getValue().release();
+						newData.release();
 						continue;
 					}
 					if(!oldData.basedOnSet().equals(newData.basedOnSet())) {
 						retVal.put(key, PutStatus.VERSION_FORK);
-						entry.getValue().release();
+						newData.release();
 						continue;
 					}
 				}
@@ -259,8 +259,8 @@ public class StorageLayer implements DigestStorage {
 				Number640 minVersion = new Number640(key, Number160.ZERO);
 				Number640 maxVersion = new Number640(key, Number160.MAX_VALUE);
 				NavigableMap<Number640, Data> tmp = backend.subMap(minVersion, maxVersion);
-				tmp = filterCopy(tmp, -1, true);
-				NavigableMap<Number640, Data> heads = getLatestInternal(tmp);
+				tmp = filterCopyOrig(tmp, -1, true);
+				NavigableMap<Number640, Data> heads = getLatestInternalOrig(tmp);
 				
 				final boolean forked = heads.size() > 1; 
 				for(final Map.Entry<Number640, Data> entry:heads.entrySet()) {
@@ -269,7 +269,6 @@ public class StorageLayer implements DigestStorage {
 							retVal.put(entry.getKey(), PutStatus.VERSION_FORK);
 						}
 					}
-					entry.getValue().release();
 				}
 				
 				//now remove old versions
@@ -366,29 +365,37 @@ public class StorageLayer implements DigestStorage {
 		RangeLock<Number640>.Range lock = lock(key.locationAndDomainAndContentKey());
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey());
-			tmp = filterCopy(tmp, -1, true);
+			tmp = filterCopyOrig(tmp, -1, true);
 			return getLatestInternal(tmp);
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	private NavigableMap<Number640, Data> getLatestInternal(NavigableMap<Number640, Data> tmp) {
+	private NavigableMap<Number640, Data> getLatestInternal(NavigableMap<Number640, Data> input) {
 	    // delete all predecessors
 		NavigableMap<Number640, Data> result = new TreeMap<Number640, Data>();
-	    while (!tmp.isEmpty()) {
+	    while (!input.isEmpty()) {
 	    	// first entry is a latest version
-	    	Entry<Number640, Data> latest = tmp.lastEntry();
+	    	Entry<Number640, Data> latest = input.lastEntry();
+	    	// store in results list
+	    	result.put(latest.getKey(), latest.getValue().duplicate());
+	    	// delete all predecessors of latest entry
+	    	deletePredecessors(latest.getKey(), input);
+	    }
+	    return result;
+    }
+	
+	private NavigableMap<Number640, Data> getLatestInternalOrig(NavigableMap<Number640, Data> input) {
+	    // delete all predecessors
+		NavigableMap<Number640, Data> result = new TreeMap<Number640, Data>();
+	    while (!input.isEmpty()) {
+	    	// first entry is a latest version
+	    	Entry<Number640, Data> latest = input.lastEntry();
 	    	// store in results list
 	    	result.put(latest.getKey(), latest.getValue());
 	    	// delete all predecessors of latest entry
-	    	NavigableMap<Number640, Data> removed = deletePredecessors(latest.getKey(), tmp);
-	    	//only release the keys we have removed, the data we put in result will be released when sent
-	    	for(Map.Entry<Number640, Data> entry:removed.entrySet()) {
-	    		if(!entry.getKey().equals(latest.getKey())) {
-	    			entry.getValue().release();
-	    		}
-	    	}
+	    	deletePredecessors(latest.getKey(), input);
 	    }
 	    return result;
     }
@@ -402,6 +409,20 @@ public class StorageLayer implements DigestStorage {
 	    			break;
 	    		}
 	    		retVal.put(entry.getKey(), entry.getValue().duplicate());
+	    	} 
+	    }
+		return retVal;
+    }
+	
+	private NavigableMap<Number640, Data> filterCopyOrig(final NavigableMap<Number640, Data> tmp, int limit, boolean ascending) {
+		NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
+		int counter = 0;
+		for(Map.Entry<Number640, Data> entry : ascending ? tmp.entrySet() : tmp.descendingMap().entrySet()) {
+	    	if (!entry.getValue().hasPrepareFlag()) {
+	    		if(limit >= 0 && counter++ >= limit) {
+	    			break;
+	    		}
+	    		retVal.put(entry.getKey(), entry.getValue());
 	    	} 
 	    }
 		return retVal;
@@ -925,5 +946,9 @@ public class StorageLayer implements DigestStorage {
 			lock.unlock();
 		}
 		//TODO: check for FORKS!
+	}
+
+	public void close() {
+		backend.close();
 	}
 }

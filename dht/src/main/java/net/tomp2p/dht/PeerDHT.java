@@ -2,7 +2,9 @@ package net.tomp2p.dht;
 
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -13,11 +15,18 @@ public class PeerDHT {
 	final private DistributedHashTable dht;
 	final private StorageLayer storageLayer;
 
-	PeerDHT(Peer peer, StorageLayer storageLayer, DistributedHashTable dht, StorageRPC storageRPC) {
+	PeerDHT(final Peer peer, final StorageLayer storageLayer, final DistributedHashTable dht, final StorageRPC storageRPC) {
 		this.peer = peer;
 		this.storageLayer = storageLayer;
 		this.dht = dht;
 		this.storageRPC = storageRPC;
+		peer.addShutdownListener(new Shutdown() {
+			@Override
+			public BaseFuture shutdown() {
+				storageLayer.close();
+				return FutureDone.SUCCESS;
+			}
+		});
     }
 
 	public Peer peer() {

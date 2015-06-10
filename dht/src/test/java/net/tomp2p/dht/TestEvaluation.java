@@ -9,9 +9,20 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestEvaluation {
+	
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     @Test
     public void testEvaluationData1() throws Exception {

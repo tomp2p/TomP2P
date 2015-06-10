@@ -30,12 +30,23 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.NeighborRPC.SearchValues;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestNeighbor {
     public static final int PORT_TCP = 5001;
 
     public static final int PORT_UDP = 5002;
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     @Test
     public void testNeigbhor() throws Exception {

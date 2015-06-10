@@ -7,9 +7,21 @@ import java.util.Collection;
 import net.tomp2p.Utils2;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestFilter {
+	
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
+	
 	@Test
 	public void testIPv4Filter1() throws UnknownHostException {
 		PeerIPFilter filter = new PeerIPFilter(32, 128);

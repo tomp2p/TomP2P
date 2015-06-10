@@ -28,7 +28,11 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 /**
  * Tests over a real network. Since this requires a real network, the tests are
@@ -40,6 +44,13 @@ public class TestRealNetwork {
     private final int port = 4000;
 
     private final String ipSuperPeer = "192.168.1.187";
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     /**
      * Starts the super peer.

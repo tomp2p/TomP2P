@@ -35,7 +35,11 @@ import net.tomp2p.peers.PeerAddress;
 
 import org.junit.Assert;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 /**
  * This is not an automated test and needs manual interaction. Thus by default these tests are disabled.
@@ -48,6 +52,13 @@ public class TestRealPing {
     private static final String IP = "127.0.0.1";
     private static final int PORT = 5000;
     private static final int WAIT = 1000000;
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     /**
      * Test regular ping.

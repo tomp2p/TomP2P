@@ -11,7 +11,11 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 /**
  * Test send over network.
@@ -23,6 +27,13 @@ public class TestSend {
     private static final int PORT = 5000;
     private static final String ADDR = "192.168.1.x";
     private static final RequestP2PConfiguration REQ = new RequestP2PConfiguration(1, 10, 0);
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     /**
      * Start the sender and wait forever.

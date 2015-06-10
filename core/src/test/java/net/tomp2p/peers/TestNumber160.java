@@ -21,10 +21,21 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestNumber160 {
     private final Random rnd = new Random();
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     @Test
     public void testLength() {

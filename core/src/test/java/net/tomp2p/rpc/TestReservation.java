@@ -9,13 +9,20 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestReservation {
 
-    /*
-     * @Test public void testReservationTCPL() throws Exception { for(int i=0;i<100;i++) testReservationTCP(); }
-     */
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     @Test
     public void testReservationTCP() throws Exception {

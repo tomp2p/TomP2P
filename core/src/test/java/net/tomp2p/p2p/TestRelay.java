@@ -16,7 +16,11 @@ import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.ObjectDataReply;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +28,13 @@ public class TestRelay {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(TestRelay.class);
 	private final static Random rnd = new Random(42L);
+	
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 	
 	@Test 
 	public void testLoop() throws Exception {

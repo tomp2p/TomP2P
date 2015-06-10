@@ -18,7 +18,11 @@ import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestStorage {
     final private static Number160 locationKey = new Number160(10);
@@ -37,6 +41,13 @@ public class TestStorage {
     final private Number640 key2 = new Number640(locationKey, domainKey, content2, Number160.ZERO);
     final private Number640 key3 = new Number640(locationKey, domainKey, content3, Number160.ZERO);
     final private Number640 key4 = new Number640(locationKey, domainKey, content4, Number160.ZERO);
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     public Storage createStorage() throws IOException {
     	return new StorageMemory();

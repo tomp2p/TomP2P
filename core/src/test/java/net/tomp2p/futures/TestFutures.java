@@ -25,7 +25,11 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.peers.Number160;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 /**
  * Test the correctness and the performance of futures.
@@ -41,6 +45,13 @@ public class TestFutures {
     private int steps = RONUDS / SUB;
     private final Set<Integer> done = new HashSet<Integer>();
     private final ExecutorService e = Executors.newFixedThreadPool(10);
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     /**
      * Tests the performance of sequential processing as a base.

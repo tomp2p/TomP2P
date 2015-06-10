@@ -40,7 +40,11 @@ import net.tomp2p.utils.Utils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestStorageDHT {
     
@@ -51,6 +55,13 @@ public class TestStorageDHT {
     
     public static final int PORT_TCP = 5001;
     public static final int PORT_UDP = 5002;
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     @Before
     public void before() throws IOException {
@@ -156,12 +167,14 @@ public class TestStorageDHT {
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
+            fr.releaseResponseMessage();
             // add a the same data twice
             fr = smmSender.add(recv1.peerAddress(), addBuilder, cc);
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
-
+            fr.releaseResponseMessage();
+            
             Number320 key = new Number320(new Number160(33), Number160.createHash("test"));
             // Set<Number480> tofetch = new HashSet<Number480>();
             Number640 from = new Number640(key, Number160.ZERO, Number160.ZERO);
@@ -241,6 +254,7 @@ public class TestStorageDHT {
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
+            fr.releaseResponseMessage();
 
             Number640 key1 = new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO);
             Data c = storeRecv.get(key1);
@@ -260,6 +274,7 @@ public class TestStorageDHT {
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
+            fr.releaseResponseMessage();
             Map<Number640, Data> result2 = storeRecv.subMap(key1.minContentKey(), key1.maxContentKey());
             Assert.assertEquals(result2.size(), 2);
             //Number480 search = new Number480(key, new Number160(88));
@@ -312,6 +327,7 @@ public class TestStorageDHT {
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
+            fr.releaseResponseMessage();
             Number640 key = new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO);
             Data c = storeRecv.get(key).duplicate();
 
@@ -331,6 +347,7 @@ public class TestStorageDHT {
             // we cannot put anything there, since there already is
             Assert.assertEquals(true, fr.isSuccess());
             Map<Number640, Byte> putKeys = fr.responseMessage().keyMapByte(0).keysMap();
+            fr.release();
             Assert.assertEquals(2, putKeys.size());
             Assert.assertEquals(Byte.valueOf((byte)PutStatus.FAILED_NOT_ABSENT.ordinal()), putKeys.values().iterator().next());
             Number640 key2 = new Number640(new Number160(33), Number160.createHash("test"), new Number160(88), Number160.ZERO);
@@ -378,6 +395,7 @@ public class TestStorageDHT {
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
+            fr.releaseResponseMessage();
             // get
 
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
@@ -392,6 +410,7 @@ public class TestStorageDHT {
             Message m = fr.responseMessage();
             Map<Number640, Data> stored = m.dataMap(0).dataMap();
             compare(dataMap.dataMap(), stored);
+            fr.release();
             System.err.println("done!");
         } finally {
             if (cc != null) {
@@ -437,6 +456,7 @@ public class TestStorageDHT {
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
+            fr.releaseResponseMessage();
 
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.domainKey(Number160.createHash("test"));
@@ -451,6 +471,7 @@ public class TestStorageDHT {
             Message m = fr.responseMessage();
             Map<Number640, Data> stored = m.dataMap(0).dataMap();
             compare(dataMap.dataMap(), stored);
+            fr.release();
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -505,6 +526,7 @@ public class TestStorageDHT {
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
+            fr.release();
             // remove
             RemoveBuilder removeBuilder = new RemoveBuilder(recv1, new Number160(33));
             removeBuilder.domainKey(Number160.createHash("test"));
@@ -515,6 +537,7 @@ public class TestStorageDHT {
             fr.awaitUninterruptibly();
             Message m = fr.responseMessage();
             Assert.assertEquals(true, fr.isSuccess());
+            fr.release();
 
             // check for returned results
             Map<Number640, Data> stored = m.dataMap(0).dataMap();
@@ -533,6 +556,7 @@ public class TestStorageDHT {
             m = fr.responseMessage();
             DataMap stored2 = m.dataMap(0);
             Assert.assertEquals(0, stored2.size());
+            fr.release();
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -578,6 +602,7 @@ public class TestStorageDHT {
             Assert.assertEquals(true, fr.isSuccess());
             KeyMapByte keys = fr.responseMessage().keyMapByte(0);
             Utils.isSameSets(keys.keysMap().keySet(), dataMap.dataMap().keySet());
+            fr.release();
 
         } finally {
             if (cc != null) {
@@ -624,6 +649,7 @@ public class TestStorageDHT {
                         System.err.println("failed: " + fr.failedReason());
                     }
                     Assert.assertEquals(true, fr.isSuccess());
+                    fr.release();
                 }
                 res.clear();
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -687,6 +713,7 @@ public class TestStorageDHT {
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
+            fr.release();
 
             SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(100, 1);
             sbf.add(new Number160(77));
@@ -703,6 +730,7 @@ public class TestStorageDHT {
             Message m = fr.responseMessage();
             Map<Number640, Data> stored = m.dataMap(0).dataMap();
             Assert.assertEquals(1, stored.size());
+            fr.release();
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -746,6 +774,7 @@ public class TestStorageDHT {
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
+            fr.release();
 
             SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(100, 2);
             sbf.add(new Number160(77));
@@ -762,6 +791,7 @@ public class TestStorageDHT {
             Assert.assertEquals(true, fr.isSuccess());
             Message m = fr.responseMessage();
             Assert.assertEquals(2, m.keyMap640Keys(0).size());
+            fr.release();
 
         } finally {
             if (cc != null) {
@@ -777,7 +807,6 @@ public class TestStorageDHT {
     }
 
     @Test
-    // TODO test is not working
     public void testBigStore2() throws Exception {
         StorageMemory storeSender = new StorageMemory();
         StorageMemory storeRecv = new StorageMemory();
@@ -816,6 +845,7 @@ public class TestStorageDHT {
             Data data = recv1.storageLayer()
                     .get(new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO));
             Assert.assertEquals(true, data != null);
+            fr.release();
 
         }
         finally {
@@ -868,6 +898,7 @@ public class TestStorageDHT {
 
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
+            fr.release();
             //
 
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
@@ -883,6 +914,7 @@ public class TestStorageDHT {
             Number640 key = new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO);
             Assert.assertEquals(50 * 1024 * 1024, fr.responseMessage().dataMap(0).dataMap().get(key)
                     .length());
+            fr.release();
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -922,10 +954,11 @@ public class TestStorageDHT {
 
             FutureResponse fr = smmSender.put(recv1.peerAddress(), putBuilder, cc);
 
-            Thread.sleep(5);
+            Thread.sleep(50);
             fr.cancel();
             Assert.assertEquals(false, fr.isSuccess());
             System.err.println("good!");
+            fr.release();
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -977,6 +1010,7 @@ public class TestStorageDHT {
             fr.awaitUninterruptibly();
             System.err.println("XX:" + fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
+            fr.release();
             //
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.domainKey(Number160.createHash("test"));
@@ -985,6 +1019,7 @@ public class TestStorageDHT {
             fr.cancel();
             System.err.println("XX:" + fr.failedReason());
             Assert.assertEquals(false, fr.isSuccess());
+            fr.release();
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -1026,6 +1061,7 @@ public class TestStorageDHT {
 			FutureResponse fr = master.storeRPC().put(slave.peerAddress(), pb, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
+			fr.release();
 			
 			GetBuilder gb = master.get(new Number160("0x51")).domainKey(Number160.ZERO);
 
@@ -1034,7 +1070,7 @@ public class TestStorageDHT {
 			Assert.assertEquals(true, fr.isSuccess());
 
 			System.err.println("done");
-			
+			fr.release();
 			
 
 		} finally {

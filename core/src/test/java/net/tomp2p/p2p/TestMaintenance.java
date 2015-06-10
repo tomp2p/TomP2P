@@ -7,9 +7,21 @@ import net.tomp2p.Utils2;
 import net.tomp2p.futures.BaseFuture;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestMaintenance {
+	
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
+	
     @Test
     public void testMaintenance() throws Exception {
         final Random rnd = new Random(42L);

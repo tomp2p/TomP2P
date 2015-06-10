@@ -23,10 +23,21 @@ import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.utils.Pair;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 //TODO: find out why the shutdown takes 2 seconds
 public class TestConnection {
+	
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     @Test
     public void test() throws Exception {

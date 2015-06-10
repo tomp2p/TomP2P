@@ -26,13 +26,24 @@ import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestRouting {
     private static final Logger LOG = LoggerFactory.getLogger(TestRouting.class);
     final private static Random rnd = new Random(43L);
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     @Test
     public void testMerge() throws UnknownHostException {

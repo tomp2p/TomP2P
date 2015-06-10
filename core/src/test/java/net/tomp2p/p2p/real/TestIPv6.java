@@ -34,7 +34,11 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 /**
  * This class is not suitable for automated integration testing, since it
@@ -45,6 +49,13 @@ import org.junit.Test;
 public class TestIPv6 {
     private final int port = 4000;
     private final String ipSuperPeer = "2001:620:10:10c1:201:6cff:feca:426d";
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     /**
      * Starts the server (super peer).

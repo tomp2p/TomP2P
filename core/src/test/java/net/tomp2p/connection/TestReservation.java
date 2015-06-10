@@ -46,7 +46,11 @@ import net.tomp2p.utils.Pair;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 /**
  * Test the connection reservation.
@@ -69,6 +73,13 @@ public class TestReservation {
 	 */
 	
 	private EventLoopGroup workerGroup;
+	
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 	
 	@Before
 	public void createSink() throws IOException {

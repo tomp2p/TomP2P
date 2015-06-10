@@ -19,9 +19,20 @@ import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.RTT;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestRTTRoutingComparator {
+	
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     /**
      * Two PeerStatistic with the same PeerIDs should compare to 0 (equality)

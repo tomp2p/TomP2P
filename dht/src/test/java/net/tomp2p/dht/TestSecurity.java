@@ -31,7 +31,11 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestSecurity {
 	final private static Random rnd = new Random(42L);
@@ -45,6 +49,13 @@ public class TestSecurity {
 			Assert.fail("Cannot initialize DSA key pair generator");
 		}
 	}
+	
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
 	@Test
 	public void testPublicKeyReceived() throws Exception {

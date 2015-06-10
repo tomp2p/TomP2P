@@ -60,7 +60,11 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -86,6 +90,13 @@ public class TestMessage {
     private static final int BIT_16 = 256 * 256;
     private static final Random RND = new Random(SEED);
     private static final DSASignatureFactory factory = new DSASignatureFactory();
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
 	@Test
 	public void compositeBufferTest1() {

@@ -24,7 +24,11 @@ import java.util.List;
 import java.util.Random;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 /**
  * Test the serialization and deserialization of PeerAddress.
@@ -36,6 +40,13 @@ public class TestPeerAddress {
     private static final int SEED = 1;
     private static final int BIT_16 = 256 * 256;
     private static final Random RND = new Random(SEED);
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
 
     /**
      * Test serialization and deserialization of PeerAddress.

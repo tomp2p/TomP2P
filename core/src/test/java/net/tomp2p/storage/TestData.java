@@ -16,11 +16,23 @@ import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.peers.Number160;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class TestData {
 	
 	private static final DSASignatureFactory factory = new DSASignatureFactory();
+	
+	@Rule
+    public TestRule watcher = new TestWatcher() {
+	   protected void starting(Description description) {
+          System.out.println("Starting test: " + description.getMethodName());
+       }
+    };
+	
     @Test
     public void testData1() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
         Data data = new Data("test");

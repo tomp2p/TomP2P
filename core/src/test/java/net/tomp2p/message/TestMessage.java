@@ -208,7 +208,7 @@ public class TestMessage {
 	public void testEncodeDecode4() throws Exception {
 		Message m1 = Utils2.createDummyMessage();
 		Random rnd = new Random(42);
-		m1.type(Message.Type.DENIED);
+		m1.type(Message.Type.REQUEST_4);
 		m1.setHintSign();
 
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
@@ -247,7 +247,7 @@ public class TestMessage {
 	public void testEncodeDecode5() throws Exception {
 		Message m1 = Utils2.createDummyMessage();
 		Random rnd = new Random(42);
-		m1.type(Message.Type.PARTIALLY_OK);
+		m1.type(Message.Type.REQUEST_2);
 		m1.setHintSign();
 
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
@@ -287,7 +287,7 @@ public class TestMessage {
 	public void testEncodeDecode7() throws Exception {
 		Message m1 = Utils2.createDummyMessage();
 		Random rnd = new Random(42);
-		m1.type(Message.Type.PARTIALLY_OK);
+		m1.type(Message.Type.REQUEST_3);
 		m1.setHintSign();
 
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
@@ -385,9 +385,32 @@ public class TestMessage {
 	}
 
 	@Test
-	public void testEncodeDecode480Map() throws Exception { // encode
+	public void testEncodeDecode480MapRep() throws Exception { // encode
 		Message m1 = Utils2.createDummyMessage();
 		m1.type(Message.Type.PARTIALLY_OK);
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair pair1 = gen.generateKeyPair();
+		m1.publicKeyAndSign(pair1);
+		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+		Random rnd = new Random(42l);
+		for (int i = 0; i < 1000; i++) {
+			dataMap.put(new Number640(new Number160(rnd), new Number160(rnd),
+					new Number160(rnd), new Number160(rnd)), new Data(
+					new byte[] { (byte) rnd.nextInt(), (byte) rnd.nextInt(),
+							(byte) rnd.nextInt(), (byte) rnd.nextInt(),
+							(byte) rnd.nextInt() }));
+		}
+		m1.setDataMap(new DataMap(dataMap));
+		Message m2 = encodeDecode(m1);
+		Assert.assertEquals(true, m2.publicKey(0) != null);
+		m2.release();
+		compareMessage(m1, m2);
+	}
+	
+	@Test
+	public void testEncodeDecode480MapReq() throws Exception { // encode
+		Message m1 = Utils2.createDummyMessage();
+		m1.type(Message.Type.REQUEST_1);
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);

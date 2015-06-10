@@ -260,12 +260,14 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 			String msg = "Message was not delivered successfully, unknow ID (peer may be offline or unknown RPC handler): "
 					+ this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
+            responseMessage.release();
             return;
 		} 
         if (responseMessage.type() == Message.Type.EXCEPTION) {
             String msg = "Message caused an exception on the other side, handle as peer_abort: "
                     + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
+            responseMessage.release();
             return;
 		} 
         if (responseMessage.isRequest()) {
@@ -276,6 +278,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 			String msg = "Response message [" + responseMessage
                     + "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
+            responseMessage.release();
             return;
 		}
 		// We need to exclude RCON Messages from the sanity check because we
@@ -289,6 +292,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 					+ this.message + "]. Recipient (" + message.recipient().isRelayed() + ") / Sender ("
 					+ responseMessage.sender().isRelayed() + ")";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
+            responseMessage.release();
             return;
         }
         

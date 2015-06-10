@@ -616,7 +616,7 @@ public class StorageLayer implements DigestStorage {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
-			tmp = filterCopy(tmp, limit, ascending);
+			tmp = filterCopyOrig(tmp, limit, ascending);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
 				if (!entry.getValue().hasPrepareFlag()) {
 					digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
@@ -640,7 +640,7 @@ public class StorageLayer implements DigestStorage {
 			Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
 			Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
 			NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
-			tmp = filterCopy(tmp, limit, ascending);
+			tmp = filterCopyOrig(tmp, limit, ascending);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
 				if (isBloomFilterAnd) {
 					if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().contentKey())) {
@@ -909,6 +909,7 @@ public class StorageLayer implements DigestStorage {
 				return PutStatus.NOT_FOUND;
 			}
 		} finally {
+			newData.release();
 			lock.unlock();
 		}
 	}
@@ -943,6 +944,7 @@ public class StorageLayer implements DigestStorage {
 				return PutStatus.NOT_FOUND;
 			}
 		} finally {
+			newData.release();
 			lock.unlock();
 		}
 		//TODO: check for FORKS!

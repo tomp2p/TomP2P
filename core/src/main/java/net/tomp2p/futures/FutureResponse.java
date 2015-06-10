@@ -92,6 +92,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     public FutureResponse response(final Message responseMessage) {
         synchronized (lock) {
             if (!completedAndNotify()) {
+            	responseMessage.release();
                 return this;
             }
             if (responseMessage != null) {
@@ -112,6 +113,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     public boolean responseLater(final Message responseMessage) {
         synchronized (lock) {
             if(completed) {
+            	responseMessage.release();
                 return false;
             }
             reponseLater = true;

@@ -25,7 +25,7 @@ public interface BaseFuture extends Cancel {
      * The first state is always INIT and will always end in either OK, FAILED, or CANCEl.
      */
     public enum FutureType {
-        INIT, OK, FAILED
+        INIT, OK, FAILED, CANCEL
     };
 
     /**
@@ -198,21 +198,12 @@ public interface BaseFuture extends Cancel {
     BaseFuture removeListener(BaseFutureListener<? extends BaseFuture> listener);
 
     /**
-     * Adds a cancel listener to this future, which is called when cancel is executed. Triggering a cancel does not
+     * Set a cancel callback to this future, which is called when cancel is executed. Triggering a cancel does not
      * finish this future.
      * 
      * @param cancel
      *            The cancel listener
      * @return this
      */
-    BaseFuture addCancel(Cancel cancel);
-
-    /**
-     * Removes a cancel listener to this future. Triggering a cancel does not finish this future.
-     * 
-     * @param cancel
-     *            The cancel listener
-     * @return This class
-     */
-    BaseFuture removeCancel(Cancel cancel);
+    BaseFuture setCancel(Cancel cancel);
 }

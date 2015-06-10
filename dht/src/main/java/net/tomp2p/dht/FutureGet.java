@@ -95,6 +95,13 @@ public class FutureGet extends FutureDHT<FutureGet> {
             			data.convertToHeapBuffer();
             		}
             	}
+            	for(DigestResult digest:rawDigest.values()) {
+            		if(digest.dataMap() != null) {
+            			for(Data data:digest.dataMap().values()) {
+            				data.convertToHeapBuffer();
+            			}
+            		}
+            	}
             }
             
             this.rawDigest = rawDigest;

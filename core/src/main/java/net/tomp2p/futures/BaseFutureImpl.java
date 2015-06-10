@@ -44,7 +44,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 
     // While a future is running, the process may add cancellations for faster
     // cancel operations, e.g. cancel connection attempt
-    private final List<Cancel> cancels = new ArrayList<Cancel>(0);
+    private volatile Cancel cancel = null;
 
     private final CountDownLatch listenersFinished = new CountDownLatch(1);
 
@@ -60,8 +60,6 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     protected String reason = "unknown";
 
     private K self;
-
-    private boolean cancel = false;
 
     /**
      * Default constructor that sets the lock object, which is used for synchronization to this instance.
@@ -238,7 +236,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
         final StringBuffer sb = new StringBuffer("Future (compl/canc):");
         synchronized (lock) {
             sb.append(completed).append("/")
-            	.append(cancel).append(", ").append(type.name())
+            	.append(", ").append(type.name())
             	.append(", ").append(reason);
             return sb.toString();
         }
@@ -369,13 +367,17 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
         // There won't be any visibility problem or concurrent modification
         // because 'ready' flag will be checked against both addListener and
         // removeListener calls.
+    	//
+    	// This method doesn't need synchronization because:
+        // 1) This method is always called after synchronized (this) block.
+        //    Hence any listener list modification happens-before this method.
+        // 2) This method is called only when 'done' is true.  Once 'done'
+        //    becomes true, the listener list is never modified - see add/removeListener()
         for (final BaseFutureListener<? extends BaseFuture> listener : listeners) {
             callOperationComplete(listener);
         }
         
-        synchronized (lock) {
-        	listeners.clear();
-        }
+        listeners.clear();
         listenersFinished.countDown();
         // all events are one time events. It cannot happen that you get
         // notified twice
@@ -392,43 +394,26 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     }
 
     @Override
-    public K addCancel(final Cancel cancelListener) {
-        synchronized (cancels) {
-            if (cancel) {
-                cancelListener.cancel();
+    public K setCancel(final Cancel cancel) {
+    	synchronized (lock) {
+            if (!completed) {
+            	this.cancel = cancel;
             }
-            else {
-                cancels.add(cancelListener);
-            }
-        }
-        return self;
-    }
-    
-    @Override
-    public K removeCancel(final Cancel cancelListener) {
-        synchronized (cancels) {
-            if (!cancel) {
-                cancels.remove(cancelListener);
-            }
-        }
+    	}
         return self;
     }
 
     @Override
     public void cancel() {
-        boolean notifyCancel = false;
-        synchronized (cancels) {
-            if (!cancel) {
-                cancel = true;
-                notifyCancel = true;
-            } else {
+    	synchronized (lock) {
+            if (!completedAndNotify()) {
                 return;
             }
+            this.type = FutureType.CANCEL;
         }
-        if (notifyCancel) {
-            for (final Cancel cancellable : cancels) {
-                cancellable.cancel();
-            }
-        }
+    	if(cancel != null) {
+    		cancel.cancel();
+    	}
+        notifyListeners();
     }
 }

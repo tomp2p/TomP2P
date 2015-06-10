@@ -164,6 +164,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
                    peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "Wrong P2P version."));
             	}
             }
+            message.release();
             return;
         }
         
@@ -181,6 +182,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
         } else {
+        	message.release();
         	if (LOG.isWarnEnabled()) {
         		printWarnMessage(message);
         	}

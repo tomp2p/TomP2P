@@ -773,20 +773,6 @@ public class StorageRPC extends DispatchHandler {
         		replicationListener.dataInserted(locationKey);
         	}
         }
-        
-        /*for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
-            Enum<?> putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(), entry.getValue(), message.isSendSelf());
-            result.put(entry.getKey(), (byte) putStatus.ordinal());
-            // check the responsibility of the newly added data, do something
-            // (notify) if we are responsible
-            if (!entry.getValue().hasPrepareFlag()) {
-            	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK || putStatus == PutStatus.DELETED)
-            			&& replicationListener != null) {
-            		replicationListener.dataInserted(entry.getKey().locationKey(), replicaPut);
-            	}
-            }
-           
-        }*/
 
         responseMessage.type(result.size() == dataSize ? Type.OK : Type.PARTIALLY_OK);
         responseMessage.keyMapByte(new KeyMapByte(result));

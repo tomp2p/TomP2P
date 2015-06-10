@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.dht.StorageLayer.PutStatus;
-import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -694,9 +693,10 @@ public class DistributedHashTable {
     private static void cancel(final AtomicReferenceArray<FutureResponse> futures) {
         int len = futures.length();
         for (int i = 0; i < len; i++) {
-            BaseFuture baseFuture = futures.get(i);
+        	FutureResponse baseFuture = futures.get(i);
             if (baseFuture != null) {
                 baseFuture.cancel();
+                baseFuture.release();
             }
         }
     }

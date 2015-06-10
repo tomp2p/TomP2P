@@ -782,11 +782,11 @@ public class Sender {
 		}
 		LOG.debug("about to connect to {} with channel {}, ff={}", message.recipient(), channelFuture.channel(), fireAndForget);
 		final Cancel connectCancel = createCancel(channelFuture);
-		futureResponse.addCancel(connectCancel);
+		futureResponse.setCancel(connectCancel);
 		channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
-				futureResponse.removeCancel(connectCancel);
+				
 				if (future.isSuccess()) {
 					final ChannelFuture writeFuture = future.channel().writeAndFlush(message);
 					afterSend(writeFuture, futureResponse, fireAndForget);
@@ -817,11 +817,11 @@ public class Sender {
 	 */
 	private void afterSend(final ChannelFuture writeFuture, final FutureResponse futureResponse, final boolean fireAndForget) {
 		final Cancel writeCancel = createCancel(writeFuture);
+		futureResponse.setCancel(writeCancel);
 		writeFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
-				futureResponse.removeCancel(writeCancel);
 				if (!future.isSuccess()) {
 					futureResponse.failedLater(future.cause());
 					reportFailed(futureResponse, future.channel().close());

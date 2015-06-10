@@ -1269,4 +1269,21 @@ public class Message {
 		
 		return current;
 	}
+
+	public void release() {
+		for(DataMap dataMap: dataMapList()) {
+			for(Data data: dataMap.dataMap().values()) {
+				data.release();
+			}
+		}
+		for(Buffer buffer: bufferList()) {
+			buffer.buffer().release();
+		}
+		for(TrackerData trackerData:trackerDataList()) {
+			for(Data data:trackerData.peerAddresses().values()) {
+				data.release();
+			}
+		}
+		
+	}
 }

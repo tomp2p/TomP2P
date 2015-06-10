@@ -246,6 +246,9 @@ public class Encoder {
 		filteredData.encodeHeader(buf, signatureFactory);
 		filteredData.encodeBuffer(buf);
 		filteredData.encodeDone(buf, signatureFactory, message.privateKey());
+		if(isReply) {
+			filteredData.release();
+		}
     }
 
     public Message message() {

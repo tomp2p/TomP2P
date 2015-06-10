@@ -1070,7 +1070,6 @@ public class TestDHT {
 			//System.out.println("got it");
 		} finally {
 			if (master != null) {
-				master.shutdown().awaitUninterruptibly();
 				master.shutdown().awaitListenersUninterruptibly();
 			}
 		}

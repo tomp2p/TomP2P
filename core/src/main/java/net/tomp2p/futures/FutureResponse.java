@@ -43,7 +43,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     // the reply to this request
     protected Message responseMessage;
     
-    private boolean reponseLater = false;
+    protected boolean reponseLater = false;
 
     private final RTT roundTripTime = new RTT();
 

@@ -35,25 +35,7 @@ public class FutureDirect extends FutureResponse {
                 type = futureSuccessEvaluator().evaluate(request(), responseMessage);
                 reason = responseMessage.type().toString();
                 
-                if(convertToHeapBuffer) {
-        			if(isRaw) {
-        				int len = responseMessage.buffer(0).buffer().readableBytes();
-        				byte[] me = new byte[len];
-        				responseMessage.buffer(0).buffer().readBytes(me);
-        				buffer = new Buffer(Unpooled.wrappedBuffer(me));
-        			} else {
-        				try {
-    						object = responseMessage().buffer(0).object();
-    						responseMessage().buffer(0).buffer().release();
-    					} catch (ClassNotFoundException e) {
-    						type = FutureType.FAILED;
-    		                reason = e.toString();
-    					} catch (IOException e) {
-    						type = FutureType.FAILED;
-    		                reason = e.toString();
-    					}
-        			}
-        		}
+                convert(responseMessage);
                 
             } else {
                 type = FutureType.OK;
@@ -63,6 +45,53 @@ public class FutureDirect extends FutureResponse {
         notifyListeners();
         return this;
     }
+    
+    @Override
+    public boolean responseLater(Message responseMessage) {
+    	
+    	synchronized (lock) {
+            if(completed) {
+                return false;
+            }
+            reponseLater = true;
+            if (responseMessage != null) {
+                this.responseMessage = responseMessage;
+                // if its ok or nok, the communication was successful.
+                // Everything else is a failure in communication
+                type = futureSuccessEvaluator().evaluate(request(), responseMessage);
+                reason = responseMessage.type().toString();
+
+                convert(responseMessage);
+            } else {
+                type = FutureType.OK;
+                reason = "Nothing to deliver...";
+            }
+        }
+        return true;
+    }
+
+	private void convert(Message responseMessage) {
+		if(convertToHeapBuffer && responseMessage.buffer(0)!=null) {
+			if(isRaw) {
+				int len = responseMessage.buffer(0).buffer().readableBytes();
+				byte[] me = new byte[len];
+				responseMessage.buffer(0).buffer().readBytes(me);
+				buffer = new Buffer(Unpooled.wrappedBuffer(me));
+				responseMessage.buffer(0).buffer().release();
+			} else {
+				try {
+					object = responseMessage.buffer(0).object();
+					responseMessage.buffer(0).buffer().release();
+				} catch (ClassNotFoundException e) {
+					type = FutureType.FAILED;
+		            reason = e.toString();
+				} catch (IOException e) {
+					type = FutureType.FAILED;
+		            reason = e.toString();
+				}
+			}
+		}
+	}
     
     @Override
     public FutureDirect failed(String failed) {
@@ -79,7 +108,7 @@ public class FutureDirect extends FutureResponse {
 
 	public Buffer buffer() {
         synchronized (lock) {
-        	if(buffer == null) {
+        	if(buffer == null && responseMessage().buffer(0) != null) {
         		int len = responseMessage().buffer(0).buffer().readableBytes();
 				byte[] me = new byte[len];
 				responseMessage().buffer(0).buffer().readBytes(me);
@@ -92,7 +121,7 @@ public class FutureDirect extends FutureResponse {
     
     public Object object() throws ClassNotFoundException, IOException {
         synchronized (lock) {
-            if(object == null) {
+            if(object == null && responseMessage().buffer(0) != null) {
             	object = responseMessage().buffer(0).object();
             	responseMessage().buffer(0).buffer().release();
             }

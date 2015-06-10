@@ -1004,7 +1004,7 @@ public class TestDHT {
 			});
 			FutureDirect fd = master.peer().sendDirect(peers[50].peerAddress()).dataBuffer(d).start();
 			fd.await();
-			System.out.println("done1");
+			System.out.println("done1 " + fd.failedReason());
 			Assert.assertEquals(true, fd.isSuccess());
 			Assert.assertNull(fd.buffer());
 			// int read = fd.getBuffer().readInt();

@@ -888,9 +888,8 @@ public class StorageRPC extends DispatchHandler {
             Number640 max = iterator.next();
             result = storageLayer.get(min, max, limit, ascending);
 
-        } else if (contentKeyBloomFilter != null && !contentKeyBloomFilter.isFull() 
-        		&& versionBloomFilter != null && !versionBloomFilter.isFull() 
-        		&& contentBloomFilter !=null && !contentBloomFilter.isFull()) {
+        } else if (contentKeyBloomFilter != null && versionBloomFilter != null && contentBloomFilter !=null
+        		&& (!contentKeyBloomFilter.isFull() || !versionBloomFilter.isFull() || !contentBloomFilter.isFull())) {
             Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
             Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
             result = storageLayer.get(min, max, contentKeyBloomFilter, versionBloomFilter, contentBloomFilter, limit, ascending, isBloomFilterAnd);

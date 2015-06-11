@@ -168,9 +168,11 @@ final public class RSync {
 			if (ref != -1) {
 				int offset = blockSize * ref;
 				int remaining = Math.min(blockSize, value.length - offset);
-				result.add(value, offset, remaining);
+				result.append(value, offset, remaining);
+			} else if (instruction.literal().hasDataBuffer()) {
+				result.append(instruction.literal().dataBuffer().bufListIntern());
 			} else {
-				result.add(instruction.literal().array(), instruction.literal().offset(), instruction.literal().length());
+				result.append(instruction.literal().array(), instruction.literal().offset(), instruction.literal().length());
 			}
 		}
 		return result;

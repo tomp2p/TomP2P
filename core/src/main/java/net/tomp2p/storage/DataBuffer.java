@@ -63,7 +63,19 @@ public class DataBuffer {
 		}
 	}
 	
-	public DataBuffer add(byte[] array, int offset, int length) {
+	public DataBuffer append(final List<ByteBuf> buffers) {
+		synchronized (lock) {
+			for (final ByteBuf buf : buffers) {
+				if(buf.isReadable()) {
+					this.buffers.add(buf.duplicate());
+					buf.retain();
+				}
+			}
+		}
+		return this;
+	}
+	
+	public DataBuffer append(byte[] array, int offset, int length) {
 		synchronized (lock) {
 			buffers.add(Unpooled.wrappedBuffer(array, offset, length));
 		}
@@ -94,6 +106,10 @@ public class DataBuffer {
 		synchronized (lock) {
 			return new DataBuffer(buffers, false);
 		}
+	}
+	
+	public List<ByteBuf> bufListIntern() {
+		return shallowCopyIntern().buffers;
 	}
 
 	/**
@@ -312,4 +328,6 @@ public class DataBuffer {
 	public byte[] heapBuffer() {
 		return heapBuffer;
 	}
+
+	
 }

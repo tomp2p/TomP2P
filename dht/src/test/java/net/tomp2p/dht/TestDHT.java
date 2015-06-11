@@ -1507,10 +1507,6 @@ public class TestDHT {
 				}
 				Assert.assertEquals(true, bf.isSuccess());
 			}
-			for (FuturePeerConnection pc : list3) {
-				pc.close().awaitUninterruptibly();
-				pc.close().awaitListenersUninterruptibly();
-			}
 			for (BaseFuture bf : list2) {
 				bf.awaitUninterruptibly();
 				bf.awaitListenersUninterruptibly();
@@ -1520,6 +1516,10 @@ public class TestDHT {
 					System.out.print(".");
 				}
 				Assert.assertEquals(true, bf.isSuccess());
+			}
+			for (FuturePeerConnection pc : list3) {
+				pc.close().awaitUninterruptibly();
+				pc.close().awaitListenersUninterruptibly();
 			}
 			System.out.println("done!!");
 		} catch (Exception e) {

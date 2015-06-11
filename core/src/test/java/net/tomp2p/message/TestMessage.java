@@ -457,7 +457,7 @@ public class TestMessage {
 		Encoder e = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		e.write(buf, m1, null);
-		Decoder d = new Decoder(null, AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+		Decoder d = new Decoder(null);
 		boolean header = d.decodeHeader(buf, new InetSocketAddress(0),
 				new InetSocketAddress(0));
 		boolean payload = d.decodePayload(buf);
@@ -608,7 +608,7 @@ public class TestMessage {
 		Encoder encoder = new Encoder(new DSASignatureFactory());
 		encoder.write(buf, m1, null);
 		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
-		Decoder decoder = new Decoder(new DSASignatureFactory(), AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+		Decoder decoder = new Decoder(new DSASignatureFactory());
 		decoder.decode(ctx, buf, m1.recipient().createSocketTCP(), m1
 				.sender().createSocketTCP());
 		buf.release();

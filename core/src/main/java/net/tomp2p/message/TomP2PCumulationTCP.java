@@ -25,7 +25,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 	private int lastId = 0;
 
 	public TomP2PCumulationTCP(final SignatureFactory signatureFactory, ByteBufAllocator byteBufAllocator) {
-		decoder = new Decoder(signatureFactory, byteBufAllocator);
+		decoder = new Decoder(signatureFactory);
 		this.byteBufAllocator = byteBufAllocator;
 	}
 
@@ -95,6 +95,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 	@Override
 	public void channelInactive(final ChannelHandlerContext ctx)
 			throws Exception {
+		decoder.release();
 		final InetSocketAddress sender = (InetSocketAddress) ctx.channel()
 				.remoteAddress();
 		try {
@@ -121,6 +122,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			cumulation = null;
 		}
 		Message msg = decoder.message();
+		decoder.release();
 		// don't use getLocalizedMessage() -
 		// http://stackoverflow.com/questions/8699521/any-way-to-ignore-only-connection-reset-by-peer-ioexceptions
 		if (cause.getMessage().equals("Connection reset by peer")) {

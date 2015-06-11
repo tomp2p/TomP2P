@@ -1,7 +1,6 @@
 package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
@@ -88,12 +87,9 @@ public class Decoder {
 	private Content lastContent = null;
 
 	private final SignatureFactory signatureFactory;
-	
-	private final ByteBufAllocator byteBufAllocator;
 
-	public Decoder(SignatureFactory signatureFactory, final ByteBufAllocator byteBufAllocator) {
+	public Decoder(SignatureFactory signatureFactory) {
 		this.signatureFactory = signatureFactory;
-		this.byteBufAllocator = byteBufAllocator;
 	}
 
 	public boolean decode(ChannelHandlerContext ctx, final ByteBuf buf, InetSocketAddress recipient,
@@ -640,4 +636,32 @@ public class Decoder {
 	    	data.publicKey(message.publicKey(0));
 	    }
     }
+
+	public void release() {
+		if(message!=null) {
+			message.release();
+		}
+		//release partial data
+		if(data != null) {
+			data.release();
+		}
+		if(dataMap != null) {
+			for(Data data: dataMap.dataMap().values()) {
+				data.release();
+			}
+		}
+		if(buffer != null) {
+			buffer.release();
+		}
+		
+		if(currentTrackerData != null) {
+			currentTrackerData.release();
+		}
+		if(trackerData != null) {
+			for(Data data: trackerData.peerAddresses().values()) {
+				data.release();
+			}
+		}
+		
+	}
 }

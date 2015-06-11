@@ -79,6 +79,7 @@ public final class MessageHeaderCodec {
         	buffer.writeBytes(ext);
         }
         if(message.hasHeaderExtension()) {
+            LOG.debug("Message has header extension");
             buffer.writeBytes(message.headerExtension());
         }
     }

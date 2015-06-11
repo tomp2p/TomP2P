@@ -191,11 +191,19 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 		    //send response message if message rejected
 		    if(filterResult.element0()) {
 			    Message responseMessage = filterResult.element1();
+			    if(responseMessage == null) {
+				    responseMessage = DispatchHandler.createResponseMessage(message, Type.DENIED, message.sender());
+			    }
 			    responseMessage.sender(peerBeanMaster.serverPeerAddress());
 			    response(ctx, responseMessage);
 			    return;
 		    }
 	    }
+		if (!message.isRequest()) {
+			LOG.debug("Handing request message to the next handler. {}", message);
+			ctx.fireChannelRead(message);
+			return;
+		}
         Responder responder = new DirectResponder(ctx, message);
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {

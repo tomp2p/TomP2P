@@ -55,7 +55,7 @@ public class PeerBean {
     private HolePInitiator holePunchInitiator;
     private int holePNumberOfHoles;
     private int holePNumberOfPunches;
-    private Registration registration;
+    private Registration registration = null;
 
 	/**
 	 * This map is used for all open PeerConnections which are meant to stay

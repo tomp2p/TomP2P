@@ -154,7 +154,7 @@ public class TestPeerAddress {
                 RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), null, true, true, true, true, true,
-                false, psa);
+                false, null, psa);
 
         final int length = 200;
         byte[] me = new byte[length];
@@ -166,13 +166,15 @@ public class TestPeerAddress {
     }
 
     /**
-     * Test serialization and deserialization of PeerAddress. Test mix of IPv4 and IPv6.
+     * Test serialization and deserialization of PeerAddress. Test mix of IPv4 and IPv6 with registration.
      * 
      * @throws UnknownHostException .
      */
     @Test
     public void testPeerAddress6() throws UnknownHostException {
 
+        byte[] registration = new byte[64];
+        new Random().nextBytes(registration);
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
         psa.add(new PeerSocketAddress(InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde1"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
@@ -186,14 +188,14 @@ public class TestPeerAddress {
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde0"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)), null, true, true, true, true, true, false, psa);
+                RND.nextInt(BIT_16)), null, true, true, true, true, true, false, registration, psa);
 
-        final int length = 200;
+        final int length = 300;
         byte[] me = new byte[length];
         final int offset = 50;
         int offset2 = pa3.toByteArray(me, offset);
         int len = offset2 - offset;
-        // 142 is the
+        // 206 is the
         Assert.assertEquals(PeerAddress.MAX_SIZE, PeerAddress.size(pa3.options(), pa3.relays()));
         Assert.assertEquals(PeerAddress.MAX_SIZE, len);
         //
@@ -218,10 +220,31 @@ public class TestPeerAddress {
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde0"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)), null, true, true, true, true, true, false, psa);
-        
+                RND.nextInt(BIT_16)), null, true, true, true, true, true, false, null, psa);
         Assert.assertEquals(142, pa3.toByteArray().length);
 
+    }
+
+    /**
+     * Test serialization and deserialization of PeerAddress. Test registration.
+     *
+     * @throws UnknownHostException .
+     */
+    @Test
+    public void testPeerAddress8() throws UnknownHostException {
+        byte[] registration = new byte[64];
+        new Random().nextBytes(registration);
+        Collection<PeerSocketAddress> psa = null;
+        PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
+                InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde0"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)), null, true, true, true, true, true, false, registration, psa);
+
+        byte[] me = new byte[pa3.size()];
+        final int offset = 0;
+        int offset2 = pa3.toByteArray(me, offset);
+        PeerAddress pa4 = new PeerAddress(me, offset);
+
+        compare(pa3, pa4);
     }
 
     /**
@@ -244,6 +267,7 @@ public class TestPeerAddress {
         Assert.assertEquals(pa1.isRelayed(), pa2.isRelayed());
         Assert.assertEquals(pa1.options(), pa2.options());
         Assert.assertEquals(pa1.relays(), pa2.relays());
+        Assert.assertArrayEquals(pa1.getRegistration(), pa2.getRegistration());
         List<PeerSocketAddress> psa1 = new ArrayList<PeerSocketAddress>(pa1.peerSocketAddresses());
         List<PeerSocketAddress> psa2 = new ArrayList<PeerSocketAddress>(pa2.peerSocketAddresses());
         Assert.assertEquals(psa1.size(), psa2.size());

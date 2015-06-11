@@ -134,7 +134,7 @@ public class Sender {
 	 *            The message to send
 	 * @param channelCreator
 	 *            The channel creator for the TCP channel.
-	 * @param idleTCPSeconds
+	 * @param idleTCPMillis
 	 *            The idle time until message fail.
 	 * @param connectTimeoutMillis
 	 *            The idle time for the connection setup.
@@ -313,7 +313,7 @@ public class Sender {
 	 * @param futureResponse
 	 * @param message
 	 * @param channelCreator
-	 * @param idleTCPSeconds
+	 * @param idleTCPMillis
 	 * @param connectTimeoutMillis
 	 * @param peerConnection
 	 * @param timeoutHandler
@@ -552,7 +552,7 @@ public class Sender {
 	 *            The message to send
 	 * @param channelCreator
 	 *            The channel creator for the UDP channel
-	 * @param idleUDPSeconds
+	 * @param idleUDPMillis
 	 *            The idle time of a message until fail
 	 * @param broadcast
 	 *            True, if the message is to be sent via layer 2 broadcast

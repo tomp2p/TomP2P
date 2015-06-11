@@ -113,9 +113,10 @@ public abstract class DispatchHandler {
         Message message = new Message().recipient(recipient).sender(peerBean().serverPeerAddress())
                 .command(name).type(type).version(connectionBean().p2pId());
         // add Header extension if registration in peerBean available
-        if(peerBean().registration() != null)
-            message.headerExtension(peerBean().registration().encodeHeaderExtension());
+        if(peerBean().registration() != null) {
+            message.headerExtension(peerBean().registration().encode());
             message.hasHeaderExtension(true);
+        }
         return message;
     }
 
@@ -129,14 +130,9 @@ public abstract class DispatchHandler {
      * @return The response message
      */
     public Message createResponseMessage(final Message requestMessage, final Type replyType) {
-        Message replyMessage =  createResponseMessage(requestMessage, replyType, peerBean().serverPeerAddress());
-        if(peerBean().registration() != null)
-            replyMessage.headerExtension(peerBean().registration().encodeHeaderExtension());
-            replyMessage.hasHeaderExtension(true);
-        return  replyMessage;
+        return createResponseMessage(requestMessage, replyType, peerBean.serverPeerAddress());
     }
 
-    //TODO: static method problematic for headerExtension
     public static Message createResponseMessage(final Message requestMessage, final Type replyType, final PeerAddress peerAddress) {
         Message replyMessage = new Message();
         // this will have the ports > 40'000 that we need to know for sending the reply
@@ -149,6 +145,11 @@ public abstract class DispatchHandler {
         replyMessage.version(requestMessage.version());
         replyMessage.messageId(requestMessage.messageId());
         replyMessage.udp(requestMessage.isUdp());
+        //add encoded registration in header extension if it exists
+        if(peerAddress.getRegistration() != null) {
+            replyMessage.headerExtension(peerAddress.getRegistration());
+            replyMessage.hasHeaderExtension(true);
+        }
         return replyMessage;
     }
 

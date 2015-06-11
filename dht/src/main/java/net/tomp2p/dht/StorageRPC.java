@@ -657,6 +657,7 @@ public class StorageRPC extends DispatchHandler {
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
             Responder responder) throws Exception {
+        LOG.debug("received message: {}", message);
 
     	final Message responseMessage = createResponseMessage(message, Type.OK);
 

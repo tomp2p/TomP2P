@@ -978,9 +978,12 @@ public class Message {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("msgid=");
-        return sb.append(messageId()).append(",t=").append(type.toString()).
+        return sb.append(messageId()).
+            append(",t=").append(type.toString()).
         	append(",c=").append(RPC.Commands.find(command).toString()).append(",").append(isUdp()?"udp":"tcp").
-        	append(",s=").append(sender).append(",r=").append(recipient).toString();        
+            append(",s=").append(sender).
+            append(",r=").append(recipient).
+            append(",reg=").append(headerExtension).toString();
     }
 
     // *************************** No transferable objects here *********************************
@@ -1164,7 +1167,9 @@ public class Message {
         message.publicKeyList = this.publicKeyList;
         message.peerSocketAddressList = this.peerSocketAddressList;
         message.signatureEncode = this.signatureEncode;
-        
+
+        message.headerExtension = this.headerExtension;
+
         // these are transient
         //presetContentTypes
         //privateKey;

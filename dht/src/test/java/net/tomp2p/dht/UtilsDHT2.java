@@ -84,7 +84,7 @@ public class UtilsDHT2 {
         InetAddress inetSend = InetAddress.getByName(inetSender);
         PeerSocketAddress peerSocketAddress = new PeerSocketAddress(inetSend, tcpPortSender, udpPortSender);
         PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, null, firewallTCP, firewallUDP, false, false, false,false,
-                PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
+                null, PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
         return n1;
     }
 

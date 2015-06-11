@@ -143,7 +143,7 @@ public class RelayUtils {
 	 */
 	public static Message decodeMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
 	        throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, IOException {
-		Decoder d = new Decoder(signatureFactory, AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+		Decoder d = new Decoder(signatureFactory);
 		final int readerBefore = buf.readerIndex();
 		d.decodeHeader(buf, recipient, sender);
 		final boolean donePayload = d.decodePayload(buf);

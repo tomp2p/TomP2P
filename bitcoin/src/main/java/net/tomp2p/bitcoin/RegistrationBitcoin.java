@@ -1,34 +1,43 @@
 package net.tomp2p.bitcoin;
 
 import net.tomp2p.message.Message;
+import net.tomp2p.p2p.Registration;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 import org.bitcoinj.core.Sha256Hash;
 
+import java.io.Serializable;
 import java.security.KeyPair;
 import java.security.PublicKey;
 
-public class Registration implements net.tomp2p.p2p.Registration {
+public class RegistrationBitcoin implements Registration, Serializable {
     private Number160 peerId;
     private Sha256Hash transactionId;
     private Sha256Hash blockId;
-    private KeyPair keyPair;
-    private PublicKey publicKey;
+    private KeyPair keyPair; //used when new Peer is generated based on new registration
+    private PublicKey publicKey; //used when registration is decoded form message/peerAddress and verified
 
-    public Registration() {
+    private final int SIZE = 64;
+
+    public RegistrationBitcoin() {
     }
 
     /**
      * Constructor for Registration with data from {@link Message}
      * @param message
      */
-    public Registration(Message message) {
+    public RegistrationBitcoin(Message message) {
         this.peerId = message.sender().peerId();
-        decodeHeaderExtension(message.headerExtension());
-        this.publicKey = message.publicKey(0);
+        decode(message.headerExtension());
+    }
+
+    public RegistrationBitcoin(PeerAddress peerAddress) {
+        this.peerId = peerAddress.peerId();
+        decode(peerAddress.getRegistration());
     }
 
     // constructor for testing
-    public Registration(Number160 peerId, Sha256Hash blockId, Sha256Hash transactionId, PublicKey publicKey) {
+    public RegistrationBitcoin(Number160 peerId, Sha256Hash blockId, Sha256Hash transactionId, PublicKey publicKey) {
         this.peerId = peerId;
         this.transactionId = transactionId;
         this.blockId = blockId;
@@ -36,7 +45,7 @@ public class Registration implements net.tomp2p.p2p.Registration {
     }
 
     @Override
-    public byte[] encodeHeaderExtension() {
+    public byte[] encode() {
         byte[] encodeHeaderExtension = new byte[64];
         byte[] blockIdBytes = this.blockId.getBytes();
         byte[] transactionIdBytes = this.transactionId.getBytes();
@@ -45,7 +54,12 @@ public class Registration implements net.tomp2p.p2p.Registration {
         return encodeHeaderExtension;
     }
 
-    private void decodeHeaderExtension(byte[] headerExtension) {
+    @Override
+    public int size() {
+        return SIZE;
+    }
+
+    private void decode(byte[] headerExtension) {
         byte[] blockIdBytes = new byte[32];
         byte[] transactionIdBytes = new byte[32];
         System.arraycopy(headerExtension, 0, blockIdBytes, 0, blockIdBytes.length);
@@ -100,4 +114,44 @@ public class Registration implements net.tomp2p.p2p.Registration {
         this.publicKey = publicKey;
     }
 
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof RegistrationBitcoin)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        final RegistrationBitcoin reg = (RegistrationBitcoin) obj;
+        if(!reg.getPeerId().equals(this.getPeerId())) {
+            return false;
+        }
+        if(!reg.getBlockId().equals(this.getBlockId())) {
+           return false;
+        }
+        if(!reg.getTransactionId().equals(this.getTransactionId())) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("reg");
+        sb.append("/peerId(").append(peerId).append(")");
+        sb.append("/blockId(").append(blockId).append(")");
+        sb.append("/transactionId(").append(transactionId).append(")");
+        return sb.toString();
+    }
+
+//    @Override
+    //TODO implement hashCode
+//    public int hashCode() {
+//        int hashCode = 0;
+//        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
+//            hashCode = (int) (31 * hashCode + (val[i] & LONG_MASK));
+//        }
+//        return hashCode;
+//    }
 }

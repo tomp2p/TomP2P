@@ -1,7 +1,5 @@
 package net.tomp2p.bitcoin;
 
-import net.tomp2p.peers.Number160;
-
 import java.security.KeyPair;
 import java.util.concurrent.ExecutionException;
 
@@ -14,9 +12,9 @@ public class RegistrationBuilder {
         this.keyPair = keyPair;
     }
 
-    public Registration start() throws InterruptedException, ExecutionException {
+    public RegistrationBitcoin start() throws InterruptedException, ExecutionException {
         // start registration
-        Registration reg = rs.registerPeer(keyPair).object();
+        RegistrationBitcoin reg = rs.registerPeer(keyPair).object();
         // get peerId from new registration
         return reg;
     }

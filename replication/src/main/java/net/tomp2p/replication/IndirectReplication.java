@@ -344,12 +344,14 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
      *            The location key.
      */
     private FutureDone<?> synchronizeData(final Number160 locationKey) {
-        Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
+        return send(locationKey);
+    }
+    
+    private NavigableMap<Number640, Data> dataMap(final Number160 locationKey) {
+    	Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
         Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
                 Number160.MAX_VALUE);
-        final NavigableMap<Number640, Data> dataMap = peer.storageLayer().get(min, max, -1, true);
-        return send(locationKey, dataMap);
-        
+        return peer.storageLayer().get(min, max, -1, true);
     }
 
     /**
@@ -363,7 +365,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
      *            The data to store
      * @return The future of the put
      */
-    protected FutureDone<?> send(final Number160 locationKey, final NavigableMap<Number640, Data> dataMap) {
+    protected FutureDone<?> send(final Number160 locationKey) {
         int replicationFactor = replication.replicationFactor() - 1;
         List<PeerAddress> closePeers = new ArrayList<PeerAddress>();
         SortedSet<PeerStatistic> sortedSet = peer.peerBean().peerMap()
@@ -377,6 +379,8 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         	
             count++;
             closePeers.add(peerStatistic.peerAddress());
+            //this must be inside the loop as we need to retain the data for every peer
+            final NavigableMap<Number640, Data> dataMap = dataMap(locationKey);
             retVal.add(replicationSender.sendDirect(peerStatistic.peerAddress(), locationKey, dataMap));
             if (count == replicationFactor) {
                 break;

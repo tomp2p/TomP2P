@@ -15,6 +15,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
@@ -149,7 +150,7 @@ public class Encoder {
                     	buf.writeBytes(dataMap.domainKey().toByteArray());
                     	buf.writeBytes(entry.getKey().toByteArray());
                     	buf.writeBytes(dataMap.versionKey().toByteArray());
-                    	encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
+                    	encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest(), message.command() == Commands.REPLICA_PUT.getNr());
                     }
                 } else {
                     for (Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
@@ -157,7 +158,7 @@ public class Encoder {
                         buf.writeBytes(entry.getKey().domainKey().toByteArray());
                         buf.writeBytes(entry.getKey().contentKey().toByteArray());
                         buf.writeBytes(entry.getKey().versionKey().toByteArray());
-                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
+                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest(), message.command() == Commands.REPLICA_PUT.getNr());
                     }
                 }
                 message.contentReferences().poll();
@@ -219,7 +220,7 @@ public class Encoder {
                 	byte[] me = entry.getKey().toByteArray();
                     buf.writeBytes(me);
                     Data data = entry.getValue().duplicate();
-                    encodeData(buf, data, false, !message.isRequest());
+                    encodeData(buf, data, false, !message.isRequest(), message.command() == Commands.REPLICA_PUT.getNr());
                 }
                 message.contentReferences().poll();
                 break;
@@ -241,12 +242,12 @@ public class Encoder {
         return true;
     }
 
-	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
+	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply, boolean isReplicaSend) throws InvalidKeyException, SignatureException, IOException {
 		Data filteredData = dataFilterTTL.filter(data, isConvertMeta, isReply);
 		filteredData.encodeHeader(buf, signatureFactory);
 		filteredData.encodeBuffer(buf);
 		filteredData.encodeDone(buf, signatureFactory, message.privateKey());
-		if(isReply) {
+		if(isReply || isReplicaSend) {
 			filteredData.release();
 		}
     }

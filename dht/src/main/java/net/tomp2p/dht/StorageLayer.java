@@ -217,27 +217,27 @@ public class StorageLayer implements DigestStorage {
 					continue;
 				}
 				
-				boolean contains = backend.contains(key);
-				if (contains) {
+				final Data oldDataGet = backend.get(key);
+				if (oldDataGet != null) {
 					if(putIfAbsent) {
 						retVal.put(key, PutStatus.FAILED_NOT_ABSENT);
 						newData.release();
 						continue;
 					}
-					final Data oldData = backend.get(key);
-					if(oldData.isDeleted()) {
+					
+					if(oldDataGet.isDeleted()) {
 						retVal.put(key, PutStatus.DELETED);
 						newData.release();
 						continue;
 					}
-					if(!oldData.basedOnSet().equals(newData.basedOnSet())) {
+					if(!oldDataGet.basedOnSet().equals(newData.basedOnSet())) {
 						retVal.put(key, PutStatus.VERSION_FORK);
 						newData.release();
 						continue;
 					}
 				}
 				
-				Data oldData = backend.put(key, newData);
+				final Data oldDataPut = backend.put(key, newData);
 				
 				long expiration = newData.expirationMillis();
 				// handle timeout
@@ -248,8 +248,8 @@ public class StorageLayer implements DigestStorage {
 				} else {
 					retVal.put(key, PutStatus.OK);
 				}
-				if(oldData != null && oldData != newData) {
-					oldData.release();
+				if(oldDataPut != null && oldDataPut != newData) {
+					oldDataPut.release();
 				}
 			}
 			

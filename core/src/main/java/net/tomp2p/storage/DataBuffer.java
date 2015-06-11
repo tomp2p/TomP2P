@@ -87,7 +87,7 @@ public class DataBuffer {
 	 * From here, work with shallow copies.
 	 * @return Shallow copy of this DataBuffer.
 	 */
-	private DataBuffer shallowCopyIntern() {
+	public DataBuffer shallowCopyIntern() {
 		if(isHeapBuffer()) {
 			throw new RuntimeException("This is now a heapbuffer, cannot copy");
 		}

@@ -167,7 +167,7 @@ public class Utils {
         if(buffer.isHeapBuffer()) {
         	return makeSHAHash(buffer.heapBuffer());
         } else {
-        	DataBuffer copy = buffer.shallowCopy();
+        	DataBuffer copy = buffer.shallowCopyIntern();
         	return makeSHAHash(copy.bufferList());
         }
     }
@@ -303,7 +303,7 @@ public class Utils {
     	if(dataBuffer.isHeapBuffer()) {
     		return decodeJavaObject(dataBuffer.heapBuffer(), 0, dataBuffer.length());
     	} else {
-    		return decodeJavaObject(dataBuffer.shallowCopy().bufferList());
+    		return decodeJavaObject(dataBuffer.shallowCopyIntern().bufferList());
     	}
     }
 

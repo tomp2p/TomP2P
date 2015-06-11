@@ -479,12 +479,6 @@ public class StorageLayer implements DigestStorage {
 			while (iterator.hasNext()) {
 				Map.Entry<Number640, Data> entry = iterator.next();
 
-				if (entry.getValue().hasPrepareFlag()) {
-					entry.getValue().release();
-					iterator.remove();
-					continue;
-				}
-
 				if (isBloomFilterAnd) {
 					if (!contentKeyBloomFilter.contains(entry.getKey().contentKey())) {
 						entry.getValue().release();

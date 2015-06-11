@@ -725,7 +725,7 @@ public class Data {
 
 	/**
 	 * @return A shallow copy where the data is shared but the reader and writer
-	 *         index is not shared
+	 *         index is not shared. This will increase the ref count on the buffer
 	 */
 	public Data duplicate() {
 		Data data = new Data(buffer.shallowCopy(), length).publicKey(publicKey)

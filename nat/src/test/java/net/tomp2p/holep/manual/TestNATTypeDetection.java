@@ -1,4 +1,4 @@
-package net.tomp2p.holep;
+package net.tomp2p.holep.manual;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -6,6 +6,8 @@ import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.holep.NATType;
+import net.tomp2p.holep.NATTypeDetection;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;

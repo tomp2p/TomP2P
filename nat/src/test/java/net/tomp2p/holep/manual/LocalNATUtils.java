@@ -1,4 +1,4 @@
-package net.tomp2p.holep;
+package net.tomp2p.holep.manual;
 
 import java.io.BufferedReader;
 import java.io.File;

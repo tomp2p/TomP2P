@@ -66,7 +66,7 @@ final public class RangeLock<K extends Comparable<K>> {
 			final Collection<Long> after = cache.tailMap(toKey, false).values();
 			Collection<Long> intersection = null;
 			
-			while (!subMap.isEmpty() || !(intersection = intersection(before, after)).isEmpty()) {
+			while (!(intersection = intersection(before, after)).isEmpty() || !subMap.isEmpty()) {
 				if((subMap.isEmpty() || sizeFiltered(id, subMap) == 0) && 
 						(intersection.isEmpty() || sizeFiltered(id, intersection) == 0)) {
 					break;

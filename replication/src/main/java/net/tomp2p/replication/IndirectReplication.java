@@ -346,13 +346,6 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
     private FutureDone<?> synchronizeData(final Number160 locationKey) {
         return send(locationKey);
     }
-    
-    private NavigableMap<Number640, Data> dataMap(final Number160 locationKey) {
-    	Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
-        Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
-                Number160.MAX_VALUE);
-        return peer.storageLayer().get(min, max, -1, true);
-    }
 
     /**
      * If my peer is responsible, I'll issue a put if absent to make sure all replicas are stored.
@@ -380,7 +373,12 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
             count++;
             closePeers.add(peerStatistic.peerAddress());
             //this must be inside the loop as we need to retain the data for every peer
-            final NavigableMap<Number640, Data> dataMap = dataMap(locationKey);
+            
+            Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
+            Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
+                    Number160.MAX_VALUE);
+            final NavigableMap<Number640, Data> dataMap = peer.storageLayer().get(min, max, -1, true);
+
             retVal.add(replicationSender.sendDirect(peerStatistic.peerAddress(), locationKey, dataMap));
             if (count == replicationFactor) {
                 break;

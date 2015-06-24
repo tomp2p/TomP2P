@@ -795,11 +795,7 @@ public class StorageLayer implements DigestStorage {
 		RangeLock<Number640>.Range lockResp = lockResponsibility(peerID);
 		try {
 			Collection<Number160> contentIDs = backend.findContentForResponsiblePeerID(peerID);
-			if (contentIDs == null) {
-				return Collections.<Number160> emptyList();
-			} else {
-				return new ArrayList<Number160>(contentIDs);
-			}
+			return contentIDs == null ? Collections.<Number160> emptyList() : contentIDs;
 		} finally {
 			lockResp.unlock();
         }

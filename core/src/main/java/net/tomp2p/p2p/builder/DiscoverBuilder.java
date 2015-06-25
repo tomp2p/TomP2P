@@ -34,6 +34,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -88,6 +89,13 @@ public class DiscoverBuilder {
         this.portUDP = portUDP;
         return this;
     }
+    
+    public DiscoverBuilder peerSocketAddress(PeerSocketAddress peerSocketAddress) {
+    	 this.inetAddress = peerSocketAddress.inetAddress();
+         this.portTCP = peerSocketAddress.tcpPort();
+         this.portUDP = peerSocketAddress.udpPort();
+         return this;
+	}
 
     public int portUDP() {
         return portUDP;

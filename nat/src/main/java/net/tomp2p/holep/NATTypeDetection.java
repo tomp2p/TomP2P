@@ -67,7 +67,7 @@ public class NATTypeDetection {
 						public void operationComplete(FutureDone<FutureResponse[]> future) throws Exception {
 							if (future.isSuccess()) {
 								if (future.object().length != 3) {
-									futureDone.failed("expected exactly two futures");
+									futureDone.failed("expected exactly three futures");
 									return;
 								}
 								if (!checkCompleteMessage(future.object()[0])) {

@@ -6,19 +6,16 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
 
-import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.holep.NATType;
 import net.tomp2p.holep.NATTypeDetection;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -37,13 +34,15 @@ import org.junit.Test;
  * @author Thomas Bocek
  *
  */
-@Ignore
+//@Ignore
 public class TestNATTypeDetection implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
 	final static private Random RND = new Random(42);
+	
+	//### CHANGE THIS TO YOUR INTERFACE###
 	final static private String INF = "wlp3s0";
-	static private Peer relayPeer = null;
+	
 	static private Number160 relayPeerId = new Number160(RND);
 
 	@Before
@@ -58,62 +57,32 @@ public class TestNATTypeDetection implements Serializable {
 		LocalNATUtils.executeNatSetup("stop", "1");
 	}
 
-	/**
-	 * If you have a terrible lag in InetAddress.getLocalHost(), make sure the
-	 * hostname resolves in the other network domain.
-	 * 
-	 * @throws ClassNotFoundException
-	 */
-	public static void main(String[] args) throws IOException,
-			ClassNotFoundException {
-		LocalNATUtils.handleMain(args);
-	}
-
-	private static Serializable init(Command command, String ip, int port)
-			throws UnknownHostException, IOException {
-		Bindings b = new Bindings();
-		Random rnd = new Random(0);
-		b.addAddress(InetAddress.getByName(ip));
-		Peer peer = new PeerBuilder(new Number160(rnd)).ports(port).bindings(b)
-				.start();
-		command.put("peer", peer);
-		return "initialized " + peer.peerAddress();
-	}
-
 	private static Serializable discover(final String address, Peer peer)
 			throws UnknownHostException {
 		PeerAddress relayP = new PeerAddress(relayPeerId, address, 5002, 5002);
 		FutureDone<NATType> type = NATTypeDetection.checkNATType(peer, relayP)
 				.awaitUninterruptibly();
-		if (type.isSuccess()) {
-			return type.object().name();
-		} else {
-			return type.failedReason();
-		}
+		return type.isSuccess() ? type.object().name() : type.failedReason();
 	}
 
-	private static Serializable shutdown(Peer peer) {
-		if (peer != null) {
-			peer.shutdown().awaitUninterruptibly();
-		}
-		return "shutdown done";
-	}
-
+	@SuppressWarnings("serial")
 	@Test
 	public void testDetection() throws Exception {
-		relayPeer = null;
+		Peer relayPeer = null;
 		RemotePeer unr1 = null;
 		RemotePeer unr2 = null;
 		try {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF);
 			InetAddress relayAddress = relayPeer.peerAddress().inetAddress();
 			final String address = relayAddress.getHostAddress();
-			unr1 = LocalNATUtils.executePeer(TestNATTypeDetection.class, "0",
+			unr1 = LocalNATUtils.executePeer(0,
 					new Command[] { new Command() {
 						// startup
 						@Override
 						public Serializable execute() throws Exception {
-							return init(this, "10.0.0.2", 5000);
+							Peer peer = LocalNATUtils.init("10.0.0.2", 5000, 0);
+							put("peer", peer);
+							return "initialized " + peer.peerAddress();
 						}
 					}, new Command() {
 						// detect the NAT type
@@ -127,16 +96,18 @@ public class TestNATTypeDetection implements Serializable {
 						@Override
 						public Serializable execute() throws Exception {
 							Peer peer = (Peer) get("peer");
-							return shutdown(peer);
+							return LocalNATUtils.shutdown(peer);
 						}
 					} });
 
-			unr2 = LocalNATUtils.executePeer(TestNATTypeDetection.class, "1",
+			unr2 = LocalNATUtils.executePeer(1,
 					new Command[] { new Command() {
 						// startup
 						@Override
 						public Serializable execute() throws Exception {
-							return init(this, "10.0.1.2", 5001);
+							Peer peer = LocalNATUtils.init("10.0.1.2", 5001, 1);
+							put("peer", peer);
+							return "initialized " + peer.peerAddress();
 						}
 					}, new Command() {
 						// detect the NAT type
@@ -150,7 +121,7 @@ public class TestNATTypeDetection implements Serializable {
 						@Override
 						public Serializable execute() throws Exception {
 							Peer peer = (Peer) get("peer");
-							return shutdown(peer);
+							return LocalNATUtils.shutdown(peer);
 						}
 					} });
 			unr1.waitFor();
@@ -162,19 +133,11 @@ public class TestNATTypeDetection implements Serializable {
 					unr2.getResult(1));
 
 		} finally {
-			System.err.print("shutdown.");
-			if (relayPeer != null) {
-				relayPeer.shutdown().awaitUninterruptibly();
-				relayPeer = null;
-			}
-			System.err.print(".");
-			if (unr1 != null) {
-				LocalNATUtils.killPeer(unr1.process());
-			}
-			System.err.println(".");
-			if (unr2 != null) {
-				LocalNATUtils.killPeer(unr2.process());
-			}
+			System.out.print("LOCAL> shutdown.");
+			LocalNATUtils.shutdown(relayPeer);
+			System.out.print(".");
+			LocalNATUtils.shutdown(unr1, unr2);
+			System.out.println(".");
 		}
 	}
 }

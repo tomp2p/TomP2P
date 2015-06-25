@@ -45,7 +45,10 @@
 # > nat-net.sh stop 0
 #
 # port forwarding, will forward the port in the natX namespace
-# > nat-net.sh forward 4000 10.0.0.2
+# > nat-net.sh forward 0 4000 10.0.0.2
+#
+# start UPNP deamon in the natX namespace with the external interface NAT_WAN and internal interface NAT_LAN
+# > nat-net.sh upnp 0
 #
 # Using the default values, your relay/rendez-vous peer should listen on address 192.168.1.50,
 # while the unreachable peer should listen on address 10.0.0.2. The unreachable peer needs to
@@ -76,6 +79,7 @@ start () {
   # create 2 namespaces: unreachable and nat
   ip netns add "unr$1"
   ip netns add "nat$1"
+  
   # setup virtual interfaces
   ip link add "nat$1_real" type veth peer name "nat$1_wan"
   ip link set "nat$1_wan" netns "nat$1"
@@ -84,21 +88,30 @@ start () {
   ip link set "unr$1_lan" netns "unr$1"
   echo "nat$1_real, nat$1_wan created in namespace nat$1."
   echo "nat$1_lan,  unr$1_lan created in namespace unr$1."
+  
   # assign IPs
   ifconfig "nat$1_real" "$NAT_REAL"/24 up
   ip netns exec "nat$1" ifconfig "nat$1_wan" "$NAT_WAN"/24 up
   ip netns exec "nat$1" ifconfig "nat$1_lan" "$NAT_LAN"/24 up
   ip netns exec "unr$1" ifconfig "unr$1_lan" "$UNR_LAN1"/24 up
+  
   # adding a virtual interface to simulate two peers behind same NAT
-  ip netns exec "unr$1" ifconfig "unr$1_lan:0" "$UNR_LAN2"/24 up
+  #
+  ip netns exec "unr$1" ifconfig "unr$1_lan:0" "$UNR_LAN2"/24 up 
+  # alternatively, one can use a tun device
+  #ip netns exec "unr$1" ip tuntap add dev "unr$1_lan2" mode tun
+  #ip netns exec "unr$1" ifconfig "unr$1_lan2" "$UNR_LAN2"/24 up
+  
   # loopback is important or getLocalHost() will hang for a long time!
   ip netns exec "unr$1" ifconfig "lo" 127.0.0.1 up
+  
   # add, modify routing
   route del -net "$NAT_REAL_NET"/24 dev "nat$1_real"
   route add -net "$NAT_WAN_NET"/24 dev "nat$1_real"
   ip netns exec "unr$1" route add default gw "$NAT_LAN"
   ip netns exec "nat$1" route add default gw "$NAT_WAN"
   echo "routing set."
+  
   # setup NAT
   ip netns exec "nat$1" echo 1 > /proc/sys/net/ipv4/ip_forward
 
@@ -118,6 +131,7 @@ stop () {
   ip netns del "unr$1"
   ip netns del "nat$1"
   ip link del "nat$1_real"
+  killall -q miniupnpd
 }
 
 forward () {
@@ -125,6 +139,14 @@ forward () {
   ip netns exec "nat$1" iptables -t nat -A PREROUTING -i nat$1_wan -p udp --dport $2 -j DNAT --to-destination $3:$2
   ip netns exec "nat$1" iptables -A FORWARD -d $3 -p tcp --dport $2 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
   ip netns exec "nat$1" iptables -A FORWARD -d $3 -p udp --dport $2 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+}
+
+upnp () {
+  ip netns exec "nat$1" iptables -t nat -N MINIUPNPD
+  ip netns exec "nat$1" iptables -t nat -I PREROUTING -j MINIUPNPD
+  ip netns exec "nat$1" iptables -t filter -N MINIUPNPD
+  ip netns exec "nat$1" iptables -t filter -I FORWARD -j MINIUPNPD
+  ip netns exec "nat$1" miniupnpd -i nat$1_wan -a nat$1_lan
 }
 
 case "$1" in
@@ -143,6 +165,10 @@ case "$1" in
   
   forward)
     forward $2 $3 $4
+  ;;
+  
+  upnp)
+    upnp $2
   ;;
   
   *)

@@ -10,16 +10,30 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 
 public class LocalNATUtils {
 	private static final String TAG = "##BASE64##:";
+	
+	/**
+	 * If you have a terrible lag in InetAddress.getLocalHost(), make sure the
+	 * hostname resolves in the other network domain.
+	 * 
+	 * @throws ClassNotFoundException
+	 */
+	public static void main(String[] args) throws IOException,
+			ClassNotFoundException {
+		LocalNATUtils.handleMain(args);
+	}
 
 	public static int executeNatSetup(String action, String... cmd)
 			throws IOException, InterruptedException {
@@ -32,13 +46,20 @@ public class LocalNATUtils {
 			cmds[i] = cmd[i - 3];
 		}
 		final ProcessBuilder builder = new ProcessBuilder(cmds);
-		builder.redirectError(ProcessBuilder.Redirect.INHERIT);
+		
 		Process process = builder.start();
+		new StreamGobbler(process.getErrorStream(), "ERR_SETUP["+cmd[0]+"]").start();
+		new StreamGobbler(process.getInputStream(), "OUT_SETUP["+cmd[0]+"]").start();
 		process.waitFor();
 		return process.exitValue();
 	}
+	
+	public static RemotePeer executePeer(int nr, final Command... cmd)
+			throws IOException, InterruptedException, ClassNotFoundException {
+		return executePeer(LocalNATUtils.class, nr, cmd);
+	}
 
-	public static RemotePeer executePeer(Class<?> klass, String nr, final Command... cmd)
+	public static RemotePeer executePeer(Class<?> klass, final int nr, final Command... cmd)
 			throws IOException, InterruptedException, ClassNotFoundException {
 		String javaHome = System.getProperty("java.home");
 		String javaBin = javaHome + File.separator + "bin" + File.separator
@@ -56,15 +77,14 @@ public class LocalNATUtils {
 		cmds[6] = "-cp";
 		cmds[7] = classpath;
 		cmds[8] = className;
-		cmds[9] = nr;
+		cmds[9] = ""+nr;
 		for (int i = 10; i < cmds.length; i++) {
 			cmds[i] = toString(cmd[i - 10]);
 		}
 
 		ProcessBuilder builder = new ProcessBuilder(cmds);
-		builder.redirectError(ProcessBuilder.Redirect.INHERIT);
 		final Process process = builder.start();
-		System.err.println("executed.");
+		new StreamGobbler(process.getErrorStream(), "ERR["+nr+"]").start();
 		final CountDownLatch cl = new CountDownLatch(cmd.length);
 		final AtomicReferenceArray<Object> results = new AtomicReferenceArray<Object>(cmd.length);
 		new Thread(new Runnable() {
@@ -77,12 +97,11 @@ public class LocalNATUtils {
 							String line = read(process.getInputStream()).trim();
 							if (line.startsWith(TAG)) {
 								line = line.substring(TAG.length());
-								System.out.println("from : " + line);
 								Object o = fromString(line);
 								results.set(i, o);
 								done = true;
 							} else {
-								System.out.println("from remote: " + line);
+								System.out.println("OUT["+nr+"]>" + line);
 							}
 						}
 						cl.countDown();
@@ -93,7 +112,7 @@ public class LocalNATUtils {
 
 			}
 		}).start();
-		System.err.println("peer started");
+		System.out.println("LOCAL> remote peer "+nr+" started");
 		return new RemotePeer(process, cl, cmd, results);
 	}
 
@@ -152,7 +171,6 @@ public class LocalNATUtils {
 	public static Command[] toObjects(String[] args) throws ClassNotFoundException, IOException {
 		Command[] cmd = new Command[args.length-1];
 		for(int i=1;i<args.length;i++) {
-			System.err.println("["+args[i]+"]");
 			cmd[i-1] = (Command) fromString(args[i]);
 		}
 		return cmd;
@@ -169,5 +187,68 @@ public class LocalNATUtils {
 			}
 		}
 		
+	}
+	
+	public static Peer init(String ip, int port, int peerId)
+			throws UnknownHostException, IOException {
+		Bindings b = new Bindings();
+		b.addAddress(InetAddress.getByName(ip));
+		ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
+		ccc.senderTCP(InetAddress.getByName(ip));
+		Peer peer = new PeerBuilder(Number160.createHash(peerId)).channelClientConfiguration(ccc).ports(port).bindings(b)
+				.start();
+		System.err.println("peer"+peer.peerAddress());
+		return peer;
+	}
+	
+	public static Serializable shutdown(Peer... peers) {
+		if(peers != null) {
+			for(Peer peer: peers) {
+				if (peer != null) {
+					peer.shutdown().awaitUninterruptibly();
+				}
+			}
+		}
+		return "shutdown done";
+	}
+
+	public static void shutdown(RemotePeer... unrs) {
+		if(unrs != null) {
+			for(RemotePeer unr : unrs) {
+				if (unr != null) {
+					try {
+						LocalNATUtils.killPeer(unr.process());
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+		
+	}
+	
+	private static class StreamGobbler extends Thread {
+	    final private InputStream is;
+	    final private String type;
+
+	    private StreamGobbler(final InputStream is, final String type) {
+	        this.is = is;
+	        this.type = type;
+	    }
+
+	    @Override
+	    public void run() {
+	        try {
+	        	final InputStreamReader isr = new InputStreamReader(is);
+	        	final BufferedReader br = new BufferedReader(isr);
+	            String line = null;
+	            while ((line = br.readLine()) != null) {
+	                System.out.println(type + "> " + line);
+	            }
+	        }
+	        catch (IOException ioe) {
+	            ioe.printStackTrace();
+	        }
+	    }
 	}
 }

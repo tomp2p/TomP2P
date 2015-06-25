@@ -1,17 +1,23 @@
 package net.tomp2p.holep.manual;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.futures.FutureAnnounce;
+import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FuturePing;
+import net.tomp2p.nat.FutureNAT;
+import net.tomp2p.nat.PeerBuilderNAT;
+import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -33,91 +39,89 @@ import org.junit.Test;
  * @author Thomas Bocek
  *
  */
-@Ignore
-public class TestNATLocal {
+//@Ignore
+public class TestNATLocal implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
+
+	//### CHANGE THIS TO YOUR INTERFACE###
+	final static private String INF = "enp0s25";
+	
 	final static private Random RND = new Random(42);
 	static private Peer relayPeer = null;
 	static private Number160 relayPeerId = new Number160(RND);
 	
 	@Before
 	public void before() throws IOException, InterruptedException {
-		LocalNATUtils.executeNatSetup("start", "0", "sym");
+		LocalNATUtils.executeNatSetup("start", "0");
+		LocalNATUtils.executeNatSetup("upnp", "0");
 	}
 
 	@After
 	public void after() throws IOException, InterruptedException {
-		LocalNATUtils.executeNatSetup("stop", "0");
+		//LocalNATUtils.executeNatSetup("stop", "0");
 	}
 
 	
-
-	/**
-	 * If you have a terrible lag in InetAddress.getLocalHost(), make sure the hostname resolves in the other network domain.
-	 * @throws InterruptedException 
-	 */
-//	public static void main(String[] args) throws IOException, InterruptedException {
-//		Peer peer = null;
-//		System.err.println("started on " +InetAddress.getLocalHost());
-//		try {
-//			Bindings b0 = new Bindings();
-//			int nr = Integer.parseInt(args[0]);
-//			int ip = Integer.parseInt(args[2]);
-//			Random rnd = new Random(ip);
-//			InetAddress inet = InetAddress.getByName("10.0." + nr + "." + ip);
-//			b0.addAddress(inet);
-//			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
-//			ccc.senderTCP(inet);
-//			ccc.senderUDP(inet);
-//			peer = new PeerBuilder(new Number160(rnd)).ports(4000+ip).channelClientConfiguration(ccc).bindings(b0).start();
-//			System.out.println("started " + peer.peerID());
-//			System.err.println("started " + peer.peerID());
-//			String command = LocalNATUtils.read(System.in, "command");
-//			
-//			while(command!=null && !command.equals("quit")) { 
-//				if (command.equals("announce")) {
-//				
-//					FutureAnnounce res;
-//					res = peer.localAnnounce().port(4002).start().awaitUninterruptibly();
-//					res = peer.localAnnounce().port(4003).start().awaitUninterruptibly();
-//					
-//					Thread.sleep(3000);
-//					res = peer.localAnnounce().port(4002).start().awaitUninterruptibly();
-//					res = peer.localAnnounce().port(4003).start().awaitUninterruptibly();
-//					int size = peer.peerBean().localMap().size();
-//				
-//					
-//					System.err.println("bootstrap to "+ args[1]);
-//					PeerAddress relayP = new PeerAddress(relayPeerId, args[1], 5002, 5002);
-//					peer.bootstrap().peerAddress(relayP).start().awaitUninterruptibly();
-//					Thread.sleep(2000);
-//					
-//					System.out.println("done " + size);
-//					
-//				
-//				} else if(command.startsWith("ping")) { 
-//					String pingNr = command.split(" ")[1];
-//					String pingIp = command.split(" ")[2];
-//					Random rnd1 = new Random(Integer.parseInt(pingIp));
-//					InetAddress pingInet = InetAddress.getByName("10.0." + pingNr + "." + pingIp);
-//					Number160 ping160 = new Number160(rnd1);
-//					PeerAddress pa = new PeerAddress(ping160, pingInet, 4000+Integer.parseInt(pingIp), 4000+Integer.parseInt(pingIp));
-//					FuturePing fp = peer.ping().peerAddress(pa).start().awaitUninterruptibly();
-//					System.out.println("done "+fp.remotePeer().inetAddress());
-//				}
-//				else {
-//					System.out.println("empty");
-//				}
-//				command = LocalNATUtils.read(System.in, "command");
-//			}
-//			System.out.println("done");
-//			
-//		} finally {
-//			System.out.println("finish");
-//			if(peer != null) {
-//				peer.shutdown().awaitUninterruptibly();
-//			}
-//		}
-//	}
+	@SuppressWarnings("serial")
+	@Test
+	public void testLocalSend() throws Exception {
+		Peer relayPeer = null;
+		RemotePeer unr1 = null;
+		try {
+			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF);
+			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			
+			
+			unr1 = LocalNATUtils.executePeer(0, new Command() {
+				
+				@Override
+				public Serializable execute() throws Exception {
+					System.err.println("test");
+					Peer peer1 = LocalNATUtils.init("10.0.0.2", 5000, 0);
+					Peer peer2 = LocalNATUtils.init("10.0.0.3", 5001, 1);
+					put("p1", peer1);
+					put("p2", peer2);
+					
+					FutureAnnounce fa1 = peer1.localAnnounce().start().awaitUninterruptibly();
+					FutureAnnounce fa2 = peer2.localAnnounce().start().awaitUninterruptibly();
+					
+					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
+					FutureDiscover fd2 = peer2.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
+					PeerNAT pn1 = new PeerBuilderNAT(peer1).start();
+					PeerNAT pn2 = new PeerBuilderNAT(peer2).start();
+					FutureNAT fn1 = pn1.startSetupPortforwarding(fd1).awaitUninterruptibly();
+					FutureNAT fn2 = pn2.startSetupPortforwarding(fd2).awaitUninterruptibly();
+					if(fn1.isSuccess() && fn2.isSuccess()) {
+						
+						// now peer1 and peer2 know each other locally.
+						PeerAddress punr2 = new PeerAddress(Number160.createHash(1), relayAddress.inetAddress(), 
+								5001, 5001);
+						FuturePing fp1 = peer1.ping().peerAddress(punr2).start().awaitUninterruptibly();
+						System.err.println(fp1.failedReason() + " /" + fp1.remotePeer());
+					} else {
+						System.err.println("failed: "+ fn1.failedReason() + fn2.failedReason());
+						return fn1.failedReason() + fn2.failedReason();
+					}
+					
+					return "done";
+				}
+			}, new Command() {
+				
+				@Override
+				public Serializable execute() throws Exception {
+					return LocalNATUtils.shutdown((Peer)get("p1"), (Peer)get("p2"));
+				}
+			});
+			unr1.waitFor();
+		} finally {
+			System.out.print("LOCAL> shutdown.");
+			LocalNATUtils.shutdown(relayPeer);
+			System.out.print(".");
+			LocalNATUtils.shutdown(unr1);
+			System.out.println(".");
+		}
+	}
 
 	@Test
 	public void testLocal() throws Exception {

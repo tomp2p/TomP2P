@@ -83,4 +83,11 @@ public class Ports {
         // a manual port-forwarding.
         return !randomPorts;
     }
+    
+    @Override
+    public String toString() {
+    	final StringBuilder sb = new StringBuilder("ports(u");
+    	sb.append(udpPort).append(",t").append(tcpPort).append(")");
+    	return sb.toString();
+    }
 }

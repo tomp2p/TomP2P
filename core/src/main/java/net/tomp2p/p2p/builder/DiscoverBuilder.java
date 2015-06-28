@@ -279,14 +279,14 @@ public class DiscoverBuilder {
                                     serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
                                     //manual port forwarding detected, set flag
                                     serverAddress = serverAddress.changePortForwarding(true);
+                                    serverAddress = serverAddress.changeInternalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
                                     peer.peerBean().serverPeerAddress(serverAddress);
-                                    peer.peerBean().serverPeerAddress().internalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
                                     LOG.info("manual ports, change it to: {}", serverAddress);
                                 } else if(expectManualForwarding) {
                                 	final PeerAddress serverAddressOrig = serverAddress;
                                 	serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
+                                	serverAddress = serverAddress.changeInternalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
                                     peer.peerBean().serverPeerAddress(serverAddress);
-                                    peer.peerBean().serverPeerAddress().internalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
                                     LOG.info("we were manually forwarding, change it to: {}", serverAddress);
                                 }
                                 else {

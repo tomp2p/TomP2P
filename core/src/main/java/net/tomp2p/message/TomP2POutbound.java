@@ -13,7 +13,6 @@ import java.net.InetSocketAddress;
 
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
-import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,18 +49,16 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 // this will release the buffer
                 if (ctx.channel() instanceof DatagramChannel) {
                 	
-                	final InetSocketAddress recipientUnreflected;
                 	InetSocketAddress recipient;
                 	InetSocketAddress sender;
                     if (message.senderSocket() == null) {
                     	//in case of a request
                     	if(message.recipientRelay()!=null) {
                     		//in case of sending to a relay (the relayed flag is already set)
-                    		recipientUnreflected = message.recipientRelay().createSocketUDP();
+                    		recipient = message.recipientRelay().createSocketUDP();
                     	} else {
-                    		recipientUnreflected = message.recipient().createSocketUDP();
+                    		recipient = message.recipient().createSocketUDP();
                     	}
-                    	recipient = Utils.natReflection(recipientUnreflected, true, message.sender());
                     	sender = message.sender().createSocketUDP(0);
                     } else {
                     	//in case of a reply

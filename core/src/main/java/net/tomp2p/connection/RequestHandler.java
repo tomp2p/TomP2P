@@ -296,19 +296,18 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             return;
         }
         
-        //NAT reflection, reverse lookup
-        PeerAddress realAddress = peerBean.localMap().translateReverse(responseMessage.sender());
-        if(realAddress != null) {
-        	responseMessage.sender(realAddress);
-        }
+        //NAT reflection, change it back, as this will be stored in our peer map that may be queried from other peers
+		if(message.recipientBeforeTranslation() != null) {
+			PeerAddress realAddress = responseMessage.sender().changePeerSocketAddress(message.recipientBeforeTranslation());
+			responseMessage.sender(realAddress);
+		}
 
         // Stop time measurement of RTT
         futureResponse.stopRTTMeasurement();
 
         // We got a good answer, let's mark the sender as alive
         //if its an announce, the peer status will be handled in the RPC
-		if (responseMessage.command() != RPC.Commands.LOCAL_ANNOUNCE.getNr() 
-				&& (responseMessage.isOk() || responseMessage.isNotOk())) {
+		if (responseMessage.isOk() || responseMessage.isNotOk()) {
 			peerBean.notifyPeerFound(responseMessage.sender(), null, null, futureResponse.getRoundTripTime());
 		}
         

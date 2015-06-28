@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.tomp2p.p2p.MaintenanceTask;
-import net.tomp2p.peers.LocalMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -55,7 +54,6 @@ public class PeerBean {
     private HolePInitiator holePunchInitiator;
     private int holePNumberOfHoles;
     private int holePNumberOfPunches;
-    private LocalMap localMap;
     
 	/**
 	 * This map is used for all open PeerConnections which are meant to stay
@@ -247,15 +245,6 @@ public class PeerBean {
 			return null;
 		}
 	}
-
-	public PeerBean localMap(LocalMap localMap) {
-	    this.localMap = localMap;
-	    return this;
-    }
-	
-	public LocalMap localMap() {
-	    return localMap;
-    }
 	
 	public PeerBean holePNumberOfHoles(final int holePNumberOfHoles) {
 		this.holePNumberOfHoles = holePNumberOfHoles;

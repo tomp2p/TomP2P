@@ -52,11 +52,9 @@ import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.builder.PingBuilder;
-import net.tomp2p.peers.LocalMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
@@ -152,14 +150,11 @@ public class Sender {
 		}
 		// NAT reflection - rewrite recipient if we found a local address for
 		// the recipient
-		LocalMap localMap = peerBean.localMap();
-		if (localMap != null) {
-			PeerStatistic peerStatistic = localMap.translate(message.recipient());
-			if (peerStatistic != null) {
-				message.recipient(peerStatistic.peerAddress());
-			}
-		}
-
+		PeerSocketAddress reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
+		PeerSocketAddress orig = message.recipient().peerSocketAddress();
+		message.saveOriginalRecipientBeforeTranslation(orig);
+		message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
+		
 		removePeerIfFailed(futureResponse, message);
 
 		// RTT calculation
@@ -486,9 +481,7 @@ public class Sender {
 			handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
 		}
 
-		InetSocketAddress reflectedRecipient = Utils.natReflection(recipient, false, dispatcher.peerBean().serverPeerAddress());
-
-		ChannelFuture channelFuture = channelCreator.createTCP(reflectedRecipient, connectTimeoutMillis, handlers, futureResponse);
+		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers, futureResponse);
 
 		if (peerConnection != null && channelFuture != null) {
 			peerConnection.channelFuture(channelFuture);
@@ -576,13 +569,8 @@ public class Sender {
 
 		// NAT reflection - rewrite recipient if we found a local address for
 		// the recipient
-		LocalMap localMap = peerBean.localMap();
-		if (localMap != null) {
-			PeerStatistic peerStatistic = localMap.translate(message.recipient());
-			if (peerStatistic != null) {
-				message.recipient(peerStatistic.peerAddress());
-			}
-		}
+		PeerSocketAddress reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
+		message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
 
 		removePeerIfFailed(futureResponse, message);
 

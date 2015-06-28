@@ -197,7 +197,7 @@ public class LocalNATUtils {
 		ccc.senderTCP(InetAddress.getByName(ip));
 		Peer peer = new PeerBuilder(Number160.createHash(peerId)).channelClientConfiguration(ccc).ports(port).bindings(b)
 				.start();
-		System.err.println("peer"+peer.peerAddress());
+		System.out.println("Init "+peer.peerAddress());
 		return peer;
 	}
 	

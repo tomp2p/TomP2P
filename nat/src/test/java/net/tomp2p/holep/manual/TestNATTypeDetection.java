@@ -16,6 +16,7 @@ import net.tomp2p.peers.PeerAddress;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -34,14 +35,14 @@ import org.junit.Test;
  * @author Thomas Bocek
  *
  */
-//@Ignore
+@Ignore
 public class TestNATTypeDetection implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
 	final static private Random RND = new Random(42);
 	
 	//### CHANGE THIS TO YOUR INTERFACE###
-	final static private String INF = "wlp3s0";
+	final static private String INF = "eth1";
 	
 	static private Number160 relayPeerId = new Number160(RND);
 

@@ -508,7 +508,7 @@ public class TestMessage {
         psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
-                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true, true, false,
+                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), null, true, true, true, true, false, false,
                 psa);
         
         Message m1 = Utils2.createDummyMessage();
@@ -536,7 +536,36 @@ public class TestMessage {
         psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
-                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true, true, true,
+                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), null, true, true, true, true, true, false,
+                psa);
+        
+        Message m1 = Utils2.createDummyMessage();
+        Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
+        tmp.add(pa3);
+        m1.neighborsSet(new NeighborSet(100, tmp));
+        
+        Message m2 = encodeDecode(m1);
+		Assert.assertEquals(tmp, m2.neighborsSetList().get(0).neighbors());
+		compareMessage(m1, m2);
+		
+	}
+	
+	@Test
+	public void testInternalPeerSocket() throws Exception {	
+        Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
+        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)));
+        PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
+                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), new PeerSocketAddress(
+                        InetAddress.getByName("0.0.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true, true, true, true,
                 psa);
         
         Message m1 = Utils2.createDummyMessage();

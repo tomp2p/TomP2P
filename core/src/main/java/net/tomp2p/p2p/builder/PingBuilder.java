@@ -21,12 +21,14 @@ import java.net.InetSocketAddress;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
+import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
@@ -46,6 +48,8 @@ public class PingBuilder {
     private int port = Ports.DEFAULT_PORT;
 
     private boolean tcpPing = false;
+    
+    private boolean broadcast = false;
     
     private PeerConnection peerConnection;
 
@@ -92,6 +96,20 @@ public class PingBuilder {
         this.port = port;
         return this;
     }
+    
+    public boolean isBroadcast() {
+        return broadcast;
+    }
+
+    public PingBuilder broadcast() {
+        this.broadcast = true;
+        return this;
+    }
+
+    public PingBuilder broadcast(boolean broadcast) {
+        this.broadcast = broadcast;
+        return this;
+    }
 
     public boolean isTcpPing() {
         return tcpPing;
@@ -125,6 +143,10 @@ public class PingBuilder {
             connectionConfiguration = new DefaultConnectionConfiguration();
         }
 
+        if (broadcast) {
+            return pingBroadcast(port);
+        }
+        
 		if (peerAddress != null) {
 			if (tcpPing) {
 				return ping(peerAddress, false);
@@ -205,6 +227,40 @@ public class PingBuilder {
         return futurePing;
     }
     
+    private FuturePing pingBroadcast(final int port) {
+    	final FuturePing futurePing = new FuturePing();
+        final DiscoverResults discoverResults = peer.connectionBean().channelServer().discoverNetworks().currentDiscoverResults();
+        final int size = discoverResults.existingBroadcastAddresses().size();
+        final FutureLateJoin<FutureResponse> futureLateJoin = new FutureLateJoin<FutureResponse>(size, 1);
+        if (size > 0) {
+            FutureChannelCreator fcc = peer.connectionBean().reservation().create(size, 0);
+            Utils.addReleaseListener(fcc, futurePing);
+            fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+                @Override
+                public void operationComplete(FutureChannelCreator future) throws Exception {
+                    if (future.isSuccess()) {
+                        addPingListener(futurePing, futureLateJoin);
+                        for (InetAddress broadcastAddress: discoverResults.existingBroadcastAddresses()) {
+                            final PeerAddress peerAddress = new PeerAddress(Number160.ZERO, broadcastAddress,
+                                    port, port);
+                            FutureResponse validBroadcast = peer.pingRPC().pingBroadcastUDP(
+                                    peerAddress, future.channelCreator(), connectionConfiguration);
+                            if (!futureLateJoin.add(validBroadcast)) {
+                                // the latejoin future is fininshed if the add returns false
+                                break;
+                            }
+                        }
+                    } else {
+                    	futurePing.failed(future);
+                    }
+                }		
+            });
+        } else {
+        	futurePing.failed("No broadcast address found. Cannot ping nothing");
+        }
+        return futurePing;
+    }
+    
     private FuturePing pingPeerConnection(final PeerConnection peerConnection) {
     	final FuturePing futurePing = new FuturePing();
     	
@@ -229,8 +285,8 @@ public class PingBuilder {
     
     
     
-    private void addPingListener(final FuturePing futurePing, FutureResponse futureResponse) {
-        futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+    private void addPingListener(final FuturePing futurePing, final BaseFuture baseFuture) {
+    	baseFuture.addListener(new BaseFutureAdapter<FutureResponse>() {
         	@Override
             public void operationComplete(FutureResponse future) throws Exception {
                 if(future.isSuccess()) {

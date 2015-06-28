@@ -56,14 +56,9 @@ public class MaintenanceTask implements Runnable {
                 if(peerStatatistic == null) {
                     continue;
                 }
-                BaseFuture future;
-                if(peerStatatistic.isLocal()) {
-                	future = peer.localAnnounce().ping().peerAddress(peerStatatistic.peerAddress()).start();
-                	LOG.debug("Maintenance local ping from {} to {}.", peer.peerAddress(), peerStatatistic.peerAddress());
-                } else { 
-                	future = peer.ping().peerAddress(peerStatatistic.peerAddress()).start();
-                	LOG.debug("Maintenance ping from {} to {}.", peer.peerAddress(), peerStatatistic.peerAddress());
-                }
+                BaseFuture future = peer.ping().peerAddress(peerStatatistic.peerAddress()).start();
+                LOG.debug("Maintenance ping from {} to {}.", peer.peerAddress(), peerStatatistic.peerAddress());
+            
                 peer.notifyAutomaticFutures(future);
                 runningFutures.put(future, peerStatatistic.peerAddress());
                 COUNTER.incrementAndGet();

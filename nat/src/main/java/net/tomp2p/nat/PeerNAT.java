@@ -115,9 +115,9 @@ public class PeerNAT {
 										if (future.isSuccess()) {
 											// UPNP or NAT-PMP was
 											// successful, set flag
-											peer.peerBean().serverPeerAddress(serverAddress.changePortForwarding(true));
-											peer.peerBean().serverPeerAddress()
-													.internalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
+											PeerAddress newServerAddress = serverAddress.changePortForwarding(true);
+											newServerAddress = newServerAddress.changeInternalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
+											peer.peerBean().serverPeerAddress(newServerAddress);
 											futureNAT.done(future.peerAddress(), future.reporter());
 										} else {
 											// indicate relay

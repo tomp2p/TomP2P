@@ -44,11 +44,9 @@ import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.SendBehavior;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.p2p.builder.PingBuilder;
-import net.tomp2p.peers.LocalMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.rpc.AnnounceRPC;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
@@ -250,10 +248,6 @@ public class PeerBuilder {
 
 		PeerBean peerBean = peerCreator.peerBean();
 		
-		LocalMap localMap = new LocalMap(peerId);
-		peerBean.localMap(localMap);
-		peerBean.addPeerStatusListener(localMap);
-		
 		peerBean.addPeerStatusListener(peerMap);
 		
 		ConnectionBean connectionBean = peerCreator.connectionBean();
@@ -298,11 +292,6 @@ public class PeerBuilder {
 			peer.broadcastRPC(broadcastRPC);
 		}
 		
-		if (isEnableAnnounceRPC()) {
-			AnnounceRPC announceRPC = new AnnounceRPC(peerBean, connectionBean);
-			peer.announceRPC(announceRPC);
-		}
-		
 		if (isEnableRouting() && isEnableNeighborRPC()) {
 			DistributedRouting routing = new DistributedRouting(peerBean, peer.neighborRPC());
 			peer.distributedRouting(routing);
@@ -315,7 +304,6 @@ public class PeerBuilder {
 		if (maintenanceTask != null) {
 			maintenanceTask.init(peer, connectionBean.timer());
 			maintenanceTask.addMaintainable(peerMap);
-			maintenanceTask.addMaintainable(localMap);
 		}
 		peerBean.maintenanceTask(maintenanceTask);
 

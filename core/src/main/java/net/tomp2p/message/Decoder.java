@@ -54,6 +54,7 @@ public class Decoder {
 
 	// current state - needs to be deleted if we want to reuse
 	private Message message = null;
+	private boolean headerDone = false;
 	private Signature signature = null;
 
 	private int neighborSize = -1;
@@ -103,9 +104,9 @@ public class Decoder {
 			final Attribute<InetSocketAddress> attributeInet = ctx.attr(INET_ADDRESS_KEY);
 			attributeInet.set(sender);
 
-			if (message == null) {
-				boolean doneHeader = decodeHeader(buf, recipient, sender);
-				if (doneHeader) {
+			if (message == null && !headerDone) {
+				headerDone = decodeHeader(buf, recipient, sender);
+				if (headerDone) {
 					// store the sender as an attribute
 					final Attribute<PeerAddress> attributePeerAddress = ctx.attr(PEER_ADDRESS_KEY);
 					attributePeerAddress.set(message.sender());
@@ -187,22 +188,27 @@ public class Decoder {
 				return false;
 			}
 			message = MessageHeaderCodec.decodeHeader(buf, recipient, sender);
-			// we have set the content types already
-			message.presetContentTypes(true);
-
-			for (Content content : message.contentTypes()) {
-				if (content == Content.EMPTY) {
-					break;
-				}
-				if (content == Content.PUBLIC_KEY_SIGNATURE) {
-					message.setHintSign();
-				}
-				contentTypes.offer(content);
-			}
-			LOG.debug("Parsed message {}.", message);
-			return true;
 		}
-		return false;
+		
+		if (message.sender().isNet4Private() && buf.readableBytes() < MessageHeaderCodec.HEADER_PRIVATE_ADDRESS_SIZE) {
+			return false;
+		} else if (message.sender().isNet4Private() && buf.readableBytes() >= MessageHeaderCodec.HEADER_PRIVATE_ADDRESS_SIZE){
+			PeerSocketAddress internalPeerSocketAddress = PeerSocketAddress.create(buf, true);
+			message.sender(message.sender().changeInternalPeerSocketAddress(internalPeerSocketAddress));
+		}
+		// we have set the content types already
+		message.presetContentTypes(true);
+			for (Content content : message.contentTypes()) {
+			if (content == Content.EMPTY) {
+				break;
+			}
+			if (content == Content.PUBLIC_KEY_SIGNATURE) {
+				message.setHintSign();
+			}
+			contentTypes.offer(content);
+		}
+		LOG.debug("Parsed message {}.", message);
+		return true;
 	}
 
 	public boolean decodePayload(final ByteBuf buf) throws NoSuchAlgorithmException, InvalidKeySpecException,
@@ -606,6 +612,7 @@ public class Decoder {
 		message.setDone();
 		contentTypes.clear();
 		message = null;
+		headerDone = false;
 		neighborSize = -1;
 		neighborSet = null;
 		keyCollectionSize = -1;

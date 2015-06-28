@@ -153,7 +153,9 @@ public abstract class DispatchHandler {
     public void forwardMessage(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
         // Here, we need a referral since we got contacted and we don't know if
         // we can contact the peer with its address. The peer may be behind a NAT.
-    	if(requestMessage.command() != RPC.Commands.LOCAL_ANNOUNCE.getNr()) {
+    	
+    	//TODO: figure out how to include this. The only thing we currently missing are the ports
+    	if(!requestMessage.sender().isNet4Private()) {
     		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection, null);
     	}
         

@@ -23,6 +23,12 @@ public interface Registration {
     PublicKey getPublicKey();
 
     /**
+     * Setter for public key
+     * @param publicKey
+     */
+    void setPublicKey(PublicKey publicKey);
+
+    /**
      * @return generated peerId form registration
      */
     Number160 getPeerId();

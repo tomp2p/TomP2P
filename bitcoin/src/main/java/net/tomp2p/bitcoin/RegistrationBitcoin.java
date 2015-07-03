@@ -10,6 +10,12 @@ import java.io.Serializable;
 import java.security.KeyPair;
 import java.security.PublicKey;
 
+/**
+ * Registration based on a bitcoin transaction in the blockchain
+ *
+ * @author Alexander Mülli
+ *
+ */
 public class RegistrationBitcoin implements Registration, Serializable {
     private Number160 peerId;
     private Sha256Hash transactionId;
@@ -60,12 +66,14 @@ public class RegistrationBitcoin implements Registration, Serializable {
     }
 
     private void decode(byte[] headerExtension) {
-        byte[] blockIdBytes = new byte[32];
-        byte[] transactionIdBytes = new byte[32];
-        System.arraycopy(headerExtension, 0, blockIdBytes, 0, blockIdBytes.length);
-        System.arraycopy(headerExtension, blockIdBytes.length, transactionIdBytes, 0, transactionIdBytes.length);
-        this.blockId = new Sha256Hash(blockIdBytes);
-        this.transactionId = new Sha256Hash(transactionIdBytes);
+        if(headerExtension != null) {
+            byte[] blockIdBytes = new byte[32];
+            byte[] transactionIdBytes = new byte[32];
+            System.arraycopy(headerExtension, 0, blockIdBytes, 0, blockIdBytes.length);
+            System.arraycopy(headerExtension, blockIdBytes.length, transactionIdBytes, 0, transactionIdBytes.length);
+            this.blockId = new Sha256Hash(blockIdBytes);
+            this.transactionId = new Sha256Hash(transactionIdBytes);
+        }
     }
 
     @Override

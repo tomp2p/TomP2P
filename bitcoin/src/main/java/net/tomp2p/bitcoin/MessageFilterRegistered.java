@@ -3,6 +3,7 @@ package net.tomp2p.bitcoin;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageFilter;
 import net.tomp2p.rpc.DispatchHandler;
+import net.tomp2p.rpc.RPC;
 import net.tomp2p.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,6 @@ public class MessageFilterRegistered implements MessageFilter {
     private static final Logger LOG = LoggerFactory.getLogger(MessageFilterRegistered.class);
 
     private RegistrationService regServ;
-    private RegistrationStorage regStore;
 
     public MessageFilterRegistered(RegistrationService regServ) {
         this.regServ = regServ;
@@ -30,6 +30,11 @@ public class MessageFilterRegistered implements MessageFilter {
 
     @Override
     public Pair<Boolean, Message> rejectPreDispatch(Message message) {
+        //don't filter Ping and Neighbor messages for now as they are not signed anyway
+        if(message.command() == RPC.Commands.PING.getNr() ||
+           message.command() == RPC.Commands.NEIGHBOR.getNr()) {
+            return new Pair<Boolean, Message>(false, null);
+        }
         if(message.hasHeaderExtension()) {
             RegistrationBitcoin registration = new RegistrationBitcoin(message);
             //verify registration and that message is authentic

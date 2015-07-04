@@ -31,7 +31,6 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 
-import net.tomp2p.p2p.Registration;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -63,19 +62,19 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     public static final int MIN_SIZE = 30;
     private static final long serialVersionUID = -1316622724169272306L;
 
-    private static final int NET6 = 1;				// 0000001
-    private static final int FIREWALL_UDP = 2;		// 0000010
-    private static final int FIREWALL_TCP = 4;		// 0000100
+    private static final int NET6 = 1;				// 00000001
+    private static final int FIREWALL_UDP = 2;		// 00000010
+    private static final int FIREWALL_TCP = 4;		// 00000100
     // indicates that a relay is used.			
-    private static final int RELAYED = 8;			// 0001000
+    private static final int RELAYED = 8;			// 00001000
     // indicates that the peer is slow (because relayed)
-    private static final int SLOW = 16;				// 0010000
+    private static final int SLOW = 16;				// 00010000
     // indicates the peer forwarded the ports either manually or with UPNP
-    private static final int PORT_FORWARDING = 32; 	// 0100000
+    private static final int PORT_FORWARDING = 32; 	// 00100000
     // indicate IPv4 with the internal IP
-    private static final int NET4_PRIVATE = 64;		// 1000000
+    private static final int NET4_PRIVATE = 64;		// 01000000
     // indicates that peer address includes registration reference
-    private static final int BITCOIN_REGISTRATION = 64;
+    private static final int REGISTRATION = 128; // 1000000
     // network information
     private final Number160 peerId;
     private final PeerSocketAddress peerSocketAddress;
@@ -160,7 +159,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.slow = (options & SLOW) > 0;
         this.portForwarding = (options & PORT_FORWARDING) > 0;
         this.net4Private = (options & NET4_PRIVATE) > 0;
-        this.hasRegistration = (options & BITCOIN_REGISTRATION) > 0;
+        this.hasRegistration = (options & REGISTRATION) > 0;
         final int relays = me[offset++] & Utils.MASK_FF;
         // first: three bits are the size 1,2,4
         // 000 means no relays
@@ -232,7 +231,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.slow = (options & SLOW) > 0;
         this.portForwarding = (options & PORT_FORWARDING) > 0;
         this.net4Private = (options & NET4_PRIVATE) > 0;
-        this.hasRegistration = (options & BITCOIN_REGISTRATION) > 0;
+        this.hasRegistration = (options & REGISTRATION) > 0;
         final int relays = channelBuffer.readUnsignedByte();
         // first: three bits are the size 1,2,4
         // 000 means no relays
@@ -570,7 +569,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             result |= NET4_PRIVATE;
         }
         if(hasRegistration) {
-            result |= BITCOIN_REGISTRATION;
+            result |= REGISTRATION;
         }
         return result;
     }
@@ -874,7 +873,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     private static boolean hasRegistration(final int options) {
-        return ((options & Utils.MASK_FF) & BITCOIN_REGISTRATION) > 0;
+        return ((options & Utils.MASK_FF) & REGISTRATION) > 0;
     }
 
     /**

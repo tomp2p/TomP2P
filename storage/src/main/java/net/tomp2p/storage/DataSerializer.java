@@ -76,10 +76,11 @@ public class DataSerializer implements Serializer<Data>, Serializable {
 	    // store as external file, create path
 	    RandomAccessFile file = null;
 	    FileChannel rwChannel = null;
+	    AlternativeCompositeByteBuf acb = null;
 	    try {
 	    	file = new RandomAccessFile(new File(path, hash.toString()), "rw");
 	    	rwChannel = file.getChannel();
-	    	AlternativeCompositeByteBuf acb = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+	    	acb = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 	    	// store data to disk
 	    	// header first
 	    	value.encodeHeader(acb, signatureFactory);
@@ -97,7 +98,9 @@ public class DataSerializer implements Serializer<Data>, Serializable {
 	    		throw new IOException(e);
 	    	}
 	    } finally {
-
+	    	if (acb!=null) {
+	    		acb.release();
+	    	}
 	    	if (rwChannel != null) {
 	    		rwChannel.close();
 	    	}

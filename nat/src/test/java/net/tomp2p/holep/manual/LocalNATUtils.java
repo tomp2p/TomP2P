@@ -20,6 +20,7 @@ import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 
 public class LocalNATUtils {
 	private static final String TAG = "##BASE64##:";
@@ -94,14 +95,21 @@ public class LocalNATUtils {
 					for (int i = 0; i < cmd.length; i++) {
 						boolean done = false;
 						while (!done) {
-							String line = read(process.getInputStream()).trim();
-							if (line.startsWith(TAG)) {
-								line = line.substring(TAG.length());
-								Object o = fromString(line);
-								results.set(i, o);
-								done = true;
+							String line = read(process.getInputStream());
+							if(line != null) {
+								line = line.trim();
+								if (line.startsWith(TAG)) {
+									line = line.substring(TAG.length());
+									Object o = fromString(line);
+									results.set(i, o);
+									done = true;
+								} else {
+									System.out.println("OUT["+nr+"]>" + line);
+								}
 							} else {
-								System.out.println("OUT["+nr+"]>" + line);
+								System.out.println("OUT["+nr+"]>null");
+								cl.countDown();
+								break;
 							}
 						}
 						cl.countDown();
@@ -182,11 +190,16 @@ public class LocalNATUtils {
 			try {
 				Serializable result = cmd.execute();
 				System.out.println(TAG + LocalNATUtils.toString(result));
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				e.printStackTrace();
+				System.out.println(TAG + LocalNATUtils.toString(e.getMessage()));
 			}
 		}
 		
+	}
+	
+	public static PeerAddress peerAddress(String ip, int port, int peerId) throws UnknownHostException {
+		return new PeerAddress(Number160.createHash(peerId), ip, port, port);
 	}
 	
 	public static Peer init(String ip, int port, int peerId)

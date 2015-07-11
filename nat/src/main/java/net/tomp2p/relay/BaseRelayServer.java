@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicLong;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
@@ -52,6 +53,7 @@ public abstract class BaseRelayServer extends DispatchHandler implements PeerSta
 	private PeerAddress unreachablePeer;
 	private final ArrayList<OfflineListener> offlineListeners;
 	private List<Map<Number160, PeerStatistic>> peerMap = null;
+	private final static AtomicLong messageCounter = new AtomicLong();
 
 	protected BaseRelayServer(Peer peer, PeerAddress unreachablePeer, RelayType relayType) {
 		super(peer.peerBean(), peer.connectionBean());
@@ -113,15 +115,6 @@ public abstract class BaseRelayServer extends DispatchHandler implements PeerSta
 	@Override
 	public final void handleResponse(Message message, PeerConnection peerConnection, boolean sign, final Responder responder)
 			throws Exception {
-		// TODO the sender should have the ip/port from the relay peer, the peerId
-		// from the unreachable peer, in order to have 6 relays instead of 5
-		handleResponse(message, responder);
-	}
-
-	/**
-	 * Receive a message at the relay server from a given peer
-	 */
-	public final void handleResponse(Message message, final Responder responder) {
 		// special treatment for ping and neighbor
 		if (message.command() == RPC.Commands.PING.getNr()) {
 			LOG.debug("Received message {} to handle ping for unreachable peer {}", message, unreachablePeer);
@@ -130,6 +123,7 @@ public abstract class BaseRelayServer extends DispatchHandler implements PeerSta
 			LOG.debug("Received message {} to handle neighbor request for unreachable peer {}", message, unreachablePeer);
 			handleNeigbhor(message, responder);
 		} else {
+			messageCounter.incrementAndGet();
 			LOG.debug("Received message {} to forward to unreachable peer {}", message, unreachablePeer);
 			FutureDone<Message> response = forwardToUnreachable(message);
 			response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
@@ -270,4 +264,8 @@ public abstract class BaseRelayServer extends DispatchHandler implements PeerSta
 	 * @param originalMessage the original message that contained the extracted peer map
 	 */
 	protected abstract void peerMapUpdated(Message originalMessage, Message preparedResponse);
+	
+	public static long messageCounter()  {
+		return messageCounter.get();
+	}
 }

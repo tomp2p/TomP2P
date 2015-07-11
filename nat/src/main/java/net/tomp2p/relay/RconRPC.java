@@ -91,13 +91,14 @@ public class RconRPC extends DispatchHandler {
 	 * 
 	 * @param message
 	 * @param responder
+	 * @throws Exception 
 	 */
-	private void handleRconForward(final Message message, final Responder responder) {
+	private void handleRconForward(final Message message, final Responder responder) throws Exception {
 		// get the relayForwarderRPC via Dispatcher to retrieve the existing peerConnection
 		final BaseRelayServer forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardMessage(message, forwarder.unreachablePeerAddress());
-			forwarder.handleResponse(forwardMessage, responder);
+			forwarder.handleResponse(forwardMessage, null, true, responder);
 		} else {
 			handleFail(message, responder, "No RelayForwarder registered for peerId="
 					+ message.recipient().peerId().toString());

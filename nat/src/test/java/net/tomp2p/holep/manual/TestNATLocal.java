@@ -81,8 +81,8 @@ public class TestNATLocal implements Serializable {
 					FutureDiscover fd2 = peer2.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
 					PeerNAT pn1 = new PeerBuilderNAT(peer1).start();
 					PeerNAT pn2 = new PeerBuilderNAT(peer2).start();
-					FutureNAT fn1 = pn1.startSetupPortforwarding(fd1).awaitUninterruptibly();
-					FutureNAT fn2 = pn2.startSetupPortforwarding(fd2).awaitUninterruptibly();
+					FutureNAT fn1 = pn1.portForwarding(fd1).awaitUninterruptibly();
+					FutureNAT fn2 = pn2.portForwarding(fd2).awaitUninterruptibly();
 					StringBuilder sb = new StringBuilder();
 					if(fn1.isSuccess() && fn2.isSuccess()) {
 						// now peer1 and peer2 know each other locally.

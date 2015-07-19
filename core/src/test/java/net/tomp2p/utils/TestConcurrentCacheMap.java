@@ -31,7 +31,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-public class TestCache {
+public class TestConcurrentCacheMap {
 	
 	@Rule
     public TestRule watcher = new TestWatcher() {

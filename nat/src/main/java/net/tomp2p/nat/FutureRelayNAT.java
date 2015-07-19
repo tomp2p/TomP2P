@@ -3,13 +3,11 @@ package net.tomp2p.nat;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.p2p.Shutdown;
-import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.buffer.BufferRequestListener;
 
 public class FutureRelayNAT extends BaseFutureImpl<FutureRelayNAT> {
 
 	private Shutdown shutdown;
-	private FutureRelay futureRelay;
 	private BufferRequestListener bufferRequestListener;
 
 	public FutureRelayNAT() {
@@ -50,18 +48,6 @@ public class FutureRelayNAT extends BaseFutureImpl<FutureRelayNAT> {
 		}
 	}
 
-	public FutureRelayNAT futureRelay(FutureRelay futureRelay) {
-		synchronized (lock) {
-			this.futureRelay = futureRelay;
-		}
-		return this;
-	}
-
-	public FutureRelay futureRelay() {
-		synchronized (lock) {
-			return futureRelay;
-		}
-	}
 	
 	public FutureRelayNAT bufferRequestListener(BufferRequestListener bufferRequestListener) {
 		this.bufferRequestListener = bufferRequestListener;

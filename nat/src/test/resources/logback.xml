@@ -43,6 +43,9 @@
     <logger name="net.tomp2p.message.Encoder" level="TRACE"/>
     <logger name="net.tomp2p.message.TomP2POutbound" level="TRACE"/>
     <logger name="net.tomp2p.message.TomP2PCumulationTCP" level="TRACE"/> -->
+    
+    <logger name="net.tomp2p.relay.DistributedRelay" level="TRACE"/>
+    <logger name="net.tomp2p.relay.RelayRPC" level="TRACE"/>
 
     <!--  <logger name="net.tomp2p.relay" level="TRACE"/> -->
     <!-- Disable Netty Warning that I'm aware of -->

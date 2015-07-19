@@ -1,16 +1,16 @@
-package net.tomp2p.relay;
+package net.tomp2p.utils;
 
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
-import net.tomp2p.utils.ConcurrentCacheMap;
 
 /**
  * Wrapper of {@link ConcurrentCacheMap}
  * 
  * @author Raphael Voellmy
+ * @author Thomas Bocek
  *
  * @param <E>
  */
@@ -22,27 +22,26 @@ public class ConcurrentCacheSet<E> implements Set<E> {
         map = new ConcurrentCacheMap<E, Boolean>();
     }
     
-    public ConcurrentCacheSet(int timeToLive) {
-        map = new ConcurrentCacheMap<E, Boolean>(timeToLive, ConcurrentCacheMap.MAX_ENTRIES);
+    public ConcurrentCacheSet(final int timeToLiveSeconds) {
+        map = new ConcurrentCacheMap<E, Boolean>(timeToLiveSeconds, ConcurrentCacheMap.MAX_ENTRIES);
     }
     
-    public ConcurrentCacheSet(int timeToLive, int maxEntries) {
-        map = new ConcurrentCacheMap<E, Boolean>(timeToLive, maxEntries);
+    public ConcurrentCacheSet(final int timeToLiveSeconds, final int maxEntries) {
+        map = new ConcurrentCacheMap<E, Boolean>(timeToLiveSeconds, maxEntries);
     }
     
-    public ConcurrentCacheSet(int timeToLive, int maxEntries, boolean refreshTimeout) {
-        map = new ConcurrentCacheMap<E, Boolean>(timeToLive, maxEntries, refreshTimeout);
+    public ConcurrentCacheSet(final int timeToLiveSeconds, final int maxEntries, final boolean refreshTimeout) {
+        map = new ConcurrentCacheMap<E, Boolean>(timeToLiveSeconds, maxEntries, refreshTimeout);
     }
     
     @Override
-    public boolean add(E e) {
-        boolean alreadyContained = !map.containsKey(e);
-        map.put(e, false);
-        return alreadyContained;
+    public boolean add(final E e) {
+        final Boolean retVal = map.put(e, true);
+        return Objects.equals(retVal, Boolean.TRUE);
     }
 
     @Override
-    public boolean addAll(Collection<? extends E> c) {
+    public boolean addAll(final Collection<? extends E> c) {
         boolean changed = false;
         for(E o : c) {
             changed |= add(o);
@@ -56,12 +55,12 @@ public class ConcurrentCacheSet<E> implements Set<E> {
     }
 
     @Override
-    public boolean contains(Object o) {
+    public boolean contains(final Object o) {
         return map.keySet().contains(o);
     }
 
     @Override
-    public boolean containsAll(Collection<?> c) {
+    public boolean containsAll(final Collection<?> c) {
         return map.keySet().containsAll(c);
     }
 
@@ -76,15 +75,13 @@ public class ConcurrentCacheSet<E> implements Set<E> {
     }
 
     @Override
-    public boolean remove(Object o) {
+    public boolean remove(final Object o) {
         return map.remove(o) != null;
     }
 
     @Override
-    public boolean removeAll(Collection<?> c) {
-        //TODO: type safety?
-        @SuppressWarnings("unchecked")
-        Iterator<E> it = (Iterator<E>) c.iterator();
+    public boolean removeAll(final Collection<?> c) {
+        final Iterator<?> it = (Iterator<?>) c.iterator();
         boolean changed = false;
         while(it.hasNext()) {
             changed |= remove(it.next());
@@ -94,9 +91,7 @@ public class ConcurrentCacheSet<E> implements Set<E> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        Set<?> diff = map.keySet();
-        diff.removeAll(c);
-        return removeAll(diff);
+        throw new UnsupportedOperationException();
     }
 
     @Override

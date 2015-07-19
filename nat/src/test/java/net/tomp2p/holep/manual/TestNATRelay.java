@@ -5,17 +5,21 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.BaseRelayServer;
+import net.tomp2p.relay.RelayCallback;
 import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 import net.tomp2p.rpc.ObjectDataReply;
 
@@ -25,7 +29,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
+//@Ignore
 public class TestNATRelay implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -64,11 +68,18 @@ public class TestNATRelay implements Serializable {
 					Peer peer1 = LocalNATUtils.init("10.0.0.2", 5000, 0);
 					put("p1", peer1);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
-					PeerNAT pn1 = new PeerBuilderNAT(peer1).start();
+					Assert.assertFalse(fd1.isDiscoveredTCP());
+					final CountDownLatch cl = new CountDownLatch(1);
+					PeerNAT pn1 = new PeerBuilderNAT(peer1).relayCallback(new RelayCallback() {
+						@Override
+						public void onRelayRemoved(PeerAddress candidate, PeerConnection object) {}
+						@Override
+						public void onRelayAdded(PeerAddress candidate, PeerConnection object) {cl.countDown();}
+					}).start();
 					//setup relay
-					FutureRelayNAT frn1 = pn1.startRelay(new TCPRelayClientConfig(), fd1).awaitUninterruptibly();
 					
-					Assert.assertTrue(frn1.isSuccess());
+					pn1.relay();
+					cl.await();
 					
 					peer1.objectDataReply(new ObjectDataReply() {
 						@Override
@@ -106,12 +117,19 @@ public class TestNATRelay implements Serializable {
 					Peer peer1 = LocalNATUtils.init("10.0.1.2", 5000, 1);
 					put("p1", peer1);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
-					PeerNAT pn1 = new PeerBuilderNAT(peer1).start();
+					Assert.assertFalse(fd1.isDiscoveredTCP());
+					final CountDownLatch cl = new CountDownLatch(1);
+					PeerNAT pn1 = new PeerBuilderNAT(peer1).relayCallback(new RelayCallback() {
+						@Override
+						public void onRelayRemoved(PeerAddress candidate, PeerConnection object) {}
+						@Override
+						public void onRelayAdded(PeerAddress candidate, PeerConnection object) {cl.countDown();}
+					}).start();
 					//setup relay
-					FutureRelayNAT frn1 = pn1.startRelay(new TCPRelayClientConfig(), fd1).awaitUninterruptibly();
-					System.out.println(frn1.failedReason());
 					
-					Assert.assertTrue(frn1.isSuccess());
+					pn1.relay();
+					cl.await();
+					
 					
 					peer1.objectDataReply(new ObjectDataReply() {
 						@Override
@@ -176,11 +194,9 @@ public class TestNATRelay implements Serializable {
 					PeerNAT pn1 = new PeerBuilderNAT(peer1).start();
 					PeerNAT pn2 = new PeerBuilderNAT(peer2).start();
 					//setup relay
-					FutureRelayNAT frn1 = pn1.startRelay(new TCPRelayClientConfig(), fd1).awaitUninterruptibly();
-					FutureRelayNAT frn2 = pn2.startRelay(new TCPRelayClientConfig(), fd2).awaitUninterruptibly();
-					System.out.println(frn1.failedReason());
-					Assert.assertTrue(frn1.isSuccess());
-					Assert.assertTrue(frn2.isSuccess());
+					Shutdown sh1 = pn1.relay();
+					Shutdown sh2 = pn2.relay();
+					
 					//send message from p1 to p2
 					peer2.objectDataReply(new ObjectDataReply() {
 						@Override

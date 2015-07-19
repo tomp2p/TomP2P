@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
 
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -12,6 +14,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.relay.buffer.BufferedRelayClient;
 import net.tomp2p.rpc.RPC;
@@ -28,7 +31,6 @@ import org.slf4j.LoggerFactory;
 public class PeerMapUpdateTask extends TimerTask {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PeerMapUpdateTask.class);
-	private static final long BOOTSTRAP_TIMEOUT_MS = 10000;
 
 	private final RelayRPC relayRPC;
 	private final BootstrapBuilder bootstrapBuilder;
@@ -60,57 +62,15 @@ public class PeerMapUpdateTask extends TimerTask {
 		}
 
 		// bootstrap to get updated peer map and then push it to the relay peers
-		bootstrapBuilder.start().awaitUninterruptibly(BOOTSTRAP_TIMEOUT_MS);
-
-		// send the peer map to the relays
-		List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
-		for (final BaseRelayClient relay : distributedRelay.relayClients()) {
-			sendPeerMap(relay, peerMapVerified);
-		}
-
-		// try to add more relays
-		final FutureRelay futureRelay2 = new FutureRelay();
-		distributedRelay.setupRelays(futureRelay2);
-		relayRPC.peer().notifyAutomaticFutures(futureRelay2);
-	}
-
-	/**
-	 * Send the peer map of an unreachable peer to a relay peer, so that the
-	 * relay peer can reply to neighbor requests on behalf of the unreachable
-	 * peer.
-	 * 
-	 * @param connection
-	 *            The connection to the relay peer
-	 * @param map
-	 *            The unreachable peer's peer map.
-	 */
-	private void sendPeerMap(final BaseRelayClient connection, List<Map<Number160, PeerStatistic>> map) {
-		LOG.debug("Sending current routing table to relay {}", connection.relayAddress());
-
-		final Message message = relayRPC
-				.createMessage(connection.relayAddress(), RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
-		// TODO: neighbor size limit is 256, we might have more here
-		message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
-		
-		// append relay-type specific data (if necessary)
-		distributedRelay.relayConfig().prepareMapUpdateMessage(message);
-		
-		final FutureResponse fr = connection.sendToRelay(message);
-		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
-			public void operationComplete(FutureResponse future) throws Exception {
-				if (future.isFailed()) {
-					LOG.warn("Failed to update routing table on relay peer {}. Reason: {}", connection.relayAddress(),
-							future.failedReason());
-					connection.onMapUpdateFailed();
-				} else {
-					LOG.trace("Updated routing table on relay {}", connection.relayAddress());
-					connection.onMapUpdateSuccess();
-					
-					// process possible buffered messages (Android only)
-					if(connection instanceof BufferedRelayClient) {
-						BufferedRelayClient bufferedConn = (BufferedRelayClient) connection;
-						bufferedConn.onReceiveMessageBuffer(future.responseMessage(), new FutureDone<Void>());
-					}
+		bootstrapBuilder.start().addListener(new BaseFutureAdapter<FutureBootstrap>() {
+			@Override
+			public void operationComplete(FutureBootstrap future)
+					throws Exception {
+				// send the peer map to the relays
+				List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
+				for (final Map.Entry<PeerAddress, PeerConnection> entry : distributedRelay.activeClients().entrySet()) {
+					relayRPC.sendPeerMap(entry.getKey(), entry.getValue(), peerMapVerified);
+					LOG.debug("send peermap to {}", entry.getKey());
 				}
 			}
 		});

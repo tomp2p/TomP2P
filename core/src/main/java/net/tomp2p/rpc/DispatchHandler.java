@@ -155,7 +155,10 @@ public abstract class DispatchHandler {
         // we can contact the peer with its address. The peer may be behind a NAT.
     	
     	//TODO: figure out how to include this. The only thing we currently missing are the ports
-    	if(!requestMessage.sender().isNet4Private()) {
+    	if(requestMessage.sender().isNet4Private() || 
+    			(requestMessage.type() == Type.REQUEST_1 && requestMessage.command() == RPC.Commands.RELAY.getNr())) {
+    		LOG.debug("don't add the sender to the map (yet) {}", requestMessage);
+    	} else {
     		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection, null);
     	}
         

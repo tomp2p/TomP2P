@@ -207,7 +207,7 @@ public class PeerBuilderNAT {
 				config.start(peer);
 			}
 		}
-		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC, relayServerConfigurations);
+		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC);
 		
 		
 		

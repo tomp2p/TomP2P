@@ -215,12 +215,13 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 						@Override
 						public void operationComplete(final FutureDone<Void> futureClose)
 								throws Exception {
+							LOG.debug("lost/offline relay: {}", candidate);
 							failedRelays.add(future.object().remotePeer());
 							synchronized (activeClients) {
 								activeClients.remove(candidate, future.object());
 								updatePeerAddress();
 							}
-							LOG.debug("lost/offline relay: {}", candidate);
+							
 							relayCallback.onRelayRemoved(candidate, future.object());
 							startConnectionsOpen(relayCallback);
 						}

@@ -62,6 +62,9 @@
 # are to be expected. E.g., logback could hang for a minute. By adding the hostname
 # to /etc/hosts resolved this issue.
 #
+# For half configured nat, use this to clean
+# ps ax | grep "sudo ip" | cut -d" " -f2 | sudo xargs kill
+#
 # Author: Thomas Bocek
 
 # Set the IP address to something in your subnet of your global namespace

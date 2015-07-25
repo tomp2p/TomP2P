@@ -199,7 +199,7 @@ public class PeerNAT {
 		return null;
 	}
 	
-	public Shutdown relay() {
+	public Shutdown startRelay() {
 		distributedRelay.setupRelays(relayCallback);
 		
 		final Shutdown shutdownRelay = new Shutdown() {

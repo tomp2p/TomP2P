@@ -78,7 +78,7 @@ public class TestNATRelay implements Serializable {
 					}).start();
 					//setup relay
 					
-					pn1.relay();
+					Shutdown s = pn1.startRelay();
 					cl.await();
 					
 					peer1.objectDataReply(new ObjectDataReply() {
@@ -87,8 +87,7 @@ public class TestNATRelay implements Serializable {
 							return "me1";
 						}
 					});
-					//TODO: this is wrong here to pass the testcase find out why
-					Thread.sleep(1000);
+
 					PeerAddress peer2 = LocalNATUtils.peerAddress("10.0.1.2", 5000, 1);
 					Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
 					psa.add(relayAddress);
@@ -98,7 +97,9 @@ public class TestNATRelay implements Serializable {
 					System.out.println(fdir1.failedReason());
 					Assert.assertTrue(fdir1.isSuccess());
 					Assert.assertEquals("me2", fdir1.object());
-					
+					System.err.println("DONEEEE1");
+					//TODO: should also work without shutdown, figure out why not
+					s.shutdown();
 					return "tbd";
 				}
 			}, new Command() {
@@ -127,7 +128,7 @@ public class TestNATRelay implements Serializable {
 					}).start();
 					//setup relay
 					
-					pn1.relay();
+					Shutdown s =  pn1.startRelay();
 					cl.await();
 					
 					
@@ -137,8 +138,7 @@ public class TestNATRelay implements Serializable {
 							return "me2";
 						}
 					});
-					//TODO: this is wrong here to pass the testcase find out why
-					Thread.sleep(1000);
+
 					PeerAddress peer2 = LocalNATUtils.peerAddress("10.0.0.2", 5000, 0);
 					Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
 					psa.add(relayAddress);
@@ -148,7 +148,9 @@ public class TestNATRelay implements Serializable {
 					System.out.println(fdir1.failedReason());
 					Assert.assertTrue(fdir1.isSuccess());
 					Assert.assertEquals("me1", fdir1.object());
-					
+					System.err.println("DONEEEE2");
+					//TODO: should also work without shutdown, figure out why not
+					s.shutdown();
 					return "tbd";
 				}
 			}, new Command() {
@@ -194,8 +196,8 @@ public class TestNATRelay implements Serializable {
 					PeerNAT pn1 = new PeerBuilderNAT(peer1).start();
 					PeerNAT pn2 = new PeerBuilderNAT(peer2).start();
 					//setup relay
-					Shutdown sh1 = pn1.relay();
-					Shutdown sh2 = pn2.relay();
+					Shutdown sh1 = pn1.startRelay();
+					Shutdown sh2 = pn2.startRelay();
 					
 					//send message from p1 to p2
 					peer2.objectDataReply(new ObjectDataReply() {

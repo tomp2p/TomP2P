@@ -92,10 +92,13 @@ public class LocalNATUtils {
 			@Override
 			public void run() {
 				try {
+					InputStreamReader isr = new InputStreamReader(process.getInputStream());
+					BufferedReader br = new BufferedReader(isr);
 					for (int i = 0; i < cmd.length; i++) {
 						boolean done = false;
+						
 						while (!done) {
-							String line = read(process.getInputStream());
+							String line = br.readLine();
 							if(line != null) {
 								line = line.trim();
 								if (line.startsWith(TAG)) {
@@ -114,6 +117,7 @@ public class LocalNATUtils {
 						}
 						cl.countDown();
 					}
+					process.getInputStream().close();
 				} catch (Throwable t) {
 					t.printStackTrace();
 				}
@@ -124,19 +128,12 @@ public class LocalNATUtils {
 		return new RemotePeer(process, cl, cmd, results);
 	}
 
-	public static String read(InputStream is) throws IOException {
-		// Read out dir output
-		InputStreamReader isr = new InputStreamReader(is);
-		BufferedReader br = new BufferedReader(isr);
-		return br.readLine();
-	}
-
 	public static int killPeer(Process process) throws InterruptedException,
 			IOException {
-		process.destroy();
 		process.getErrorStream().close();
 		process.getInputStream().close();
 		process.getOutputStream().close();
+		process.destroy();
 		return process.waitFor();
 	}
 
@@ -195,7 +192,7 @@ public class LocalNATUtils {
 				System.out.println(TAG + LocalNATUtils.toString(e.getMessage()));
 			}
 		}
-		
+		System.out.flush();
 	}
 	
 	public static PeerAddress peerAddress(String ip, int port, int peerId) throws UnknownHostException {
@@ -258,6 +255,7 @@ public class LocalNATUtils {
 	            while ((line = br.readLine()) != null) {
 	                System.out.println(type + "> " + line);
 	            }
+	            System.out.flush();
 	        }
 	        catch (IOException ioe) {
 	            ioe.printStackTrace();

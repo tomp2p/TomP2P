@@ -8,8 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +47,8 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 	private FutureDone<Void> shutdownFuture = new FutureDone<Void>();
 	
 	private volatile boolean shutdown = false;
-	
-	final private Semaphore activeLoop = new Semaphore(1);
+		
+	final private ExecutorService executorService;
 
 	/**
 	 * @param peer
@@ -63,10 +62,11 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 	 * @param relayType
 	 *            the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, RelayClientConfig relayConfig) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, RelayClientConfig relayConfig, ExecutorService executorService) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
 		this.relayConfig = relayConfig;
+		this.executorService = executorService;
 
 		activeClients = Collections.synchronizedMap(new HashMap<PeerAddress, PeerConnection>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(relayConfig.failedRelayWaitTime());
@@ -97,13 +97,15 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 
 	public FutureDone<Void> shutdown() {
 		shutdown = true;
-		activeLoop.release();
 		synchronized (activeClients) {
 			for (Map.Entry<PeerAddress, PeerConnection> entry: activeClients.entrySet()) {
 				entry.getValue().close();
 			}
 		}
-
+		executorService.shutdown();
+		synchronized (peer) {
+			peer.notify();
+		}
 		return shutdownFuture;
 	}
 
@@ -116,7 +118,16 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 	 * @return RelayFuture containing a {@link DistributedRelay} instance
 	 */
 	public DistributedRelay setupRelays(final RelayCallback relayCallback) {
-		startConnectionsLoop(relayCallback);
+		executorService.submit(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					startConnectionsLoop(relayCallback);
+				} catch (Exception e) {
+					relayCallback.onFailure(e);
+				}
+			}
+		});
 		return this;
 	}
 	
@@ -159,24 +170,38 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 	/**
 	 * The relay setup is called sequentially until the number of max relays is reached. If a peerconnection goes down, it will search for other relays
 	 * @param relayCallback 
+	 * @throws InterruptedException 
 	 */
 	
 	
-	private void startConnectionsLoop(final RelayCallback relayCallback) {
+	private void startConnectionsLoop(final RelayCallback relayCallback) throws InterruptedException {
 
-		activeLoop.acquireUninterruptibly();
-		
 		if(shutdown && activeClients.isEmpty()) {
 			shutdownFuture.done();
 			LOG.debug("shutting down, don't restart relays");
-			activeLoop.release();
+			return;
+		}
+		
+		if(shutdown) {
 			return;
 		}
 		
 		if(activeClients.size() >= relayConfig.type().maxRelayCount()) {
 			LOG.debug("we have enough relays");
 			//wait at most x seconds for a restart of the loop
-			startWaitThread(relayCallback);
+			executorService.submit(new Runnable() {
+				@Override
+				public void run() { 
+					try {
+						synchronized (peer) {
+							peer.wait(60 * 1000);
+						}
+						startConnectionsLoop(relayCallback);
+					} catch (Exception e) {
+						relayCallback.onFailure(e);
+					}
+				}
+			});
 			return;
 		}
 		
@@ -184,8 +209,19 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 		final List<PeerAddress> relayCandidates = relayCandidates();
 		if(relayCandidates.isEmpty()) {
 			LOG.debug("no more relays");
-			//wait at most x seconds for a restart of the loop
-			startWaitThread(relayCallback);
+			executorService.submit(new Runnable() {
+				@Override
+				public void run() { 
+					try {
+						synchronized (peer) {
+							peer.wait(60 * 1000);
+						}
+						startConnectionsLoop(relayCallback);
+					} catch (Exception e) {
+						relayCallback.onFailure(e);
+					}
+				}
+			});
 			return;
 		}
 		
@@ -213,9 +249,14 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 							updatePeerAddress();
 							relayCallback.onRelayRemoved(candidate, future.object());
 							
-							//loop again
-							activeLoop.release();
-							//we are in a waiting thread, don't call startConnectionsLoop()
+							//notify to loop now - this may not do anything if we are shutting down
+							synchronized (peer) {
+								peer.notify();
+							}
+							
+							if(shutdown && activeClients.isEmpty()) {
+								shutdownFuture.done();
+							}
 						}
 					});
 				} else {
@@ -225,26 +266,9 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 					relayCallback.onRelayRemoved(candidate, future.object());
 				}
 				//loop again
-				activeLoop.release();
 				startConnectionsLoop(relayCallback);
 			}
 		});		
-	}
-
-	private void startWaitThread(final RelayCallback relayCallback) {
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					activeLoop.tryAcquire(60, TimeUnit.SECONDS);
-					activeLoop.release();
-					startConnectionsLoop(relayCallback);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				
-			}
-		}).start();
 	}
 
 	/**

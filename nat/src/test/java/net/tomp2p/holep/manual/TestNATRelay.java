@@ -62,6 +62,12 @@ public class TestNATRelay implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.0.2", 5000, 0);
+					peer1.objectDataReply(new ObjectDataReply() {
+						@Override
+						public Object reply(PeerAddress sender, Object request) throws Exception {
+							return "me1";
+						}
+					});
 					put("p1", peer1);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
 					Assert.assertFalse(fd1.isDiscoveredTCP());
@@ -71,18 +77,14 @@ public class TestNATRelay implements Serializable {
 						public void onRelayRemoved(PeerAddress candidate, PeerConnection object) {}
 						@Override
 						public void onRelayAdded(PeerAddress candidate, PeerConnection object) {cl.countDown();}
+						@Override
+						public void onFailure(Exception e) {e.printStackTrace();}
 					}).start();
 					//setup relay
 					
 					pn1.startRelay();
 					cl.await();
-					
-					peer1.objectDataReply(new ObjectDataReply() {
-						@Override
-						public Object reply(PeerAddress sender, Object request) throws Exception {
-							return "me1";
-						}
-					});
+					Thread.sleep(500);
 
 					PeerAddress peer2 = LocalNATUtils.peerAddress("10.0.1.2", 5000, 1);
 					Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
@@ -92,14 +94,16 @@ public class TestNATRelay implements Serializable {
 					FutureDirect fdir1 = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					System.out.println(fdir1.failedReason());
 					Assert.assertTrue(fdir1.isSuccess());
-					System.err.println("DONE1");
-					return "me2".equals(fdir1.object()) ? "TRUE" : "FALSE";
+					String result = fdir1.object().toString();
+					System.out.println("DONE1" + result);
+					return "me2".equals(result) ? "TRUE" : "FALSE";
 				}
 			}, new Command() {
 				
 				@Override
 				public Serializable execute() throws Exception {
 					System.err.println("shutdown0");
+					Thread.sleep(500);
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -110,6 +114,12 @@ public class TestNATRelay implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.1.2", 5000, 1);
+					peer1.objectDataReply(new ObjectDataReply() {
+						@Override
+						public Object reply(PeerAddress sender, Object request) throws Exception {
+							return "me2";
+						}
+					});
 					put("p1", peer1);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
 					Assert.assertFalse(fd1.isDiscoveredTCP());
@@ -119,19 +129,14 @@ public class TestNATRelay implements Serializable {
 						public void onRelayRemoved(PeerAddress candidate, PeerConnection object) {}
 						@Override
 						public void onRelayAdded(PeerAddress candidate, PeerConnection object) {cl.countDown();}
+						@Override
+						public void onFailure(Exception e) {e.printStackTrace();}
 					}).start();
 					//setup relay
 					
 					pn1.startRelay();
 					cl.await();
-					
-					
-					peer1.objectDataReply(new ObjectDataReply() {
-						@Override
-						public Object reply(PeerAddress sender, Object request) throws Exception {
-							return "me2";
-						}
-					});
+					Thread.sleep(500);	
 
 					PeerAddress peer2 = LocalNATUtils.peerAddress("10.0.0.2", 5000, 0);
 					Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
@@ -141,14 +146,16 @@ public class TestNATRelay implements Serializable {
 					FutureDirect fdir1 = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					System.out.println(fdir1.failedReason());
 					Assert.assertTrue(fdir1.isSuccess());
-					System.err.println("DONE2");
-					return "me1".equals(fdir1.object()) ? "TRUE" : "FALSE";
+					String result = fdir1.object().toString();
+					System.out.println("DONE2 " + result);
+					return "me1".equals(result) ? "TRUE" : "FALSE";
 				}
 			}, new Command() {
 				
 				@Override
 				public Serializable execute() throws Exception {
 					System.err.println("shutdown1");
+					Thread.sleep(500);
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -247,12 +254,16 @@ public class TestNATRelay implements Serializable {
 						public void onRelayRemoved(PeerAddress candidate, PeerConnection object) {}
 						@Override
 						public void onRelayAdded(PeerAddress candidate, PeerConnection object) {cl.countDown();}
+						@Override
+						public void onFailure(Exception e) {}
 					}).start();
 					PeerNAT pn2 = new PeerBuilderNAT(peer2).relayCallback(new RelayCallback() {
 						@Override
 						public void onRelayRemoved(PeerAddress candidate, PeerConnection object) {}
 						@Override
 						public void onRelayAdded(PeerAddress candidate, PeerConnection object) {cl.countDown();}
+						@Override
+						public void onFailure(Exception e) {}
 					}).start();
 					//setup relay
 					pn1.startRelay();

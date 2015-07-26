@@ -9,4 +9,6 @@ public interface RelayCallback {
 
 	void onRelayRemoved(PeerAddress candidate, PeerConnection object);
 
+	void onFailure(Exception e);
+
 }

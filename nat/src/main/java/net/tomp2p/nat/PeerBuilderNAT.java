@@ -3,6 +3,8 @@ package net.tomp2p.nat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,9 @@ public class PeerBuilderNAT {
 		
 		@Override
 		public void onRelayAdded(PeerAddress candidate, PeerConnection object) {}
+
+		@Override
+		public void onFailure(Exception e) {}
 	};
 	
 	final private Peer peer;
@@ -61,6 +66,8 @@ public class PeerBuilderNAT {
 	private int holePNumberOfHoles = DEFAULT_NUMBER_OF_HOLEP_HOLES;
 	private static final int DEFAULT_NUMBER_OF_HOLE_PUNCHES = 3;
 	private int holePNumberOfPunches = DEFAULT_NUMBER_OF_HOLE_PUNCHES;
+	
+	private ExecutorService executorService;
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
@@ -168,6 +175,15 @@ public class PeerBuilderNAT {
 		this.relayCallback = relayCallback;
 		return this;
 	}
+	
+	public ExecutorService executorService() {
+		return executorService;
+	}
+	
+	public PeerBuilderNAT executorService(ExecutorService executorService) {
+		this.executorService = executorService;
+		return this;
+	}
 
 	public PeerNAT start() {
 		
@@ -209,9 +225,11 @@ public class PeerBuilderNAT {
 		}
 		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC);
 		
+		if(executorService == null) {
+			executorService = Executors.newSingleThreadExecutor();
+		}
 		
-		
-		DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, relayConfig);
+		DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, relayConfig, executorService);
 		
 		
 		

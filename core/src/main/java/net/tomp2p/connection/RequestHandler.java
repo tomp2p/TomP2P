@@ -291,9 +291,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 			String msg = "Response message [" + responseMessage + "] sent has a different relay flag than we sent with request message ["
 					+ this.message + "]. Recipient (" + message.recipient().isRelayed() + ") / Sender ("
 					+ responseMessage.sender().isRelayed() + ")";
-            exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
-            responseMessage.release();
-            return;
+			LOG.warn(msg);
         }
         
         //NAT reflection, change it back, as this will be stored in our peer map that may be queried from other peers

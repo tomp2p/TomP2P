@@ -46,6 +46,8 @@
     
     <logger name="net.tomp2p.relay.DistributedRelay" level="TRACE"/>
     <logger name="net.tomp2p.relay.RelayRPC" level="TRACE"/>
+    <logger name="net.tomp2p.relay.Forwarder" level="TRACE"/>
+    <logger name="net.tomp2p.connection.RequestHandler" level="TRACE"/>
 
     <!--  <logger name="net.tomp2p.relay" level="TRACE"/> -->
     <!-- Disable Netty Warning that I'm aware of -->

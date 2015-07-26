@@ -63,7 +63,7 @@
 # to /etc/hosts resolved this issue.
 #
 # For half configured nat, use this to clean
-# ps ax | grep "sudo ip" | cut -d" " -f2 | sudo xargs kill
+# pgrep -f "sudo ip" | sudo xargs kill
 #
 # Author: Thomas Bocek
 

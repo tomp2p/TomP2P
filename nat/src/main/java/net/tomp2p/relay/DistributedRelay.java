@@ -4,33 +4,23 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureForkJoin;
-import net.tomp2p.futures.FuturePeerConnection;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.Futures;
-import net.tomp2p.message.Message;
-import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.relay.buffer.BufferRequestListener;
-import net.tomp2p.relay.buffer.BufferedRelayClient;
-import net.tomp2p.rpc.RPC;
 import net.tomp2p.utils.ConcurrentCacheSet;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The relay manager is responsible for setting up and maintaining connections
@@ -58,6 +48,8 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 	private FutureDone<Void> shutdownFuture = new FutureDone<Void>();
 	
 	private volatile boolean shutdown = false;
+	
+	final private Semaphore activeLoop = new Semaphore(1);
 
 	/**
 	 * @param peer
@@ -105,15 +97,12 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 
 	public FutureDone<Void> shutdown() {
 		shutdown = true;
+		activeLoop.release();
 		synchronized (activeClients) {
 			for (Map.Entry<PeerAddress, PeerConnection> entry: activeClients.entrySet()) {
 				entry.getValue().close();
 			}
 		}
-
-		/*synchronized (relayListeners) {
-			relayListeners.clear();
-		}*/
 
 		return shutdownFuture;
 	}
@@ -127,7 +116,7 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 	 * @return RelayFuture containing a {@link DistributedRelay} instance
 	 */
 	public DistributedRelay setupRelays(final RelayCallback relayCallback) {
-		startConnectionsOpen(relayCallback);
+		startConnectionsLoop(relayCallback);
 		return this;
 	}
 	
@@ -167,24 +156,27 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 		return relayCandidates;
 	}
 	
-	final AtomicInteger activity = new AtomicInteger(0);
-	
 	/**
 	 * The relay setup is called sequentially until the number of max relays is reached. If a peerconnection goes down, it will search for other relays
 	 * @param relayCallback 
 	 */
-	private void startConnectionsOpen(final RelayCallback relayCallback) {
+	
+	
+	private void startConnectionsLoop(final RelayCallback relayCallback) {
+
+		activeLoop.acquireUninterruptibly();
 		
-		synchronized (activeClients) {
-			if(activity.incrementAndGet() == 1 && shutdown && activeClients.isEmpty()) {
-				shutdownFuture.done();
-				LOG.debug("shutting down, don't restart relays");
-				return;
-			}
+		if(shutdown && activeClients.isEmpty()) {
+			shutdownFuture.done();
+			LOG.debug("shutting down, don't restart relays");
+			activeLoop.release();
+			return;
 		}
 		
 		if(activeClients.size() >= relayConfig.type().maxRelayCount()) {
 			LOG.debug("we have enough relays");
+			//wait at most x seconds for a restart of the loop
+			startWaitThread(relayCallback);
 			return;
 		}
 		
@@ -192,6 +184,8 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 		final List<PeerAddress> relayCandidates = relayCandidates();
 		if(relayCandidates.isEmpty()) {
 			LOG.debug("no more relays");
+			//wait at most x seconds for a restart of the loop
+			startWaitThread(relayCallback);
 			return;
 		}
 		
@@ -203,13 +197,10 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 					throws Exception {
 				
 				if(future.isSuccess()) {
-					synchronized (activeClients) {
-						activeClients.put(candidate, future.object());
-						updatePeerAddress();
-					}
 					LOG.debug("found relay: {}", candidate);
+					activeClients.put(candidate, future.object());
+					updatePeerAddress();
 					relayCallback.onRelayAdded(candidate, future.object());
-					startConnectionsOpen(relayCallback);
 					
 					future.object().closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 						@Override
@@ -217,32 +208,43 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 								throws Exception {
 							LOG.debug("lost/offline relay: {}", candidate);
 							failedRelays.add(future.object().remotePeer());
-							synchronized (activeClients) {
-								activeClients.remove(candidate, future.object());
-								updatePeerAddress();
-							}
 							
+							activeClients.remove(candidate, future.object());
+							updatePeerAddress();
 							relayCallback.onRelayRemoved(candidate, future.object());
-							startConnectionsOpen(relayCallback);
+							
+							//loop again
+							activeLoop.release();
+							//we are in a waiting thread, don't call startConnectionsLoop()
 						}
 					});
 				} else {
-					synchronized (activeClients) {
-						activeClients.remove(candidate, future.object());
-						updatePeerAddress();
-					}
 					LOG.debug("bad relay: {}", candidate);
+					activeClients.remove(candidate, future.object());
+					updatePeerAddress();
 					relayCallback.onRelayRemoved(candidate, future.object());
-					startConnectionsOpen(relayCallback);
 				}
-				synchronized (activeClients) {
-					if(activeClients.isEmpty() && shutdown && activity.decrementAndGet() == 0) {
-						shutdownFuture.done();
-					}
+				//loop again
+				activeLoop.release();
+				startConnectionsLoop(relayCallback);
+			}
+		});		
+	}
+
+	private void startWaitThread(final RelayCallback relayCallback) {
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					activeLoop.tryAcquire(60, TimeUnit.SECONDS);
+					activeLoop.release();
+					startConnectionsLoop(relayCallback);
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 				
 			}
-		});		
+		}).start();
 	}
 
 	/**
@@ -251,21 +253,23 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 	 * relay peers.
 	 */
 	private void updatePeerAddress() {
-		// add relay addresses to peer address
-		boolean hasRelays = !activeClients.isEmpty();
-
-		Collection<PeerSocketAddress> socketAddresses = new ArrayList<PeerSocketAddress>(activeClients.size());
+		final boolean hasRelays;
+		final Collection<PeerSocketAddress> socketAddresses;
+		synchronized (activeClients) {
+			// add relay addresses to peer address
+			hasRelays = !activeClients.isEmpty();
+			socketAddresses = new ArrayList<PeerSocketAddress>(activeClients.size());
 		
-		//we can have more than the max relay count in our active client list.
-		int max = relayConfig.type().maxRelayCount();
-		int i = 0;
-		for (PeerAddress relay : activeClients.keySet()) {
-			socketAddresses.add(new PeerSocketAddress(relay.inetAddress(), relay.tcpPort(), relay.udpPort()));
-			if(i++ >= max) {
-				break;
+			//we can have more than the max relay count in our active client list.
+			int max = relayConfig.type().maxRelayCount();
+			int i = 0;
+			for (PeerAddress relay : activeClients.keySet()) {
+				socketAddresses.add(new PeerSocketAddress(relay.inetAddress(), relay.tcpPort(), relay.udpPort()));
+				if(i++ >= max) {
+					break;
+				}
 			}
 		}
-		
 
 		// update firewalled and isRelayed flags
 		PeerAddress newAddress = peer.peerAddress().changeFirewalledTCP(!hasRelays).changeFirewalledUDP(!hasRelays)

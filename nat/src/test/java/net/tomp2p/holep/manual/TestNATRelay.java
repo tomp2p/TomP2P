@@ -7,27 +7,23 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.BaseRelayServer;
 import net.tomp2p.relay.RelayCallback;
-import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 import net.tomp2p.rpc.ObjectDataReply;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
 //@Ignore
 public class TestNATRelay implements Serializable {
@@ -78,7 +74,7 @@ public class TestNATRelay implements Serializable {
 					}).start();
 					//setup relay
 					
-					Shutdown s = pn1.startRelay();
+					pn1.startRelay();
 					cl.await();
 					
 					peer1.objectDataReply(new ObjectDataReply() {
@@ -96,16 +92,14 @@ public class TestNATRelay implements Serializable {
 					FutureDirect fdir1 = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					System.out.println(fdir1.failedReason());
 					Assert.assertTrue(fdir1.isSuccess());
-					Assert.assertEquals("me2", fdir1.object());
-					System.err.println("DONEEEE1");
-					//TODO: should also work without shutdown, figure out why not
-					s.shutdown();
-					return "tbd";
+					System.err.println("DONE1");
+					return "me2".equals(fdir1.object()) ? "TRUE" : "FALSE";
 				}
 			}, new Command() {
 				
 				@Override
 				public Serializable execute() throws Exception {
+					System.err.println("shutdown0");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -128,7 +122,7 @@ public class TestNATRelay implements Serializable {
 					}).start();
 					//setup relay
 					
-					Shutdown s =  pn1.startRelay();
+					pn1.startRelay();
 					cl.await();
 					
 					
@@ -147,27 +141,80 @@ public class TestNATRelay implements Serializable {
 					FutureDirect fdir1 = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					System.out.println(fdir1.failedReason());
 					Assert.assertTrue(fdir1.isSuccess());
-					Assert.assertEquals("me1", fdir1.object());
-					System.err.println("DONEEEE2");
-					//TODO: should also work without shutdown, figure out why not
-					s.shutdown();
-					return "tbd";
+					System.err.println("DONE2");
+					return "me1".equals(fdir1.object()) ? "TRUE" : "FALSE";
 				}
 			}, new Command() {
 				
 				@Override
 				public Serializable execute() throws Exception {
+					System.err.println("shutdown1");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
 			unr1.waitFor();
 			unr2.waitFor();
+			Assert.assertEquals("TRUE", unr1.getResult(0));
+			Assert.assertEquals("TRUE", unr2.getResult(0));
 			
 		} finally {
 			System.out.print("LOCAL> shutdown.");
 			LocalNATUtils.shutdown(relayPeer);
 			System.out.print(".");
 			LocalNATUtils.shutdown(unr1, unr2);
+			System.out.println(".");
+		}
+	}
+	
+	
+	@Test
+	public void testRealRelaySameNATNoRelay() throws Exception {
+		
+		RemotePeer unr1 = null;
+		try {
+			unr1 = LocalNATUtils.executePeer(0, new Command() {
+				
+				@Override
+				public Serializable execute() throws Exception {
+					Peer peer1 = LocalNATUtils.init("10.0.0.2", 5000, 0);
+					Peer peer2 = LocalNATUtils.init("10.0.0.3", 5001, 1);
+					
+					//send message from p1 to p2
+					peer2.objectDataReply(new ObjectDataReply() {
+						@Override
+						public Object reply(PeerAddress sender, Object request) throws Exception {
+							return "me";
+						}
+					});
+					
+					put("p1", peer1);
+					put("p2", peer2);
+					
+					PeerNAT pn1 = new PeerBuilderNAT(peer1).start();
+					PeerNAT pn2 = new PeerBuilderNAT(peer2).start();
+					//setup relay
+					pn1.startRelay();
+					pn2.startRelay();
+					
+					
+					FutureDirect fdir1 = peer1.sendDirect(peer2.peerAddress()).object("test").start().awaitUninterruptibly();
+					Assert.assertEquals("me", fdir1.object());
+					//should be direct not over relay
+					Assert.assertEquals(0, BaseRelayServer.messageCounter());
+					return "done";
+				}
+			}, new Command() {
+				
+				@Override
+				public Serializable execute() throws Exception {
+					return LocalNATUtils.shutdown((Peer)get("p1"), (Peer)get("p2"));
+				}
+			});
+			unr1.waitFor();
+			Assert.assertEquals("done", unr1.getResult(0));
+		} finally {
+			System.out.print("LOCAL> shutdown.");
+			LocalNATUtils.shutdown(unr1);
 			System.out.println(".");
 		}
 	}
@@ -191,13 +238,26 @@ public class TestNATRelay implements Serializable {
 					put("p1", peer1);
 					put("p2", peer2);
 					
-					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
-					FutureDiscover fd2 = peer2.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
-					PeerNAT pn1 = new PeerBuilderNAT(peer1).start();
-					PeerNAT pn2 = new PeerBuilderNAT(peer2).start();
+					peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
+					peer2.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
+					
+					final CountDownLatch cl = new CountDownLatch(2);
+					PeerNAT pn1 = new PeerBuilderNAT(peer1).relayCallback(new RelayCallback() {
+						@Override
+						public void onRelayRemoved(PeerAddress candidate, PeerConnection object) {}
+						@Override
+						public void onRelayAdded(PeerAddress candidate, PeerConnection object) {cl.countDown();}
+					}).start();
+					PeerNAT pn2 = new PeerBuilderNAT(peer2).relayCallback(new RelayCallback() {
+						@Override
+						public void onRelayRemoved(PeerAddress candidate, PeerConnection object) {}
+						@Override
+						public void onRelayAdded(PeerAddress candidate, PeerConnection object) {cl.countDown();}
+					}).start();
 					//setup relay
-					Shutdown sh1 = pn1.startRelay();
-					Shutdown sh2 = pn2.startRelay();
+					pn1.startRelay();
+					pn2.startRelay();
+					cl.await();
 					
 					//send message from p1 to p2
 					peer2.objectDataReply(new ObjectDataReply() {
@@ -220,7 +280,7 @@ public class TestNATRelay implements Serializable {
 				}
 			});
 			unr1.waitFor();
-			
+			Assert.assertEquals("done", unr1.getResult(0));
 		} finally {
 			System.out.print("LOCAL> shutdown.");
 			LocalNATUtils.shutdown(relayPeer);

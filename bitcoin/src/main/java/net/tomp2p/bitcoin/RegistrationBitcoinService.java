@@ -10,6 +10,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.utils.Utils;
 import org.bitcoinj.core.*;
 import org.bitcoinj.kits.WalletAppKit;
+import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
@@ -58,8 +59,11 @@ public class RegistrationBitcoinService implements RegistrationService<Registrat
         kit.startAsync();
         LOG.debug("starting Registration Service");
         kit.awaitRunning();
+        int numberOfPeers = 3;
+        if(kit.params().equals(RegTestParams.get()))
+            numberOfPeers = 1;
         try {
-            kit.peerGroup().waitForPeers(5).get();
+            kit.peerGroup().waitForPeers(numberOfPeers).get();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
@@ -93,10 +97,9 @@ public class RegistrationBitcoinService implements RegistrationService<Registrat
 
         LOG.info("Wallet Balance: " + kit.wallet().getBalance() + " Satoshis");
         //check for sufficient funds in wallet
-        if(kit.wallet().getBalance().isLessThan(value)) {
+        if (kit.wallet().getBalance().isLessThan(value)) {
             LOG.info("Not enough coins in your wallet. Missing " + value.subtract(kit.wallet().getBalance()) + " satoshis are missing (including fees)");
             LOG.info("Send bitcoins to: " + kit.wallet().currentReceiveAddress().toString());
-            //TODO: calculate missing coins correctly with fees
             ListenableFuture<Coin> balanceFuture = kit.wallet().getBalanceFuture(value, Wallet.BalanceType.AVAILABLE);
             FutureCallback<Coin> callback = new FutureCallback<Coin>() {
                 public void onSuccess(Coin balance) {
@@ -122,8 +125,11 @@ public class RegistrationBitcoinService implements RegistrationService<Registrat
         Number160 pubKeyHash = net.tomp2p.utils.Utils.makeSHAHash(keyPair.getPublic().getEncoded());
         LOG.debug("write public key " + pubKeyHash + " into transaction");
         Script script = new ScriptBuilder().op(OP_RETURN).data(keyPair.getPublic().getEncoded()).build();
-//        tx.addOutput(Transaction.MIN_NONDUST_OUTPUT, script);
-        tx.addOutput(Coin.ZERO, script);
+        if (kit.params().equals(MainNetParams.get())) {
+            tx.addOutput(Transaction.MIN_NONDUST_OUTPUT, script);
+        } else {
+            tx.addOutput(Coin.ZERO, script);
+        }
 
         //broadcast transaction
         Wallet.SendRequest sendRequest = Wallet.SendRequest.forTx(tx);
@@ -144,7 +150,6 @@ public class RegistrationBitcoinService implements RegistrationService<Registrat
             public void onConfidenceChanged(Transaction tx, ChangeReason reason) {
                 TransactionConfidence confidence = tx.getConfidence();
                 if (reason.equals(ChangeReason.TYPE) && confidence.getConfidenceType().equals(TransactionConfidence.ConfidenceType.BUILDING)) {
-                    Peer peer = kit.peerGroup().getConnectedPeers().get(0);
                     Sha256Hash blockHash = null;
                     //TODO: find a cleaner way to get hash of block where transaction is included
                     for (Sha256Hash hash : tx.getAppearsInHashes().keySet()) blockHash = hash;
@@ -155,7 +160,9 @@ public class RegistrationBitcoinService implements RegistrationService<Registrat
                     }
                     try {
                         //download the full block where transaction was included
-                        Block block = peer.getBlock(blockHash).get();
+
+                        Block block  = getBlockAndVerify(blockHash);
+//                        Block block = peer.getBlock(blockHash).get();
                         //generate peerId
                         Number160 peerId = generatePeerId(keyPair.getPublic(), block.getNonce());
                         registration.setPeerId(peerId);
@@ -179,7 +186,7 @@ public class RegistrationBitcoinService implements RegistrationService<Registrat
     public boolean verify(RegistrationBitcoin registration) {
         //check local registration storage if registration was already verified
         if(storage.lookup(registration)) {
-            LOG.debug("registration was already verified");
+            LOG.info("registration was already verified");
             return true;
         }
         //else verify registration on blockchain
@@ -194,12 +201,10 @@ public class RegistrationBitcoinService implements RegistrationService<Registrat
             // asking bitcoin peer for block
             Peer peer = kit.peerGroup().getConnectedPeers().get(0);
             LOG.debug("trying to get block " + blockHash);
-            b = peer.getBlock(blockHash).get();
+            b = getBlockAndVerify(blockHash);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        //TODO: verify block header b.verifyHeader()
 
         LOG.debug("block nonce: " + b.getNonce());
         for(Transaction tx : b.getTransactions()) {
@@ -271,5 +276,20 @@ public class RegistrationBitcoinService implements RegistrationService<Registrat
         LOG.debug("block nonce: " + blockNonce);
         LOG.debug("generated peerId: " + peerId);
         return peerId;
+    }
+
+
+    public Block getBlockAndVerify(Sha256Hash blockHash) {
+        Peer peer = kit.peerGroup().getConnectedPeers().get(0);
+        Block block = null;
+        try {
+            block = peer.getBlock(blockHash).get();
+            block.verify();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return block;
     }
 }

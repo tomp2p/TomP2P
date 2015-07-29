@@ -24,7 +24,7 @@ public class MessageFilterRegisteredTest {
 
     @org.junit.BeforeClass
     public static void setUp() throws Exception {
-        URL resource = ProcessTest.class.getResource("/bitcoin-regtest");
+        URL resource = MessageFilterRegisteredTest.class.getResource("/bitcoin-regtest");
         File dir = new File(resource.toURI());
         registrationService = new RegistrationServiceMock(null, RegTestParams.get(), dir, "tomp2p-bitcoin");
     }

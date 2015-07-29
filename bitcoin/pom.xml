@@ -5,7 +5,7 @@
 	<parent>
 		<artifactId>tomp2p-parent</artifactId>
 		<groupId>net.tomp2p</groupId>
-		<version>5.0-Beta8-SNAPSHOT</version>
+		<version>5.0-Beta9-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 
@@ -51,6 +51,18 @@
 			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>1.10</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>1.10</version>
+            <scope>test</scope>
+        </dependency>
 
 	</dependencies>
 </project>

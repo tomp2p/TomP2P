@@ -396,6 +396,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 		readLock.lock();
 		try {
 			final Map<Integer, DispatchHandler> ioHandlers = search(peerID, peerId2);
+			if(ioHandlers == null) {
+				return null;
+			}
 			for (DispatchHandler handler : ioHandlers.values()) {
 				if (clazz.isInstance(handler)) {
 					return (T) handler;

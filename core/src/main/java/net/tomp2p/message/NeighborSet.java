@@ -63,4 +63,13 @@ public class NeighborSet {
 
         return t1 && t2;
     }
+    
+    @Override
+    public String toString() {
+    	StringBuilder sb = new StringBuilder("NeighborSet:");
+    	for(PeerAddress pa:neighbors) {
+    		sb.append(pa).append(';');
+    	}
+    	return sb.toString();
+    }
 }

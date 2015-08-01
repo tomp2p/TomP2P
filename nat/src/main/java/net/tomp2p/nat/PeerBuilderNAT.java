@@ -2,7 +2,6 @@ package net.tomp2p.nat;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -14,12 +13,12 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.holep.HolePInitiatorImpl;
 import net.tomp2p.holep.HolePRPC;
-import net.tomp2p.message.Message;
+import net.tomp2p.holep.HolePScheduler;
+import net.tomp2p.holep.strategy.HolePStrategy;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.BaseRelayClient;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.RconRPC;
 import net.tomp2p.relay.RelayCallback;
@@ -43,6 +42,12 @@ public class PeerBuilderNAT {
 
 		@Override
 		public void onFailure(Exception e) {}
+
+		@Override
+		public void onFullRelays() {}
+
+		@Override
+		public void onNoMoreRelays() {}
 	};
 	
 	final private Peer peer;
@@ -229,11 +234,7 @@ public class PeerBuilderNAT {
 			executorService = Executors.newSingleThreadExecutor();
 		}
 		
-		DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, relayConfig, executorService);
-		
-		
-		
-		
+		DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, relayConfig, executorService, bootstrapBuilder);
 
 		peer.addShutdownListener(new Shutdown() {
 			@Override

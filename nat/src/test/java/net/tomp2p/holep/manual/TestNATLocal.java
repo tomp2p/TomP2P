@@ -64,7 +64,7 @@ public class TestNATLocal implements Serializable {
 		Peer relayPeer = null;
 		RemotePeer unr1 = null;
 		try {
-			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF);
+			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
 			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
 			
 			

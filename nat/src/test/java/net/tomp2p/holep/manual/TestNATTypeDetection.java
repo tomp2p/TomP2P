@@ -73,7 +73,7 @@ public class TestNATTypeDetection implements Serializable {
 		RemotePeer unr1 = null;
 		RemotePeer unr2 = null;
 		try {
-			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF);
+			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
 			InetAddress relayAddress = relayPeer.peerAddress().inetAddress();
 			final String address = relayAddress.getHostAddress();
 			unr1 = LocalNATUtils.executePeer(0,

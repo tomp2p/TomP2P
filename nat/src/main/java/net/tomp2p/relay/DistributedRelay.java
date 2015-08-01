@@ -14,11 +14,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.builder.BootstrapBuilder;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerMapChangeListener;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.utils.ConcurrentCacheSet;
 
 /**
@@ -30,7 +37,7 @@ import net.tomp2p.utils.ConcurrentCacheSet;
  * @author Nico Rutishauser
  * 
  */
-public class DistributedRelay /*implements BufferRequestListener*/ {
+public class DistributedRelay implements PeerMapChangeListener {
 
 	private final static Logger LOG = LoggerFactory.getLogger(DistributedRelay.class);
 
@@ -47,8 +54,11 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 	private FutureDone<Void> shutdownFuture = new FutureDone<Void>();
 	
 	private volatile boolean shutdown = false;
+	private boolean allRelays = false;
 		
 	final private ExecutorService executorService;
+	final private BootstrapBuilder bootstrapBuilder;
+	
 
 	/**
 	 * @param peer
@@ -57,20 +67,22 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 	 *            the relay RPC
 	 * @param maxFail 
 	 * @param relayConfig 
+	 * @param bootstrapBuilder 
 	 * @param maxRelays
 	 *            maximum number of relay peers to set up
 	 * @param relayType
 	 *            the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, RelayClientConfig relayConfig, ExecutorService executorService) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, RelayClientConfig relayConfig, ExecutorService executorService, BootstrapBuilder bootstrapBuilder) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
 		this.relayConfig = relayConfig;
 		this.executorService = executorService;
+		this.bootstrapBuilder = bootstrapBuilder;
 
 		activeClients = Collections.synchronizedMap(new HashMap<PeerAddress, PeerConnection>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(relayConfig.failedRelayWaitTime());
-		//relayListeners = Collections.synchronizedList(new ArrayList<RelayListener>(1));
+		peer.peerBean().peerMap().addPeerMapChangeListener(this);
 	}
 
 	public RelayClientConfig relayConfig() {
@@ -97,6 +109,7 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 
 	public FutureDone<Void> shutdown() {
 		shutdown = true;
+		peer.peerBean().peerMap().removePeerMapChangeListener(this);
 		synchronized (activeClients) {
 			for (Map.Entry<PeerAddress, PeerConnection> entry: activeClients.entrySet()) {
 				entry.getValue().close();
@@ -188,6 +201,9 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 		
 		if(activeClients.size() >= relayConfig.type().maxRelayCount()) {
 			LOG.debug("we have enough relays");
+			allRelays = true;
+			relayCallback.onFullRelays();
+			updatePeerMap();
 			//wait at most x seconds for a restart of the loop
 			executorService.submit(new Runnable() {
 				@Override
@@ -209,6 +225,8 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 		final List<PeerAddress> relayCandidates = relayCandidates();
 		if(relayCandidates.isEmpty()) {
 			LOG.debug("no more relays");
+			relayCallback.onNoMoreRelays();
+			updatePeerMap();
 			executorService.submit(new Runnable() {
 				@Override
 				public void run() { 
@@ -242,7 +260,10 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 						@Override
 						public void operationComplete(final FutureDone<Void> futureClose)
 								throws Exception {
+							
 							LOG.debug("lost/offline relay: {}", candidate);
+							//we need to notify our map, since we know this peer is offline, TODO: make this generic for all PeerConnections
+							peer.peerBean().peerMap().peerFailed(candidate, new PeerException(AbortCause.SHUTDOWN, "remote open peer connection was closed"));
 							failedRelays.add(future.object().remotePeer());
 							
 							activeClients.remove(candidate, future.object());
@@ -251,6 +272,7 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 							
 							//notify to loop now - this may not do anything if we are shutting down
 							synchronized (peer) {
+								allRelays = false;
 								peer.notify();
 							}
 							
@@ -302,7 +324,41 @@ public class DistributedRelay /*implements BufferRequestListener*/ {
 		LOG.debug("Updated peer address {}, isrelay = {}", newAddress, hasRelays);
 	}
 
+	@Override
+	public void peerInserted(PeerAddress peerAddress, boolean verified) {
+		LOG.debug("new peer added, go again "+peerAddress+ " / "+verified);
+		synchronized (peer) {
+			if(!allRelays) {
+				peer.notify();
+			}
+		}
+	}
 
+	@Override
+	public void peerRemoved(PeerAddress peerAddress,
+			PeerStatistic storedPeerAddress) {}
+
+	@Override
+	public void peerUpdated(PeerAddress peerAddress,
+			PeerStatistic storedPeerAddress) {}
+
+
+	private void updatePeerMap() {
+		// bootstrap to get updated peer map and then push it to the relay peers
+		bootstrapBuilder.start().addListener(new BaseFutureAdapter<FutureBootstrap>() {
+			@Override
+			public void operationComplete(FutureBootstrap future)
+					throws Exception {
+				// send the peer map to the relays
+				List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
+				for (final Map.Entry<PeerAddress, PeerConnection> entry : activeClients().entrySet()) {
+					relayRPC.sendPeerMap(entry.getKey(), entry.getValue(), peerMapVerified);
+					LOG.debug("send peermap to {}", entry.getKey());
+				}
+			}
+		});
+	}
+	
 	/*@Override
 	public FutureDone<Void> sendBufferRequest(String relayPeerId) {
 		for (BaseRelayClient relayConnection : relayClients()) {

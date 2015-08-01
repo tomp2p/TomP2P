@@ -42,10 +42,10 @@ public class RelayRPC extends DispatchHandler {
 	private final Peer peer;
 
 	// holds the server for each client
-	private final Map<Number160, BaseRelayServer> servers;
+	//private final Map<Number160, BaseRelayServer> servers;
 
 	// holds the client for each server
-	private ConcurrentHashMap<Number160, BaseRelayClient> clients;
+	//private ConcurrentHashMap<Number160, BaseRelayClient> clients;
 	
 
 	/**
@@ -82,8 +82,8 @@ public class RelayRPC extends DispatchHandler {
 	public RelayRPC(Peer peer, RconRPC rconRPC, HolePRPC holePRPC) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peer = peer;
-		this.servers = new ConcurrentHashMap<Number160, BaseRelayServer>();
-		this.clients = new ConcurrentHashMap<Number160, BaseRelayClient>();
+		//this.servers = new ConcurrentHashMap<Number160, BaseRelayServer>();
+		//this.clients = new ConcurrentHashMap<Number160, BaseRelayClient>();
 		this.rconRPC = rconRPC;
 		this.holePunchRPC = holePRPC;
 
@@ -141,10 +141,12 @@ public class RelayRPC extends DispatchHandler {
 			final List<Map<Number160, PeerStatistic>> map) {
 		final Message message = createMessage(relayPeer, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
 
-		message.neighborsSet(new NeighborSet(255, RelayUtils.flatten(map)));
-		
+		NeighborSet ns = new NeighborSet(255, RelayUtils.flatten(map));
+		message.neighborsSet(ns);
+		LOG.debug("send neigbors " + ns);
 		// append relay-type specific data (if necessary)
 		//relayConfig.prepareMapUpdateMessage(message);
+		message.keepAlive(true);
 		FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), message);
 		return response;
 	}
@@ -168,10 +170,10 @@ public class RelayRPC extends DispatchHandler {
 		} else if (message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
 			// An unreachable peer requests the buffer at the relay peer
 			// or a buffer is transmitted to the unreachable peer directly
-			handleBuffer(message, responder);
+			//handleBuffer(message, responder);
 		} else if (message.type() == Type.REQUEST_5 && message.command() == RPC.Commands.RELAY.getNr()) {
 			// A late response
-			handleLateResponse(message, peerConnection, sign, responder);
+			//handleLateResponse(message, peerConnection, sign, responder);
 		} else {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
@@ -202,27 +204,27 @@ public class RelayRPC extends DispatchHandler {
 	/**
 	 * @return all unreachable peers currently connected to this relay node
 	 */
-	public Set<PeerAddress> unreachablePeers() {
+	/*public Set<PeerAddress> unreachablePeers() {
 		Set<PeerAddress> unreachablePeers = new HashSet<PeerAddress>(servers.size());
 		for (BaseRelayServer forwarder : servers.values()) {
 			unreachablePeers.add(forwarder.unreachablePeerAddress());
 		}
 		return unreachablePeers;
-	}
+	}*/
 
 	/**
 	 * Add a client to the list
 	 */
-	public void addClient(BaseRelayClient connection) {
+	/*public void addClient(BaseRelayClient connection) {
 		clients.put(connection.relayAddress().peerId(), connection);
-	}
+	}*/
 
 	/**
 	 * Remove a client from the list
 	 */
-	public void removeClient(BaseRelayClient connection) {
+	/*public void removeClient(BaseRelayClient connection) {
 		clients.remove(connection.relayAddress().peerId());
-	}
+	}*/
 
 	/**
 	 * Handle the setup where an unreachable peer connects to this one
@@ -329,11 +331,13 @@ public class RelayRPC extends DispatchHandler {
 	 */
 	private void handleMap(Message message, Responder responder) {
 		LOG.debug("Handle foreign map update {}", message);
-		BaseRelayServer server = servers.get(message.sender().peerId());
-		if (server != null) {
+		
+		final Forwarder forwarder = dispatcher().searchHandler(Forwarder.class, peer.peerAddress().peerId(), message.sender().peerId());		
+		
+		if (forwarder != null) {
 			Collection<PeerAddress> map = message.neighborsSet(0).neighbors();
 			Message response = createResponseMessage(message, Type.OK);
-			server.setPeerMap(RelayUtils.unflatten(map, message.sender()), message, response);
+			forwarder.setPeerMap(RelayUtils.unflatten(map, message.sender()), message, response);
 			responder.response(response);
 		} else {
 			LOG.error("No forwarder for peer {} found. Need to setup relay first");
@@ -354,7 +358,7 @@ public class RelayRPC extends DispatchHandler {
 	 * @param message
 	 * @param responder
 	 */
-	private void handleBuffer(final Message message, final Responder responder) {
+	/*private void handleBuffer(final Message message, final Responder responder) {
 		BaseRelayServer server = servers.get(message.sender().peerId());
 		BaseRelayClient client = clients.get(message.sender().peerId());
 		if (server != null && server instanceof BufferedRelayServer) {
@@ -385,7 +389,7 @@ public class RelayRPC extends DispatchHandler {
 		} else {
 			responder.failed(Type.EXCEPTION, "This message type is intended for buffering forwarders only");
 		}
-	}
+	}*/
 
 	/**
 	 * There are two possibilites for this case:
@@ -399,7 +403,7 @@ public class RelayRPC extends DispatchHandler {
 	 * @param peerConnection
 	 * @param sign
 	 */
-	private void handleLateResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) {
+	/*private void handleLateResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) {
 		if (!message.sender().isSlow() || message.bufferList().isEmpty()) {
 			throw new IllegalArgumentException(
 					"Late response does not come from slow peer or does not contain the buffered message");
@@ -445,5 +449,5 @@ public class RelayRPC extends DispatchHandler {
 				forwarder.forwardToUnreachable(message);
 			}
 		}
-	}
+	}*/
 }

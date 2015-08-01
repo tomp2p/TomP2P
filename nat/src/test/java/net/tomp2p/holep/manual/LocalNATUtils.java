@@ -25,6 +25,13 @@ import net.tomp2p.peers.PeerAddress;
 public class LocalNATUtils {
 	private static final String TAG = "##BASE64##:";
 	
+	private static final RemotePeerCallback DEFAULT_CALLBACK = new RemotePeerCallback() {
+		@Override
+		public void onNull(int i) {}
+		@Override
+		public void onFinished(int i) {}
+	};
+	
 	/**
 	 * If you have a terrible lag in InetAddress.getLocalHost(), make sure the
 	 * hostname resolves in the other network domain.
@@ -59,8 +66,18 @@ public class LocalNATUtils {
 			throws IOException, InterruptedException, ClassNotFoundException {
 		return executePeer(LocalNATUtils.class, nr, cmd);
 	}
+	
+	public static RemotePeer executePeer(int nr, final RemotePeerCallback remoteCallback, final Command... cmd)
+			throws IOException, InterruptedException, ClassNotFoundException {
+		return executePeer(LocalNATUtils.class, nr, remoteCallback, cmd);
+	}
+	
+	public static RemotePeer executePeer(Class<?> klass, int nr, final Command... cmd)
+			throws IOException, InterruptedException, ClassNotFoundException {
+		return executePeer(LocalNATUtils.class, nr, DEFAULT_CALLBACK, cmd);
+	}
 
-	public static RemotePeer executePeer(Class<?> klass, final int nr, final Command... cmd)
+	public static RemotePeer executePeer(Class<?> klass, final int nr, final RemotePeerCallback remoteCallback, final Command... cmd)
 			throws IOException, InterruptedException, ClassNotFoundException {
 		String javaHome = System.getProperty("java.home");
 		String javaBin = javaHome + File.separator + "bin" + File.separator
@@ -112,10 +129,12 @@ public class LocalNATUtils {
 							} else {
 								System.out.println("OUT["+nr+"]>null");
 								cl.countDown();
+								remoteCallback.onNull(i);
 								break;
 							}
 						}
 						cl.countDown();
+						remoteCallback.onFinished(i);
 					}
 					process.getInputStream().close();
 				} catch (Throwable t) {
@@ -140,12 +159,12 @@ public class LocalNATUtils {
 	/**
 	 * As set in: tomp2p/nat/src/test/resources/nat-net.sh
 	 */
-	public static Peer createRealNode(Number160 relayPeerId, String iface)
+	public static Peer createRealNode(Number160 relayPeerId, String iface, int port)
 			throws Exception {
 		// relay
 		Bindings b2 = new Bindings();
 		b2.addInterface(iface);
-		return new PeerBuilder(relayPeerId).ports(5002).bindings(b2).start();
+		return new PeerBuilder(relayPeerId).ports(port).bindings(b2).start();
 	}
 
 	/**

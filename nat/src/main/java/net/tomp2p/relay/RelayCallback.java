@@ -5,10 +5,14 @@ import net.tomp2p.peers.PeerAddress;
 
 public interface RelayCallback {
 
-	void onRelayAdded(PeerAddress candidate, PeerConnection object);
+	void onRelayAdded(PeerAddress relay, PeerConnection object);
 
-	void onRelayRemoved(PeerAddress candidate, PeerConnection object);
+	void onRelayRemoved(PeerAddress relay, PeerConnection object);
 
 	void onFailure(Exception e);
+
+	void onFullRelays();
+
+	void onNoMoreRelays();
 
 }

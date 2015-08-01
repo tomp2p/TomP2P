@@ -246,7 +246,6 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             }
         }
         
-		LOG.debug("Report failure: ", cause);
         futureResponse.failedLater(cause);
         ctx.close();
     }

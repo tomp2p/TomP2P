@@ -1,7 +1,12 @@
 package net.tomp2p.nat;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Ports;
@@ -21,13 +26,9 @@ import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.PeerMapUpdateTask;
-import net.tomp2p.relay.RelayCallback;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.RPC;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PeerNAT {
 
@@ -38,20 +39,18 @@ public class PeerNAT {
 	private final RelayRPC relayRPC;
 	private final boolean manualPorts;
 	private final DistributedRelay distributedRelay;
-	private final RelayCallback relayCallback;
 	private boolean relayMaintenance;
 	private BootstrapBuilder bootstrapBuilder;
 	private int peerMapUpdateIntervalSeconds;
 	
 	PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, boolean manualPorts, DistributedRelay distributedRelay, 
-			boolean relayMaintenance, RelayCallback relayCallback,  BootstrapBuilder bootstrapBuilder, int peerMapUpdateIntervalSeconds) {
+			boolean relayMaintenance, BootstrapBuilder bootstrapBuilder, int peerMapUpdateIntervalSeconds) {
 		this.peer = peer;
 		this.natUtils = natUtils;
 		this.relayRPC = relayRPC;
 		this.manualPorts = manualPorts;
 		this.distributedRelay = distributedRelay;
 		this.relayMaintenance = relayMaintenance;
-		this.relayCallback = relayCallback;
 		this.bootstrapBuilder = bootstrapBuilder;
 		this.peerMapUpdateIntervalSeconds = peerMapUpdateIntervalSeconds;
 	}
@@ -199,8 +198,12 @@ public class PeerNAT {
 		return null;
 	}
 	
-	public Shutdown startRelay() {
-		distributedRelay.setupRelays(relayCallback);
+	public Shutdown startRelay(PeerAddress... relays) {
+		return startRelay(Arrays.asList(relays));
+	}
+	
+	public Shutdown startRelay(List<PeerAddress> relays) {
+		distributedRelay.setupRelays(relays);
 		
 		final Shutdown shutdownRelay = new Shutdown() {
 			@Override

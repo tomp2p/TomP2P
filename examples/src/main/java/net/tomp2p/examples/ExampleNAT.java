@@ -18,16 +18,17 @@ package net.tomp2p.examples;
 import java.net.InetAddress;
 import java.util.Random;
 
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.nat.FutureNAT;
-import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.tcp.TCPRelayClientConfig;
+import net.tomp2p.relay.RelayCallback;
 
 public class ExampleNAT {
 	private final static int PORT_SERVER = 4000;
@@ -55,14 +56,53 @@ public class ExampleNAT {
 	public static void startClientNAT(String ip) throws Exception {
 		Random r = new Random(43L);
 		Peer peer = new PeerBuilder(new Number160(r)).ports(PORT_CLIENT).behindFirewall().start();
-		PeerNAT peerNAT = new PeerBuilderNAT(peer).start();
-		PeerAddress pa = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), PORT_SERVER, PORT_SERVER);
+		final PeerNAT peerNAT = new PeerBuilderNAT(peer).relayCallback(new RelayCallback() {
+			
+			@Override
+			public void onRelayRemoved(PeerAddress relay, PeerConnection object) {
+				System.out.println("relay removed: "+relay);
+			}
+			
+			@Override
+			public void onRelayAdded(PeerAddress relay, PeerConnection object) {
+				System.out.println("relay added: "+relay);
+			}
+			
+			@Override
+			public void onNoMoreRelays(int activeRelays) {
+				System.out.println("could not find more relays: "+activeRelays);
+			}
+			
+			@Override
+			public void onFullRelays(int activeRelays) {
+				System.out.println("could find all relays: "+activeRelays);
+			}
+			
+			@Override
+			public void onFailure(Exception e) {
+				e.printStackTrace();
+			}
+
+			@Override
+			public void onShutdown() {
+				System.out.println("shutdown");
+			}
+		}).start();
+		final PeerAddress pa = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), PORT_SERVER, PORT_SERVER);
 		
-		FutureDiscover fd = peer.discover().peerAddress(pa).start();
-		FutureNAT fn = peerNAT.startSetupPortforwarding(fd);
-		FutureRelayNAT frn = peerNAT.startRelay(new TCPRelayClientConfig(), fd, fn);
+		final FutureDiscover fd = peer.discover().peerAddress(pa).start();
+		final FutureNAT fn = peerNAT.portForwarding(fd);
+		fn.addListener(new BaseFutureAdapter<FutureNAT>() {
+
+			@Override
+			public void operationComplete(FutureNAT future) throws Exception {
+				if(future.isFailed()) {
+					peerNAT.startRelay(fd.reporter());
+				}
+				
+			}
+		});
 		
-		frn.awaitUninterruptibly();
 		if (fd.isSuccess()) {
 			System.out.println("found that my outside address is " + fd.peerAddress());
 		} else {
@@ -73,12 +113,8 @@ public class ExampleNAT {
 			System.out.println("NAT success: " + fn.peerAddress());
 		} else {
 			System.out.println("failed " + fn.failedReason());
-		}
-		
-		if (frn.isSuccess()) {
-			System.out.println("FutureRelay success");
-		} else {
-			System.out.println("failed " + frn.failedReason());
+			//this is enough time to print out the status of the relay search
+			Thread.sleep(5000);
 		}
 		
 		peer.shutdown();

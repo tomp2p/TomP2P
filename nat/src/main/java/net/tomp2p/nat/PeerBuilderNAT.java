@@ -1,7 +1,5 @@
 package net.tomp2p.nat;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -22,12 +20,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.RconRPC;
 import net.tomp2p.relay.RelayCallback;
-import net.tomp2p.relay.RelayClientConfig;
 import net.tomp2p.relay.RelayRPC;
-import net.tomp2p.relay.RelayServerConfig;
-import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.tcp.TCPRelayClientConfig;
-import net.tomp2p.relay.tcp.TCPRelayServerConfig;
 
 public class PeerBuilderNAT {
 
@@ -44,10 +37,13 @@ public class PeerBuilderNAT {
 		public void onFailure(Exception e) {}
 
 		@Override
-		public void onFullRelays() {}
+		public void onFullRelays(int activeRelays) {}
 
 		@Override
-		public void onNoMoreRelays() {}
+		public void onNoMoreRelays(int activeRelays) {}
+
+		@Override
+		public void onShutdown() {}
 	};
 	
 	final private Peer peer;
@@ -56,16 +52,11 @@ public class PeerBuilderNAT {
 	
 	private Boolean relayMaintenance;
 	
-	private RelayClientConfig relayConfig;
-	
 	private RelayCallback relayCallback;
 	
 	private BootstrapBuilder bootstrapBuilder;
 	
 	private Integer peerMapUpdateIntervalSeconds;
-
-	// holds multiple implementations for serving relay peers
-	private Map<RelayType, RelayServerConfig> relayServerConfigurations;
 
 	private static final int DEFAULT_NUMBER_OF_HOLEP_HOLES = 3;
 	private int holePNumberOfHoles = DEFAULT_NUMBER_OF_HOLEP_HOLES;
@@ -76,10 +67,6 @@ public class PeerBuilderNAT {
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
-
-		// add TCP server by default
-		this.relayServerConfigurations = new HashMap<RelayType, RelayServerConfig>();
-		relayServerConfigurations.put(RelayType.OPENTCP, new TCPRelayServerConfig());
 	}
 
 	public boolean isManualPorts() {
@@ -92,34 +79,6 @@ public class PeerBuilderNAT {
 
 	public PeerBuilderNAT manualPorts(boolean manualPorts) {
 		this.manualPorts = manualPorts;
-		return this;
-	}
-
-	/**
-	 * @return the relay server configurations. By default,
-	 *         {@link RelayType#OPENTCP} is implemented.
-	 */
-	public Map<RelayType, RelayServerConfig> relayServerConfigurations() {
-		return relayServerConfigurations;
-	}
-
-	/**
-	 * Set all relay server configurations
-	 * 
-	 * @return this instance
-	 */
-	public PeerBuilderNAT relayServerConfigurations(Map<RelayType, RelayServerConfig> relayServerConfigurations) {
-		this.relayServerConfigurations = relayServerConfigurations;
-		return this;
-	}
-
-	/**
-	 * Add a new server configuration (e.g. for {@link RelayType#ANDROID}).
-	 * 
-	 * @return this instance
-	 */
-	public PeerBuilderNAT addRelayServerConfiguration(RelayType relayType, RelayServerConfig configuration) {
-		relayServerConfigurations.put(relayType, configuration);
 		return this;
 	}
 
@@ -163,15 +122,6 @@ public class PeerBuilderNAT {
 		return holePNumberOfPunches;
 	}
 	
-	public  RelayClientConfig relayConfig() {
-		return relayConfig;
-	}
-	
-	public PeerBuilderNAT relayConfig(RelayClientConfig relayConfig) {
-		this.relayConfig = relayConfig;
-		return this;
-	}
-	
 	public RelayCallback relayCallback() {
 		return relayCallback;
 	}
@@ -191,10 +141,6 @@ public class PeerBuilderNAT {
 	}
 
 	public PeerNAT start() {
-		
-		if(relayConfig == null) {
-			relayConfig = new TCPRelayClientConfig();
-		}
 		
 		if(relayCallback == null) {
 			relayCallback = DEFAULT_RELAY_CALLBACK;
@@ -220,21 +166,13 @@ public class PeerBuilderNAT {
 		peer.peerBean().holePNumberOfHoles(holePNumberOfHoles);
 		peer.peerBean().holePNumberOfPunches(holePNumberOfPunches);
 
-		if (relayServerConfigurations == null) {
-			relayServerConfigurations = new HashMap<RelayType, RelayServerConfig>(0);
-		} else {
-			// start the server configurations
-			for (RelayServerConfig config : relayServerConfigurations.values()) {
-				config.start(peer);
-			}
-		}
 		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC);
 		
 		if(executorService == null) {
 			executorService = Executors.newSingleThreadExecutor();
 		}
 		
-		DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, relayConfig, executorService, bootstrapBuilder);
+		DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, executorService, bootstrapBuilder, relayCallback);
 
 		peer.addShutdownListener(new Shutdown() {
 			@Override
@@ -244,6 +182,6 @@ public class PeerBuilderNAT {
 			}
 		});
 
-		return new PeerNAT(peer, natUtils, relayRPC, manualPorts, distributedRelay, relayMaintenance, relayCallback, bootstrapBuilder, peerMapUpdateIntervalSeconds);
+		return new PeerNAT(peer, natUtils, relayRPC, manualPorts, distributedRelay, relayMaintenance, bootstrapBuilder, peerMapUpdateIntervalSeconds);
 	}
 }

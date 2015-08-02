@@ -28,8 +28,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.StandardProtocolFamily;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -39,13 +48,13 @@ import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.examples.utils.Repeat;
 import net.tomp2p.examples.utils.RepeatRule;
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.nat.FutureNAT;
-import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
@@ -54,17 +63,9 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.relay.tcp.TCPRelayClientConfig;
+import net.tomp2p.relay.RelayCallback;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Test bootstrapping, DHT operations like put/get/add/remove and sendDirect in both LAN and WAN environment
@@ -608,7 +609,7 @@ public class TomP2PTests {
 
 		PeerNAT peerNAT = new PeerBuilderNAT(peer).start();
 		FutureDiscover futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-		FutureNAT futureNAT = peerNAT.startSetupPortforwarding(futureDiscover);
+		FutureNAT futureNAT = peerNAT.portForwarding(futureDiscover);
 		futureNAT.awaitUninterruptibly();
 		if (futureNAT.isSuccess()) {
 			log.info("Automatic port forwarding is setup. Now we do a futureDiscover again. Address = "
@@ -639,9 +640,9 @@ public class TomP2PTests {
 		}
 	}
 
-	private Peer bootstrapInRelayMode(int clientPort) {
+	private Peer bootstrapInRelayMode(int clientPort) throws InterruptedException {
 		Number160 peerId = new Number160(new Random(43L));
-		Peer peer = null;
+		final Peer peer;
 		try {
 			peer = new PeerBuilder(peerId).bindings(getBindings()).behindFirewall().ports(clientPort).start();
 		} catch (IOException e) {
@@ -650,33 +651,66 @@ public class TomP2PTests {
 			return null;
 		}
 
-		PeerNAT peerNAT = new PeerBuilderNAT(peer).start();
-		FutureDiscover futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-		FutureNAT futureNAT = peerNAT.startSetupPortforwarding(futureDiscover);
-		FutureRelayNAT futureRelayNAT = peerNAT.startRelay(new TCPRelayClientConfig(), futureDiscover, futureNAT);
-		futureRelayNAT.awaitUninterruptibly();
-		if (futureRelayNAT.isSuccess()) {
-			log.info("Bootstrap using relay was successful. Address = " + peer.peerAddress());
-
-			FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
-			futureBootstrap.awaitUninterruptibly();
-			if (futureBootstrap.isSuccess()) {
-				return peer;
-			} else {
-				log.warn("Bootstrap failed. Reason = " + futureBootstrap.failedReason());
-				peer.shutdown().awaitUninterruptibly();
-				return null;
+		final PeerNAT peerNAT = new PeerBuilderNAT(peer).relayCallback(new RelayCallback() {
+			
+			@Override
+			public void onRelayRemoved(PeerAddress relay, PeerConnection object) {
+				log.info("Relay was removed. Address = " + relay);
 			}
+			
+			@Override
+			public void onRelayAdded(PeerAddress relay, PeerConnection object) {
+				log.info("Bootstrap using relay was successful. Address = " + relay);
+			}
+			
+			@Override
+			public void onNoMoreRelays(int activeRelays) {
+				log.info("No more relays found. Active relays: " + activeRelays);
+			}
+			
+			@Override
+			public void onFullRelays(int activeRelays) {
+				log.info("All relays found. Active relays: " + activeRelays);
+			}
+			
+			@Override
+			public void onFailure(Exception e) {
+				log.error("error", e);
+			}
+
+			@Override
+			public void onShutdown() {
+				peer.shutdown().awaitUninterruptibly();
+			}
+		}).start();
+		final FutureDiscover futureDiscover = peer.discover().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
+		FutureNAT futureNAT = peerNAT.portForwarding(futureDiscover);
+		
+		futureNAT.addListener(new BaseFutureAdapter<FutureNAT>() {
+
+			@Override
+			public void operationComplete(FutureNAT future) throws Exception {
+				if(future.isFailed()) {
+					peerNAT.startRelay(futureDiscover.reporter());
+				}
+			}
+		});
+		
+		//make the return also a future 
+		Thread.sleep(5000);
+		
+		FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(BOOTSTRAP_NODE_ADDRESS).start();
+		futureBootstrap.awaitUninterruptibly();
+		if (futureBootstrap.isSuccess()) {
+			return peer;	
 		} else {
-			log.error("Bootstrap using relay failed " + futureRelayNAT.failedReason());
-			futureRelayNAT.shutdown();
-			peer.shutdown().awaitUninterruptibly();
+			log.warn("Bootstrap failed. Reason = " + futureBootstrap.failedReason());
+			peer.shutdown();
 			return null;
 		}
-
 	}
 
-    private Peer bootstrapInUnknownMode(int clientPort) {
+    private Peer bootstrapInUnknownMode(int clientPort) throws InterruptedException {
         resolvedConnectionType = ConnectionType.DIRECT;
         Peer peer = bootstrapDirectConnection(clientPort);
         if (peer != null)
@@ -698,7 +732,7 @@ public class TomP2PTests {
         return peer;
     }
 
-    private PeerDHT getDHTPeer(int clientPort) {
+    private PeerDHT getDHTPeer(int clientPort) throws InterruptedException {
         Peer peer;
         if (FORCED_CONNECTION_TYPE == ConnectionType.DIRECT) {
             peer = bootstrapDirectConnection(clientPort);

@@ -11,8 +11,10 @@ public interface RelayCallback {
 
 	void onFailure(Exception e);
 
-	void onFullRelays();
+	void onFullRelays(int activeRelays);
 
-	void onNoMoreRelays();
+	void onNoMoreRelays(int activeRelays);
+
+	void onShutdown();
 
 }

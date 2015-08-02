@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBuf;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -39,13 +40,35 @@ public class Forwarder extends DispatchHandler {
 	
 	private final PeerConnection unreachablePeerConnection;
 	private List<Map<Number160, PeerStatistic>> peerMap;
+	private final boolean isSlow;
+	
+	private final List<Message> buffer = Collections.synchronizedList(new ArrayList<Message>());
+	
+	private int capacity = 16;
+	private long lastAccess = System.currentTimeMillis();
+	private int bufferTimeSec = 60;
 
-	public Forwarder(Peer peer, PeerConnection unreachablePeerConnection) {
+	public Forwarder(Peer peer, PeerConnection unreachablePeerConnection, boolean isSlow) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.unreachablePeerConnection = unreachablePeerConnection;
+		this.isSlow = isSlow;
 	}
 	
-	public FutureDone<Message> forwardToUnreachable(final Message message) {
+	private FutureDone<Message> forwardOrBuffer(final Message requestMessage) {
+		if(isSlow) {
+			final FutureDone<Message> futureDone = new FutureDone<Message>();
+			Message fastReply = createResponseMessage(requestMessage, Type.PARTIALLY_OK);
+			addToBuffer(requestMessage);
+			return futureDone.done(fastReply);
+			
+		} else {
+			return forwardToUnreachable(requestMessage);
+		}
+	}
+	
+	
+
+	private FutureDone<Message> forwardToUnreachable(final Message message) {
 		// Send message via direct message through the open connection to the unreachable peer
 		LOG.debug("Sending {} to unreachable peer {}", message, unreachablePeerConnection.remotePeer());
 		final Message envelope = createMessage(unreachablePeerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
@@ -111,7 +134,7 @@ public class Forwarder extends DispatchHandler {
 				} else {
 					messageCounter.incrementAndGet();
 					LOG.debug("Received message {} to forward to unreachable peer {}", message, unreachablePeerConnection.remotePeer());
-					FutureDone<Message> response = forwardToUnreachable(message);
+					FutureDone<Message> response = forwardOrBuffer(message);
 					response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 						@Override
 						public void operationComplete(FutureDone<Message> future) throws Exception {
@@ -225,4 +248,37 @@ public class Forwarder extends DispatchHandler {
 			Message preparedResponse) {
 		this.peerMap = peerMap;
 	}
+	
+	private void addToBuffer(Message requestMessage) {
+		buffer.add(requestMessage);
+		if(buffer.size() > 16 || lastAccess + (bufferTimeSec * 1000) < System.currentTimeMillis()) {
+			forwardMessages(buffer);
+		}
+	}
+	
+	private void forwardMessages(List<Message> buffer2) {
+		final Message envelope = createMessage(unreachablePeerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_4);
+		
+		// always keep the connection open
+		envelope.keepAlive(true);
+		ByteBuf bb = RelayUtils.composeMessageBuffer(buffered(), connectionBean().sender().channelClientConfiguration().signatureFactory());
+		envelope.buffer(new Buffer(bb));
+		
+		// this will be read RelayRPC.handlePiggyBackMessage
+		Collection<PeerSocketAddress> peerSocketAddresses = new ArrayList<PeerSocketAddress>(1);
+		peerSocketAddresses.add(new PeerSocketAddress(envelope.sender().inetAddress(), 0, 0));
+		envelope.peerSocketAddresses(peerSocketAddresses);
+
+		// Forward a message through the open peer connection to the unreachable peer.
+		RelayUtils.send(unreachablePeerConnection, peerBean(), connectionBean(), envelope);
+	}
+
+	public List<Message> buffered() {
+		List<Message> retVal;
+		synchronized (buffer) {
+			retVal = new ArrayList<Message>(buffer);
+		}
+		buffer.clear();
+		return retVal;
+	}	
 }

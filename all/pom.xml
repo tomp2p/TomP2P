@@ -34,11 +34,6 @@
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>tomp2p-android</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-replication</artifactId>
 			<version>${project.version}</version>
 		</dependency>

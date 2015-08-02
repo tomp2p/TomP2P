@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -385,11 +384,6 @@ public class TestNATRelay implements Serializable {
 		return relayPeer;
 	}
 	
-	private PeerNAT createRelay2(Number160 relayPeerId, int port) throws Exception {
-		Peer relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, port);
-		return new PeerBuilderNAT(relayPeer).start();
-	}
-	
 	private Peer createNattedPeer(final String ip, final int port, final int nr, final String retVal)
 			throws UnknownHostException, IOException {
 		Peer peer = LocalNATUtils.init(ip, port, nr);
@@ -412,9 +406,11 @@ public class TestNATRelay implements Serializable {
 			@Override
 			public void onFailure(Exception e) {e.printStackTrace();}
 			@Override
-			public void onFullRelays() {}
+			public void onFullRelays(int activeRelays) {}
 			@Override
-			public void onNoMoreRelays() {}
+			public void onNoMoreRelays(int activeRelays) {}
+			@Override
+			public void onShutdown() {}
 		};
 	}
 	private RelayCallback countDownRelayCallback2(
@@ -433,9 +429,11 @@ public class TestNATRelay implements Serializable {
 			@Override
 			public void onFailure(Exception e) {e.printStackTrace();}
 			@Override
-			public void onFullRelays() {}
+			public void onFullRelays(int activeRelays) {}
 			@Override
-			public void onNoMoreRelays() {}
+			public void onNoMoreRelays(int activeRelays) {}
+			@Override
+			public void onShutdown() {}
 		};
 	}
 	
@@ -449,9 +447,11 @@ public class TestNATRelay implements Serializable {
 			@Override
 			public void onFailure(Exception e) {e.printStackTrace();}
 			@Override
-			public void onFullRelays() {cl.countDown();}
+			public void onFullRelays(int activeRelays) {cl.countDown();}
 			@Override
-			public void onNoMoreRelays() {}
+			public void onNoMoreRelays(int activeRelays) {}
+			@Override
+			public void onShutdown() {}
 		};
 	}
 	

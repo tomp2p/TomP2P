@@ -4,23 +4,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message;
-import net.tomp2p.message.Message.Type;
-import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
-import net.tomp2p.relay.buffer.BufferedRelayClient;
-import net.tomp2p.rpc.RPC;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The PeerMapUpdateTask is responsible for periodically sending the unreachable

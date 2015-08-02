@@ -4,26 +4,24 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 import net.tomp2p.rpc.ObjectDataReply;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
 
 public class TestRcon {
 
@@ -67,9 +65,8 @@ public class TestRcon {
 		
 		// setup relay
 		PeerNAT uNat = new PeerBuilderNAT(unreachable).start();
-		FutureRelayNAT frn = uNat.startRelay(new TCPRelayClientConfig(), master.peerAddress());
-		frn.awaitUninterruptibly();
-		Assert.assertTrue(frn.isSuccess());
+		uNat.startRelay(master.peerAddress());
+		Thread.sleep(5000);
 
 		// Check if flags are set correctly
 		Assert.assertTrue(unreachable.peerAddress().isRelayed());

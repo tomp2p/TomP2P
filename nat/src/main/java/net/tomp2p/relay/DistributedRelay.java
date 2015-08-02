@@ -47,9 +47,6 @@ public class DistributedRelay implements PeerMapChangeListener {
 	//private final List<BaseRelayClient> relayClients;
 	private final Set<PeerAddress> failedRelays;
 	private final Map<PeerAddress, PeerConnection> activeClients;
-
-	//private final Collection<RelayListener> relayListeners;
-	private final RelayClientConfig relayConfig;
 	
 	private FutureDone<Void> shutdownFuture = new FutureDone<Void>();
 	
@@ -58,6 +55,8 @@ public class DistributedRelay implements PeerMapChangeListener {
 		
 	final private ExecutorService executorService;
 	final private BootstrapBuilder bootstrapBuilder;
+	final private RelayCallback relayCallback;
+	private volatile List<PeerAddress> relays;
 	
 
 	/**
@@ -73,21 +72,19 @@ public class DistributedRelay implements PeerMapChangeListener {
 	 * @param relayType
 	 *            the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, RelayClientConfig relayConfig, ExecutorService executorService, BootstrapBuilder bootstrapBuilder) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, ExecutorService executorService, BootstrapBuilder bootstrapBuilder, RelayCallback relayCallback) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
-		this.relayConfig = relayConfig;
 		this.executorService = executorService;
 		this.bootstrapBuilder = bootstrapBuilder;
+		this.relayCallback = relayCallback;
 
 		activeClients = Collections.synchronizedMap(new HashMap<PeerAddress, PeerConnection>());
-		failedRelays = new ConcurrentCacheSet<PeerAddress>(relayConfig.failedRelayWaitTime());
+		failedRelays = new ConcurrentCacheSet<PeerAddress>(60);
 		peer.peerBean().peerMap().addPeerMapChangeListener(this);
 	}
 
-	public RelayClientConfig relayConfig() {
-		return relayConfig;
-	}
+
 
 	/**
 	 * Returns connections to current relay peers
@@ -119,6 +116,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 		synchronized (peer) {
 			peer.notify();
 		}
+		relayCallback.onShutdown();
 		return shutdownFuture;
 	}
 
@@ -130,12 +128,13 @@ public class DistributedRelay implements PeerMapChangeListener {
 	 * 
 	 * @return RelayFuture containing a {@link DistributedRelay} instance
 	 */
-	public DistributedRelay setupRelays(final RelayCallback relayCallback) {
+	public DistributedRelay setupRelays(List<PeerAddress> relays) {
+		this.relays = relays;
 		executorService.submit(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					startConnectionsLoop(relayCallback);
+					startConnectionsLoop();
 				} catch (Exception e) {
 					relayCallback.onFailure(e);
 				}
@@ -146,7 +145,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 	
 	private List<PeerAddress> relayCandidates() {
 		final List<PeerAddress> relayCandidates;
-		if (relayConfig.manualRelays().isEmpty()) {
+		if (!relays.isEmpty()) {
 			// Get the neighbors of this peer that could possibly act as relays. Relay
 			// candidates are neighboring peers that are not relayed themselves and have
 			// not recently failed as relay or denied acting as relay.
@@ -156,7 +155,9 @@ public class DistributedRelay implements PeerMapChangeListener {
 		} else {
 			// if the user sets manual relays, the failed relays are not removed, as this has to be done by
 			// the user
-			relayCandidates = new ArrayList<PeerAddress>(relayConfig.manualRelays());
+			synchronized (relays) {
+				relayCandidates = new ArrayList<PeerAddress>(relays);	
+			}
 		}
 
 		//filterRelayCandidates
@@ -187,7 +188,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 	 */
 	
 	
-	private void startConnectionsLoop(final RelayCallback relayCallback) throws InterruptedException {
+	private void startConnectionsLoop() throws InterruptedException {
 
 		if(shutdown && activeClients.isEmpty()) {
 			shutdownFuture.done();
@@ -199,10 +200,10 @@ public class DistributedRelay implements PeerMapChangeListener {
 			return;
 		}
 		
-		if(activeClients.size() >= relayConfig.type().maxRelayCount()) {
+		if(activeClients.size() >= 5) {
 			LOG.debug("we have enough relays");
 			allRelays = true;
-			relayCallback.onFullRelays();
+			relayCallback.onFullRelays(activeClients.size());
 			updatePeerMap();
 			//wait at most x seconds for a restart of the loop
 			executorService.submit(new Runnable() {
@@ -212,7 +213,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 						synchronized (peer) {
 							peer.wait(60 * 1000);
 						}
-						startConnectionsLoop(relayCallback);
+						startConnectionsLoop();
 					} catch (Exception e) {
 						relayCallback.onFailure(e);
 					}
@@ -225,7 +226,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 		final List<PeerAddress> relayCandidates = relayCandidates();
 		if(relayCandidates.isEmpty()) {
 			LOG.debug("no more relays");
-			relayCallback.onNoMoreRelays();
+			relayCallback.onNoMoreRelays(activeClients.size());
 			updatePeerMap();
 			executorService.submit(new Runnable() {
 				@Override
@@ -234,7 +235,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 						synchronized (peer) {
 							peer.wait(60 * 1000);
 						}
-						startConnectionsLoop(relayCallback);
+						startConnectionsLoop();
 					} catch (Exception e) {
 						relayCallback.onFailure(e);
 					}
@@ -244,7 +245,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 		}
 		
 		final PeerAddress candidate = relayCandidates.get(0);
-		final FutureDone<PeerConnection> futureDone = relayRPC.sendSetupMessage(candidate, relayConfig);
+		final FutureDone<PeerConnection> futureDone = relayRPC.sendSetupMessage(candidate);
 		futureDone.addListener(new BaseFutureAdapter<FutureDone<PeerConnection>>() {
 			@Override
 			public void operationComplete(final FutureDone<PeerConnection> future)
@@ -288,7 +289,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 					relayCallback.onRelayRemoved(candidate, future.object());
 				}
 				//loop again
-				startConnectionsLoop(relayCallback);
+				startConnectionsLoop();
 			}
 		});		
 	}
@@ -307,7 +308,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 			socketAddresses = new ArrayList<PeerSocketAddress>(activeClients.size());
 		
 			//we can have more than the max relay count in our active client list.
-			int max = relayConfig.type().maxRelayCount();
+			int max = 5;
 			int i = 0;
 			for (PeerAddress relay : activeClients.keySet()) {
 				socketAddresses.add(new PeerSocketAddress(relay.inetAddress(), relay.tcpPort(), relay.udpPort()));
@@ -319,7 +320,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 
 		// update firewalled and isRelayed flags
 		PeerAddress newAddress = peer.peerAddress().changeFirewalledTCP(!hasRelays).changeFirewalledUDP(!hasRelays)
-				.changeRelayed(hasRelays).changePeerSocketAddresses(socketAddresses).changeSlow(hasRelays && relayConfig.type().isSlow());
+				.changeRelayed(hasRelays).changePeerSocketAddresses(socketAddresses).changeSlow(hasRelays);
 		peer.peerBean().serverPeerAddress(newAddress);
 		LOG.debug("Updated peer address {}, isrelay = {}", newAddress, hasRelays);
 	}

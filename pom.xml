@@ -47,7 +47,6 @@
 		<module>replication</module>
 		<module>examples</module>
 		<module>nat</module>
-		<module>android</module>
 		<module>all</module>
 		<module>storage</module>
 		<module>dht</module>

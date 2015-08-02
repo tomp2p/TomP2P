@@ -6,14 +6,12 @@ import java.util.Random;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.tcp.TCPRelayClientConfig;
 import net.tomp2p.rpc.ObjectDataReply;
 
 public class ExampleHoleP {
@@ -54,7 +52,7 @@ public class ExampleHoleP {
 		shutdown();
 	}
 
-	private static void setUp(String[] args) throws IOException {
+	private static void setUp(String[] args) throws IOException, InterruptedException {
 		if (args.length > 0) {
 			if (args.length > 1) {
 				try {
@@ -84,7 +82,7 @@ public class ExampleHoleP {
 		System.err.println("Bootstrap and Relay Setup Done!");
 	}
 	
-	public static Peer setUpRelayingWithNewPeer() throws IOException {
+	public static Peer setUpRelayingWithNewPeer() throws IOException, InterruptedException {
 		// Bootstrap natpeer
 		Peer unreachable = new PeerBuilder(Number160.createHash(RND.nextInt())).ports(PORT + 1).start();
 		PeerAddress pa = unreachable.peerBean().serverPeerAddress();
@@ -97,8 +95,9 @@ public class ExampleHoleP {
 
 		// setup relay, check NATType, and specify number of holes and punches
 		PeerNAT uNat = new PeerBuilderNAT(unreachable).holePNumberOfHolePunches(numberOfPunches).holePNumberOfHoles(numberOfHoles).start();
-		FutureRelayNAT frn = uNat.startRelay(new TCPRelayClientConfig(), master.peerAddress());
-		frn.awaitUninterruptibly();
+		uNat.startRelay(master.peerAddress());
+		//TODO: wait until a relay is added
+		Thread.sleep(5000);
 
 		System.err.println("unreachable peer with PeerAddress = " + unreachable.peerAddress().toString() + " bootstrapped!");
 		

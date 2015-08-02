@@ -267,7 +267,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 							peer.peerBean().peerMap().peerFailed(candidate, new PeerException(AbortCause.SHUTDOWN, "remote open peer connection was closed"));
 							failedRelays.add(future.object().remotePeer());
 							
-							activeClients.remove(candidate, future.object());
+							activeClients.remove(candidate);
 							updatePeerAddress();
 							relayCallback.onRelayRemoved(candidate, future.object());
 							

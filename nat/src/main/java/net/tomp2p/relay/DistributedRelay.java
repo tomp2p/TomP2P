@@ -284,7 +284,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 					});
 				} else {
 					LOG.debug("bad relay: {}", candidate);
-					activeClients.remove(candidate, future.object());
+					activeClients.remove(candidate);
 					updatePeerAddress();
 					relayCallback.onRelayRemoved(candidate, future.object());
 				}

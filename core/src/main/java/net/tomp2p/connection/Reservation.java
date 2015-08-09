@@ -440,9 +440,12 @@ public class Reservation {
 					futureChannelCreator.failed(e);
 					return;
 				}
+				
+				PeerSocketAddress psa = peerBean.serverPeerAddress().internalPeerSocketAddress();
+				InetAddress fromAddress = psa == null ? peerBean.serverPeerAddress().inetAddress() : psa.inetAddress();
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, 0, permitsPermanentTCP,
-				        channelClientConfiguration, peerBean.serverPeerAddress().internalPeerSocketAddress().inetAddress());
+				        channelClientConfiguration, fromAddress);
 				addToSet(channelCreator);
 			} finally {
 				read.unlock();

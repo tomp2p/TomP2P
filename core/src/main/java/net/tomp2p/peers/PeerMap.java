@@ -868,14 +868,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             final Map<Number160, PeerStatistic> tmp, final PeerAddress peerAddress, final boolean firstHand, RTT roundTripTime) {
         synchronized (tmp) {
             PeerStatistic old = tmp.get(peerAddress.peerId());
-            if (old != null) {
-            	//TODO: this should only be from firsthand!
-                old.peerAddress(peerAddress);
+            if (old != null && firstHand) {
+            	old.peerAddress(peerAddress);
                 old.addRTT(roundTripTime);
-                if (firstHand) {
-                    old.successfullyChecked();
-                    old.increaseNumberOfResponses();
-                }
+                old.successfullyChecked();
+                old.increaseNumberOfResponses();
                 return old;
             }
         }

@@ -18,6 +18,7 @@ package net.tomp2p.connection;
 
 import io.netty.channel.EventLoopGroup;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +38,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.RequestConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
+import net.tomp2p.peers.PeerSocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +67,7 @@ public class Reservation {
 	// single thread
 	private final ExecutorService executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, queue);
 	private final EventLoopGroup workerGroup;
+	private final PeerBean peerBean;
 
 	// we should be fair, otherwise we see connection timeouts due to unfairness
 	// if busy
@@ -89,7 +92,7 @@ public class Reservation {
 	 *            TCP connections, maxPermitsPermanentTCP: the number of maximum
 	 *            permanent TCP connections
 	 */
-	public Reservation(final EventLoopGroup workerGroup, final ChannelClientConfiguration channelClientConfiguration) {
+	public Reservation(final EventLoopGroup workerGroup, final ChannelClientConfiguration channelClientConfiguration, final PeerBean peerBean) {
 		this.workerGroup = workerGroup;
 		this.maxPermitsUDP = channelClientConfiguration.maxPermitsUDP();
 		this.maxPermitsTCP = channelClientConfiguration.maxPermitsTCP();
@@ -98,6 +101,7 @@ public class Reservation {
 		this.semaphoreTCP = new Semaphore(maxPermitsTCP);
 		this.semaphorePermanentTCP = new Semaphore(maxPermitsPermanentTCP);
 		this.channelClientConfiguration = channelClientConfiguration;
+		this.peerBean = peerBean;
 	}
 
 	/**
@@ -368,9 +372,12 @@ public class Reservation {
 					futureChannelCreator.failed(e);
 					return;
 				}
+				
+				PeerSocketAddress psa = peerBean.serverPeerAddress().internalPeerSocketAddress();
+				InetAddress fromAddress = psa == null ? peerBean.serverPeerAddress().inetAddress() : psa.inetAddress();
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, permitsUDP, permitsTCP,
-				        channelClientConfiguration);
+				        channelClientConfiguration, fromAddress);
 				addToSet(channelCreator);
 			} finally {
 				read.unlock();
@@ -435,7 +442,7 @@ public class Reservation {
 				}
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, 0, permitsPermanentTCP,
-				        channelClientConfiguration);
+				        channelClientConfiguration, peerBean.serverPeerAddress().internalPeerSocketAddress().inetAddress());
 				addToSet(channelCreator);
 			} finally {
 				read.unlock();

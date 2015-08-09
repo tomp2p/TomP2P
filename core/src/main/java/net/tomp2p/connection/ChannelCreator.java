@@ -33,6 +33,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
@@ -83,6 +84,8 @@ public class ChannelCreator {
 	private final FutureDone<Void> futureChannelCreationDone;
 
 	private final ChannelClientConfiguration channelClientConfiguration;
+	
+	private final InetAddress sendFromAddress;
 
 	private EventExecutorGroup handlerExecutor;
 
@@ -108,7 +111,7 @@ public class ChannelCreator {
 	 */
 	ChannelCreator(final EventLoopGroup workerGroup, final FutureDone<Void> futureChannelCreationDone,
 			int maxPermitsUDP, int maxPermitsTCP,
-			final ChannelClientConfiguration channelClientConfiguration) {
+			final ChannelClientConfiguration channelClientConfiguration, InetAddress sendFromAddress) {
 		this.workerGroup = workerGroup;
 		this.futureChannelCreationDone = futureChannelCreationDone;
 		this.maxPermitsUDP = maxPermitsUDP;
@@ -116,6 +119,7 @@ public class ChannelCreator {
 		this.semaphoreUPD = new Semaphore(maxPermitsUDP);
 		this.semaphoreTCP = new Semaphore(maxPermitsTCP);
 		this.channelClientConfiguration = channelClientConfiguration;
+		this.sendFromAddress = sendFromAddress;
 	}
 
 	/**
@@ -154,7 +158,9 @@ public class ChannelCreator {
 			// we do a connect, we cannot receive
 			// broadcast messages
 			final ChannelFuture channelFuture;
-			channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
+			
+			LOG.debug("Create UDP, use from address: {}", sendFromAddress);
+			channelFuture = b.bind(new InetSocketAddress(sendFromAddress, 0));
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;
@@ -199,8 +205,10 @@ public class ChannelCreator {
 			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(
 					channelHandlers, true, true);
 			addHandlers(b, channelHandlers2);
+			
+			LOG.debug("Create TCP, use from address: {}", sendFromAddress);
 
-			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(channelClientConfiguration.senderTCP(), 0));
+			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(sendFromAddress, 0));
 
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreTCP, futureResponse);

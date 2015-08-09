@@ -42,12 +42,18 @@
     <logger name="net.tomp2p.message.Decoder" level="TRACE"/>
     <logger name="net.tomp2p.message.Encoder" level="TRACE"/>
     <logger name="net.tomp2p.message.TomP2POutbound" level="TRACE"/>
-    <logger name="net.tomp2p.message.TomP2PCumulationTCP" level="TRACE"/> -->
+    <logger name="net.tomp2p.message.TomP2PCumulationTCP" level="TRACE"/> 
     
     <logger name="net.tomp2p.relay.DistributedRelay" level="TRACE"/>
     <logger name="net.tomp2p.relay.RelayRPC" level="TRACE"/>
     <logger name="net.tomp2p.relay.Forwarder" level="TRACE"/>
     <logger name="net.tomp2p.connection.RequestHandler" level="TRACE"/>
+    <logger name="net.tomp2p.p2p.builder.DiscoverBuilder" level="TRACE"/>
+    <logger name="net.tomp2p.rpc.NeighborRPC" level="TRACE"/>
+    <logger name="net.tomp2p.connection.Dispatcher" level="TRACE"/>
+    
+    <logger name="net.tomp2p.connection.ChannelCreator" level="TRACE"/>
+    <logger name="net.tomp2p.peers.PeerMap" level="TRACE"/>-->
 
     <!--  <logger name="net.tomp2p.relay" level="TRACE"/> -->
     <!-- Disable Netty Warning that I'm aware of -->

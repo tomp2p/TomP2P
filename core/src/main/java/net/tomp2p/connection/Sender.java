@@ -768,7 +768,7 @@ public class Sender {
 			futureResponse.failed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
 			return;
 		}
-		LOG.debug("about to connect to {} with channel {}, ff={}", message.recipient(), channelFuture.channel(), fireAndForget);
+		LOG.debug("about to connect to {} with channel {}, ff={}, msg={}", message.recipient(), channelFuture.channel(), fireAndForget, message);
 		final Cancel connectCancel = createCancel(channelFuture);
 		futureResponse.setCancel(connectCancel);
 		channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {

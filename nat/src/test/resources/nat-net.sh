@@ -5,10 +5,10 @@
 # using real hardware or virtual machines. The network setup looks as follows:
 #
 # -------------------------------------------------------------
-#           +--------+  +------------+
-# global    |DEV_REAL|--|NAT_REAL    |
-# namespace |your IP |  |192.168.1.50|
-#           +--------+  +-----+------+
+#           +--------+  +-------------+
+# global    |DEV_REAL|--|NAT_REAL     |
+# namespace |your IP |  |192.168.10.50|
+#           +--------+  +-----+-------+
 # ----------------------------|--------------------------------
 #                       +-----+----+  +--------+
 # natX                  |NAT_WAN   |--|NAT_LAN |
@@ -44,8 +44,8 @@
 # stop NAT
 # > nat-net.sh stop 0
 #
-# port forwarding, will forward the port in the natX namespace
-# > nat-net.sh forward 0 4000 10.0.0.2
+# port forwarding, will forward the port in the natX namespace from port 4000 to port 5000
+# > nat-net.sh forward 0 4000 10.0.0.2 5000
 #
 # start UPNP deamon in the natX namespace with the external interface NAT_WAN and internal interface NAT_LAN
 # > nat-net.sh upnp 0
@@ -68,8 +68,8 @@
 # Author: Thomas Bocek
 
 # Set the IP address to something in your subnet of your global namespace
-NAT_REAL="192.168.1.5$2"
-NAT_REAL_NET="192.168.1.0"
+NAT_REAL="192.168.10.5$2"
+NAT_REAL_NET="192.168.10.0"
 # IP address should not be in a subnet of your global namespace,
 # as you would need an additional ARP proxy
 NAT_WAN="172.20.$2.1"
@@ -107,13 +107,17 @@ start () {
   
   # loopback is important or getLocalHost() will hang for a long time!
   ip netns exec "unr$1" ifconfig "lo" 127.0.0.1 up
+  ip netns exec "nat$1" ifconfig "lo" 127.0.0.1 up
+  
   
   # add, modify routing
-  route del -net "$NAT_REAL_NET"/24 dev "nat$1_real"
+  #route del -net "$NAT_REAL_NET"/24 dev "nat$1_real"
   route add -net "$NAT_WAN_NET"/24 dev "nat$1_real"
   ip netns exec "unr$1" route add default gw "$NAT_LAN"
   ip netns exec "nat$1" route add default gw "$NAT_WAN"
   echo "routing set."
+
+  echo 1 > "/proc/sys/net/ipv4/conf/nat$1_real/proxy_arp"
   
   # setup NAT
   ip netns exec "nat$1" echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -124,8 +128,9 @@ start () {
     ip netns exec "nat$1" iptables -t nat -A POSTROUTING -o "nat$1_wan" -j MASQUERADE --random
   fi
 
-  ip netns exec "nat$1" iptables -A FORWARD -i "nat$1_wan" -o "nat$1_lan" -m state --state RELATED,ESTABLISHED -j ACCEPT
-  ip netns exec "nat$1" iptables -A FORWARD -i "nat$1_lan" -o "nat$1_wan" -j ACCEPT
+  #if we have a drop policy, we need this accept rules
+  #ip netns exec "nat$1" iptables -A FORWARD -i "nat$1_wan" -o "nat$1_lan" -m state --state RELATED,ESTABLISHED -j ACCEPT
+  #ip netns exec "nat$1" iptables -A FORWARD -i "nat$1_lan" -o "nat$1_wan" -j ACCEPT
   echo "NAT setup $2".
 }
 
@@ -138,8 +143,8 @@ stop () {
 }
 
 forward () {
-  ip netns exec "nat$1" iptables -t nat -A PREROUTING -i nat$1_wan -p tcp --dport $2 -j DNAT --to-destination $3:$2
-  ip netns exec "nat$1" iptables -t nat -A PREROUTING -i nat$1_wan -p udp --dport $2 -j DNAT --to-destination $3:$2
+  ip netns exec "nat$1" iptables -t nat -A PREROUTING -i nat$1_wan -p tcp --dport $2 -j DNAT --to-destination $3:$4
+  ip netns exec "nat$1" iptables -t nat -A PREROUTING -i nat$1_wan -p udp --dport $2 -j DNAT --to-destination $3:$4
   ip netns exec "nat$1" iptables -A FORWARD -d $3 -p tcp --dport $2 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
   ip netns exec "nat$1" iptables -A FORWARD -d $3 -p udp --dport $2 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
 }
@@ -167,7 +172,7 @@ case "$1" in
   ;;
   
   forward)
-    forward $2 $3 $4
+    forward $2 $3 $4 $5
   ;;
   
   upnp)

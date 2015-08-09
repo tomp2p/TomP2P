@@ -90,7 +90,7 @@ public class TestNATRelay implements Serializable {
 
 				@Override
 				public Serializable execute() throws Exception {
-					Peer peer1 = createNattedPeer("10.0.0.2", 5000, 0, "me1");
+					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.0.2", 5000, 0, "me1");
 					put("p1", peer1);
 					
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
@@ -187,7 +187,7 @@ public class TestNATRelay implements Serializable {
 
 				@Override
 				public Serializable execute() throws Exception {
-					Peer peer1 = createNattedPeer("10.0.0.2", 5000, 0, "me1");
+					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.0.2", 5000, 0, "me1");
 					put("p1", peer1);
 					
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
@@ -266,7 +266,7 @@ public class TestNATRelay implements Serializable {
 
 				@Override
 				public Serializable execute() throws Exception {
-					Peer peer1 = createNattedPeer("10.0.0.2", 5000, 0, "me1");
+					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.0.2", 5000, 0, "me1");
 					put("p1", peer1);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
 					FutureDiscover fd2 = peer1.discover().peerSocketAddress(relayAddress2).start().awaitUninterruptibly();
@@ -333,7 +333,7 @@ public class TestNATRelay implements Serializable {
 
 				@Override
 				public Serializable execute() throws Exception {
-					Peer peer1 = createNattedPeer("10.0.0.2", 5000, 0, "me1");
+					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.0.2", 5000, 0, "me1");
 					put("p1", peer1);
 					//get to know both relays
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
@@ -382,18 +382,6 @@ public class TestNATRelay implements Serializable {
 		Peer relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, port);
 		new PeerBuilderNAT(relayPeer).start();
 		return relayPeer;
-	}
-	
-	private Peer createNattedPeer(final String ip, final int port, final int nr, final String retVal)
-			throws UnknownHostException, IOException {
-		Peer peer = LocalNATUtils.init(ip, port, nr);
-		peer.objectDataReply(new ObjectDataReply() {
-			@Override
-			public Object reply(PeerAddress sender, Object request) throws Exception {
-				return retVal;
-			}
-		});
-		return peer;
 	}
 	
 	private RelayCallback countDownRelayCallback(
@@ -470,7 +458,7 @@ public class TestNATRelay implements Serializable {
 				
 				@Override
 				public Serializable execute() throws Exception {
-					Peer peer1 = createNattedPeer("10.0.0.2", 5000, 0, "me1");
+					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.0.2", 5000, 0, "me1");
 					put("p1", peer1);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
 					Assert.assertFalse(fd1.isDiscoveredTCP());
@@ -511,7 +499,7 @@ public class TestNATRelay implements Serializable {
 				
 				@Override
 				public Serializable execute() throws Exception {
-					Peer peer1 = createNattedPeer("10.0.1.2", 5000, 1, "me2");
+					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.1.2", 5000, 1, "me2");
 					put("p1", peer1);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
 					Assert.assertFalse(fd1.isDiscoveredTCP());
@@ -569,10 +557,10 @@ public class TestNATRelay implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					
-					Peer peer1 = createNattedPeer("10.0.0.2", 5000, 0, "n/a");
+					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.0.2", 5000, 0, "n/a");
 					put("p1", peer1);
 					
-					Peer peer2 = createNattedPeer("10.0.0.3", 5001, 1, "me");
+					Peer peer2 = LocalNATUtils.createNattedPeer("10.0.0.3", 5001, 1, "me");
 					put("p2", peer2);
 					
 					
@@ -622,10 +610,10 @@ public class TestNATRelay implements Serializable {
 				
 				@Override
 				public Serializable execute() throws Exception {
-					Peer peer1 = createNattedPeer("10.0.0.2", 5000, 0, "n/a");
+					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.0.2", 5000, 0, "n/a");
 					put("p1", peer1);
 					
-					Peer peer2 = createNattedPeer("10.0.0.3", 5001, 1, "me");
+					Peer peer2 = LocalNATUtils.createNattedPeer("10.0.0.3", 5001, 1, "me");
 					put("p2", peer2);
 					
 					peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();

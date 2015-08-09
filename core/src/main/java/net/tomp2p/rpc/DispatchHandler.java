@@ -156,7 +156,9 @@ public abstract class DispatchHandler {
     	
     	//TODO: figure out how to include this. The only thing we currently missing are the ports
     	if(requestMessage.sender().isNet4Private() || 
-    			(requestMessage.type() == Type.REQUEST_1 && requestMessage.command() == RPC.Commands.RELAY.getNr())) {
+    			(requestMessage.type() == Type.REQUEST_1 && requestMessage.command() == RPC.Commands.RELAY.getNr()) ||
+    			(requestMessage.type() == Type.REQUEST_2 && requestMessage.command() == RPC.Commands.PING.getNr()) ) {
+    		//request 2/ping is a ping discover, where we don't know our external address and port. Don't add this!
     		LOG.debug("don't add the sender to the map (yet) {}", requestMessage);
     	} else {
     		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection, null);

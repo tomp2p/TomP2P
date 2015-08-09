@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -21,6 +22,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.ObjectDataReply;
 
 public class LocalNATUtils {
 	private static final String TAG = "##BASE64##:";
@@ -187,7 +189,12 @@ public class LocalNATUtils {
 	public static String toString(Serializable o) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ObjectOutputStream oos = new ObjectOutputStream(baos);
-		oos.writeObject(o);
+		try {
+			oos.writeObject(o);
+		} catch (NotSerializableException e) {
+			System.err.println("could not serialize object: " + o.getClass().getName());
+			throw e;
+		}
 		oos.close();
 		return Base64.getEncoder().encodeToString(baos.toByteArray());
 	}
@@ -225,6 +232,20 @@ public class LocalNATUtils {
 		ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 		ccc.senderTCP(InetAddress.getByName(ip));
 		Peer peer = new PeerBuilder(Number160.createHash(peerId)).channelClientConfiguration(ccc).ports(port).bindings(b)
+				.start();
+		System.out.println("Init "+peer.peerAddress());
+		return peer;
+	}
+	
+	public static Peer init(String ip, int port, int peerId, int forwardedPort)
+			throws UnknownHostException, IOException {
+		Bindings b = new Bindings();
+		b.addAddress(InetAddress.getByName(ip));
+		
+		ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
+
+		ccc.senderTCP(InetAddress.getByName(ip));
+		Peer peer = new PeerBuilder(Number160.createHash(peerId)).portsExternal(forwardedPort).channelClientConfiguration(ccc).ports(port).bindings(b)
 				.start();
 		System.out.println("Init "+peer.peerAddress());
 		return peer;
@@ -281,4 +302,29 @@ public class LocalNATUtils {
 	        }
 	    }
 	}
+	
+	public static Peer createNattedPeer(final String ip, final int port, final int nr, final String retVal)
+			throws UnknownHostException, IOException {
+		Peer peer = LocalNATUtils.init(ip, port, nr);
+		peer.objectDataReply(new ObjectDataReply() {
+			@Override
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				return retVal;
+			}
+		});
+		return peer;
+	}
+	
+	public static Peer createNattedPeer(final String ip, final int port, final int nr, int forwardedPort, final String retVal)
+			throws UnknownHostException, IOException {
+		Peer peer = LocalNATUtils.init(ip, port, nr, forwardedPort);
+		peer.objectDataReply(new ObjectDataReply() {
+			@Override
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				return retVal;
+			}
+		});
+		return peer;
+	}
+	
 }

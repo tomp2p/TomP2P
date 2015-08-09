@@ -134,6 +134,7 @@ public class NeighborRPC extends DispatchHandler {
         		message.bloomFilter(searchValues.contentBloomFilter());
         	}
         }
+        LOG.debug("Ask remote peer for neighbors with msg {}", message);
         return send(message, configuration, channelCreator);
     }
 

@@ -373,7 +373,7 @@ public class Reservation {
 					return;
 				}
 				
-				PeerSocketAddress psa = peerBean.serverPeerAddress().internalPeerSocketAddress();
+				PeerSocketAddress psa = peerBean.serverPeerAddress() == null ? null: peerBean.serverPeerAddress().internalPeerSocketAddress();
 				InetAddress fromAddress = psa == null ? peerBean.serverPeerAddress().inetAddress() : psa.inetAddress();
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, permitsUDP, permitsTCP,
@@ -441,7 +441,7 @@ public class Reservation {
 					return;
 				}
 				
-				PeerSocketAddress psa = peerBean.serverPeerAddress().internalPeerSocketAddress();
+				PeerSocketAddress psa = peerBean.serverPeerAddress() == null ? null: peerBean.serverPeerAddress().internalPeerSocketAddress();
 				InetAddress fromAddress = psa == null ? peerBean.serverPeerAddress().inetAddress() : psa.inetAddress();
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, 0, permitsPermanentTCP,

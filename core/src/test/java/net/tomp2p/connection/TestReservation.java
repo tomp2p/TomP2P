@@ -125,7 +125,7 @@ public class TestReservation {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.maxPermitsTCP(tcpMax);
 			c.pipelineFilter(new MyPipeLine());
-			Reservation r = new Reservation(workerGroup, c, new PeerBean(null));
+			Reservation r = new Reservation(workerGroup, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
 				FutureChannelCreator fc = r.create(0, conn);
@@ -183,7 +183,7 @@ public class TestReservation {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsUDP(udpMax);
-			Reservation r = new Reservation(workerGroup, c, new PeerBean(null));
+			Reservation r = new Reservation(workerGroup, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
 				FutureChannelCreator fc = r.create(conn, 0);
@@ -240,7 +240,7 @@ public class TestReservation {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsTCP(tcpMax);
-			Reservation r = new Reservation(workerGroup, c, new PeerBean(null));
+			Reservation r = new Reservation(workerGroup, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
 				FutureChannelCreator fc = r.create(0, conn);
@@ -298,7 +298,7 @@ public class TestReservation {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsTCP(tcpMax);
-			Reservation r = new Reservation(ev, c, new PeerBean(null));
+			Reservation r = new Reservation(ev, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
 				FutureChannelCreator fc = r.create(0, conn);

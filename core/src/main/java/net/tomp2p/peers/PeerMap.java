@@ -33,6 +33,7 @@ import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.p2p.PeerStatisticComparator;
 import net.tomp2p.utils.CacheMap;
 import net.tomp2p.utils.ConcurrentCacheMap;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -322,14 +323,18 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         final int classMember = classMember(remotePeer.peerId());
 
         // Update existing PeerStatistic with RTT info and potential new port
-        final PeerStatistic oldPeerStatistic = updateExistingVerifiedPeerAddress(
+        final Pair<PeerStatistic,Boolean> old = updateExistingVerifiedPeerAddress(
                 peerMapVerified.get(classMember), remotePeer, firstHand, roundTripTime);
-        if (oldPeerStatistic != null) {
+        if (old != null && old.element1()) {
             // we update the peer, so we can exit here and report that we have
             // updated it.
-            notifyUpdate(remotePeer, oldPeerStatistic);
+            notifyUpdate(remotePeer, old.element0());
             return true;
-        } else {
+        } else if (old != null && !old.element1()) {
+        	//don't update, as we have second hand information that is not reliabel, we arleady have it, don't update
+        	return false;
+        }
+        else {
             if (firstHand || (secondHand && !peerVerification)) {
                 final Map<Number160, PeerStatistic> map = peerMapVerified.get(classMember);
                 boolean insterted = false;
@@ -864,7 +869,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @param roundTripTime
      * @return The old peer address if we have updated the peer, null otherwise
      */
-    public static PeerStatistic updateExistingVerifiedPeerAddress(
+    public static Pair<PeerStatistic,Boolean> updateExistingVerifiedPeerAddress(
             final Map<Number160, PeerStatistic> tmp, final PeerAddress peerAddress, final boolean firstHand, RTT roundTripTime) {
         synchronized (tmp) {
             PeerStatistic old = tmp.get(peerAddress.peerId());
@@ -873,7 +878,10 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 old.addRTT(roundTripTime);
                 old.successfullyChecked();
                 old.increaseNumberOfResponses();
-                return old;
+                return new Pair<PeerStatistic,Boolean>(old, true);
+            } else if (old != null) {
+            	//this is second hand information, don't update, as we already have it.
+            	return new Pair<PeerStatistic,Boolean>(old, false);
             }
         }
         return null;

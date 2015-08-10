@@ -90,7 +90,7 @@ public class PeerBuilder {
 		}
 	};
 
-	private static final KeyPair EMPTY_KEY_PAIR = new KeyPair(EMPTY_PUBLIC_KEY, null);
+	public static final KeyPair EMPTY_KEY_PAIR = new KeyPair(EMPTY_PUBLIC_KEY, null);
 	// if the permits are chosen too high, then we might run into timeouts as we
 	// cant handle that many connections
 	// withing the time limit

@@ -19,6 +19,7 @@ package net.tomp2p.connection;
 import io.netty.channel.EventLoopGroup;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -373,8 +374,14 @@ public class Reservation {
 					return;
 				}
 				
-				PeerSocketAddress psa = peerBean.serverPeerAddress() == null ? null: peerBean.serverPeerAddress().internalPeerSocketAddress();
-				InetAddress fromAddress = psa == null ? peerBean.serverPeerAddress().inetAddress() : psa.inetAddress();
+				final InetAddress fromAddress;
+				if(peerBean.serverPeerAddress() == null) {
+					fromAddress = new InetSocketAddress(0).getAddress();
+				} else if(peerBean.serverPeerAddress().internalPeerSocketAddress() != null) {
+					fromAddress = peerBean.serverPeerAddress().internalPeerSocketAddress().inetAddress();
+				} else {
+					fromAddress = peerBean.serverPeerAddress().inetAddress();
+				}
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, permitsUDP, permitsTCP,
 				        channelClientConfiguration, fromAddress);
@@ -441,8 +448,14 @@ public class Reservation {
 					return;
 				}
 				
-				PeerSocketAddress psa = peerBean.serverPeerAddress() == null ? null: peerBean.serverPeerAddress().internalPeerSocketAddress();
-				InetAddress fromAddress = psa == null ? peerBean.serverPeerAddress().inetAddress() : psa.inetAddress();
+				final InetAddress fromAddress;
+				if(peerBean.serverPeerAddress() == null) {
+					fromAddress = new InetSocketAddress(0).getAddress();
+				} else if(peerBean.serverPeerAddress().internalPeerSocketAddress() != null) {
+					fromAddress = peerBean.serverPeerAddress().internalPeerSocketAddress().inetAddress();
+				} else {
+					fromAddress = peerBean.serverPeerAddress().inetAddress();
+				}
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, 0, permitsPermanentTCP,
 				        channelClientConfiguration, fromAddress);

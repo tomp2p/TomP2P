@@ -883,6 +883,7 @@ public class Sender {
 					} else if (message.command() == RPC.Commands.HOLEP.getNr() && message.type().ordinal() == Message.Type.REQUEST_3.ordinal()) {
 						//do nothing, because such a (dummy) message will never reach its target the first time
 					}
+					LOG.debug("peer failed: {}", message);
 					synchronized (peerStatusListeners) {
 						for (PeerStatusListener peerStatusListener : peerStatusListeners) {
 							peerStatusListener.peerFailed(message.recipient(), new PeerException(future));

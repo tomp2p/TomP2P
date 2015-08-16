@@ -16,8 +16,6 @@
 
 package net.tomp2p.connection;
 
-import io.netty.channel.EventLoopGroup;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -34,15 +32,15 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.netty.channel.EventLoopGroup;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.RequestConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.peers.PeerSocketAddress;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Reserves a block of connections.
@@ -379,6 +377,8 @@ public class Reservation {
 					fromAddress = new InetSocketAddress(0).getAddress();
 				} else if(peerBean.serverPeerAddress().internalPeerSocketAddress() != null) {
 					fromAddress = peerBean.serverPeerAddress().internalPeerSocketAddress().inetAddress();
+				} else if(peerBean.serverPeerAddress().isFirewalledTCP() || peerBean.serverPeerAddress().isFirewalledUDP() || peerBean.serverPeerAddress().isPortForwarding()){
+					fromAddress = new InetSocketAddress(0).getAddress();
 				} else {
 					fromAddress = peerBean.serverPeerAddress().inetAddress();
 				}

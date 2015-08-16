@@ -278,7 +278,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True if the neighbor could be added or updated, otherwise false.
      */
     @Override
-    public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection, RTT roundTripTime) {
+    public boolean peerFound(PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection, RTT roundTripTime) {
         LOG.debug("Peer {} is online. Reporter was {}.", remotePeer, referrer);
         boolean firstHand = referrer == null;
         //if we got contacted by this peer, but we did not initiate the connection
@@ -299,15 +299,24 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // don't add nodes with zero node id, do not add myself and do not add
         // nodes marked as bad
         if (remotePeer.peerId().isZero() || self().equals(remotePeer.peerId()) || reject(remotePeer)) {
+        	LOG.debug("peer Id is zero, self address, or simply rejected");
             return false;
         }
         
+        //if we have first hand information, that means we send a message to that peer and we received a reply. 
+        //So its not firewalled. This happens in the discovery phase
         if (remotePeer.isFirewalledTCP() || remotePeer.isFirewalledUDP()) {
-        	return false;
+        	if(firstHand) {
+        		remotePeer = remotePeer.changeFirewalledTCP(false).changeFirewalledUDP(false);
+        	} else {
+        		LOG.debug("peer is firewalled, reject");
+        		return false;
+        	}
         }
         
         //if a peer is relayed but cannot provide any relays, it is useless
         if (remotePeer.isRelayed() && remotePeer.peerSocketAddresses().isEmpty()) {
+        	LOG.debug("relayed without any relays, reject");
         	return false;
         }
         
@@ -315,8 +324,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         		shutdownMap.containsKey(remotePeer.peerId()) || 
         		exceptionMap.containsKey(remotePeer.peerId());
         
-        if(thirdHand && probablyDead) {
-        	LOG.debug("Don't add {}.", remotePeer.peerId());
+        if((secondHand || thirdHand) && probablyDead) {
+        	LOG.debug("Most likely offline, reject");
         	return false;
         }
         
@@ -329,8 +338,10 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             // we update the peer, so we can exit here and report that we have
             // updated it.
             notifyUpdate(remotePeer, old.element0());
+            LOG.debug("Update peer information");
             return true;
         } else if (old != null && !old.element1()) {
+        	LOG.debug("Unreliable information, don't update");
         	//don't update, as we have second hand information that is not reliabel, we arleady have it, don't update
         	return false;
         }
@@ -359,10 +370,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                         mapOverflow.remove(remotePeer.peerId());
                     }
                     notifyInsert(remotePeer, true);
+                    LOG.debug("Peer inserted");
                     return true;
                 }
             }
         }
+        LOG.debug("Not rejected or inserted, add to overflow map");
         // if we are here, we did not have this peer, but our verified map was full
         // check if we have it stored in the non verified map.
         final Map<Number160, PeerStatistic> mapOverflow = peerMapOverflow.get(classMember);

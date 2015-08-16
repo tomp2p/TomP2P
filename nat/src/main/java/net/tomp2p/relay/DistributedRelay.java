@@ -145,7 +145,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 	
 	private List<PeerAddress> relayCandidates() {
 		final List<PeerAddress> relayCandidates;
-		if (!relays.isEmpty()) {
+		if (relays.isEmpty()) {
 			// Get the neighbors of this peer that could possibly act as relays. Relay
 			// candidates are neighboring peers that are not relayed themselves and have
 			// not recently failed as relay or denied acting as relay.

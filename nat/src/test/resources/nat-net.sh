@@ -154,7 +154,7 @@ upnp () {
   ip netns exec "nat$1" iptables -t nat -I PREROUTING -j MINIUPNPD
   ip netns exec "nat$1" iptables -t filter -N MINIUPNPD
   ip netns exec "nat$1" iptables -t filter -I FORWARD -j MINIUPNPD
-  ip netns exec "nat$1" miniupnpd -i nat$1_wan -a nat$1_lan
+  ip netns exec "nat$1" miniupnpd -i "nat$1_wan" -a "nat$1_lan" -P "/var/run/miniupnpd$1.pid"
 }
 
 case "$1" in

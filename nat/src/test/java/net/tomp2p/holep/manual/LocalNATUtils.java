@@ -231,8 +231,7 @@ public class LocalNATUtils {
 		b.addAddress(InetAddress.getByName(ip));
 		ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 		ccc.senderTCP(InetAddress.getByName(ip));
-		Peer peer = new PeerBuilder(Number160.createHash(peerId)).channelClientConfiguration(ccc).ports(port).bindings(b)
-				.start();
+		Peer peer = new PeerBuilder(Number160.createHash(peerId)).channelClientConfiguration(ccc).ports(port).bindings(b).behindFirewall().start();
 		System.out.println("Init "+peer.peerAddress());
 		return peer;
 	}

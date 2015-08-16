@@ -212,7 +212,7 @@ public class TestNATRelay implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					System.out.println("wait 5 sec");
-					Thread.sleep(5000);
+					Thread.sleep(7000);
 					System.out.println("done wait 5 sec");
 					//now relay1 is shutdown, check if we updated our data
 					return "check relay2";

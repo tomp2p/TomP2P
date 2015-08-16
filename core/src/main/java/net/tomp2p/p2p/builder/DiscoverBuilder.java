@@ -218,18 +218,20 @@ public class DiscoverBuilder {
             final ChannelCreator cc, final ConnectionConfiguration configuration) {
 
         peer.pingRPC().addPeerReachableListener(new PeerReachable() {
-            private boolean changedUDP = false;
+            private volatile boolean changedUDP = false;
 
-            private boolean changedTCP = false;
+            private volatile boolean changedTCP = false;
 
             @Override
             public void peerWellConnected(PeerAddress peerAddress, PeerAddress reporter, boolean tcp) {
                 if (tcp) {
                     changedTCP = true;
                     futureDiscover.discoveredTCP();
+                    LOG.debug("TCP discovered");
                 } else {
                     changedUDP = true;
                     futureDiscover.discoveredUDP();
+                    LOG.debug("UDP discovered");
                 }
                 if (changedTCP && changedUDP) {
                     futureDiscover.done(peerAddress, reporter);

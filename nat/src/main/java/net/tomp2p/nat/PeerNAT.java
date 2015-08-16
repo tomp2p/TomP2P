@@ -171,6 +171,7 @@ public class PeerNAT {
 			success = natUtils.mapUPNP(internalHost, peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
 					ports.udpPort(), ports.tcpPort());
 		} catch (Exception e) {
+			LOG.error("cannot map UPNP", e);
 			success = false;
 		}
 

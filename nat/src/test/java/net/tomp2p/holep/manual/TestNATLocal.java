@@ -35,7 +35,7 @@ import org.junit.Test;
  * @author Thomas Bocek
  *
  */
-@Ignore
+//@Ignore
 public class TestNATLocal implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
@@ -83,6 +83,10 @@ public class TestNATLocal implements Serializable {
 					PeerNAT pn2 = new PeerBuilderNAT(peer2).start();
 					FutureNAT fn1 = pn1.portForwarding(fd1).awaitUninterruptibly();
 					FutureNAT fn2 = pn2.portForwarding(fd2).awaitUninterruptibly();
+					
+					System.err.println("fn: "+fn1.failedReason());
+					Assert.assertTrue(fn1.isSuccess());
+					
 					StringBuilder sb = new StringBuilder();
 					if(fn1.isSuccess() && fn2.isSuccess()) {
 						// now peer1 and peer2 know each other locally.

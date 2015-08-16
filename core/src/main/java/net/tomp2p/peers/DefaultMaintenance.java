@@ -135,13 +135,14 @@ public class DefaultMaintenance implements Maintenance {
                 final PeerStatistic readyForMaintenance = next(mapNonVerified);
                 if (readyForMaintenance != null
                         && !notInterestedAddresses.contains(readyForMaintenance.peerAddress())) {
-                    LOG.debug("check peer {} from the non-verified map.", readyForMaintenance.peerAddress());
+                    LOG.debug("check urgent peer {} from the non-verified map.", readyForMaintenance.peerAddress());
                     return readyForMaintenance;
                 }
             }
             final PeerStatistic readyForMaintenance = next(mapVerified);
             if (readyForMaintenance != null
                     && !notInterestedAddresses.contains(readyForMaintenance.peerAddress())) {
+            	LOG.debug("check peer {} from the non-verified map.", readyForMaintenance.peerAddress());
                 return readyForMaintenance;
             }
         }

@@ -319,7 +319,7 @@ public class PingRPC extends DispatchHandler {
 					@Override
 					public void operationComplete(final FutureChannelCreator future) throws Exception {
 						if (future.isSuccess()) {
-									LOG.debug("Fire UDP to {}.", message.sender());
+							LOG.debug("Fire UDP to {}.", message.sender());
 							FutureResponse futureResponse = fireUDP(message.sender(), future.channelCreator(),
 									connectionBean().channelServer().channelServerConfiguration());
 							Utils.addReleaseListener(future.channelCreator(), futureResponse);

@@ -16,8 +16,9 @@
 
 package net.tomp2p.connection;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -374,18 +375,22 @@ public class Reservation {
 				
 				final InetAddress fromAddress;
 				if(peerBean.serverPeerAddress() == null) {
-					fromAddress = new InetSocketAddress(0).getAddress();
+					fromAddress = Inet4Address.getByAddress(new byte[4]);
 				} else if(peerBean.serverPeerAddress().internalPeerSocketAddress() != null) {
 					fromAddress = peerBean.serverPeerAddress().internalPeerSocketAddress().inetAddress();
-				} else if(peerBean.serverPeerAddress().isFirewalledTCP() || peerBean.serverPeerAddress().isFirewalledUDP() || peerBean.serverPeerAddress().isPortForwarding()){
-					fromAddress = new InetSocketAddress(0).getAddress();
 				} else {
 					fromAddress = peerBean.serverPeerAddress().inetAddress();
 				}
+				
+				LOG.debug("channel from {}", fromAddress);
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, permitsUDP, permitsTCP,
 				        channelClientConfiguration, fromAddress);
 				addToSet(channelCreator);
+			} catch (UnknownHostException u) {
+				//never happens as we use wildcard address
+				u.printStackTrace();
+				throw new RuntimeException(u);
 			} finally {
 				read.unlock();
 			}
@@ -450,16 +455,22 @@ public class Reservation {
 				
 				final InetAddress fromAddress;
 				if(peerBean.serverPeerAddress() == null) {
-					fromAddress = new InetSocketAddress(0).getAddress();
+					fromAddress = Inet4Address.getByAddress(new byte[4]);
 				} else if(peerBean.serverPeerAddress().internalPeerSocketAddress() != null) {
 					fromAddress = peerBean.serverPeerAddress().internalPeerSocketAddress().inetAddress();
 				} else {
 					fromAddress = peerBean.serverPeerAddress().inetAddress();
 				}
+				
+				LOG.debug("channel from {}", fromAddress);
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, 0, permitsPermanentTCP,
 				        channelClientConfiguration, fromAddress);
 				addToSet(channelCreator);
+			} catch (UnknownHostException u) {
+				//never happens as we use wildcard address
+				u.printStackTrace();
+				throw new RuntimeException(u);
 			} finally {
 				read.unlock();
 			}

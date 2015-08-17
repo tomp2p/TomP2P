@@ -140,6 +140,7 @@ stop () {
   ip netns del "nat$1"
   ip link del "nat$1_real"
   killall -q miniupnpd
+  rm -f /var/run/miniupnpd*.pid
 }
 
 forward () {
@@ -154,7 +155,7 @@ upnp () {
   ip netns exec "nat$1" iptables -t nat -I PREROUTING -j MINIUPNPD
   ip netns exec "nat$1" iptables -t filter -N MINIUPNPD
   ip netns exec "nat$1" iptables -t filter -I FORWARD -j MINIUPNPD
-  ip netns exec "nat$1" miniupnpd -i "nat$1_wan" -a "nat$1_lan" -P "/var/run/miniupnpd$1.pid"
+  ip netns exec "nat$1" miniupnpd -i "nat$1_wan" -a "nat$1_lan" -P "/var/run/miniupnpd$1.pid" -d > "/tmp/upnp$1.log" 2>&1 &
 }
 
 case "$1" in

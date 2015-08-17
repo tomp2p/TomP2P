@@ -106,7 +106,8 @@ public class PeerNAT {
 					if (externalPorts != null) {
 						final PeerAddress serverAddressOrig = peer.peerBean().serverPeerAddress();
 						final PeerAddress serverAddress = serverAddressOrig.changePorts(externalPorts.tcpPort(),
-								externalPorts.udpPort()).changeAddress(future.externalAddress());
+								externalPorts.udpPort()).changeAddress(future.externalAddress()).
+								changeInternalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
 
 						// set the new address regardless wheter it will succeed
 						// or not.
@@ -123,12 +124,11 @@ public class PeerNAT {
 											// UPNP or NAT-PMP was
 											// successful, set flag
 											PeerAddress newServerAddress = serverAddress.changePortForwarding(true);
-											newServerAddress = newServerAddress.changeInternalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
 											peer.peerBean().serverPeerAddress(newServerAddress);
 											futureNAT.done(future.peerAddress(), future.reporter());
 										} else {
 											// indicate relay
-											PeerAddress pa = peer.peerBean().serverPeerAddress()
+											PeerAddress pa = serverAddressOrig
 													.changeFirewalledTCP(true).changeFirewalledUDP(true);
 											peer.peerBean().serverPeerAddress(pa);
 											futureNAT.failed(future);
@@ -164,6 +164,7 @@ public class PeerNAT {
 	 *         successful, otherwise null
 	 */
 	public Ports setupPortforwarding(final String internalHost, Ports ports) {
+		LOG.debug("setup UPNP for host {} and ports {}", internalHost, ports);
 		// new random ports
 		boolean success;
 

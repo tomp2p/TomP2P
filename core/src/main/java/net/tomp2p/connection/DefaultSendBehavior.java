@@ -21,6 +21,10 @@ public class DefaultSendBehavior implements SendBehavior {
 			// shortcut, just send to yourself
 			return SendMethod.SELF;
 		}
+		
+		if(message.isReflected()) {
+			return SendMethod.DIRECT;
+		}
 
 		if (message.recipient().isRelayed()) {
 			if (message.sender().isRelayed()) {
@@ -52,6 +56,10 @@ public class DefaultSendBehavior implements SendBehavior {
 		if(message.recipient().peerId().equals(message.sender().peerId())) {
 			// shortcut, just send to yourself
 			return SendMethod.SELF;
+		}
+		
+		if(message.isReflected()) {
+			return SendMethod.DIRECT;
 		}
 
 		if (message.recipient().isRelayed() && message.sender().isRelayed()

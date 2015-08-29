@@ -35,14 +35,14 @@ import org.junit.Test;
  * @author Thomas Bocek
  *
  */
-@Ignore
+//@Ignore
 public class TestNATTypeDetection implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
 	final static private Random RND = new Random(42);
 	
 	//### CHANGE THIS TO YOUR INTERFACE###
-	final static private String INF = "eth1";
+	final static private String INF = "enp0s25";
 	
 	static private Number160 relayPeerId = new Number160(RND);
 
@@ -76,7 +76,8 @@ public class TestNATTypeDetection implements Serializable {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
 			InetAddress relayAddress = relayPeer.peerAddress().inetAddress();
 			final String address = relayAddress.getHostAddress();
-			unr1 = LocalNATUtils.executePeer(0,
+			CommandSync sync = new CommandSync(2);
+			unr1 = LocalNATUtils.executePeer(0, sync, 
 					new Command[] { new Command() {
 						// startup
 						@Override
@@ -101,7 +102,7 @@ public class TestNATTypeDetection implements Serializable {
 						}
 					} });
 
-			unr2 = LocalNATUtils.executePeer(1,
+			unr2 = LocalNATUtils.executePeer(1, sync, 
 					new Command[] { new Command() {
 						// startup
 						@Override

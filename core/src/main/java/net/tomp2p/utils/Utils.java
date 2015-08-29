@@ -930,23 +930,11 @@ public class Utils {
 	    	//check for NAT reflection
 	    	if(recipient.inetAddress().equals(self.inetAddress()) && self.internalPeerSocketAddress() != null && recipient.internalPeerSocketAddress()!=null) {
 	    		//the recipient and me have the same external IP, this means we either send it to us, or to a peer in our network. Since NAT reflection is rarly properly implemented in routers, we need to change the IP address here in order to reach the peer.
-	    		if(recipient.udpPort() == self.udpPort() ) {
-	    			//we send it to ourself, change it to something local
-	    			try {
-	    				
-	    				return new PeerSocketAddress(InetAddress.getLocalHost(), self.internalPeerSocketAddress().tcpPort(), 
-	    						self.internalPeerSocketAddress().udpPort());
-                    } catch (UnknownHostException e) {
-	                    e.printStackTrace();
-	                    return null;
-                    }
-	    		} else {
-	    			InetAddress a = self.calcInternalInetAddress(recipient.internalPeerSocketAddress().inetAddress());
-	    			return new PeerSocketAddress(a, recipient.internalPeerSocketAddress().tcpPort(), recipient.internalPeerSocketAddress().udpPort());
-	    		}
+	    		InetAddress a = self.calcInternalInetAddress(recipient.internalPeerSocketAddress().inetAddress());
+	    		return new PeerSocketAddress(a, recipient.internalPeerSocketAddress().tcpPort(), recipient.internalPeerSocketAddress().udpPort());
 	    	}
 	    }
-	    return recipient.peerSocketAddress();
+	    return null;
     }
 
 	/**

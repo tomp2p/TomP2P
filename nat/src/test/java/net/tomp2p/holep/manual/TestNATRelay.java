@@ -39,7 +39,7 @@ public class TestNATRelay implements Serializable {
 	static private Number160 relayPeerId4 = new Number160(RND);
 	static private Number160 relayPeerId5 = new Number160(RND);
 	//### CHANGE THIS TO YOUR INTERFACE###
-	final static private String INF = "eth1";
+	final static private String INF = "enp0s25";
 
 	@Before
 	public void before() throws IOException, InterruptedException {
@@ -72,6 +72,7 @@ public class TestNATRelay implements Serializable {
 			final PeerSocketAddress relayAddress2 = relayPeer2.peerAddress().peerSocketAddress();
 			
 			final Peer relayPeer1Copy = relayPeer1;
+			CommandSync sync = new CommandSync(1);
 			
 			unr1 = LocalNATUtils.executePeer(0, new RemotePeerCallback() {
 				
@@ -86,7 +87,7 @@ public class TestNATRelay implements Serializable {
 						relayPeer1Copy.shutdown().awaitUninterruptibly();
 					}
 				}
-			}, new Command() {
+			}, sync, new Command() {
 
 				@Override
 				public Serializable execute() throws Exception {
@@ -165,6 +166,7 @@ public class TestNATRelay implements Serializable {
 			final Peer relayPeer1Copy = relayPeer1;
 			final Peer relayPeer2Copy = relayPeer2;
 			final AtomicBoolean test = new AtomicBoolean(false);
+			CommandSync sync = new CommandSync(1);
 			unr1 = LocalNATUtils.executePeer(0, new RemotePeerCallback() {
 				
 				@Override
@@ -183,7 +185,7 @@ public class TestNATRelay implements Serializable {
 					}
 					
 				}
-			}, new Command() {
+			}, sync, new Command() {
 
 				@Override
 				public Serializable execute() throws Exception {
@@ -262,7 +264,8 @@ public class TestNATRelay implements Serializable {
 			final PeerSocketAddress relayAddress4 = relayPeer4.peerAddress().peerSocketAddress();
 			relayPeer5 = createRelay(relayPeerId5, 5006);
 			final PeerSocketAddress relayAddress5 = relayPeer5.peerAddress().peerSocketAddress();
-			unr1 = LocalNATUtils.executePeer(0, new Command() {
+			CommandSync sync = new CommandSync(1);
+			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 
 				@Override
 				public Serializable execute() throws Exception {
@@ -328,8 +331,9 @@ public class TestNATRelay implements Serializable {
 			final PeerSocketAddress relayAddress1 = relayPeer1.peerAddress().peerSocketAddress();
 			relayPeer2 = createRelay(relayPeerId2, 5003);
 			final PeerSocketAddress relayAddress2 = relayPeer2.peerAddress().peerSocketAddress();
+			CommandSync sync = new CommandSync(1);
 			
-			unr1 = LocalNATUtils.executePeer(0, new Command() {
+			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 
 				@Override
 				public Serializable execute() throws Exception {
@@ -453,8 +457,9 @@ public class TestNATRelay implements Serializable {
 		try {
 			relayPeer = createRelay(relayPeerId1, 5002);
 			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			CommandSync sync = new CommandSync(2);
 			
-			unr1 = LocalNATUtils.executePeer(0, new Command() {
+			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 				
 				@Override
 				public Serializable execute() throws Exception {
@@ -495,7 +500,7 @@ public class TestNATRelay implements Serializable {
 			});
 			
 			
-			unr2 = LocalNATUtils.executePeer(1, new Command() {
+			unr2 = LocalNATUtils.executePeer(1, sync, new Command() {
 				
 				@Override
 				public Serializable execute() throws Exception {
@@ -552,7 +557,8 @@ public class TestNATRelay implements Serializable {
 		
 		RemotePeer unr1 = null;
 		try {
-			unr1 = LocalNATUtils.executePeer(0, new Command() {
+			CommandSync sync = new CommandSync(1);
+			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 				
 				@Override
 				public Serializable execute() throws Exception {
@@ -605,8 +611,8 @@ public class TestNATRelay implements Serializable {
 		try {
 			relayPeer = createRelay(relayPeerId1, 5002);
 			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
-			
-			unr1 = LocalNATUtils.executePeer(0, new Command() {
+			CommandSync sync = new CommandSync(1);
+			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 				
 				@Override
 				public Serializable execute() throws Exception {

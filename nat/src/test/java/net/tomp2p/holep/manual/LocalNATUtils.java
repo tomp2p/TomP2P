@@ -64,23 +64,26 @@ public class LocalNATUtils {
 		return process.exitValue();
 	}
 	
-	public static RemotePeer executePeer(int nr, final Command... cmd)
+	public static RemotePeer executePeer(int nr, final CommandSync sync, final Command... cmd)
 			throws IOException, InterruptedException, ClassNotFoundException {
-		return executePeer(LocalNATUtils.class, nr, cmd);
+		return executePeer(LocalNATUtils.class, nr, sync, cmd);
 	}
 	
-	public static RemotePeer executePeer(int nr, final RemotePeerCallback remoteCallback, final Command... cmd)
+	public static RemotePeer executePeer(int nr, final RemotePeerCallback remoteCallback, final CommandSync sync, final Command... cmd)
 			throws IOException, InterruptedException, ClassNotFoundException {
-		return executePeer(LocalNATUtils.class, nr, remoteCallback, cmd);
+		return executePeer(LocalNATUtils.class, nr, remoteCallback, sync, cmd);
 	}
 	
-	public static RemotePeer executePeer(Class<?> klass, int nr, final Command... cmd)
+	public static RemotePeer executePeer(Class<?> klass, int nr, final CommandSync sync, final Command... cmd)
 			throws IOException, InterruptedException, ClassNotFoundException {
-		return executePeer(LocalNATUtils.class, nr, DEFAULT_CALLBACK, cmd);
+		return executePeer(LocalNATUtils.class, nr, DEFAULT_CALLBACK, sync, cmd);
 	}
 
-	public static RemotePeer executePeer(Class<?> klass, final int nr, final RemotePeerCallback remoteCallback, final Command... cmd)
+	public static RemotePeer executePeer(Class<?> klass, final int nr, final RemotePeerCallback remoteCallback, final CommandSync sync, final Command... cmd)
 			throws IOException, InterruptedException, ClassNotFoundException {
+		
+		sync.init(cmd.length);
+		
 		String javaHome = System.getProperty("java.home");
 		String javaBin = javaHome + File.separator + "bin" + File.separator
 				+ "java";
@@ -125,6 +128,9 @@ public class LocalNATUtils {
 									Object o = fromString(line);
 									results.set(i, o);
 									done = true;
+									sync.waitFor(i);
+									process.getOutputStream().write(77);
+									process.getOutputStream().flush();
 								} else {
 									System.out.println("OUT["+nr+"]>" + line);
 								}
@@ -211,8 +217,23 @@ public class LocalNATUtils {
 		final Command[] cmds = LocalNATUtils.toObjects(args);
 		for(Command cmd:cmds) {
 			try {
+				final CountDownLatch latch = new CountDownLatch(1);
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							System.in.read();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						latch.countDown();
+						
+					}
+				}).start();
 				Serializable result = cmd.execute();
 				System.out.println(TAG + LocalNATUtils.toString(result));
+				//wait until we can continue
+				latch.await();
 			} catch (Throwable e) {
 				e.printStackTrace();
 				System.out.println(TAG + LocalNATUtils.toString(e.getMessage()));

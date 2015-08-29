@@ -129,8 +129,8 @@ start () {
   fi
 
   #if we have a drop policy, we need this accept rules
-  #ip netns exec "nat$1" iptables -A FORWARD -i "nat$1_wan" -o "nat$1_lan" -m state --state RELATED,ESTABLISHED -j ACCEPT
-  #ip netns exec "nat$1" iptables -A FORWARD -i "nat$1_lan" -o "nat$1_wan" -j ACCEPT
+  ip netns exec "nat$1" iptables -A FORWARD -i "nat$1_wan" -o "nat$1_lan" -m state --state RELATED,ESTABLISHED -j ACCEPT
+  ip netns exec "nat$1" iptables -A FORWARD -i "nat$1_lan" -o "nat$1_wan" -j ACCEPT
   echo "NAT setup $2".
 }
 

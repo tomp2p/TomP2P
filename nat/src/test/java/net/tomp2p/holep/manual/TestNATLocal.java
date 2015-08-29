@@ -41,7 +41,7 @@ public class TestNATLocal implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	//### CHANGE THIS TO YOUR INTERFACE###
-	final static private String INF = "eth1";
+	final static private String INF = "enp0s25";
 	
 	final static private Random RND = new Random(42);
 	static private Number160 relayPeerId = new Number160(RND);
@@ -67,8 +67,8 @@ public class TestNATLocal implements Serializable {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
 			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
 			
-			
-			unr1 = LocalNATUtils.executePeer(0, new Command() {
+			CommandSync sync = new CommandSync(1);
+			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 				
 				@Override
 				public Serializable execute() throws Exception {

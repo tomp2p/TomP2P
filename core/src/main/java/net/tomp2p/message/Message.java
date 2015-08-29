@@ -204,6 +204,7 @@ public class Message {
     private transient boolean verified = false;
     private transient boolean sendSelf = false;
     private transient PeerSocketAddress recipientBeforeTranslation = null;
+    private transient boolean reflected;
 
     /**
      * Creates message with a random ID.
@@ -1296,4 +1297,19 @@ public class Message {
 	public PeerSocketAddress recipientBeforeTranslation() {
 		return recipientBeforeTranslation;
 	}
+
+	public Message reflected(boolean reflected) {
+		this.reflected = reflected;
+		return this;
+	}
+	
+	public Message reflected() {
+		return reflected(true);
+	}
+	
+	public boolean isReflected() {
+		return reflected;
+	}
+	
+	
 }

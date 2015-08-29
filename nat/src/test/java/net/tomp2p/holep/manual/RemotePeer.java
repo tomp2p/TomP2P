@@ -32,5 +32,8 @@ public class RemotePeer {
 	public Command getCmd(int i) {
 		return cmd[i];
 	}
+	public int resultSize() {
+		return results.length();
+	}
 
 }

@@ -151,9 +151,12 @@ public class Sender {
 		// NAT reflection - rewrite recipient if we found a local address for
 		// the recipient
 		PeerSocketAddress reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
-		PeerSocketAddress orig = message.recipient().peerSocketAddress();
-		message.saveOriginalRecipientBeforeTranslation(orig);
-		message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
+		if(reflectedRecipient != null) {
+			PeerSocketAddress orig = message.recipient().peerSocketAddress();
+			message.saveOriginalRecipientBeforeTranslation(orig);
+			message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
+			message.reflected();
+		}
 		
 		removePeerIfFailed(futureResponse, message);
 
@@ -570,7 +573,12 @@ public class Sender {
 		// NAT reflection - rewrite recipient if we found a local address for
 		// the recipient
 		PeerSocketAddress reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
-		message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
+		if(reflectedRecipient != null) {
+			PeerSocketAddress orig = message.recipient().peerSocketAddress();
+			message.saveOriginalRecipientBeforeTranslation(orig);
+			message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
+			message.reflected();
+		}
 
 		removePeerIfFailed(futureResponse, message);
 

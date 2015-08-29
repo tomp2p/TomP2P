@@ -25,7 +25,7 @@ public class TestNATForwarding implements Serializable {
 	final static private Random RND = new Random(42);
 	static private Number160 relayPeerId = new Number160(RND);
 	//### CHANGE THIS TO YOUR INTERFACE###
-	final static private String INF = "eth1";
+	final static private String INF = "enp0s25";
 	
 	@Before
 	public void before() throws IOException, InterruptedException {
@@ -55,8 +55,8 @@ public class TestNATForwarding implements Serializable {
 			System.out.println("relay peer at: "+relay);
 			
 			//final Peer relayPeer1Copy = relayPeer1;
-			
-			unr1 = LocalNATUtils.executePeer(0, new Command() {
+			CommandSync sync = new CommandSync(2);
+			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.0.2", 5000, 0, 4000, "peer1");
@@ -91,7 +91,7 @@ public class TestNATForwarding implements Serializable {
 				}
 			});
 			
-			unr2 = LocalNATUtils.executePeer(1, new Command() {
+			unr2 = LocalNATUtils.executePeer(1, sync, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.1.2", 5000, 1, 4000, "peer2");
@@ -152,6 +152,7 @@ public class TestNATForwarding implements Serializable {
 			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
 			final PeerAddress relay = relayPeer.peerAddress();
 			System.out.println("relay peer at: "+relay);
+			CommandSync sync = new CommandSync(2);
 			
 			new Thread(new Runnable() {
 				
@@ -173,7 +174,7 @@ public class TestNATForwarding implements Serializable {
 			
 			//final Peer relayPeer1Copy = relayPeer1;
 			
-			unr1 = LocalNATUtils.executePeer(0, new Command() {
+			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.0.2", 5000, 0, 4000, "peer1");
@@ -208,7 +209,7 @@ public class TestNATForwarding implements Serializable {
 				}
 			});
 			
-			unr2 = LocalNATUtils.executePeer(1, new Command() {
+			unr2 = LocalNATUtils.executePeer(1, sync, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.createNattedPeer("10.0.1.2", 5000, 1, 4000, "peer2");

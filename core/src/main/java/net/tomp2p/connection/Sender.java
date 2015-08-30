@@ -156,6 +156,7 @@ public class Sender {
 			message.saveOriginalRecipientBeforeTranslation(orig);
 			message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
 			message.reflected();
+			LOG.debug("reflect recipient TCP {}", message);
 		}
 		
 		removePeerIfFailed(futureResponse, message);
@@ -578,6 +579,7 @@ public class Sender {
 			message.saveOriginalRecipientBeforeTranslation(orig);
 			message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
 			message.reflected();
+			LOG.debug("reflect recipient UDP {}", message);
 		}
 
 		removePeerIfFailed(futureResponse, message);

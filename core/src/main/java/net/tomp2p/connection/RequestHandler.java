@@ -305,6 +305,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         // We got a good answer, let's mark the sender as alive
         //if its an announce, the peer status will be handled in the RPC
 		if (responseMessage.isOk() || responseMessage.isNotOk()) {
+			LOG.debug("Try adding peer {} to map, {}", responseMessage.sender(), responseMessage);
 			peerBean.notifyPeerFound(responseMessage.sender(), null, null, futureResponse.getRoundTripTime());
 		}
         

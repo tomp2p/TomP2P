@@ -58,6 +58,7 @@ public class RelayUtils {
 		PeerMapConfiguration peerMapConfiguration = new PeerMapConfiguration(sender.peerId());
 		PeerMap peerMap = new PeerMap(peerMapConfiguration);
 		for (PeerAddress peerAddress : map) {
+			LOG.debug("found peer in unflatten for relaying, {}", peerAddress);
 			peerMap.peerFound(peerAddress, null, null, null);
 		}
 		return peerMap.peerMapVerified();

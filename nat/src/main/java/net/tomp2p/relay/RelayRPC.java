@@ -6,6 +6,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -230,7 +231,14 @@ public class RelayRPC extends DispatchHandler {
 	 */
 	private void handleSetup(Message message, final PeerConnection unreachablePeerConnectionOrig, final Responder responder) {
 		final Number160 unreachablePeerId = unreachablePeerConnectionOrig.remotePeer().peerId();
-		final PeerConnection unreachablePeerConnectionCopy = unreachablePeerConnectionOrig.changeRemotePeer(unreachablePeerConnectionOrig.remotePeer().changeRelayed(true));
+		//add myself as relay
+		Collection<PeerSocketAddress> psa = unreachablePeerConnectionOrig.remotePeer().peerSocketAddresses();
+		Collection<PeerSocketAddress> psa2 = new ArrayList<PeerSocketAddress>(psa);
+
+		psa2.add(peer().peerAddress().peerSocketAddress());
+		final PeerConnection unreachablePeerConnectionCopy = unreachablePeerConnectionOrig.changeRemotePeer(
+				unreachablePeerConnectionOrig.remotePeer().changeRelayed(true).changePeerSocketAddresses(psa2));
+		
 		//now we can add this peer to the map, as we have now set the flag
 		peerBean().notifyPeerFound(message.sender(), message.sender(), unreachablePeerConnectionCopy, null);
 		for (Commands command : RPC.Commands.values()) {

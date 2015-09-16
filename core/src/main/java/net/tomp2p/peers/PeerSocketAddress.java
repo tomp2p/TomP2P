@@ -248,14 +248,14 @@ public class PeerSocketAddress implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("[");
+        StringBuilder sb = new StringBuilder();
         sb.append(inetAddress);
         if(tcpPort == udpPort) {
         	sb.append(",").append(tcpPort);
         } else {
         	sb.append(",t:").append(tcpPort).append(",u:").append(udpPort);
         }
-        return sb.append("]").toString();
+        return sb.toString();
     }
 
     @Override

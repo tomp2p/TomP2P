@@ -29,5 +29,6 @@ mvn deploy:deploy-file \
  -Dversion=3.5.x.Patched \
  -Dpackaging=jar \
  -Dfile=netty-3.5.x.Patched.jar \
+ -Dsources=netty-3.5.x.Patched-sources.jar
  -DrepositoryId=ssh-tomp2p \
  -Durl=scp://tomp2p.net/home/##username##/maven

@@ -95,7 +95,7 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private void handleRconForward(final Message message, final Responder responder) throws Exception {
 		// get the relayForwarderRPC via Dispatcher to retrieve the existing peerConnection
-		final BaseRelayServer forwarder = extractRelayForwarder(message);
+		final Forwarder forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardMessage(message, forwarder.unreachablePeerAddress());
 			forwarder.handleResponse(forwardMessage, null, true, responder);
@@ -112,9 +112,9 @@ public class RconRPC extends DispatchHandler {
 	 * @param unreachablePeerId the unreachable peer
 	 * @return forwarder
 	 */
-	private BaseRelayServer extractRelayForwarder(final Message message) {
+	private Forwarder extractRelayForwarder(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		return (BaseRelayServer) dispatcher.searchHandler(BaseRelayServer.class, peer.peerID(), message.recipient().peerId());
+		return (Forwarder) dispatcher.searchHandler(Forwarder.class, peer.peerID(), message.recipient().peerId());
 	}
 
 	/**

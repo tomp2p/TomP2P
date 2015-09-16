@@ -15,7 +15,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.BaseRelayServer;
+import net.tomp2p.relay.Forwarder;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
@@ -101,7 +101,7 @@ public class HolePRPC extends DispatchHandler {
 	 * @param responder
 	 */
 	private void forwardHolePunchMessage(final Message message, final Responder responder) {
-		final BaseRelayServer forwarder = extractRelayForwarder(message);
+		final Forwarder forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardPortsMessage(message, forwarder.unreachablePeerAddress());
 			final FutureDone<Message> response = forwarder.forwardToUnreachable(forwardMessage);
@@ -175,9 +175,9 @@ public class HolePRPC extends DispatchHandler {
 	 *            the unreachable peer
 	 * @return forwarder
 	 */
-	private BaseRelayServer extractRelayForwarder(final Message message) {
+	private Forwarder extractRelayForwarder(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		return (BaseRelayServer) dispatcher.searchHandler(BaseRelayServer.class, peer.peerID(), message.recipient().peerId());
+		return (Forwarder) dispatcher.searchHandler(Forwarder.class, peer.peerID(), message.recipient().peerId());
 	}
 
 	/**

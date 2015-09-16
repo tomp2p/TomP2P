@@ -23,7 +23,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.relay.BaseRelayServer;
 import net.tomp2p.relay.Forwarder;
 import net.tomp2p.relay.RelayCallback;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -584,7 +583,6 @@ public class TestNATRelay implements Serializable {
 					FutureDirect fdir1 = peer1.sendDirect(peer2.peerAddress()).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("me", fdir1.object());
 					//should be direct not over relay
-					Assert.assertEquals(0, BaseRelayServer.messageCounter());
 					return "done";
 				}
 			}, new Command() {
@@ -643,7 +641,6 @@ public class TestNATRelay implements Serializable {
 					FutureDirect fdir1 = peer1.sendDirect(peer2.peerAddress()).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("me", fdir1.object());
 					//should be direct not over relay
-					Assert.assertEquals(0, BaseRelayServer.messageCounter());
 					return "done";
 				}
 			}, new Command() {

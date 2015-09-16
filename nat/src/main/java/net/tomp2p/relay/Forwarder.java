@@ -44,7 +44,7 @@ public class Forwarder extends DispatchHandler {
 	
 	private final List<Message> buffer = Collections.synchronizedList(new ArrayList<Message>());
 	
-	private int capacity = 16;
+	//private int capacity = 16;
 	private long lastAccess = System.currentTimeMillis();
 	private int bufferTimeSec = 60;
 
@@ -68,7 +68,7 @@ public class Forwarder extends DispatchHandler {
 	
 	
 
-	private FutureDone<Message> forwardToUnreachable(final Message message) {
+	public FutureDone<Message> forwardToUnreachable(final Message message) {
 		// Send message via direct message through the open connection to the unreachable peer
 		LOG.debug("Sending {} to unreachable peer {}", message, unreachablePeerConnection.remotePeer());
 		final Message envelope = createMessage(unreachablePeerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
@@ -280,5 +280,9 @@ public class Forwarder extends DispatchHandler {
 		}
 		buffer.clear();
 		return retVal;
+	}
+
+	public PeerAddress unreachablePeerAddress() {
+		return unreachablePeerConnection.remotePeer();
 	}	
 }

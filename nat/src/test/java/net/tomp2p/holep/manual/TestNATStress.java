@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -11,16 +12,21 @@ import org.junit.Before;
 import org.junit.Test;
 
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.nat.FutureNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.RelayCallback;
+import net.tomp2p.storage.Data;
 
 /**
  * 2 UPNP peers behind same NAT, 1 behind other NAT (total 3 peers) 2 port
@@ -38,7 +44,7 @@ public class TestNATStress implements Serializable {
 	static private Number160 relayPeerId1 = new Number160(RND);
 	static private Number160 relayPeerId2 = new Number160(RND);
 	// ### CHANGE THIS TO YOUR INTERFACE###
-	final static private String INF = "eth1";
+	final static private String INF = "enp0s25";
 
 	@Before
 	public void before() throws IOException, InterruptedException {
@@ -68,6 +74,7 @@ public class TestNATStress implements Serializable {
 	@Test
 	public void testStress() throws Exception {
 		Peer relayPeer1 = null;
+		PeerDHT relayDHT1 = null;
 		Peer relayPeer2 = null;
 
 		PeerDHT pd = null;
@@ -76,6 +83,7 @@ public class TestNATStress implements Serializable {
 
 		try {
 			relayPeer1 = createRelay(relayPeerId1, 5002);
+			relayDHT1 = new PeerBuilderDHT(relayPeer1).start();
 			final Peer relayPeer11 = relayPeer1;
 			relayPeer2 = createRelay(relayPeerId2, 5003);
 			final PeerSocketAddress relayAddress1 = relayPeer1.peerAddress().peerSocketAddress();
@@ -83,13 +91,36 @@ public class TestNATStress implements Serializable {
 			
 			System.out.println("relay 1:"+relayPeer1.peerAddress());
 			System.out.println("relay 2:"+relayPeer2.peerAddress());
+			
+			final AtomicBoolean a = new AtomicBoolean(false);
+			RemotePeerCallback rmc = new RemotePeerCallback() {
+				
+				@Override
+				public void onNull(int i) {}
+				
+				@Override
+				public void onFinished(int i) {
+					if(i == 2) {
+						System.err.println("MAP SIZE: "+relayPeer11.peerBean().peerMap().all().size());
+						for(PeerAddress pa:relayPeer11.peerBean().peerMap().all()) {
+							System.err.println("got: "+pa);
+						}
+						a.set(relayPeer11.peerBean().peerMap().all().size() == 9);
+					}
+					
+				}
+			};
 
-			unr[0] = LocalNATUtils.executePeer(0, sync, new Command() {
+			unr[0] = LocalNATUtils.executePeer(0, rmc, sync, new Command() {
 
 				@Override
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.0.2", 5000, 0);
 					put("p1", peer1);
+					PeerDHT pdht = new PeerBuilderDHT(peer1).start();
+					put("pd", pdht);
+					PeerNAT pnat = new PeerBuilderNAT(peer1).start();
+					put("pn", pnat);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start();
 					PeerNAT pn = new PeerBuilderNAT(peer1).start();
 					FutureNAT fn = pn.portForwarding(fd1).awaitUninterruptibly();
@@ -98,6 +129,31 @@ public class TestNATStress implements Serializable {
 			}, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
+					Thread.sleep(10000);
+					return true;
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FuturePut fp = pdht.add(Number160.ONE).data(new Data("from1")).requestP2PConfiguration(new RequestP2PConfiguration(10, 0, 0)).start().awaitUninterruptibly();
+					return fp.isSuccess();
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FutureGet fg = pdht.get(Number160.ONE).all().start().awaitUninterruptibly();
+					if(fg.isSuccess()) {
+						return 9 == fg.dataMap().size() ? true: false;
+					} else {
+						return false;
+					}
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					System.out.println("shutdown");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -108,6 +164,10 @@ public class TestNATStress implements Serializable {
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.0.3", 5000, 1);
 					put("p1", peer1);
+					PeerDHT pdht = new PeerBuilderDHT(peer1).start();
+					put("pd", pdht);
+					PeerNAT pnat = new PeerBuilderNAT(peer1).start();
+					put("pn", pnat);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start();
 					PeerNAT pn = new PeerBuilderNAT(peer1).start();
 					FutureNAT fn = pn.portForwarding(fd1).awaitUninterruptibly();
@@ -116,6 +176,31 @@ public class TestNATStress implements Serializable {
 			}, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
+					Thread.sleep(5000);
+					return "true";
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FuturePut fp = pdht.add(Number160.ONE).data(new Data("from2")).requestP2PConfiguration(new RequestP2PConfiguration(10, 0, 0)).start().awaitUninterruptibly();
+					return fp.isSuccess();
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FutureGet fg = pdht.get(Number160.ONE).all().start().awaitUninterruptibly();
+					if(fg.isSuccess()) {
+						return 9 == fg.dataMap().size() ? true: false;
+					} else {
+						return false;
+					}
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					System.out.println("shutdown");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -126,6 +211,10 @@ public class TestNATStress implements Serializable {
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.1.2", 5000, 2);
 					put("p1", peer1);
+					PeerDHT pdht = new PeerBuilderDHT(peer1).start();
+					put("pd", pdht);
+					PeerNAT pnat = new PeerBuilderNAT(peer1).start();
+					put("pn", pnat);
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start();
 					PeerNAT pn = new PeerBuilderNAT(peer1).start();
 					FutureNAT fn = pn.portForwarding(fd1).awaitUninterruptibly();
@@ -134,6 +223,31 @@ public class TestNATStress implements Serializable {
 			}, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
+					Thread.sleep(5000);
+					return "true";
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FuturePut fp = pdht.add(Number160.ONE).data(new Data("from3")).requestP2PConfiguration(new RequestP2PConfiguration(10, 0, 0)).start().awaitUninterruptibly();
+					return fp.isSuccess();
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FutureGet fg = pdht.get(Number160.ONE).all().start().awaitUninterruptibly();
+					if(fg.isSuccess()) {
+						return 9 == fg.dataMap().size() ? true: false;
+					} else {
+						return false;
+					}
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					System.out.println("shutdown");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -144,12 +258,41 @@ public class TestNATStress implements Serializable {
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.2.2", 5000, 3, 4000);
 					put("p1", peer1);
+					PeerDHT pdht = new PeerBuilderDHT(peer1).start();
+					put("pd", pdht);
+					PeerNAT pnat = new PeerBuilderNAT(peer1).start();
+					put("pn", pnat);
 					FutureDiscover fd = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
 					return fd.isSuccess();
 				}
 			}, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
+					Thread.sleep(5000);
+					return "true";
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FuturePut fp = pdht.add(Number160.ONE).data(new Data("from4")).requestP2PConfiguration(new RequestP2PConfiguration(10, 0, 0)).start().awaitUninterruptibly();
+					return fp.isSuccess();
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FutureGet fg = pdht.get(Number160.ONE).all().start().awaitUninterruptibly();
+					if(fg.isSuccess()) {
+						return 9 == fg.dataMap().size() ? true: false;
+					} else {
+						return false;
+					}
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					System.out.println("shutdown");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -160,12 +303,41 @@ public class TestNATStress implements Serializable {
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.2.3", 5000, 4, 4001);
 					put("p1", peer1);
+					PeerDHT pdht = new PeerBuilderDHT(peer1).start();
+					put("pd", pdht);
+					PeerNAT pnat = new PeerBuilderNAT(peer1).start();
+					put("pn", pnat);
 					FutureDiscover fd = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
 					return fd.isSuccess();
 				}
 			}, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
+					Thread.sleep(5000);
+					return "true";
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FuturePut fp = pdht.add(Number160.ONE).data(new Data("from5")).requestP2PConfiguration(new RequestP2PConfiguration(10, 0, 0)).start().awaitUninterruptibly();
+					return fp.isSuccess();
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FutureGet fg = pdht.get(Number160.ONE).all().start().awaitUninterruptibly();
+					if(fg.isSuccess()) {
+						return 9 == fg.dataMap().size() ? true: false;
+					} else {
+						return false;
+					}
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					System.out.println("shutdown");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -176,12 +348,41 @@ public class TestNATStress implements Serializable {
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.3.2", 5000, 5, 4000);
 					put("p1", peer1);
+					PeerDHT pdht = new PeerBuilderDHT(peer1).start();
+					put("pd", pdht);
+					PeerNAT pnat = new PeerBuilderNAT(peer1).start();
+					put("pn", pnat);
 					FutureDiscover fd = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
 					return fd.isSuccess();
 				}
 			}, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
+					Thread.sleep(5000);
+					return "true";
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FuturePut fp = pdht.add(Number160.ONE).data(new Data("from6")).requestP2PConfiguration(new RequestP2PConfiguration(10, 0, 0)).start().awaitUninterruptibly();
+					return fp.isSuccess();
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FutureGet fg = pdht.get(Number160.ONE).all().start().awaitUninterruptibly();
+					if(fg.isSuccess()) {
+						return 9 == fg.dataMap().size() ? true: false;
+					} else {
+						return false;
+					}
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					System.out.println("shutdown");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -192,6 +393,10 @@ public class TestNATStress implements Serializable {
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.4.2", 5000, 6);
 					put("p1", peer1);
+					PeerDHT pdht = new PeerBuilderDHT(peer1).start();
+					put("pd", pdht);
+					PeerNAT pnat = new PeerBuilderNAT(peer1).start();
+					put("pn", pnat);
 					
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
 					Assert.assertFalse(fd1.isDiscoveredTCP());
@@ -201,12 +406,36 @@ public class TestNATStress implements Serializable {
 					//setup relay
 					pn1.startRelay();
 					cl1.await();
-					Thread.sleep(20*1000);
 					return "true";
 				}
 			}, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
+					Thread.sleep(5000);
+					return "true";
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FuturePut fp = pdht.add(Number160.ONE).data(new Data("from7")).requestP2PConfiguration(new RequestP2PConfiguration(10, 0, 0)).start().awaitUninterruptibly();
+					return fp.isSuccess();
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FutureGet fg = pdht.get(Number160.ONE).all().start().awaitUninterruptibly();
+					if(fg.isSuccess()) {
+						return 9 == fg.dataMap().size() ? true: false;
+					} else {
+						return false;
+					}
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					System.out.println("shutdown");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -217,6 +446,10 @@ public class TestNATStress implements Serializable {
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.4.3", 5000, 7);
 					put("p1", peer1);
+					PeerDHT pdht = new PeerBuilderDHT(peer1).start();
+					put("pd", pdht);
+					PeerNAT pnat = new PeerBuilderNAT(peer1).start();
+					put("pn", pnat);
 					
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
 					Assert.assertFalse(fd1.isDiscoveredTCP());
@@ -231,6 +464,31 @@ public class TestNATStress implements Serializable {
 			}, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
+					Thread.sleep(5000);
+					return "true";
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FuturePut fp = pdht.add(Number160.ONE).data(new Data("from8")).requestP2PConfiguration(new RequestP2PConfiguration(10, 0, 0)).start().awaitUninterruptibly();
+					return fp.isSuccess();
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FutureGet fg = pdht.get(Number160.ONE).all().start().awaitUninterruptibly();
+					if(fg.isSuccess()) {
+						return 9 == fg.dataMap().size() ? true: false;
+					} else {
+						return false;
+					}
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					System.out.println("shutdown");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
@@ -241,6 +499,10 @@ public class TestNATStress implements Serializable {
 				public Serializable execute() throws Exception {
 					Peer peer1 = LocalNATUtils.init("10.0.5.2", 5000, 8);
 					put("p1", peer1);
+					PeerDHT pdht = new PeerBuilderDHT(peer1).start();
+					put("pd", pdht);
+					PeerNAT pnat = new PeerBuilderNAT(peer1).start();
+					put("pn", pnat);
 					
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress1).start().awaitUninterruptibly();
 					Assert.assertFalse(fd1.isDiscoveredTCP());
@@ -255,39 +517,50 @@ public class TestNATStress implements Serializable {
 			}, new Command() {
 				@Override
 				public Serializable execute() throws Exception {
+					Thread.sleep(5000);
+					return "true";
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FuturePut fp = pdht.add(Number160.ONE).data(new Data("from9")).requestP2PConfiguration(new RequestP2PConfiguration(10, 0, 0)).start().awaitUninterruptibly();
+					return fp.isSuccess();
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					PeerDHT pdht = (PeerDHT)get("pd");
+					FutureGet fg = pdht.get(Number160.ONE).all().start().awaitUninterruptibly();
+					if(fg.isSuccess()) {
+						return 9 == fg.dataMap().size() ? true: false;
+					} else {
+						return false;
+					}
+				}
+			}, new Command() {
+				@Override
+				public Serializable execute() throws Exception {
+					System.out.println("shutdown");
 					return LocalNATUtils.shutdown((Peer)get("p1"));
 				}
 			});
 			
-			new Thread(new Runnable() {
-				
-				@Override
-				public void run() {
-					for(;;) {
-						System.err.println("MAP SIZE: "+relayPeer11.peerBean().peerMap().all().size());
-						for(PeerAddress pa:relayPeer11.peerBean().peerMap().all()) {
-							System.err.println("PA: "+pa);
-						}
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-					
-					
-				}
-			}).start();
 
 			for (RemotePeer u : unr) {
 				u.waitFor();
 			}
+			//test if we have 9 peers
+			Assert.assertTrue(a.get());
+			
+			FutureGet fg = relayDHT1.get(Number160.ONE).all().start().awaitUninterruptibly();
+			Assert.assertEquals(9, fg.dataMap().size());
 
 			for (RemotePeer u : unr) {
-				for (int i = 0; i < u.resultSize(); i++) {
-					Assert.assertEquals("true", u.getResult(i));
+				for (int i = 0; i < u.resultSize() - 1; i++) {
+					Assert.assertEquals("true", u.getResult(i).toString());
 				}
+				Assert.assertEquals("shutdown done", u.getResult(u.resultSize() - 1).toString());
 			}
 
 		} finally {

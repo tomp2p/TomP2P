@@ -237,10 +237,11 @@ public class RelayRPC extends DispatchHandler {
 
 		psa2.add(peer().peerAddress().peerSocketAddress());
 		final PeerConnection unreachablePeerConnectionCopy = unreachablePeerConnectionOrig.changeRemotePeer(
-				unreachablePeerConnectionOrig.remotePeer().changeRelayed(true).changePeerSocketAddresses(psa2));
+				unreachablePeerConnectionOrig.remotePeer().changeRelayed(true).changeFirewalledTCP(false).changeFirewalledUDP(false).changePeerSocketAddresses(psa2));
 		
 		//now we can add this peer to the map, as we have now set the flag
-		peerBean().notifyPeerFound(message.sender(), message.sender(), unreachablePeerConnectionCopy, null);
+		//its TCP, we have a connection to this peer, so mark it as first hand
+		peerBean().notifyPeerFound(unreachablePeerConnectionCopy.remotePeer(), null, unreachablePeerConnectionCopy, null);
 		for (Commands command : RPC.Commands.values()) {
 			if (command == RPC.Commands.RCON) {
 				// We must register the rconRPC for every unreachable peer that

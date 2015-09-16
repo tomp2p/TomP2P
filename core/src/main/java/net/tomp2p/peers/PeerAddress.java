@@ -552,16 +552,35 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     @Override
     public String toString() {
 		StringBuilder sb = new StringBuilder("paddr[");
-		sb.append(peerId.toString()).append(peerSocketAddress.toString()).append("]");
-		sb.append("/relay(").append(relayed);
-		if (relayed) {
-			sb.append(",").append(peerSocketAddresses.size()).append(")=")
-					.append(Arrays.toString(peerSocketAddresses.toArray()));
-		} else {
-			sb.append(")");
-		}
+		sb.append(peerId.toString()).append(peerSocketAddress.toString()).append(',');
 
-		sb.append("/slow(").append(slow).append(")");
+		if(net6) {
+			sb.append('6');
+		}
+	    if(firewalledTCP) {
+			sb.append('t');
+		}
+	    if(firewalledUDP) {
+			sb.append('u');
+		}
+		if(relayed) {
+			sb.append('r');
+		}
+		if(slow) {
+			sb.append('s');
+		}
+		if(portForwarding) {
+			sb.append('p');
+		}
+		if(net4Private) {
+			sb.append('4');
+		}
+		sb.append(']');
+		
+		if (relayed) {
+			sb.append("r:(").append(peerSocketAddresses.size()).append(")")
+					.append(Arrays.toString(peerSocketAddresses.toArray()));
+		}
 
 		return sb.toString();
     }

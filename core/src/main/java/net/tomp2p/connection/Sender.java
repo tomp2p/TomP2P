@@ -16,14 +16,6 @@
 
 package net.tomp2p.connection;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.GenericFutureListener;
-
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -34,10 +26,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.GenericFutureListener;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureDone;
@@ -60,11 +61,9 @@ import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.storage.Data;
+import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The class that sends out messages.
@@ -85,7 +84,7 @@ public class Sender {
 
 	// this map caches all messages which are meant to be sent by a reverse
 	// connection setup
-	private final ConcurrentHashMap<Integer, Pair<FutureResponse, FutureResponse>> cachedRequests = new ConcurrentHashMap<Integer, Pair<FutureResponse, FutureResponse>>();
+	private final ConcurrentCacheMap<Integer, Pair<FutureResponse, FutureResponse>> cachedRequests = new ConcurrentCacheMap<Integer, Pair<FutureResponse, FutureResponse>>(30, 1024);
 
 	private PingBuilderFactory pingBuilderFactory;
 
@@ -910,7 +909,7 @@ public class Sender {
 	 * reverse connection is set up beforehand. After a successful connection
 	 * establishment, the cached messages are sent through the direct channel.
 	 */
-	public ConcurrentHashMap<Integer, Pair<FutureResponse, FutureResponse>> cachedRequests() {
+	public ConcurrentCacheMap<Integer, Pair<FutureResponse, FutureResponse>> cachedRequests() {
 		return cachedRequests;
 	}
 

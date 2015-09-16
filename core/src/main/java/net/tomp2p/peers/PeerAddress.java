@@ -18,6 +18,7 @@ package net.tomp2p.peers;
 import io.netty.buffer.ByteBuf;
 
 import java.io.Serializable;
+import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -30,6 +31,8 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+
+import javax.management.RuntimeErrorException;
 
 import net.tomp2p.utils.Utils;
 
@@ -300,7 +303,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         int size = Number160.BYTE_ARRAY_SIZE;
         this.peerSocketAddress = peerSocketAddress;
         this.internalPeerSocketAddress = internalPeerSocketAddress;
-        this.internalNetworkPrefix = internalPeerSocketAddress == null ? -1: prefix(internalPeerSocketAddress.inetAddress());
+        this.internalNetworkPrefix = internalPeerSocketAddress == null ? -1: prefix4(internalPeerSocketAddress.inetAddress());
         this.hashCode = id.hashCode();
         this.net6 = peerSocketAddress.inetAddress() instanceof Inet6Address;
         this.firewalledUDP = firewalledUDP;
@@ -932,7 +935,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 		return mask.set(masked).toInetAddress();
 	}
 	
-	private int prefix(InetAddress inetAddress) {
+	private int prefix4(InetAddress inetAddress) {
 		NetworkInterface networkInterface;
 		try {
 			networkInterface = NetworkInterface.getByInetAddress(internalPeerSocketAddress.inetAddress());
@@ -942,11 +945,15 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 			if(networkInterface.getInterfaceAddresses().size() <= 0) {
 				return -1;
 			}
-			InterfaceAddress iface = networkInterface.getInterfaceAddresses().get(0);
-			if(iface == null) {
-				return -1;
+			for(InterfaceAddress iface: networkInterface.getInterfaceAddresses()) {
+				if(iface == null) {
+					continue;
+				}
+				if(iface.getAddress() instanceof Inet4Address) {
+					return iface.getNetworkPrefixLength();
+				}
 			}
-			return iface.getNetworkPrefixLength(); 
+			return -1;
 		} catch (SocketException e) {
 			e.printStackTrace();
 			return -1;

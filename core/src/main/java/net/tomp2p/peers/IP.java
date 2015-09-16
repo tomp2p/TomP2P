@@ -19,8 +19,12 @@ public class IP {
 		public IPv4 maskWithNetworkMask(final int networkMask) {
 			if (networkMask == 32) {
 				return this;
-			} else {
-				return new IPv4(bits & (0xFFFFFFFF << (32 - networkMask)));
+			} else if(networkMask == 0) { 
+				return new IPv4(0);
+			}
+			else {
+				int mask = (0xFFFFFFFF << (32 - networkMask));
+				return new IPv4(bits & mask);
 			}
 		}
 		
@@ -28,7 +32,7 @@ public class IP {
 		 * 192.168.1.2 with netmask /24 results in 0.0.0.2
 		 */
 		public IPv4 maskWithNetworkMaskInv(final int networkMask) {
-			if (networkMask == 32) {
+			if (networkMask == 0) {
 				return this;
 			} else {
 				return new IPv4(bits & (0xFFFFFFFF >>> networkMask));
@@ -70,6 +74,19 @@ public class IP {
 		@Override
 		public int hashCode() {
 			return bits;
+		}
+		
+		@Override
+		public String toString() {
+			final StringBuilder sb = new StringBuilder("/");
+			sb.append((byte) (bits >>> 24));
+			sb.append('.');
+			sb.append((byte) (bits >>> 16));
+			sb.append('.');
+			sb.append((byte) (bits >>> 8));
+			sb.append('.');
+			sb.append((byte) bits);
+			return sb.toString();
 		}
 	}
 	
@@ -133,6 +150,27 @@ public class IP {
 		@Override
 		public int hashCode() {
 			return (int)((highBits^(highBits>>>32)) ^ (lowBits^(lowBits>>>32)));
+		}
+		
+		@Override
+		public String toString() {
+			final StringBuilder sb = new StringBuilder("/");
+			sb.append(String.format("%04X ", (short) (highBits >>> 48)));
+			sb.append(':');
+			sb.append(String.format("%04X ", (short) (highBits >>> 32)));
+			sb.append(':');
+			sb.append(String.format("%04X ", (short) (highBits >>> 16)));
+			sb.append(':');
+			sb.append(String.format("%04X ", (short) highBits));
+			sb.append(':');
+			sb.append(String.format("%04X ", (short) (lowBits >>> 48)));
+			sb.append(':');
+			sb.append(String.format("%04X ", (short) (lowBits >>> 32)));
+			sb.append(':');
+			sb.append(String.format("%04X ", (short) (lowBits >>> 16)));
+			sb.append(':');
+			sb.append(String.format("%04X ", (short) lowBits));
+			return sb.toString();
 		}
 	}
 	

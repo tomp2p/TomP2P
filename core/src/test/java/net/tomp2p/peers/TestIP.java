@@ -8,6 +8,8 @@ import java.net.UnknownHostException;
 import org.junit.Assert;
 import org.junit.Test;
 
+import net.tomp2p.utils.Utils;
+
 public class TestIP {
 	@Test
 	public void testMask4() throws UnknownHostException {
@@ -50,5 +52,40 @@ public class TestIP {
 		InetAddress inet2 = Inet4Address.getByName("10.10.10.55");
 		InetAddress inet3 = test.toInetAddress();
 		Assert.assertEquals(inet2, inet3);
+	}
+	
+	@Test
+	public void testCalc1() throws UnknownHostException {
+		
+		IP.IPv4 mask = IP.fromInet4Address(InetAddress.getByName("10.0.0.3"));
+		mask = mask.maskWithNetworkMask(24);
+		IP.IPv4 masked = IP.fromInet4Address(InetAddress.getByName("0.0.0.2"));
+		masked = masked.maskWithNetworkMaskInv(24);
+		InetAddress i = mask.set(masked).toInetAddress();
+		Assert.assertEquals(i, InetAddress.getByName("10.0.0.2") );
+	}
+	
+	@Test
+	public void testCalc2() throws UnknownHostException {
+		
+		IP.IPv4 mask = IP.fromInet4Address(InetAddress.getByName("10.0.0.3"));
+		mask = mask.maskWithNetworkMask(16);
+		IP.IPv4 masked = IP.fromInet4Address(InetAddress.getByName("0.0.1.2"));
+		masked = masked.maskWithNetworkMaskInv(16);
+		InetAddress i = mask.set(masked).toInetAddress();
+		Assert.assertEquals(i, InetAddress.getByName("10.0.1.2") );
+	}
+	
+	@Test
+	public void testCalc3() throws UnknownHostException {
+		
+		IP.IPv4 mask = IP.fromInet4Address(InetAddress.getByName("10.0.0.3"));
+		System.err.println(mask);
+		mask = mask.maskWithNetworkMask(0);
+		System.err.println(mask);
+		IP.IPv4 masked = IP.fromInet4Address(InetAddress.getByName("1.2.3.4"));
+		masked = masked.maskWithNetworkMaskInv(0);
+		InetAddress i = mask.set(masked).toInetAddress();
+		Assert.assertEquals(i, InetAddress.getByName("1.2.3.4") );
 	}
 }

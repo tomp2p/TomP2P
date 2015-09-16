@@ -926,13 +926,12 @@ public class Utils {
 	}
 
 	public static PeerSocketAddress natReflection(PeerAddress recipient, PeerAddress self) {
-	    if(self.isPortForwarding() && recipient.isPortForwarding()) {
-	    	//check for NAT reflection
-	    	if(recipient.inetAddress().equals(self.inetAddress()) && self.internalPeerSocketAddress() != null && recipient.internalPeerSocketAddress()!=null) {
-	    		//the recipient and me have the same external IP, this means we either send it to us, or to a peer in our network. Since NAT reflection is rarly properly implemented in routers, we need to change the IP address here in order to reach the peer.
-	    		InetAddress a = self.calcInternalInetAddress(recipient.internalPeerSocketAddress().inetAddress());
-	    		return new PeerSocketAddress(a, recipient.internalPeerSocketAddress().tcpPort(), recipient.internalPeerSocketAddress().udpPort());
-	    	}
+	    
+		//check for NAT reflection
+	    if(recipient.inetAddress().equals(self.inetAddress()) && self.internalPeerSocketAddress() != null && recipient.internalPeerSocketAddress()!=null) {
+	    	//the recipient and me have the same external IP, this means we either send it to us, or to a peer in our network. Since NAT reflection is rarly properly implemented in routers, we need to change the IP address here in order to reach the peer.
+	    	InetAddress a = self.calcInternalInetAddress(recipient.internalPeerSocketAddress().inetAddress());
+	    	return new PeerSocketAddress(a, recipient.internalPeerSocketAddress().tcpPort(), recipient.internalPeerSocketAddress().udpPort());
 	    }
 	    return null;
     }

@@ -20,14 +20,12 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +40,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureForkJoin;
-import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataFilter;
 import net.tomp2p.message.DataFilterTTL;
@@ -52,7 +48,6 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
-import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
@@ -149,14 +144,7 @@ public class Sender {
 		}
 		// NAT reflection - rewrite recipient if we found a local address for
 		// the recipient
-		PeerSocketAddress reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
-		if(reflectedRecipient != null) {
-			PeerSocketAddress orig = message.recipient().peerSocketAddress();
-			message.saveOriginalRecipientBeforeTranslation(orig);
-			message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
-			message.reflected();
-			LOG.debug("reflect recipient TCP {}", message);
-		}
+		handleReflection(message);
 		
 		removePeerIfFailed(futureResponse, message);
 
@@ -209,9 +197,20 @@ public class Sender {
 			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
 			final TimeoutFactory timeoutHandler) {
 		message.keepAlive(true);
+		
+		PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().peerSocketAddress());
+		if(ps == null) {
+			futureResponse.failed("no relay provided, but relay indicated RCON");
+			return;
+		}
+		if(ps.equals(peerBean.serverPeerAddress().peerSocketAddress())) {
+			LOG.debug("Send to self-relay RCON");
+			sendSelf(futureResponse, message);
+			return;
+		}
 
 		LOG.debug("initiate reverse connection setup to peer with peerAddress {}", message.recipient());
-		Message rconMessage = createRconMessage(message);
+		Message rconMessage = createRconMessage(ps, message);
 		final FutureResponse rconResponse = new FutureResponse(rconMessage);
 
 		// cache the original message until the connection is established
@@ -246,9 +245,9 @@ public class Sender {
 	 * @param message
 	 * @return rconMessage
 	 */
-	private static Message createRconMessage(final Message message) {
+	private static Message createRconMessage(PeerSocketAddress ps, final Message message) {
 		// get Relay InetAddress from unreachable peer
-		PeerSocketAddress socketAddress = Utils.extractRandomRelay(message);
+		
 
 		// we need to make a copy of the original message
 		Message rconMessage = new Message();
@@ -262,7 +261,7 @@ public class Sender {
 		// peer will close the PeerConnection to the unreachable peer.
 		rconMessage.keepAlive(true);
 		// making the message ready to send
-		readyToSend(message, socketAddress, rconMessage, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_1);
+		readyToSend(message, ps, rconMessage, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_1);
 
 		return rconMessage;
 	}
@@ -302,7 +301,13 @@ public class Sender {
 	private void connectAndSend(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
 			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
 			final TimeoutFactory timeoutHandler, final Message message) {
-		InetSocketAddress recipient = message.recipient().createSocketTCP();
+		final InetSocketAddress recipient; 
+		if(message.recipientReflected() != null) {
+			recipient = message.recipientReflected().createSocketTCP();
+		} else {
+			recipient = message.recipient().createSocketTCP();
+		}
+				
 		final ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler,
 				connectTimeoutMillis, futureResponse);
 		afterConnect(futureResponse, message, channelFuture, handler == null);
@@ -324,81 +329,20 @@ public class Sender {
 	private void handleRelay(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
 			final Message message, final ChannelCreator channelCreator, final int idleTCPMillis, final int connectTimeoutMillis,
 			final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
-		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses());
-		futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
-			@Override
-			public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
-				if (futureDone.isSuccess()) {
-					InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(futureDone.object());
-					ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler,
-							connectTimeoutMillis, futureResponse);
-					afterConnect(futureResponse, message, channelFuture, handler == null);
-
-					futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-						@Override
-						public void operationComplete(FutureResponse future) throws Exception {
-							if (future.isFailed()) {
-								if (future.responseMessage() != null && future.responseMessage().type() != Message.Type.DENIED) {
-									// remove the failed relay and try again
-									clearInactivePeerSocketAddress(futureDone);
-									sendTCP(handler, futureResponse, message, channelCreator, idleTCPMillis, connectTimeoutMillis,
-											peerConnection);
-								}
-							}
-						}
-
-						private void clearInactivePeerSocketAddress(final FutureDone<PeerSocketAddress> futureDone) {
-							Collection<PeerSocketAddress> tmp = new ArrayList<PeerSocketAddress>();
-							for (PeerSocketAddress psa : message.recipient().peerSocketAddresses()) {
-								if (psa != null) {
-									if (!psa.equals(futureDone.object())) {
-										tmp.add(psa);
-									}
-								}
-							}
-							message.peerSocketAddresses(tmp);
-						}
-					});
-
-				} else {
-					futureResponse.failed("No relay could be contacted.", futureDone);
-				}
-			}
-		});
-	}
-
-	/**
-	 * Ping all relays of the receiver. The first one answering is picked as the
-	 * responsible relay for this message.
-	 * 
-	 * @param peerSocketAddresses
-	 *            a collection of relay addresses
-	 * @return
-	 */
-	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses) {
-		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
-
-		FuturePing[] forks = new FuturePing[peerSocketAddresses.size()];
-		int index = 0;
-		for (PeerSocketAddress psa : peerSocketAddresses) {
-			if (psa != null) {
-				InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(psa);
-				PingBuilder pingBuilder = pingBuilderFactory.create();
-				forks[index++] = pingBuilder.inetAddress(inetSocketAddress.getAddress()).port(inetSocketAddress.getPort()).start();
-			}
+		
+		PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().peerSocketAddress());
+		if(ps == null) {
+			futureResponse.failed("no relay provided, but relay indicated TCP");
+			return;
 		}
-		FutureForkJoin<FuturePing> ffk = new FutureForkJoin<FuturePing>(1, true, new AtomicReferenceArray<FuturePing>(forks));
-		ffk.addListener(new BaseFutureAdapter<FutureForkJoin<FuturePing>>() {
-			@Override
-			public void operationComplete(FutureForkJoin<FuturePing> future) throws Exception {
-				if (future.isSuccess()) {
-					futureDone.done(future.first().remotePeer().peerSocketAddress());
-				} else {
-					futureDone.failed(future);
-				}
-			}
-		});
-		return futureDone;
+		if(ps.equals(peerBean.serverPeerAddress().peerSocketAddress())) {
+			LOG.debug("Send to self-relay TCP");
+			sendSelf(futureResponse, message);
+			return;
+		}
+		InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(ps);
+		ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler, connectTimeoutMillis, futureResponse);
+		afterConnect(futureResponse, message, channelFuture, handler == null);
 	}
 
 	/**
@@ -572,14 +516,7 @@ public class Sender {
 
 		// NAT reflection - rewrite recipient if we found a local address for
 		// the recipient
-		PeerSocketAddress reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
-		if(reflectedRecipient != null) {
-			PeerSocketAddress orig = message.recipient().peerSocketAddress();
-			message.saveOriginalRecipientBeforeTranslation(orig);
-			message.recipient(message.recipient().changePeerSocketAddress(reflectedRecipient));
-			message.reflected();
-			LOG.debug("reflect recipient UDP {}", message);
-		}
+		handleReflection(message);
 
 		removePeerIfFailed(futureResponse, message);
 
@@ -611,18 +548,24 @@ public class Sender {
 				} else {
 					LOG.debug("No hole punching possible, because There is no PeerNAT. New Attempt with Relaying");
 				}
+				break;
 			case RELAY:
-				try {
-					channelFuture = prepareRelaySendUDP(futureResponse, message, channelCreator, broadcast, handlers, channelFuture);
-				} catch (Exception e) {
-					e.printStackTrace();
+				PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().peerSocketAddress());
+				if(ps == null) {
+					futureResponse.failed("no relay provided, but relay indicated UDP");
 					return;
 				}
+				if(ps.equals(peerBean.serverPeerAddress().peerSocketAddress())) {
+					LOG.debug("Send to self-relay UDP, {}", message);
+					sendSelf(futureResponse, message);
+					return;
+				}
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
 				break;
 			case SELF:
+				LOG.debug("Send to self");
 				sendSelf(futureResponse, message);
-				channelFuture = null;
-				break;
+				return;
 			default:
 				throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");
 			}
@@ -631,6 +574,14 @@ public class Sender {
 			LOG.warn(e.getMessage());
 			futureResponse.failed(e);
 
+		}
+	}
+
+	private void handleReflection(final Message message) {
+		PeerSocketAddress reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
+		if(reflectedRecipient != null) {
+			message.recipientReflected(message.recipient().changePeerSocketAddress(reflectedRecipient));
+			LOG.debug("reflect recipient UDP {}", message);
 		}
 	}
 
@@ -647,21 +598,31 @@ public class Sender {
 	 * @return
 	 * @throws Exception
 	 */
-	private ChannelFuture prepareRelaySendUDP(final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final boolean broadcast,
-			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, ChannelFuture channelFuture) throws Exception {
+	private PeerSocketAddress prepareRelaySend(final Message message, final PeerSocketAddress preferredAddress) {
 		List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
-		LOG.debug("send neighbor request to random relay peer {}", psa);
 		if (psa.size() > 0) {
-			PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-			message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
-			channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+			if(psa.contains(preferredAddress)) {
+				LOG.debug("send neighbor request to preferred relay peer {} out of {}", preferredAddress, psa);
+				return preferredAddress;
+			}
+			
+			//check for any reflected addresses. Those are *not* preferred. Although they may be more efficient, 
+			//we don't have any internal address information in peersocketaddress -> TODO
+			while(!psa.isEmpty()) {
+				PeerSocketAddress ps = psa.remove(random.nextInt(psa.size()));
+				if(ps.inetAddress().equals(peerBean.serverPeerAddress().peerSocketAddress().inetAddress())) {
+					continue;
+				}
+				message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+				LOG.debug("send neighbor request to random relay peer {} out of {}", ps, psa);
+				return ps;
+			}
+			LOG.error("no non-reflected relays found");
+			return null;
 		} else {
-			String failMessage = "Peer is relayed, but no relay given";
-			futureResponse.failed(failMessage);
-			throw new Exception(failMessage);
+			LOG.error("Peer is relayed, but no relay given");
+			return null;
 		}
-		return channelFuture;
 	}
 
 	private FutureDone<Message> handleHolePunch(final FutureResponse futureResponse, final Message message,
@@ -695,13 +656,19 @@ public class Sender {
 
 			private void doRelayFallback(final FutureResponse futureResponse, final Message message, final boolean broadcast,
 					final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, ChannelFuture channelFuture) {
-				try {
-					channelFuture = prepareRelaySendUDP(futureResponse, message, channelCreator, broadcast, handlers, channelFuture);
-					afterConnect(futureResponse, message, channelFuture, handler == null);
-				} catch (Exception e) {
-					e.printStackTrace();
+				
+				PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().peerSocketAddress());
+				if(ps == null) {
+					futureResponse.failed("no relay provided, but relay indicated HP");
 					return;
 				}
+				if(ps.equals(peerBean.serverPeerAddress().peerSocketAddress())) {
+					LOG.debug("Send to self-relay HP");
+					sendSelf(futureResponse, message);
+					return;
+				}
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+				afterConnect(futureResponse, message, channelFuture, handler == null);
 			}
 		});
 		return fDone;
@@ -892,10 +859,12 @@ public class Sender {
 					} else if (message.command() == RPC.Commands.HOLEP.getNr() && message.type().ordinal() == Message.Type.REQUEST_3.ordinal()) {
 						//do nothing, because such a (dummy) message will never reach its target the first time
 					}
-					LOG.debug("peer failed: {}", message);
-					synchronized (peerStatusListeners) {
-						for (PeerStatusListener peerStatusListener : peerStatusListeners) {
-							peerStatusListener.peerFailed(message.recipient(), new PeerException(future));
+					if(!future.isCanceled()) {
+						LOG.debug("peer failed: {}", message);
+						synchronized (peerStatusListeners) {
+							for (PeerStatusListener peerStatusListener : peerStatusListeners) {
+								peerStatusListener.peerFailed(message.recipient(), new PeerException(future));
+							}
 						}
 					}
 				}

@@ -33,6 +33,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -118,6 +119,13 @@ public class BootstrapBuilder {
     	this.inetAddress = socket.getAddress();
     	this.portTCP = socket.getPort();
     	this.portUDP = socket.getPort();
+	    return this;
+    }
+    
+    public BootstrapBuilder peerSocketAddress(PeerSocketAddress socket) {
+    	this.inetAddress = socket.inetAddress();
+    	this.portTCP = socket.tcpPort();
+    	this.portUDP = socket.udpPort();
 	    return this;
     }
 

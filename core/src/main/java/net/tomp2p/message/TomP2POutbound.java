@@ -56,6 +56,9 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                     	if(message.recipientRelay()!=null) {
                     		//in case of sending to a relay (the relayed flag is already set)
                     		recipient = message.recipientRelay().createSocketUDP();
+                    	} else if(message.recipientReflected()!=null) {
+                    		//in case we use nat reflection
+                    		recipient = message.recipientReflected().createSocketUDP();
                     	} else {
                     		recipient = message.recipient().createSocketUDP();
                     	}

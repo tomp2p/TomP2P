@@ -924,11 +924,16 @@ public class Utils {
 		}
 		return randomInt;
 	}
+	
+	public static boolean canReflect(PeerAddress recipient, PeerAddress self) {
+		return recipient.inetAddress().equals(self.inetAddress()) 
+				&& self.internalPeerSocketAddress() != null 
+				&& recipient.internalPeerSocketAddress()!=null;
+	}
 
 	public static PeerSocketAddress natReflection(PeerAddress recipient, PeerAddress self) {
-	    
 		//check for NAT reflection
-	    if(recipient.inetAddress().equals(self.inetAddress()) && self.internalPeerSocketAddress() != null && recipient.internalPeerSocketAddress()!=null) {
+	    if(canReflect(recipient, self)) {
 	    	//the recipient and me have the same external IP, this means we either send it to us, or to a peer in our network. Since NAT reflection is rarly properly implemented in routers, we need to change the IP address here in order to reach the peer.
 	    	InetAddress a = self.calcInternalInetAddress(recipient.internalPeerSocketAddress().inetAddress());
 	    	return new PeerSocketAddress(a, recipient.internalPeerSocketAddress().tcpPort(), recipient.internalPeerSocketAddress().udpPort());

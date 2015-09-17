@@ -35,5 +35,4 @@ public class RemotePeer {
 	public int resultSize() {
 		return results.length();
 	}
-
 }

@@ -15,17 +15,16 @@
  */
 package net.tomp2p.connection;
 
- import io.netty.channel.ChannelHandlerContext;
+ import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Is able to send TCP and UDP messages (as a request) and processes incoming responses. It is important that
@@ -294,9 +293,8 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         }
         
         //NAT reflection, change it back, as this will be stored in our peer map that may be queried from other peers
-		if(message.recipientBeforeTranslation() != null) {
-			PeerAddress realAddress = responseMessage.sender().changePeerSocketAddress(message.recipientBeforeTranslation());
-			responseMessage.sender(realAddress);
+		if(message.recipientReflected() != null) {
+			responseMessage.sender(message.recipient().changePeerSocketAddress(message.recipient().peerSocketAddress()));
 		}
 
         // Stop time measurement of RTT

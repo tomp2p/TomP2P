@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +74,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     final private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
     final private Lock readLock = reentrantReadWriteLock.readLock();
     final private Lock writeLock = reentrantReadWriteLock.writeLock();
-    final private Map<Number320, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number320, Map<Integer, DispatchHandler>>();
+    final private SortedMap<Number320, Map<Integer, DispatchHandler>> ioHandlers = new TreeMap<Number320, Map<Integer, DispatchHandler>>();
     
 	/**
 	 * Map that stores requests that are not answered yet. Normally, the {@link RequestHandler} handles
@@ -147,6 +149,17 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         writeLock.lock();
     	try {
     		ioHandlers.remove(new Number320(peerId, onBehalfOf));
+    	}  finally {
+    		writeLock.unlock();
+    	}
+    }
+    
+    public void removeIoHandler(final Number160 peerId) {
+    	writeLock.lock();
+    	try {
+    		Number320 min = new Number320(peerId, Number160.ZERO); 
+    		Number320 max = new Number320(peerId, Number160.MAX_VALUE);
+    		ioHandlers.subMap(min, max).clear();
     	}  finally {
     		writeLock.unlock();
     	}
@@ -320,20 +333,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 			return searchHandler(peerId, peerId, message.command());
 			// else we search for the handler that we are responsible for
 		} else {
-			DispatchHandler handler = searchHandler(recipient.peerId(), recipient.peerId(), message.command());
+			DispatchHandler handler = searchHandler(peerBean().serverPeerAddress().peerId(), recipient.peerId(), message.command());
 			if (handler != null) {
 				return handler;
 			}
-
-			// If we could not find a handler that we are responsible for, we
-			// are most likely a relay. Since we have no ID of the relay, we
-			// just take the first one.
-			Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
-			for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
-				if (entry.getKey().domainKey().equals(recipient.peerId())) {
-					return entry.getValue();
-				}
-			}
+			LOG.warn("No handler found for {} no behalf of {}, command {}", peerBean().serverPeerAddress().peerId(), recipient.peerId(), message.command());
 			return null;
 		}
 	}

@@ -1,7 +1,6 @@
 package net.tomp2p.connection;
 
 import net.tomp2p.message.Message;
-import net.tomp2p.rpc.RPC;
 
 /**
  * Default sending behavior for UDP and TCP messages. Depending whether the
@@ -22,7 +21,7 @@ public class DefaultSendBehavior implements SendBehavior {
 			return SendMethod.SELF;
 		}
 		
-		if(message.isReflected()) {
+		if(message.recipientReflected() != null) {
 			return SendMethod.DIRECT;
 		}
 
@@ -32,11 +31,6 @@ public class DefaultSendBehavior implements SendBehavior {
 				// relayed. Thus send the message to
 				// one of the receiver's relay peers
 				return SendMethod.RELAY;
-			} else if (message.recipient().isSlow()) {
-				// the recipient is a slow peer (i.e. a mobile device). Send it
-				// to the relay such that this
-				// one can handle latency and buffer multiple requests
-				return SendMethod.RELAY;
 			} else {
 				// Messages with small size can be sent over relay, other messages should be sent directly (more efficient)
 				if(message.estimateSize() > MTU) {
@@ -45,10 +39,9 @@ public class DefaultSendBehavior implements SendBehavior {
 					return SendMethod.RELAY;
 				}
 			}
-		} else {
-			// send directly
-			return SendMethod.DIRECT;
 		}
+		// send directly
+		return SendMethod.DIRECT;
 	}
 
 	@Override
@@ -58,22 +51,14 @@ public class DefaultSendBehavior implements SendBehavior {
 			return SendMethod.SELF;
 		}
 		
-		if(message.isReflected()) {
+		if(message.recipientReflected() != null) {
 			return SendMethod.DIRECT;
+		}
+		
+		if(message.recipient().isRelayed()) {
+			return SendMethod.RELAY;
 		}
 
-		if (message.recipient().isRelayed() && message.sender().isRelayed()
-				&& !(message.command() == RPC.Commands.NEIGHBOR.getNr() || message.command() == RPC.Commands.PING.getNr())) {
-			return SendMethod.HOLEP;
-		} else if (message.recipient().isRelayed()) {
-			if (message.command() == RPC.Commands.NEIGHBOR.getNr() || message.command() == RPC.Commands.PING.getNr()) {
-				return SendMethod.RELAY;
-			} else {
-				throw new UnsupportedOperationException(
-						"Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
-			}
-		} else {
-			return SendMethod.DIRECT;
-		}
+		return SendMethod.DIRECT;
 	}
 }

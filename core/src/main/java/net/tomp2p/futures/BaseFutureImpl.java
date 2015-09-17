@@ -186,6 +186,13 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
             return completed && (type != FutureType.OK);
         }
     }
+    
+    @Override
+    public boolean isCanceled() {
+        synchronized (lock) {
+            return completed && (type == FutureType.CANCEL);
+        }
+    }
 
     @Override
     public K failed(final BaseFuture origin) {

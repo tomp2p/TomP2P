@@ -206,4 +206,6 @@ public interface BaseFuture extends Cancel {
      * @return this
      */
     BaseFuture setCancel(Cancel cancel);
+
+	boolean isCanceled();
 }

@@ -166,7 +166,6 @@ public class Message {
     private byte command;
     private PeerAddress sender;
     private PeerAddress recipient;
-    private transient PeerAddress recipientRelay;
     private int options = 0;
 
     // Payload:
@@ -203,8 +202,8 @@ public class Message {
     private transient boolean content = false;
     private transient boolean verified = false;
     private transient boolean sendSelf = false;
-    private transient PeerSocketAddress recipientBeforeTranslation = null;
-    private transient boolean reflected;
+    private transient PeerAddress recipientRelay;
+    private transient PeerAddress recipientReflected;
 
     /**
      * Creates message with a random ID.
@@ -346,8 +345,16 @@ public class Message {
     
     public Message recipientRelay(PeerAddress recipientRelay) {
     	this.recipientRelay = recipientRelay;
-        return this;
-	    
+        return this; 
+    }
+    
+    public PeerAddress recipientReflected() {
+        return recipientReflected;
+    }
+    
+    public Message recipientReflected(PeerAddress recipientReflected) {
+    	this.recipientReflected = recipientReflected;
+        return this; 
     }
 
     /**
@@ -1288,28 +1295,4 @@ public class Message {
 		}
 		
 	}
-
-	public Message saveOriginalRecipientBeforeTranslation(PeerSocketAddress recipientBeforeTranslation) {
-		this.recipientBeforeTranslation = recipientBeforeTranslation;
-		return this;
-	}
-	
-	public PeerSocketAddress recipientBeforeTranslation() {
-		return recipientBeforeTranslation;
-	}
-
-	public Message reflected(boolean reflected) {
-		this.reflected = reflected;
-		return this;
-	}
-	
-	public Message reflected() {
-		return reflected(true);
-	}
-	
-	public boolean isReflected() {
-		return reflected;
-	}
-	
-	
 }

@@ -120,10 +120,9 @@ public class TimeoutFactory {
 		@Override
 		public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
 			if (evt instanceof IdleStateHandlerTomP2P) {
-				LOG.warn("Channel timeout for channel {} {}.", name, ctx.channel());
 				final PeerAddress recipient;
 				if (futureResponse != null) {
-					LOG.warn("Request status is {}", futureResponse.request());
+					LOG.warn("Channel timeout for channel {} {}. Request status is {}", name, ctx.channel(), futureResponse.request());
 					ctx.channel().close().addListener(new GenericFutureListener<ChannelFuture>() {
 						@Override
 						public void operationComplete(final ChannelFuture future) throws Exception {
@@ -133,6 +132,7 @@ public class TimeoutFactory {
 
 					recipient = futureResponse.request().recipient();
 				} else {
+					LOG.warn("Channel timeout for channel {} {}.", name, ctx.channel());
 					ctx.close();
 					// check if we have set an attribute at least (if we have
 					// already decoded the header)

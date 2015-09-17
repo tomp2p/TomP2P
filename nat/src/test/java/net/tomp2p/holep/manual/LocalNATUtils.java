@@ -82,7 +82,8 @@ public class LocalNATUtils {
 	public static RemotePeer executePeer(Class<?> klass, final int nr, final RemotePeerCallback remoteCallback, final CommandSync sync, final Command... cmd)
 			throws IOException, InterruptedException, ClassNotFoundException {
 		
-		sync.init(cmd.length);
+		final int cmdLen = cmdLen(cmd);
+		sync.init(cmdLen);
 		
 		String javaHome = System.getProperty("java.home");
 		String javaBin = javaHome + File.separator + "bin" + File.separator
@@ -90,7 +91,7 @@ public class LocalNATUtils {
 		String classpath = System.getProperty("java.class.path");
 		String className = klass.getCanonicalName();
 
-		final String[] cmds = new String[cmd.length + 10];
+		final String[] cmds = new String[cmdLen + 10];
 		cmds[0] = "sudo";
 		cmds[1] = "ip";
 		cmds[2] = "netns";
@@ -101,22 +102,27 @@ public class LocalNATUtils {
 		cmds[7] = classpath;
 		cmds[8] = className;
 		cmds[9] = ""+nr;
-		for (int i = 10; i < cmds.length; i++) {
-			cmds[i] = toString(cmd[i - 10]);
+		int current = 0;
+		for (int i = 10; i < cmds.length;) {
+			final int repeat = repeat(cmd[current]);
+			for(int j=0;j<repeat;j++) {
+				cmds[i++] = toString(cmd[current]);
+			}
+			current++;
 		}
 
 		ProcessBuilder builder = new ProcessBuilder(cmds);
 		final Process process = builder.start();
 		new StreamGobbler(process.getErrorStream(), "ERR["+nr+"]").start();
-		final CountDownLatch cl = new CountDownLatch(cmd.length);
-		final AtomicReferenceArray<Object> results = new AtomicReferenceArray<Object>(cmd.length);
+		final CountDownLatch cl = new CountDownLatch(cmdLen);
+		final AtomicReferenceArray<Object> results = new AtomicReferenceArray<Object>(cmdLen);
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
 					InputStreamReader isr = new InputStreamReader(process.getInputStream());
 					BufferedReader br = new BufferedReader(isr);
-					for (int i = 0; i < cmd.length; i++) {
+					for (int i = 0; i < cmdLen; i++) {
 						boolean done = false;
 						
 						while (!done) {
@@ -136,7 +142,6 @@ public class LocalNATUtils {
 								}
 							} else {
 								System.out.println("OUT["+nr+"]>null");
-								cl.countDown();
 								remoteCallback.onNull(i);
 								break;
 							}
@@ -153,6 +158,31 @@ public class LocalNATUtils {
 		}).start();
 		System.out.println("LOCAL> remote peer "+nr+" started");
 		return new RemotePeer(process, cl, cmd, results);
+	}
+
+	private static int cmdLen(Command[] cmd) {
+		int total = 0;
+		for(Command c:cmd) {
+			total += repeat(c);
+		}
+		return total;
+	}
+
+	private static int repeat(Command command) {
+		Repeat repeat;
+		try {
+			repeat = command.getClass().getMethod("execute").getAnnotation(Repeat.class);
+			if(repeat == null) {
+				return 1;
+			}
+			return repeat.repeat();
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();
+			return 1;
+		} catch (SecurityException e) {
+			e.printStackTrace();
+			return 1;
+		}
 	}
 
 	public static int killPeer(Process process) throws InterruptedException,

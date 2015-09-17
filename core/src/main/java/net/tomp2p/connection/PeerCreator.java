@@ -137,7 +137,7 @@ public class PeerCreator {
 			LOG.debug("Shutting down...");
 		}
 		// de-register in dispatcher
-		connectionBean.dispatcher().removeIoHandler(peerBean().serverPeerAddress().peerId(), peerBean().serverPeerAddress().peerId());
+		connectionBean.dispatcher().removeIoHandler(peerBean().serverPeerAddress().peerId());
 		// shutdown running tasks for this peer
 		if (peerBean.maintenanceTask() != null) {
 			peerBean.maintenanceTask().shutdown();

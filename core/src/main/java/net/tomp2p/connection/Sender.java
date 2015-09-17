@@ -520,10 +520,6 @@ public class Sender {
 
 		removePeerIfFailed(futureResponse, message);
 
-		if (message.sender().isRelayed()) {
-			message.peerSocketAddresses(message.sender().peerSocketAddresses());
-		}
-
 		boolean isFireAndForget = handler == null;
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPMillis,

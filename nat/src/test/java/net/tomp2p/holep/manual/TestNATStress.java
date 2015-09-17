@@ -47,7 +47,7 @@ public class TestNATStress implements Serializable {
 	static private Number160 relayPeerId2 = new Number160(RND);
 	// ### CHANGE THIS TO YOUR INTERFACE###
 	final static private String INF = "enp0s25";
-	final static private int REPEAT = 10;
+	final static private int REPEAT = 20;
 
 	@Before
 	public void before() throws IOException, InterruptedException {

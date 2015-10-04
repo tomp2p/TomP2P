@@ -167,7 +167,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				@Override
 				public void operationComplete(final FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
-						final ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers, futureResponse);
+						final ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers, futureResponse, false);
 						cF.addListener(new GenericFutureListener<ChannelFuture>() {
 							@Override
 							public void operationComplete(final ChannelFuture future) throws Exception {

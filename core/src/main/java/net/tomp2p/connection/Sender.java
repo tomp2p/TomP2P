@@ -532,7 +532,7 @@ public class Sender {
 			ChannelFuture channelFuture = null;
 			switch (sendBehavior.udpSendBehavior(message)) {
 			case DIRECT:
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, isFireAndForget);
 				break;
 			case HOLEP:
 				if (peerBean.holePunchInitiator() != null) {
@@ -556,7 +556,7 @@ public class Sender {
 					sendSelf(futureResponse, message);
 					return;
 				}
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, isFireAndForget);
 				break;
 			case SELF:
 				LOG.debug("Send to self");
@@ -663,7 +663,7 @@ public class Sender {
 					sendSelf(futureResponse, message);
 					return;
 				}
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, false);
 				afterConnect(futureResponse, message, channelFuture, handler == null);
 			}
 		});
@@ -790,7 +790,7 @@ public class Sender {
 				if (fireAndForget) {
 					futureResponse.responseLater(null);
 					LOG.debug("fire and forget, close channel {} now. {}", futureResponse.request(), future.channel());
-					reportMessage(futureResponse, future.channel().close());
+					futureResponse.responseNow();
 				}
 			}
 		});

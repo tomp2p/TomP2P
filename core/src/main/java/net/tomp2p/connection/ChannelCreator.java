@@ -133,7 +133,7 @@ public class ChannelCreator {
 	 * @return The channel future object or null if we are shut down
 	 */
 	public ChannelFuture createUDP(final boolean broadcast, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers,
-			FutureResponse futureResponse) {
+			FutureResponse futureResponse, boolean fireandforget) {
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
@@ -148,6 +148,10 @@ public class ChannelCreator {
 			b.group(workerGroup);
 			b.channel(NioDatagramChannel.class);
 			b.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(ConnectionBean.UDP_LIMIT));
+			
+			//we don't need to increase the buffers as we limit the connections in tomp2p
+			//b.option(ChannelOption.SO_RCVBUF, 1024 * 1024);
+			//b.option(ChannelOption.SO_SNDBUF, 1024 * 1024);
 			if (broadcast) {
 				b.option(ChannelOption.SO_BROADCAST, true);
 			}
@@ -160,7 +164,11 @@ public class ChannelCreator {
 			final ChannelFuture channelFuture;
 			
 			LOG.debug("Create UDP, use from address: {}", sendFromAddress);
-			channelFuture = b.bind(new InetSocketAddress(sendFromAddress, 0));
+			if(fireandforget) {
+				channelFuture = b.connect(futureResponse.request().recipient().createSocketUDP());
+			} else {
+				channelFuture = b.bind(new InetSocketAddress(sendFromAddress, 0));
+			}
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;

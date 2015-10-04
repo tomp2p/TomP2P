@@ -333,11 +333,18 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 			return searchHandler(peerId, peerId, message.command());
 			// else we search for the handler that we are responsible for
 		} else {
-			DispatchHandler handler = searchHandler(peerBean().serverPeerAddress().peerId(), recipient.peerId(), message.command());
+			//search first for main peer and port sharing peers
+			DispatchHandler handler = searchHandler(recipient.peerId(), recipient.peerId(), message.command());
 			if (handler != null) {
 				return handler;
 			}
-			LOG.warn("No handler found for {} no behalf of {}, command {}", peerBean().serverPeerAddress().peerId(), recipient.peerId(), message.command());
+			
+			//on behalf on peers
+			handler = searchHandler(peerBean().serverPeerAddress().peerId(), recipient.peerId(), message.command());
+			if (handler != null) {
+				return handler;
+			}
+			LOG.warn("No handler found for {} on behalf of {}, command {}. Message is {}", peerBean().serverPeerAddress().peerId(), recipient.peerId(), RPC.Commands.find(message.command()), message);
 			return null;
 		}
 	}

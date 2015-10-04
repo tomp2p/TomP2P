@@ -265,7 +265,9 @@ public final class ChannelServer implements DiscoverNetworkListener{
 			b.option(ChannelOption.SO_BROADCAST, true);
 		}
 		b.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(ConnectionBean.UDP_LIMIT));
-
+		//default is on my machine 200K, testBroadcastUDP fails with this value, as UDP packets are dropped. Increase to 2MB
+		b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
+		
 		b.handler(new ChannelInitializer<Channel>() {
 			@Override
 			protected void initChannel(final Channel ch) throws Exception {

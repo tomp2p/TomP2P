@@ -473,4 +473,13 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	public Map<Integer, FutureResponse> getPendingRequests() {
 		return pendingRequests;
 	}
+
+	public boolean responsibleFor(Number160 peerId) {
+		readLock.lock();
+    	try {
+    		return ioHandlers.containsKey(new Number320(peerId, peerId));
+    	} finally {
+    		readLock.unlock();
+    	}
+	}
 }

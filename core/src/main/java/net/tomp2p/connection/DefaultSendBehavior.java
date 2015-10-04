@@ -15,8 +15,13 @@ public class DefaultSendBehavior implements SendBehavior {
 	private static final int MTU = 1000;
 	
 	@Override
-	public SendMethod tcpSendBehavior(Message message) {
+	public SendMethod tcpSendBehavior(Dispatcher dispatcher, Message message) {
 		if(message.recipient().peerId().equals(message.sender().peerId())) {
+			// shortcut, just send to yourself
+			return SendMethod.SELF;
+		}
+		//also check if we have multiple peers
+		if(dispatcher.responsibleFor(message.recipient().peerId())) {
 			// shortcut, just send to yourself
 			return SendMethod.SELF;
 		}
@@ -45,8 +50,13 @@ public class DefaultSendBehavior implements SendBehavior {
 	}
 
 	@Override
-	public SendMethod udpSendBehavior(Message message) throws UnsupportedOperationException {
+	public SendMethod udpSendBehavior(Dispatcher dispatcher, Message message) throws UnsupportedOperationException {
 		if(message.recipient().peerId().equals(message.sender().peerId())) {
+			// shortcut, just send to yourself
+			return SendMethod.SELF;
+		}
+		//also check if we have multiple peers
+		if(dispatcher.responsibleFor(message.recipient().peerId())) {
 			// shortcut, just send to yourself
 			return SendMethod.SELF;
 		}

@@ -6,6 +6,7 @@ import net.tomp2p.message.Message;
  * Decice how a direct message is sent.
  * 
  * @author Nico Rutishauser
+ * @author Thomas Bocek
  * 
  */
 public interface SendBehavior {
@@ -47,7 +48,7 @@ public interface SendBehavior {
 	 *            the message to be sent
 	 * @return the sending behavior which should be used
 	 */
-	SendMethod tcpSendBehavior(Message message);
+	SendMethod tcpSendBehavior(Dispatcher dispatcher, Message message);
 
 	/**
 	 * Returns the send behavior depending on the message to be sent over UDP.
@@ -58,5 +59,5 @@ public interface SendBehavior {
 	 * @throws UnsupportedOperationException
 	 *             sending over UDP is not allowed for this message.
 	 */
-	SendMethod udpSendBehavior(Message message) throws UnsupportedOperationException;
+	SendMethod udpSendBehavior(Dispatcher dispatcher, Message message) throws UnsupportedOperationException;
 }

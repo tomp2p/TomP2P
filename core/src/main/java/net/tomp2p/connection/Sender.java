@@ -158,7 +158,7 @@ public class Sender {
 		} else if (channelCreator != null) {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPMillis, handler == null);
 
-			switch (sendBehavior.tcpSendBehavior(message)) {
+			switch (sendBehavior.tcpSendBehavior(dispatcher, message)) {
 			case DIRECT:
 				connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
 				break;
@@ -530,7 +530,7 @@ public class Sender {
 
 		try {
 			ChannelFuture channelFuture = null;
-			switch (sendBehavior.udpSendBehavior(message)) {
+			switch (sendBehavior.udpSendBehavior(dispatcher, message)) {
 			case DIRECT:
 				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, isFireAndForget);
 				break;
@@ -806,23 +806,6 @@ public class Sender {
 	 *            The close future
 	 */
 	private void reportFailed(final FutureResponse futureResponse, final ChannelFuture close) {
-		close.addListener(new GenericFutureListener<ChannelFuture>() {
-			@Override
-			public void operationComplete(final ChannelFuture arg0) throws Exception {
-				futureResponse.responseNow();
-			}
-		});
-	}
-
-	/**
-	 * Report a successful response after the channel was closed.
-	 * 
-	 * @param futureResponse
-	 *            The future to set the response
-	 * @param close
-	 *            The close future
-	 */
-	private void reportMessage(final FutureResponse futureResponse, final ChannelFuture close) {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture arg0) throws Exception {

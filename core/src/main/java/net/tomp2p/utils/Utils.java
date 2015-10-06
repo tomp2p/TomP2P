@@ -266,13 +266,26 @@ public class Utils {
     public static byte[] uncompress(byte[] compressedData) {
         return uncompress(compressedData, 0, compressedData.length);
     }
+    
+    //save memory: http://stackoverflow.com/a/26850863
+    /** Subclasses ByteArrayOutputStream to give access to the internal raw buffer. */
+    private static class ByteArrayOutputStream2 extends ByteArrayOutputStream {
+        public ByteArrayOutputStream2() { super(); }
+
+        /** Returns the internal buffer of this ByteArrayOutputStream, without copying. */
+        public synchronized byte[] buf() {
+            return this.buf;
+        }
+    }
 
     public static byte[] encodeJavaObject(Object attachement) throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    	ByteArrayOutputStream2 bos = new ByteArrayOutputStream2();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         oos.writeObject(attachement);
 		// no need to call close or flush since we use ByteArrayOutputStream
-        byte[] data = bos.toByteArray();
+        byte[] data = bos.buf();
+        //no need to call this, but it gives a warning if not called
+        oos.close();
         return data;
     }
 

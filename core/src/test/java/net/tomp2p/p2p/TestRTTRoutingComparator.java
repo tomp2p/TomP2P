@@ -169,8 +169,8 @@ public class TestRTTRoutingComparator {
             Assert.assertEquals(peer2.peerAddress(), fr.potentialHits().pollFirst() );
 
             // The startPeer should only have contacted peer2 and not peer1 (because of maxSuccess=1, parallel=1)
-            Assert.assertTrue(peer2.peerBean().peerMap().containsOverflow(startPeer.peerAddress()));
-            Assert.assertFalse(peer1.peerBean().peerMap().containsOverflow(startPeer.peerAddress()));
+            Assert.assertTrue(peer2.peerBean().peerMap().contains(startPeer.peerAddress()));
+            Assert.assertFalse(peer1.peerBean().peerMap().contains(startPeer.peerAddress()));
 
 
         } finally {

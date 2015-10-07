@@ -29,7 +29,9 @@ import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.Futures;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.peers.Number160;
@@ -216,26 +218,33 @@ public class DiscoverBuilder {
      */
     private void discover(final FutureDiscover futureDiscover, final PeerAddress peerAddress,
             final ChannelCreator cc, final ConnectionConfiguration configuration) {
+    	
+    	final FutureDone<Void> pingDone = new FutureDone<Void>();
 
         peer.pingRPC().addPeerReachableListener(new PeerReachable() {
             private volatile boolean changedUDP = false;
-
             private volatile boolean changedTCP = false;
 
             @Override
-            public void peerWellConnected(PeerAddress peerAddress, PeerAddress reporter, boolean tcp) {
-                if (tcp) {
-                    changedTCP = true;
-                    futureDiscover.discoveredTCP();
-                    LOG.debug("TCP discovered");
-                } else {
-                    changedUDP = true;
-                    futureDiscover.discoveredUDP();
-                    LOG.debug("UDP discovered");
-                }
-                if (changedTCP && changedUDP) {
-                    futureDiscover.done(peerAddress, reporter);
-                }
+            public void peerWellConnected(final PeerAddress peerAddress, final PeerAddress reporter, final boolean tcp) {
+            	pingDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+					@Override
+					public void operationComplete(FutureDone<Void> future) throws Exception {
+						if (tcp) {
+		            		futureDiscover.discoveredTCP();
+		            		changedTCP = true;
+		            		LOG.debug("TCP discovered");
+		            	} else {
+		            		futureDiscover.discoveredUDP();
+		            		changedUDP = true;
+		            		LOG.debug("UDP discovered");
+		            	}
+						if (changedTCP && changedUDP) {
+		                    futureDiscover.done(peerAddress, reporter);
+		                }
+					}
+				});
+                
             }
         });
 
@@ -307,7 +316,7 @@ public class DiscoverBuilder {
                         fr1.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
                             public void operationComplete(FutureResponse future) throws Exception {
-	                            if(future.isFailed() && !futureDiscover.isCompleted()) {
+	                            if(future.isFailed() ) {
 	                            	LOG.warn("FutureDiscover (2): We need at least the TCP connection {} - {}", future, futureDiscover.failedReason());
 	                            	futureDiscover.failed("FutureDiscover (2): We need at least the TCP connection", future);
 	                            }
@@ -318,10 +327,16 @@ public class DiscoverBuilder {
                         fr2.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
                             public void operationComplete(FutureResponse future) throws Exception {
-	                            if(future.isFailed() && !futureDiscover.isCompleted()) {
+	                            if(future.isFailed() ) {
 	                            	LOG.warn("FutureDiscover (2): UDP failed connection {} - {}", future, futureDiscover.failedReason());
 	                            }
                             }
+						});
+                        Futures.whenAll(fr1, fr2).addListener(new BaseFutureAdapter<FutureDone<FutureResponse[]>>() {
+							@Override
+							public void operationComplete(FutureDone<FutureResponse[]> future) throws Exception {
+								pingDone.done();
+							}
 						});
                         // from here we probe, set the timeout here
                         futureDiscover.timeout(serverAddress, peer.connectionBean().timer(), discoverTimeoutSec);

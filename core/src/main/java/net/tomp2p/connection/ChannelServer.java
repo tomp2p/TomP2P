@@ -267,6 +267,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 		b.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(ConnectionBean.UDP_LIMIT));
 		//default is on my machine 200K, testBroadcastUDP fails with this value, as UDP packets are dropped. Increase to 2MB
 		b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
+		//b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
 		
 		b.handler(new ChannelInitializer<Channel>() {
 			@Override
@@ -300,11 +301,13 @@ public final class ChannelServer implements DiscoverNetworkListener{
 		ServerBootstrap b = new ServerBootstrap();
 		b.group(bossGroup, workerGroup);
 		b.channel(NioServerSocketChannel.class);
+		//b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
+		//b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
 		b.childHandler(new ChannelInitializer<Channel>() {
 			@Override
 			protected void initChannel(final Channel ch) throws Exception {
 				ch.config().setAllocator(channelServerConfiguration.byteBufAllocator());
-				// b.option(ChannelOption.SO_BACKLOG, BACKLOG);
+				//bestEffortOptions(ch, ChannelOption.SO_BACKLOG, BACKLOG);
 				bestEffortOptions(ch, ChannelOption.SO_LINGER, 0);
 				bestEffortOptions(ch, ChannelOption.TCP_NODELAY, true);
 				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : handlers(true).entrySet()) {

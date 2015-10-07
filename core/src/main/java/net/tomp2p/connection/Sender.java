@@ -154,6 +154,7 @@ public class Sender {
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null && peerConnection.channelFuture().channel().isActive()) {
 			channelFuture = sendTCPPeerConnection(peerConnection, handler, channelCreator, futureResponse);
+			LOG.debug("go for peer connection / TCP");
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		} else if (channelCreator != null) {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPMillis, handler == null);
@@ -756,7 +757,7 @@ public class Sender {
 					final ChannelFuture writeFuture = future.channel().writeAndFlush(message);
 					afterSend(writeFuture, futureResponse, fireAndForget);
 				} else {
-					LOG.debug("Channel creation failed", future.cause());
+					LOG.warn("Channel creation failed", future.cause());
 					futureResponse.failed("Channel creation failed " + future.channel() + "/" + future.cause());
 					// may have been closed by the other side,
 					// or it may have been canceled from this side
@@ -790,7 +791,7 @@ public class Sender {
 				if (!future.isSuccess()) {
 					futureResponse.failedLater(future.cause());
 					reportFailed(futureResponse, future.channel().close());
-					LOG.warn("Failed to write channel the request {} {}.", futureResponse.request(), future.cause());
+					LOG.warn("Failed to write to channel - request {} {}.", futureResponse.request(), future.cause());
 				}
 				if (fireAndForget) {
 					futureResponse.responseLater(null);
@@ -844,7 +845,7 @@ public class Sender {
 						//do nothing, because such a (dummy) message will never reach its target the first time
 					}
 					if(!future.isCanceled()) {
-						LOG.debug("peer failed: {}", message);
+						LOG.debug("peer failed: {}, {}", message, future);
 						synchronized (peerStatusListeners) {
 							for (PeerStatusListener peerStatusListener : peerStatusListeners) {
 								peerStatusListener.peerFailed(message.recipient(), new PeerException(future));

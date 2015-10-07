@@ -1534,6 +1534,59 @@ public class TestDHT {
 			}
 		}
 	}
+	
+	@Test
+	public void testTooManyDiscover() throws Exception {
+		Peer master = null;
+		Peer slave = null;
+		try {
+			// since we have two peers, we need to reduce the connections -> we
+			// will have 300 * 2 (peer connection)
+			// plus 100 * 2 * 2. The last multiplication is due to discover,
+			// where the recipient creates a connection
+			// with its own limit. Since the limit is 1024 and we stop at 1000
+			// only for the connection, we may run into
+			// too many open files
+			PeerBuilder masterMaker = new PeerBuilder(new Number160(rnd)).ports(4001);
+			master = masterMaker.enableMaintenance(false).start();
+			PeerBuilder slaveMaker = new PeerBuilder(new Number160(rnd)).ports(4002);
+			slave = slaveMaker.enableMaintenance(false).start();
+
+			System.out.println("peers up and running");
+
+			
+			
+			List<BaseFuture> list2 = new ArrayList<BaseFuture>();
+			
+			for (int i = 0; i < 20000; i++) {
+				list2.add(master.discover().peerAddress(slave.peerAddress()).start());
+				
+			}
+			
+			for (BaseFuture bf : list2) {
+				bf.awaitUninterruptibly();
+				bf.awaitListenersUninterruptibly();
+				if (bf.isFailed()) {
+					System.out.println("WTF " + bf.failedReason());
+				} else {
+					System.out.print(".");
+				}
+				Assert.assertEquals(true, bf.isSuccess());
+			}
+			
+			System.out.println("done!!");
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			System.out.println("done!1!");
+			if (master != null) {
+				master.shutdown().await();
+			}
+			if (slave != null) {
+				slave.shutdown().await();
+			}
+		}
+	}
 
 	
 

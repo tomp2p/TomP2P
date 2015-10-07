@@ -20,7 +20,7 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+//import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -212,7 +212,7 @@ public class StorageMemory implements Storage {
 		}
 		Set<Number160> contentIDs = responsibilityMapRev.get(peerId);
 		if(contentIDs == null) {
-			contentIDs = new HashSet<Number160>();
+			contentIDs = Collections.newSetFromMap(new ConcurrentHashMap<Number160, Boolean>()); 
 			responsibilityMapRev.put(peerId, contentIDs);
 		}
 		contentIDs.add(locationKey);

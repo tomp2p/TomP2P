@@ -1491,7 +1491,7 @@ public class TestDHT {
 			}
 			for (int i = 0; i < 20000; i++) {
 				list2.add(master.discover().peerAddress(slave.peerAddress()).start());
-				final byte[] b = new byte[10000];
+				final byte[] b = new byte[1000];
 				byte[] me = Utils.intToByteArray(i);
 				System.arraycopy(me, 0, b, 0, 4);
 				list2.add(master.sendDirect(slave.peerAddress()).dataBuffer(new DataBuffer(Unpooled.wrappedBuffer(b)))

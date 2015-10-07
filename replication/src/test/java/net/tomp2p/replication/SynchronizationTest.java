@@ -323,14 +323,14 @@ public class SynchronizationTest {
 	}
 	
 	@Test
-	public void testInfoMessageNOTSAMELoop() throws IOException, InterruptedException {
+	public void testInfoMessageNOTSAMELoop() throws IOException, InterruptedException, ClassNotFoundException {
 		for (int i=0;i<100;i++) {
 			testInfoMessageNOTSAME();
 		}
 	}
 
 	@Test
-	public void testInfoMessageNOTSAME() throws IOException, InterruptedException {
+	public void testInfoMessageNOTSAME() throws IOException, InterruptedException, ClassNotFoundException {
 
 		PeerDHT sender = null;
 		PeerDHT receiver = null;
@@ -351,12 +351,12 @@ public class SynchronizationTest {
 			final String value = "Test";
 			final String value1 = "Test1";
 
-			sender.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
-			receiver.put(locationKey).data(new Data(value1)).start().awaitUninterruptibly();
+			sender.put(locationKey).data(new Data(value.getBytes())).start().awaitUninterruptibly();
+			receiver.put(locationKey).data(new Data(value1.getBytes())).start().awaitUninterruptibly();
 
 			NavigableMap<Number640, Data> map = new TreeMap<Number640, Data>();
 			final DataMap dataMap = new DataMap(map);
-			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
+			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test".getBytes()));
 
 			sender.peer().bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
 
@@ -386,7 +386,7 @@ public class SynchronizationTest {
 
 			latch.await();
 			assertEquals(1, ref.get().size());
-			assertEquals(100, ref.get().dataMap().values().iterator().next().toBytes().length);
+			assertEquals(60, ref.get().dataMap().values().iterator().next().toBytes().length);
 			assertEquals(false, ref.get().dataMap().values().iterator().next().isFlag1());
 			assertEquals(false, ref.get().dataMap().values().iterator().next().isFlag2());
 

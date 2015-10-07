@@ -161,7 +161,9 @@ public abstract class DispatchHandler {
     		//request 2/ping is a ping discover, where we don't know our external address and port. Don't add this!
     		LOG.debug("don't add the sender to the map (yet) {}", requestMessage);
     	} else {
-    		peerBean.notifyPeerFound(requestMessage.sender(), requestMessage.sender(), peerConnection, null);
+    		//if its send to self, then we have full trust, don't set reporter 
+    		final PeerAddress reporter = requestMessage.isSendSelf() ? null : requestMessage.sender();
+    		peerBean.notifyPeerFound(requestMessage.sender(), reporter, null, null);
     	}
         
         try {

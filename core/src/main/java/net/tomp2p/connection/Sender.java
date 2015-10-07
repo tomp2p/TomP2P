@@ -370,6 +370,11 @@ public class Sender {
 		});
 
 		final DispatchHandler handler = dispatcher.associatedHandler(copy);
+		if(handler == null) {
+			LOG.error("No handler found for self message {}", message);
+			return;
+		}
+	
 		handler.forwardMessage(copy, null, new Responder() {
 
 			@Override

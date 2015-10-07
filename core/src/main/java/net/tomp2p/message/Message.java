@@ -1156,17 +1156,21 @@ public class Message {
         message.peerSocketAddressList = this.peerSocketAddressList;
         message.signatureEncode = this.signatureEncode;
         
-        // these are transient
-        //presetContentTypes
-        //privateKey;
-        //senderSocket;
-        //recipientSocket;
-        //udp;
-        //done;
-        //sign;
-        //content;
-        //verified;
-        //sendSelf;
+        // these are transient, copy anyway
+        
+        message.presetContentTypes = presetContentTypes; 
+
+        message.privateKey = this.privateKey;
+        message.senderSocket = this.senderSocket;
+        message.recipientSocket = this.recipientSocket;
+        message.udp = this.udp;
+        message.done = this.done;
+        message.sign = this.sign;
+        message.content = this.content;
+        message.verified = this.verified;
+        message.sendSelf = this.sendSelf;
+        message.recipientRelay = this.recipientRelay;
+        message.recipientReflected = this.recipientReflected;
         
         return message;
     }

@@ -46,7 +46,7 @@
 		<!-- adds jar package to the root directory of zip package -->
 		<fileSet>
 			<directory>${project.build.directory}</directory>
-			<outputDirectory></outputDirectory>
+			<outputDirectory/>
 			<includes>
 				<include>*.jar</include>
 			</includes>

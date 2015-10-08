@@ -54,7 +54,7 @@ public final class ExampleIndirectReplication {
      * @throws Exception .
      */
     public static void main(final String[] args) throws Exception {
-        exmpleIndirectReplication();
+        exampleIndirectReplication();
     }
 
     /**
@@ -64,7 +64,7 @@ public final class ExampleIndirectReplication {
      * @throws IOException .
      * @throws InterruptedException .
      */
-    private static void exmpleIndirectReplication() throws IOException, InterruptedException {
+    private static void exampleIndirectReplication() throws IOException, InterruptedException {
         final int port1 = 4001;
         final int nr1 = 1;
         final int port2 = 4002;
@@ -104,14 +104,14 @@ public final class ExampleIndirectReplication {
         //the result shows in the command line 1, 1, 1. This behavior is explaind as follows:
         //
         //The bootstrap from peer1 to peer2 causes peer 1 to replicate the data object to peer2
-        //The bootstrap from peer1 to peer3 causes the peer3 to become the new resposible peer. Thus, peer1 
+        //The bootstrap from peer1 to peer3 causes the peer3 to become the new responsible peer. Thus, peer1
         //transfers the data to peer3 and all three peers have the data.
         //
         //Now consider the following scenario, if we change the order of the bootstrap, so that peer1 first
         //bootstraps to peer3 and then to peer2, we will see 1, 0, 1 in the command line. This behavior is explained
         //as follows:
         //
-        //First peer1 will figure out that peer3 is repsonsible and transfer the data to this peer. Then peer1 bootstraps to 
+        //First peer1 will figure out that peer3 is responsible and transfer the data to this peer. Then peer1 bootstraps to
         //peer2. However, as peer1 is not responsible anymore and peer3 does not know yet peer2, peer 2 won't see that data
         //until peer3 does the periodical replication check.
         shutdown(peers);

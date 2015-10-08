@@ -255,7 +255,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         MessageID recvMessageID = new MessageID(responseMessage);
         // Error handling
         if (responseMessage.type() == Message.Type.UNKNOWN_ID) {
-			String msg = "Message was not delivered successfully, unknow ID (peer may be offline or unknown RPC handler): "
+			String msg = "Message was not delivered successfully, unknown ID (peer may be offline or unknown RPC handler): "
 					+ this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             responseMessage.release();

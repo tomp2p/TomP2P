@@ -24,7 +24,7 @@ public interface SendBehavior {
 
 		/**
 		 * Open a reverse connection to the receiver and send the message. The
-		 * reverse conneciton is closed afterwards.
+		 * reverse connection is closed afterwards.
 		 */
 		RCON,
 

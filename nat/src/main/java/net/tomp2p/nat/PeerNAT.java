@@ -350,7 +350,7 @@ public class PeerNAT {
 		// reverse connection setup. It just doesn't make sense!
 		if (peer.peerAddress().peerId().equals(relayPeerAddress.peerId())) {
 			throw new IllegalStateException(
-					"We are alredy a relay for the target peer. We shouldn't use a reverse connection to connect to the targeted peer!");
+					"We are already a relay for the target peer. We shouldn't use a reverse connection to connect to the targeted peer!");
 		}
 	}
 

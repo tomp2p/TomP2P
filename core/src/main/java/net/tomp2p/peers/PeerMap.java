@@ -342,13 +342,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             return true;
         } else if (old != null && !old.element1()) {
         	LOG.debug("Unreliable information, don't update");
-        	//don't update, as we have second hand information that is not reliabel, we arleady have it, don't update
+        	//don't update, as we have second hand information that is not reliabel, we already have it, don't update
         	return false;
         }
         else {
             if (firstHand || (secondHand && !peerVerification)) {
                 final Map<Number160, PeerStatistic> map = peerMapVerified.get(classMember);
-                boolean insterted = false;
+                boolean inserted = false;
                 synchronized (map) {
                     // check again, now we are synchronized
                     if (map.containsKey(remotePeer.peerId())) {
@@ -359,11 +359,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                         peerStatistic.successfullyChecked();
                         peerStatistic.addRTT(roundTripTime);
                         map.put(remotePeer.peerId(), peerStatistic);
-                        insterted = true;
+                        inserted = true;
                     }
                 }
 
-                if (insterted) {
+                if (inserted) {
                     // if we inserted into the verified map, remove it from the non-verified map
                     final Map<Number160, PeerStatistic> mapOverflow = peerMapOverflow.get(classMember);
                     synchronized (mapOverflow) {
@@ -874,7 +874,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * (e.g. port) may have changed.
      * 
      * @param tmp
-     *            The map where the peer is suppost to be
+     *            The map where the peer is supposed to be
      * @param peerAddress
      *            The address of the peer that may have been changed
      * @param firstHand

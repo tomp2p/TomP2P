@@ -39,7 +39,7 @@ public interface BaseFutureListener<F extends BaseFuture> {
      * @param t
      *            The exception thrown in #operationComplete(BaseFuture).
      * @throws Exception
-     *             If an execption is thrown, it is printed in the log and and
+     *             If an exception is thrown, it is printed in the log and and
      *             System.err
      */
     public abstract void exceptionCaught(Throwable t) throws Exception;

@@ -113,7 +113,7 @@ public class PeerConnection {
         channelFuture.channel().closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
             @Override
             public void operationComplete(Future<? super Void> arg0) throws Exception {
-            	LOG.debug("About to close the connection {}, {}.",  channelFuture.channel(), initiator ? "initiator" : "from-disptacher");
+            	LOG.debug("About to close the connection {}, {}.",  channelFuture.channel(), initiator ? "initiator" : "from-dispatcher");
                 closeFuture.done();
             }
         });

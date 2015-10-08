@@ -111,7 +111,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
             LOG.error("Exception in encoding when started.", cause);
             cause.printStackTrace();
         }
-    	//if exeception is not propagated, we may need to wait for the timeout - check testChangeEntryProtectionKey
+    	//if exception is not propagated, we may need to wait for the timeout - check testChangeEntryProtectionKey
     	super.exceptionCaught(ctx, cause);
     }
 }

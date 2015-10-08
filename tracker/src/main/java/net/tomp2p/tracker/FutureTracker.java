@@ -94,7 +94,7 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
             this.type = ((potentialTrackers.size() == 0) && (directTrackers.size() == 0)) ? BaseFuture.FutureType.FAILED
                     : BaseFuture.FutureType.OK;
             if (this.type == BaseFuture.FutureType.FAILED) {
-                this.reason = "we did not find anything, are you sure you are serching for the right tracker?";
+                this.reason = "we did not find anything, are you sure you are searching for the right tracker?";
             }
         }
         notifyListeners();

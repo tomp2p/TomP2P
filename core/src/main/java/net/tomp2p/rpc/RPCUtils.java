@@ -15,7 +15,7 @@ public class RPCUtils {
 			if (bitSet.get(i)) {
 				//big endian
 				//bytes[bytes.length - i / 8 - 1] |= 1 << (i % 8);
-				//litle endian
+				//little endian
 				bytes[i/8] |= 1 << (7 - i % 8);
 			}
 		}
@@ -33,7 +33,7 @@ public class RPCUtils {
 		for (int i = 0; i < bytes.length * 8; i++) {
 			//big endian
 			//if ((bytes[bytes.length - i / 8 - 1] & (1 << (i % 8))) > 0) {
-			//litle endian
+			//little endian
 			if ((bytes[i/8] & (1 << (7 - i % 8))) > 0) {
 				bits.set(i);
 			}

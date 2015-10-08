@@ -65,13 +65,13 @@ public class StorageLayer implements DigestStorage {
 	// Hash of public key is always preferred
 	private ProtectionMode protectionDomainMode = ProtectionMode.MASTER_PUBLIC_KEY;
 
-	// Domains can generallay be protected
+	// Domains can generally be protected
 	private ProtectionEnable protectionDomainEnable = ProtectionEnable.ALL;
 
 	// Hash of public key is always preferred
 	private ProtectionMode protectionEntryMode = ProtectionMode.MASTER_PUBLIC_KEY;
 
-	// Entries can generallay be protected
+	// Entries can generally be protected
 	private ProtectionEnable protectionEntryEnable = ProtectionEnable.ALL;
 
 	// stores the domains that cannot be reserved and items can be added by
@@ -199,7 +199,7 @@ public class StorageLayer implements DigestStorage {
 					continue;
 				}
 				
-				// We need this check in case we did not use the encoder/deconder,
+				// We need this check in case we did not use the encoder/decoder,
 				// which is the case if we send the message to ourself. In that
 				// case, the public key of the data is never set to the message
 				// publick key, if the publick key of the data was null.
@@ -689,7 +689,7 @@ public class StorageLayer implements DigestStorage {
 		// I dont want to claim the domain
 		if (!domainProtection) {
 			LOG.debug("no domain protection requested {} for domain {}", Utils.hash(newPublicKey), key);
-			// returns true if the domain is not protceted by others, otherwise
+			// returns true if the domain is not protected by others, otherwise
 			// false if the domain is protected
 			return !domainProtectedByOthers;
 		} else {
@@ -711,7 +711,7 @@ public class StorageLayer implements DigestStorage {
 		boolean entryProtectedByOthers = backend.isEntryProtectedByOthers(key, publicKeyMessage);
 		// I dont want to claim the domain
 		if (!entryProtection) {
-			// returns true if the domain is not protceted by others, otherwise
+			// returns true if the domain is not protected by others, otherwise
 			// false if the domain is protected
 			return !entryProtectedByOthers;
 		} else {

@@ -67,8 +67,8 @@ public class RelayUtils {
 	public static Collection<PeerAddress> flatten(List<Map<Number160, PeerStatistic>> maps) {
 		Collection<PeerAddress> result = new ArrayList<PeerAddress>();
 		for (Map<Number160, PeerStatistic> map : maps) {
-			for (PeerStatistic peerStatatistic : map.values()) {
-				result.add(peerStatatistic.peerAddress());
+			for (PeerStatistic peerStatistic : map.values()) {
+				result.add(peerStatistic.peerAddress());
 			}
 		}
 		return result;
@@ -207,7 +207,7 @@ public class RelayUtils {
 	 * Decodes buffer containing a String
 	 * 
 	 * @param buffer the buffer received in a message
-	 * @return the encodeed String
+	 * @return the encoded String
 	 */
 	public static String decodeString(Buffer buffer) {
 		if (buffer == null || buffer.buffer() == null) {
@@ -263,7 +263,6 @@ public class RelayUtils {
 	 * Opens a new peer connection to the receiver and sends the message through it.
 	 * @param peer
 	 * @param message
-	 * @param config
 	 * @return
 	 */
 	public static FutureResponse connectAndSend(final Peer peer, final Message message) {

@@ -187,7 +187,7 @@ public final class ExampleConsistency {
         //mpeer3.getPeerBean().storage()
         //        .put(key, new Data("attack, attack, attack!"), null, false, false);
         
-        //wait for mainenance pings
+        //wait for maintenance pings
         Thread.sleep(3000);
         
         // we got attack!

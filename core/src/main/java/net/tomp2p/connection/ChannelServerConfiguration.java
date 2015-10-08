@@ -66,7 +66,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
 
     /**
      * @param behindFirewall
-     *            Set to true if this peer is behind a firewall and not directly accessable
+     *            Set to true if this peer is behind a firewall and not directly accessible
      * @return This class
      */
     public ChannelServerConfiguration behindFirewall(final boolean behindFirewall) {

@@ -110,7 +110,7 @@ public class HolePRPC extends DispatchHandler {
 				public void operationComplete(final FutureDone<Message> future) throws Exception {
 					if (future.isSuccess()) {
 						final Message answerMessage = createAnswerMessage(message, future.object());
-						LOG.debug("Returing from relay to requester: {}", answerMessage);
+						LOG.debug("Returning from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);
 					} else {
 						responder.failed(Type.EXCEPTION, "Relaying message failed: " + future.failedReason());

@@ -62,7 +62,7 @@ class MessageQueue implements Runnable {
     }
 
     /**
-     * Creates and starts a {@link MessageQueue}. The created MesageQueue is
+     * Creates and starts a {@link MessageQueue}. The created MessageQueue is
      * returned. To use the queue, add {@link Message}s through the {@link
      * enqueueMessage(Message)} method.
      * 
@@ -196,7 +196,7 @@ class MessageQueue implements Runnable {
                     // Send the message outside of the queueLock context.
                     message.sendMessage(gatewayIP);
 
-                    // Notify the listener about the repsonse.
+                    // Notify the listener about the response.
                     message.notifyListener();
                 }
             } catch (InterruptedException ex) {

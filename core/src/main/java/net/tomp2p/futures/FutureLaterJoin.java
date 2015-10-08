@@ -35,7 +35,7 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl<Future
 
     private int minSuccess = Integer.MAX_VALUE;
 
-    private K lastSuceessFuture;
+    private K lastSuccessFuture;
 
     private int successCount = 0;
 
@@ -72,7 +72,7 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl<Future
                         if (!completed) {
                             if (future.isSuccess()) {
                                 successCount++;
-                                lastSuceessFuture = future;
+                                lastSuccessFuture = future;
                             }
                             futuresDone.add(future);
                             done = checkDone();
@@ -152,9 +152,9 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl<Future
     /**
      * @return the last successful finished future.
      */
-    public K lastSuceessFuture() {
+    public K lastSuccessFuture() {
         synchronized (lock) {
-            return lastSuceessFuture;
+            return lastSuccessFuture;
         }
     }
 }

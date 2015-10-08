@@ -246,7 +246,7 @@ public class PingBuilder {
                             FutureResponse validBroadcast = peer.pingRPC().pingBroadcastUDP(
                                     peerAddress, future.channelCreator(), connectionConfiguration);
                             if (!futureLateJoin.add(validBroadcast)) {
-                                // the latejoin future is fininshed if the add returns false
+                                // the latejoin future is finished if the add returns false
                                 break;
                             }
                         }

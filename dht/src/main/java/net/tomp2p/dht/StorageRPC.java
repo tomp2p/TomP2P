@@ -660,7 +660,7 @@ public class StorageRPC extends DispatchHandler {
 
     	final Message responseMessage = createResponseMessage(message, Type.OK);
 
-        //switch/case does not work here out of the box, need to convert byte back to enum, not sure if thats worth it.
+        //switch/case does not work here out of the box, need to convert byte back to enum, not sure if that's worth it.
         if (message.command() == RPC.Commands.ADD.getNr()) {
         	handleAdd(message, responseMessage, isDomainProtected(message));
         } else if(message.command() == RPC.Commands.PUT.getNr() || message.command() == RPC.Commands.REPLICA_PUT.getNr()) {

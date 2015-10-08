@@ -204,7 +204,7 @@ public class Reservation {
 	 */
 	public FutureChannelCreator createPermanent(final int permitsPermanentTCP) {
 		if (permitsPermanentTCP > maxPermitsPermanentTCP) {
-			throw new IllegalArgumentException(String.format("Cannot acquire more permantent TCP connections (%s) than maximally allowed (%s).", permitsPermanentTCP, maxPermitsPermanentTCP));
+			throw new IllegalArgumentException(String.format("Cannot acquire more permanent TCP connections (%s) than maximally allowed (%s).", permitsPermanentTCP, maxPermitsPermanentTCP));
 		}
 		final FutureChannelCreator futureChannelCreator = new FutureChannelCreator();
 		read.lock();
@@ -275,7 +275,7 @@ public class Reservation {
 				// this is very important that we set first the listener and
 				// then call shutdown. Otherwise, the order of
 				// the listener calls is not guaranteed and we may call this
-				// listener before the semphore.release,
+				// listener before the semaphore.release,
 				// causing an exception.
 				channelCreator.shutdownFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 					@Override

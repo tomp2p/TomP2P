@@ -137,7 +137,7 @@ public class MapRequestMessage extends Message {
      * @return The external port that was assigned.
      * @throws NatPmpException
      *             Thrown if there was an exception generated during the parsing
-     *             of the respnse.
+     *             of the response.
      */
     public Integer getExternalPort() throws NatPmpException {
         return externalPort;
@@ -158,7 +158,7 @@ public class MapRequestMessage extends Message {
      * @return The assigned port mapping lifetime, in seconds.
      * @throws NatPmpException
      *             Thrown if there was an exception generated during the parsing
-     *             of the respnse.
+     *             of the response.
      */
     public Integer getPortMappingLifetime() throws NatPmpException {
         return portMappingLifetime;

@@ -64,7 +64,7 @@ public class RoutingMechanism {
      * @param futureResponses
      *            The current future responses that are running
      * @param futureRoutingResponse
-     *            The reponse future from this routing request
+     *            The response future from this routing request
      */
     public RoutingMechanism(final AtomicReferenceArray<FutureResponse> futureResponses,
             final FutureRouting futureRoutingResponse, final Collection<PeerMapFilter> peerMapFilters) {
@@ -210,12 +210,12 @@ public class RoutingMechanism {
         this.maxFailures = maxFailures;
     }
 
-    public int maxSucess() {
+    public int maxSuccess() {
         return maxSuccess;
     }
 
-    public void maxSucess(int maxSucess) {
-        this.maxSuccess = maxSucess;
+    public void maxSuccess(int maxSuccess) {
+        this.maxSuccess = maxSuccess;
     }
 
     public PeerAddress pollFirstInQueueToAsk() {
@@ -292,7 +292,7 @@ public class RoutingMechanism {
                 LOG.debug("Enough direct hits found: {}.", directHits);
                 finished = true;
                 stopCreatingNewFutures = true;
-            } else if ((++nrSuccess) > maxSucess()) {
+            } else if ((++nrSuccess) > maxSuccess()) {
                 // wait until pending futures are finished
                 LOG.debug("Max success reached: {}.", nrSuccess);
                 finished = last;

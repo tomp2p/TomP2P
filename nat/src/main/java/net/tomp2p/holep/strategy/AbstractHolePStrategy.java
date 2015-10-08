@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DO NOT INSTANCIATE THIS CLASS! <br>
+ * DO NOT INSTANTIATE THIS CLASS! <br>
  * <br>
  * 
  * If you need to add a new supported nat type please extend this class and
@@ -354,7 +354,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 					final int numberOfConnectionAttempts = portList.size() / 2;
 					final AtomicInteger countDown = new AtomicInteger(numberOfConnectionAttempts);
 					for (int i = 0; i < portList.size(); i++) {
-						// this ensures, that if all hole punch attemps fail,
+						// this ensures, that if all hole punch attempts fail,
 						// the system is still able to send the message via
 						// relaying without the user noticing it
 						final FutureResponse holePFutureResponse = handleFutureResponse(originalFutureResponse, portList, i, countDown,
@@ -374,9 +374,9 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			}
 
 			/**
-			 * this ensures, that if all hole punch attemps fail, the system is
+			 * this ensures, that if all hole punch attempts fail, the system is
 			 * still able to send the message via relaying without the user
-			 * noticing it. In case of a succesful transmission, it also
+			 * noticing it. In case of a successful transmission, it also
 			 * forwards the response message to the original FutureResponse.
 			 * 
 			 * @param originalFutureResponse

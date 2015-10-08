@@ -48,7 +48,7 @@ public class UtilsTracker {
 	}
 	
 	/**
-     * Adds a listener to the response future and releases all aquired channels in channel creator.
+     * Adds a listener to the response future and releases all acquired channels in channel creator.
      * 
      * @param channelCreator
      *            The channel creator that will be shutdown and all connections will be closed

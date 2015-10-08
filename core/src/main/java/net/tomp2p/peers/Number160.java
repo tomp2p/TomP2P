@@ -151,7 +151,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
     }
 
     /**
-     * Creates a new Key using the byte array. The array is copied to the backing int[] starting at the given offest.
+     * Creates a new Key using the byte array. The array is copied to the backing int[] starting at the given offset.
      * 
      * @param val
      *            byte array

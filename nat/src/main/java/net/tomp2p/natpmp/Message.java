@@ -54,7 +54,7 @@ public abstract class Message {
     private Integer secondsSinceEpoch;
 
     /**
-     * Constructs a new Message with the speficied type.
+     * Constructs a new Message with the specified type.
      * 
      * @param type
      *            The {@link MessageType} of the message. This must not be null.
@@ -98,7 +98,7 @@ public abstract class Message {
     abstract void parseResponse(byte[] response) throws Exception;
 
     /**
-     * Gets the excpetion associated with the response. This exception is
+     * Gets the exception associated with the response. This exception is
      * generally provided by an external entity.
      * 
      * @return The {@link NatPmpException} associated with the response.

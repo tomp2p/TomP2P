@@ -90,7 +90,7 @@ public class PeerDHT {
 		return new ParallelRequestBuilder<FutureDHT<?>>(this, locationKey);
 	}
 
-	// ----- convenicence methods ------
+	// ----- convenience methods ------
 	public BaseFuture shutdown() {
 	    return peer.shutdown();
     }

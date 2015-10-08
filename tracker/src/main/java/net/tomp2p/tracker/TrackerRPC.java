@@ -86,12 +86,12 @@ public class TrackerRPC extends DispatchHandler {
 		if (peerAddressToAnnounce == null) {
 			peerAddressToAnnounce = peerBean().serverPeerAddress();
 		}
-		trackerData.put(peerAddressToAnnounce, builder.attachement());
+		trackerData.put(peerAddressToAnnounce, builder.attachment());
 		trackerData = UtilsTracker.limit(trackerData, TrackerRPC.MAX_MSG_SIZE_UDP);
 		message.trackerData(trackerData);
 
 		LOG.debug("tracker PUT {}", message);
-		if (builder.isForceTCP() || builder.attachement()!=null) {
+		if (builder.isForceTCP() || builder.attachment()!=null) {
 			return requestHandler.sendTCP(channelCreator);
 		} else {
 			return requestHandler.sendUDP(channelCreator);
@@ -121,7 +121,7 @@ public class TrackerRPC extends DispatchHandler {
 		        connectionBean(), builder);
 
 		LOG.debug("tracker GET {}", message);
-		if ((builder.isExpectAttachement() || builder.isForceTCP())) {
+		if ((builder.isExpectAttachment() || builder.isForceTCP())) {
 			return requestHandler.sendTCP(channelCreator);
 		} else {
 			return requestHandler.sendUDP(channelCreator);

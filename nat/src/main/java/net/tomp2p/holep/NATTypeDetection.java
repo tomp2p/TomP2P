@@ -32,7 +32,7 @@ public class NATTypeDetection {
 
 	/**
 	 * This method contacts a Relay {@link Peer} in order to find out the NAT
-	 * port assignement behavior. This assumes that you are behind a NAT as
+	 * port assignment behavior. This assumes that you are behind a NAT as
 	 * discovered with Peer.discover(). If you are not behind NAT, then this
 	 * will return PORT_PRESERVING. There are 3 possible NAT behaviours: <br />
 	 * PORT_PRESERVING = The NAT preserves the port which a peer uses to send

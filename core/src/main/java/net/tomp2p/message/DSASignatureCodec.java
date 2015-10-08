@@ -24,7 +24,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.utils.Utils;
 
 /**
- * Bare minimun ASN.1 encoder and decoder for the signature.
+ * Bare minimum ASN.1 encoder and decoder for the signature.
  * 
  * @author Thomas Bocek
  * 
@@ -47,14 +47,14 @@ public class DSASignatureCodec implements SignatureCodec {
 		}
 		int seqLen = encodedData[1];
 		if (seqLen < 0) {
-			throw new IOException("cannot handle seq legth > than 127, got " + seqLen);
+			throw new IOException("cannot handle seq length > than 127, got " + seqLen);
 		}
 		if (encodedData[2] != 0x02) {
 			throw new IOException("expected sequence with value 2, but got " + encodedData[2]);
 		}
 		int intLen1 = encodedData[3];
 		if (intLen1 < 0) {
-			throw new IOException("cannot handle int legth > than 127, got " + intLen1);
+			throw new IOException("cannot handle int length > than 127, got " + intLen1);
 		}
 		number1 = encodeNumber(encodedData, 4, intLen1);
 		if (encodedData[4 + intLen1] != 0x02) {
@@ -62,7 +62,7 @@ public class DSASignatureCodec implements SignatureCodec {
 		}
 		int intLen2 = encodedData[5 + intLen1];
 		if (intLen2 < 0) {
-			throw new IOException("cannot handle int legth > than 127, got " + intLen2);
+			throw new IOException("cannot handle int length > than 127, got " + intLen2);
 		}
 		number2 = encodeNumber(encodedData, 6 + intLen1, intLen2);
 	}

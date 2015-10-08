@@ -2,20 +2,20 @@ package net.tomp2p.peers;
 
 public class LocalMapConf {
 
-	private int localMapTimout = Integer.MAX_VALUE;
+	private int localMapTimeout = Integer.MAX_VALUE;
 	private int localMapSize = 1000;
 	private int localMapRevTimeout = Integer.MAX_VALUE;
 	private int localMapRevSize = 1000;
-	private int offlineMapTimout = 60;
+	private int offlineMapTimeout = 60;
 	private int offlineMapSize = 1000;
 	private int[] intervalSeconds = new int[] { 2, 4, 8, 16, 32, 64 };
 
-	public int localMapTimout() {
-		return localMapTimout;
+	public int localMapTimeout() {
+		return localMapTimeout;
 	}
 
-	public LocalMapConf localMapTimout(int localMapTimout) {
-		this.localMapTimout = localMapTimout;
+	public LocalMapConf localMapTimeout(int localMapTimout) {
+		this.localMapTimeout = localMapTimout;
 		return this;
 	}
 
@@ -46,12 +46,12 @@ public class LocalMapConf {
 		return this;
 	}
 
-	public int offlineMapTimout() {
-		return offlineMapTimout;
+	public int offlineMapTimeout() {
+		return offlineMapTimeout;
 	}
 
-	public LocalMapConf offlineMapTimout(int offlineMapTimout) {
-		this.offlineMapTimout = offlineMapTimout;
+	public LocalMapConf offlineMapTimeout(int offlineMapTimeout) {
+		this.offlineMapTimeout = offlineMapTimeout;
 		return this;
 	}
 

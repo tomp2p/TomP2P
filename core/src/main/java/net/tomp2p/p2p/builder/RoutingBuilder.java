@@ -192,7 +192,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         routingMechanism.maxDirectHits(maxDirectHits());
         routingMechanism.maxFailures(maxFailures());
         routingMechanism.maxNoNewInfo(maxNoNewInfo());
-        routingMechanism.maxSucess(maxSuccess());
+        routingMechanism.maxSuccess(maxSuccess());
         return routingMechanism;
     }
 

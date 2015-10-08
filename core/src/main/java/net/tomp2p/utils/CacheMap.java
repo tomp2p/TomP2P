@@ -81,7 +81,7 @@ public class CacheMap<K, V> extends LinkedHashMap<K, V> {
             return super.put(key, value);
         }
         return super.get(key);
-    };
+    }
 
     @Override
     protected boolean removeEldestEntry(final Map.Entry<K, V> eldest) {

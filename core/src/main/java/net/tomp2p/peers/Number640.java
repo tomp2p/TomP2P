@@ -203,7 +203,7 @@ public final class Number640 extends Number implements Comparable<Number640> {
     public double doubleValue() {
         return (locationKey.doubleValue() * Math.pow(2, Number160.BITS * 3))
                 + (domainKey.doubleValue() * Math.pow(2, Number160.BITS * 2)) 
-                + (contentKey.doubleValue() * Math.pow(2, Number160.BITS * 1))
+                + (contentKey.doubleValue() * Math.pow(2, Number160.BITS))
                 + versionKey.doubleValue();
     }
     

@@ -74,7 +74,7 @@ public class JobScheduler implements Shutdown {
 				shutdownFuture.done();
 			}
 		}
-	};
+	}
 
 	public JobScheduler(Peer peer) {
 		this(peer, 1, Executors.defaultThreadFactory());

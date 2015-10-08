@@ -260,7 +260,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
         for (int i = 0; i < INT_ARRAY_SIZE; i++) {
             // multiply by four
             final int idx = offset + (i << 2);
-            me[idx + 0] = (byte) (val[i] >> 24);
+            me[idx] = (byte) (val[i] >> 24);
             me[idx + 1] = (byte) (val[i] >> 16);
             me[idx + 2] = (byte) (val[i] >> 8);
             me[idx + 3] = (byte) (val[i]);

@@ -53,7 +53,7 @@ public class TimeoutFactory {
 	/**
 	 * Creates a factory for timeout handlers.
 	 * @param futureResponse
-	 *            The future that will be called if a timeout occured
+	 *            The future that will be called if a timeout occurred
 	 * @param timeoutSeconds
 	 *            The time for a timeout
 	 * @param peerStatusListeners
@@ -104,11 +104,11 @@ public class TimeoutFactory {
 
 		/**
 		 * @param futureResponse
-		 *            The future that will be called if a timeout occured. Can
+		 *            The future that will be called if a timeout occurred. Can
 		 *            be null if we are server, if we are client, futureResponse
 		 *            will be set
 		 * @param peerStatusListeners
-		 *            The listeners that get notified when a timeout happend
+		 *            The listeners that get notified when a timeout happened
 		 */
 		public TimeHandler(final FutureResponse futureResponse, final List<PeerStatusListener> peerStatusListeners,
 		        final String name) {

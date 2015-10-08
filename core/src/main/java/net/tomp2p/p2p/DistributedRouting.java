@@ -213,7 +213,7 @@ public class DistributedRouting {
         } else if (type == Type.REQUEST_3 && !randomSearch && peerBean.digestTracker() != null) {
             DigestInfo digestInfo = peerBean.digestTracker().digest(routingBuilder.locationKey(),
                     routingBuilder.domainKey(), routingBuilder.contentKey());
-            // we always put ourselfs to the tracker list, so we need to check
+            // we always put ourselves to the tracker list, so we need to check
             // if we know also other peers on our trackers.
             if (digestInfo.size() > 0) {
                 directHits.put(peerBean.serverPeerAddress(), digestInfo);
@@ -234,7 +234,7 @@ public class DistributedRouting {
             // if a peer bootstraps to itself, then the size of peerAddresses
             // is 1 and it contains itself. Check for that because we need to
             // know if we are routing, bootstrapping and bootstrapping to
-            // ourselfs, to return the correct status for the future
+            // ourselves, to return the correct status for the future
             boolean isRoutingOnlyToSelf = (peerAddresses.size() == 1 && peerAddresses.iterator().next()
                     .peerAddress().equals(peerBean.serverPeerAddress()));
             routingBuilder.routingOnlyToSelf(isRoutingOnlyToSelf);

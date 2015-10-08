@@ -17,7 +17,7 @@
 package net.tomp2p.futures;
 
 /**
- * A generic future that can be used to set a future to complete with an attachement.
+ * A generic future that can be used to set a future to complete with an attachment.
  * 
  * @author Thomas Bocek
  * 

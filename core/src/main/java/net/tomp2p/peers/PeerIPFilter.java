@@ -22,7 +22,7 @@ import java.util.Collection;
 
 /**
  * Filter peers if the IP is the same. TODO: make subnetting configurable, IPv4
- * and IPv6. Beeing too strict does not mean to harm the network. Other peers
+ * and IPv6. Being too strict does not mean to harm the network. Other peers
  * will have the information about the peer even if you excluded it.
  * 
  * @author Thomas Bocek

@@ -47,7 +47,7 @@ public enum NATType {
 	},
 	/**
 	 * NON_PRESERVING_SEQUENTIAL means, that a NAT will assign port number to
-	 * its public endpoint in an continous increasing manner (e.g. 1234).
+	 * its public endpoint in an continuous increasing manner (e.g. 1234).
 	 */
 	NON_PRESERVING_SEQUENTIAL {
 		@Override

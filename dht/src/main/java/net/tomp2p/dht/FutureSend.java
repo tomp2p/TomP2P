@@ -120,9 +120,9 @@ public class FutureSend extends FutureDHT<FutureSend> {
     }
     
     /**
-     * Return raw data from send_dircet (Netty buffer).
+     * Return raw data from send_direct (Netty buffer).
      * 
-     * @return The raw data from send_dircet and the information which peer has been contacted
+     * @return The raw data from send_direct and the information which peer has been contacted
      */
     public Map<PeerAddress, DataBuffer> rawDirectData1() {
         synchronized (lock) {
@@ -131,9 +131,9 @@ public class FutureSend extends FutureDHT<FutureSend> {
     }
 
     /**
-     * Return raw data from send_dircet (Object).
+     * Return raw data from send_direct (Object).
      * 
-     * @return The raw data from send_dircet and the information which peer has been contacted
+     * @return The raw data from send_direct and the information which peer has been contacted
      */
     public Map<PeerAddress, Object> rawDirectData2() {
         synchronized (lock) {

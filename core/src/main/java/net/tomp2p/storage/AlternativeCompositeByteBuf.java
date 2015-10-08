@@ -1476,7 +1476,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		}
 		int index = findIndex(writerIndex);
 		if(index < 0) {
-			//no component found, make sure we can write, thus adding a compontent. TODO: check fillbuffer
+			//no component found, make sure we can write, thus adding a component. TODO: check fillbuffer
 			ensureWritable(writerIndex);
 			index = findIndex(writerIndex);
 		}

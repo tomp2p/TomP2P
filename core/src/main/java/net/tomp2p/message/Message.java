@@ -496,7 +496,7 @@ public class Message {
     // Types of requests
 
     /**
-     * @return True if this is a request, a regural or a fire and forget
+     * @return True if this is a request, a regular or a fire and forget
      */
     public boolean isRequest() {
 		return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3 || type == Type.REQUEST_4

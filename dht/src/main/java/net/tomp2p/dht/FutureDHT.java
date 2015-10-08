@@ -63,7 +63,7 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
      * Adds all requests that have been created for the DHT operations. Those were created after the routing process.
      * 
      * @param futureResponse
-     *            The futurRepsonse that has been created
+     *            The futureResponse that has been created
      */
     public K addRequests(final FutureResponse futureResponse) {
         synchronized (lock) {
@@ -79,7 +79,7 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
     }
 
     /**
-     * Adds a listener to the response future and releases all aquired channels in channel creator.
+     * Adds a listener to the response future and releases all acquired channels in channel creator.
      * 
      * @param channelCreator
      *            The channel creator that will be shutdown and all connections will be closed

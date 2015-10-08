@@ -182,7 +182,7 @@ public class DistributedTracker {
 		        new HashSet<PeerAddress>(), new HashMap<PeerAddress, TrackerData>(), operation,
 		        trackerConfiguration.parallel(), new AtomicInteger(0), trackerConfiguration.maxFailure(),
 		        new AtomicInteger(0), trackerConfiguration.maxFullTrackers(), new AtomicInteger(0),
-		        trackerConfiguration.atLeastSucessfulRequestes(), trackerConfiguration.atLeastEntriesFromTrackers(),
+		        trackerConfiguration.atLeastSuccessfulRequests(), trackerConfiguration.atLeastEntriesFromTrackers(),
 		        new AtomicInteger(0), trackerConfiguration.maxPrimaryTrackers(),
 		        new AtomicReferenceArray<FutureResponse>(futureResponses), futureTracker, knownPeers, isGet);
 	}
@@ -192,7 +192,7 @@ public class DistributedTracker {
 	        final Set<PeerAddress> alreadyAsked, final Set<PeerAddress> successAsked,
 	        final Map<PeerAddress, TrackerData> peerOnTracker, final Operation operation, final int parallel,
 	        final AtomicInteger nrFailures, final int maxFailures, final AtomicInteger trackerFull,
-	        final int maxTrackerFull, final AtomicInteger successfulRequests, final int atLeastSuccessfullRequests,
+	        final int maxTrackerFull, final AtomicInteger successfulRequests, final int atLeastSuccessfulRequests,
 	        final int atLeastEntriesFromTrackers, final AtomicInteger primaryTracker, final int maxPrimaryTracker,
 	        final AtomicReferenceArray<FutureResponse> futureResponses, final FutureTracker futureTracker,
 	        final Set<Number160> knownPeers, final boolean isGet) {
@@ -266,7 +266,7 @@ public class DistributedTracker {
 						secondaryQueue.addAll(newPeers);
 					}
 					int successRequests = isFull ? successfulRequests.get() : successfulRequests.incrementAndGet();
-					finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfullRequests,
+					finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfulRequests,
 					        atLeastEntriesFromTrackers, isGet);
 
 					LOG.debug("evaluation result: finished={}, {} / {}", finished, peerOnTracker.size(),
@@ -285,13 +285,13 @@ public class DistributedTracker {
 					LOG.debug("no success {}", future.failedReason());
 					finished = nrFailures.incrementAndGet() > maxFailures;
 				}
-				// check if done, or continune looping
+				// check if done, or continue looping
 				if (finished) {
 					Set<PeerAddress> potentialTrackers = new HashSet<PeerAddress>(queueToAsk);
 					potentialTrackers.addAll(secondaryQueue);
 
 					LOG.debug("we finished2, we asked {}, but we could ask {} more nodes ({} / {})",
-					        alreadyAsked.size(), queueToAsk.size(), successfulRequests, atLeastSuccessfullRequests);
+					        alreadyAsked.size(), queueToAsk.size(), successfulRequests, atLeastSuccessfulRequests);
 
 					futureTracker.trackers(potentialTrackers, successAsked, peerOnTracker, future.futuresCompleted());
 					if (cancelOnFinish) {
@@ -300,7 +300,7 @@ public class DistributedTracker {
 				} else {
 					loopRec(locationKey, domainKey, queueToAsk, secondaryQueue, alreadyAsked, successAsked,
 					        peerOnTracker, operation, parallel, nrFailures, maxFailures, trackerFull, maxTrackerFull,
-					        successfulRequests, atLeastSuccessfullRequests, atLeastEntriesFromTrackers, primaryTracker,
+					        successfulRequests, atLeastSuccessfulRequests, atLeastEntriesFromTrackers, primaryTracker,
 					        maxPrimaryTracker, futureResponses, futureTracker, knownPeers, isGet);
 				}
 			}
@@ -420,7 +420,7 @@ public class DistributedTracker {
 		 * @param primary
 		 *            If the remote peer is a primary tracker, the flag is set
 		 *            to true
-		 * @return The future reponse of the RPC
+		 * @return The future response of the RPC
 		 */
 		FutureResponse create(PeerAddress address, boolean primary);
 	}

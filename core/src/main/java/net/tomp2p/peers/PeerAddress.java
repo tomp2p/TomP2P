@@ -32,8 +32,6 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 
-import javax.management.RuntimeErrorException;
-
 import net.tomp2p.utils.Utils;
 
 /**

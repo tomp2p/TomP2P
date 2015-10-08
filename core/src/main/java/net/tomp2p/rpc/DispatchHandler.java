@@ -129,7 +129,7 @@ public abstract class DispatchHandler {
     
     public static Message createResponseMessage(final Message requestMessage, final Type replyType, final PeerAddress peerAddress) {
         Message replyMessage = new Message();
-        // this will have the ports > 40'000 that we need to know for sendig the reply
+        // this will have the ports > 40'000 that we need to know for sending the reply
         replyMessage.senderSocket(requestMessage.senderSocket());
         replyMessage.recipientSocket(requestMessage.recipientSocket());
         replyMessage.recipient(requestMessage.sender());

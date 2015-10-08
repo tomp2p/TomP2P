@@ -58,7 +58,7 @@ public final class ExampleDirectReplication {
             final int port = 4001;
             peers = ExampleUtils.createAndAttachPeersDHT(nrPeers, port);
             ExampleUtils.bootstrap(peers);
-            exmpleDirectReplication(peers);
+            exampleDirectReplication(peers);
         } finally {
             if (peers != null && peers[0] != null) {
                 peers[0].shutdown();
@@ -75,7 +75,7 @@ public final class ExampleDirectReplication {
      * @throws InterruptedException 
      * @throws IOException .
      */
-    private static void exmpleDirectReplication(final PeerDHT[] peers) throws IOException, InterruptedException {
+    private static void exampleDirectReplication(final PeerDHT[] peers) throws IOException, InterruptedException {
         PutBuilder putBuilder = peers[1].put(Number160.ONE).data(new Data("test"));
         JobScheduler replication = new JobScheduler(peers[1].peer());
         Shutdown shutdown = replication.start(putBuilder, 1000, -1, new AutomaticFuture() {

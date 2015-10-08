@@ -53,7 +53,7 @@ public class FutureDirect extends FutureResponse {
             if(completed) {
                 return false;
             }
-            reponseLater = true;
+            responseLater = true;
             if (responseMessage != null) {
                 this.responseMessage = responseMessage;
                 // if its ok or nok, the communication was successful.

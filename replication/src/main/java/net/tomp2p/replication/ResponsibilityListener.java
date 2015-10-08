@@ -28,7 +28,7 @@ import net.tomp2p.peers.PeerAddress;
 public interface ResponsibilityListener {
 
     /**
-     * The responsibilty changed to our peer. That means we are now responsible.
+     * The responsibility changed to our peer. That means we are now responsible.
      * 
      * @param locationKey
      *            The location key

@@ -25,24 +25,24 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
     
     private Set<Number160> knownPeers;
 
-    private boolean expectAttachement = false;
+    private boolean expectAttachment = false;
 
     public GetTrackerBuilder(PeerTracker peer, Number160 locationKey) {
         super(peer, locationKey);
         self(this);
     }
 
-    public boolean isExpectAttachement() {
-        return expectAttachement;
+    public boolean isExpectAttachment() {
+        return expectAttachment;
     }
 
-    public GetTrackerBuilder expectAttachement() {
-        this.expectAttachement = true;
+    public GetTrackerBuilder expectAttachment() {
+        this.expectAttachment = true;
         return this;
     }
 
-    public GetTrackerBuilder expectAttachement(boolean expectAttachement) {
-        this.expectAttachement = expectAttachement;
+    public GetTrackerBuilder expectAttachment(boolean expectAttachment) {
+        this.expectAttachment = expectAttachment;
         return this;
     }
 
@@ -51,7 +51,7 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
             return FUTURE_TRACKER_SHUTDOWN;
         }
 
-        if(!expectAttachement) {
+        if(!expectAttachment) {
             forceUDP(true);
         }
         

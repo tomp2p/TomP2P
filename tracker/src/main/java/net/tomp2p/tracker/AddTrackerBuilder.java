@@ -26,7 +26,7 @@ import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 
 public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
-    private Data attachement;
+    private Data attachment;
 
     private SimpleBloomFilter<Number160> bloomFilter;
 
@@ -43,12 +43,12 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         self(this);
     }
 
-    public Data attachement() {
-        return attachement;
+    public Data attachment() {
+        return attachment;
     }
 
-    public AddTrackerBuilder attachement(Data attachement) {
-        this.attachement = attachement;
+    public AddTrackerBuilder attachment(Data attachment) {
+        this.attachment = attachment;
         return this;
     }
 
@@ -107,7 +107,7 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         if (peer.peer().isShutdown()) {
             return FUTURE_TRACKER_SHUTDOWN;
         }
-        if(attachement == null) {
+        if(attachment == null) {
             forceUDP(true);
         }
         preBuild("add-tracker-build");
@@ -120,7 +120,7 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         // add myself to my local tracker, since we use a mesh we are part of
         // the tracker mesh as well.
         peer.trackerStorage().put(new Number320(locationKey, domainKey), peer.peerAddress(), keyPair() == null? null: keyPair().getPublic(),
-                        attachement);
+                attachment);
         final FutureTracker futureTracker = peer.distributedTracker().add(this);
 
         return futureTracker;

@@ -139,7 +139,7 @@ public class RelayRPC extends DispatchHandler {
 
 		NeighborSet ns = new NeighborSet(255, RelayUtils.flatten(map));
 		message.neighborsSet(ns);
-		LOG.debug("send neigbors " + ns);
+		LOG.debug("send neighbors " + ns);
 		// append relay-type specific data (if necessary)
 		//relayConfig.prepareMapUpdateMessage(message);
 		message.keepAlive(true);
@@ -161,7 +161,7 @@ public class RelayRPC extends DispatchHandler {
 			// The unreachable peer receives wrapped messages from the relay
 			handlePiggyBackedMessage(message, responder);
 		} else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
-			// the relay server receives the update of the routing table regularly from the unrachable peer
+			// the relay server receives the update of the routing table regularly from the unreachable peer
 			handleMap(message, responder);
 		} else if (message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
 			// An unreachable peer requests the buffer at the relay peer

@@ -40,7 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class has 3 methods that are called from outside eventes: check, peerInsert, peerRemoved.
+ * This class has 3 methods that are called from outside events: check, peerInsert, peerRemoved.
  */
 public class Replication implements PeerMapChangeListener, ReplicationListener {
     private static final Logger LOG = LoggerFactory.getLogger(Replication.class);
@@ -311,7 +311,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 							@Override
 							public void exceptionCaught(Throwable t)
 									throws Exception {
-								LOG.error("Unexcepted exception ocurred.", t);
+								LOG.error("Unexpected exception occurred.", t);
 							}
 						});
 				peer.peer().notifyAutomaticFutures(futureForkJoin);
@@ -383,7 +383,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 				if (isInReplicationRange(myResponsibleLocation, peerAddress, replicationFactor)) {
 					// check if I still have to replicate
 					if (isInReplicationRange(myResponsibleLocation, selfAddress, replicationFactor)) {
-						LOG.debug("I {} and newly joined peer {} have replication responibility for {}.",
+						LOG.debug("I {} and newly joined peer {} have replication responsibility for {}.",
 								selfAddress, peerAddress, myResponsibleLocation);
 						// newly joined peer has to get notified
 						FutureForkJoin<FutureDone<Void>> futureForkJoin = notifyMeResponsible(myResponsibleLocation, peerAddress);
@@ -416,7 +416,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 							@Override
 							public void exceptionCaught(Throwable t)
 									throws Exception {
-								LOG.error("Unexcepted exception ocurred.", t);
+								LOG.error("Unexpected exception occurred.", t);
 							}
 						});
 						peer.peer().notifyAutomaticFutures(futureForkJoin);
@@ -454,7 +454,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 									@Override
 									public void exceptionCaught(Throwable t)
 											throws Exception {
-										LOG.error("Unexcepted exception ocurred.", t);
+										LOG.error("Unexpected exception occurred.", t);
 									}
 								});
 						peer.peer().notifyAutomaticFutures(futureForkJoin);
@@ -465,7 +465,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
     }
 
     @Override
-    public void peerRemoved(final PeerAddress peerAddress, final PeerStatistic peerStatatistic) {
+    public void peerRemoved(final PeerAddress peerAddress, final PeerStatistic peerStatistic) {
         if (!isReplication()) {
             return;
         }
@@ -545,7 +545,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
     }
 
     @Override
-    public void peerUpdated(final PeerAddress peerAddress, final PeerStatistic peerStatatistic) {
+    public void peerUpdated(final PeerAddress peerAddress, final PeerStatistic peerStatistic) {
         // do nothing
     }
 

@@ -663,7 +663,7 @@ public class Utils {
         int counter = 0;
         for (Object object : objects) {
             if (object == null) {
-                throw new IllegalArgumentException("Null not allowed in paramenetr nr. " + counter);
+                throw new IllegalArgumentException("Null not allowed in parameter nr. " + counter);
             }
             counter++;
         }
@@ -784,7 +784,7 @@ public class Utils {
     }
 
     /**
-	 * Adds a listener to the response futures and releases all aquired channels in the channel creator.
+	 * Adds a listener to the response futures and releases all acquired channels in the channel creator.
      * 
      * @param channelCreator
      *            The channel creator that will be shutdown and all connections will be closed
@@ -962,11 +962,11 @@ public class Utils {
 	 * @return socketAddress
 	 */
 	public static PeerSocketAddress extractRandomRelay(final Message message) {
-		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
+		Object[] relayInetAddresses = message.recipient().peerSocketAddresses().toArray();
 		PeerSocketAddress socketAddress = null;
-		if (relayInetAdresses.length > 0) {
+		if (relayInetAddresses.length > 0) {
 			// we should be fair and choose one of the relays randomly
-			socketAddress = (PeerSocketAddress) relayInetAdresses[randomPositiveInt(relayInetAdresses.length)];
+			socketAddress = (PeerSocketAddress) relayInetAddresses[randomPositiveInt(relayInetAddresses.length)];
 		} else {
 			throw new IllegalArgumentException(
 					"There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");

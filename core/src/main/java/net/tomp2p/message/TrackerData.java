@@ -29,7 +29,7 @@ import net.tomp2p.utils.Utils;
 
 public class TrackerData {
 
-    private final static Data EMTPY_DATA = new Data(0, 0);
+    private final static Data EMPTY_DATA = new Data(0, 0);
 
     private final Map<PeerAddress, Data> peerAddresses;
 
@@ -74,8 +74,8 @@ public class TrackerData {
         return peerAddresses.size();
     }
 
-    public void put(PeerAddress remotePeer, Data attachement) {
-        peerAddresses.put(remotePeer, attachement == null ? EMTPY_DATA : attachement);
+    public void put(PeerAddress remotePeer, Data attachment) {
+        peerAddresses.put(remotePeer, attachment == null ? EMPTY_DATA : attachment);
     }
 
     public Map.Entry<PeerAddress, Data> remove(Number160 remotePeerId) {

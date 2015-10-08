@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A generic future that can be used to set a future to complete with an attachement.
+ * A generic future that can be used to set a future to complete with an attachment.
  * 
  * @author Thomas Bocek
  * 

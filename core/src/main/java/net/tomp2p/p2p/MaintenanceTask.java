@@ -52,15 +52,15 @@ public class MaintenanceTask implements Runnable {
                 return;
             }
             for (Maintainable maintainable : maintainables) {
-                PeerStatistic peerStatatistic = maintainable.nextForMaintenance(runningFutures.values());
-                if(peerStatatistic == null) {
+                PeerStatistic peerStatistic = maintainable.nextForMaintenance(runningFutures.values());
+                if(peerStatistic == null) {
                     continue;
                 }
-                BaseFuture future = peer.ping().peerAddress(peerStatatistic.peerAddress()).start();
-                LOG.debug("Maintenance ping from {} to {}.", peer.peerAddress(), peerStatatistic.peerAddress());
+                BaseFuture future = peer.ping().peerAddress(peerStatistic.peerAddress()).start();
+                LOG.debug("Maintenance ping from {} to {}.", peer.peerAddress(), peerStatistic.peerAddress());
             
                 peer.notifyAutomaticFutures(future);
-                runningFutures.put(future, peerStatatistic.peerAddress());
+                runningFutures.put(future, peerStatistic.peerAddress());
                 COUNTER.incrementAndGet();
                 future.addListener(new BaseFutureAdapter<BaseFuture>() {
                     @Override

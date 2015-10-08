@@ -48,7 +48,7 @@ public class ExampleBootstrap {
 			futureBootstrap1.awaitUninterruptibly();
 			System.out.println("peer[0] knows: " + peers[0].peerBean().peerMap().all() + " unverified: "
 			        + peers[0].peerBean().peerMap().allOverflow());
-			System.out.println("wait for maintenace ping");
+			System.out.println("wait for maintenance ping");
 			Thread.sleep(2000);
 			System.out.println("peer[0] knows: " + peers[0].peerBean().peerMap().all() + " unverified: "
 			        + peers[0].peerBean().peerMap().allOverflow());

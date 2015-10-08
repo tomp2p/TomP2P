@@ -142,7 +142,7 @@ public class Encoder {
                 break;
             case MAP_KEY640_DATA:
                 DataMap dataMap = message.dataMap(next.index());
-                // legnth
+                // length
                 buf.writeInt(dataMap.size());
                 if (dataMap.isConvert()) {
                     for (Entry<Number160, Data> entry : dataMap.dataMapConvert().entrySet()) {
@@ -205,7 +205,7 @@ public class Encoder {
                 if (buffer.incRead(readable) == buffer.length()) {
                     message.contentReferences().poll();
                 } else if (message.isStreaming()) {
-                    LOG.debug("Partial message of lengt {} sent.", readable);
+                    LOG.debug("Partial message of length {} sent.", readable);
                     return false;
                 } else {
                 	final String description = "Larger buffer has been announced, but not in message streaming mode. This is wrong.";

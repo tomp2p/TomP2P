@@ -140,7 +140,7 @@ public class Forwarder extends DispatchHandler {
 						public void operationComplete(FutureDone<Message> future) throws Exception {
 							if (future.isSuccess()) {
 								Message answerMessage = future.object();
-								LOG.debug("Returing from relay to requester: {}", answerMessage);
+								LOG.debug("Returning from relay to requester: {}", answerMessage);
 								responder.response(answerMessage);
 							} else {
 								responder.failed(Type.DENIED, "Relaying message failed: " + future.failedReason());
@@ -231,8 +231,8 @@ public class Forwarder extends DispatchHandler {
 		for (Map<Number160, PeerStatistic> map : peerMap) {
 			statistics.addAll(map.values());
 		}
-		for (PeerStatistic peerStatatistic : statistics) {
-			peerAddresses.add(peerStatatistic.peerAddress());
+		for (PeerStatistic peerStatistic : statistics) {
+			peerAddresses.add(peerStatistic.peerAddress());
 		}
 		return peerAddresses;
 	}

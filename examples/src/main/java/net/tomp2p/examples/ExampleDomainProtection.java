@@ -52,12 +52,12 @@ public class ExampleDomainProtection
         futurePut =
             peer3.put( Number160.ONE ).data( new Data( "hello" ) ).domainKey( peer2Owner ).protectDomain().start();
         futurePut.awaitUninterruptibly();
-        System.out.println( "stored: " + futurePut.isSuccess() + " -> becaues peer1 already claimed this domain" );
+        System.out.println( "stored: " + futurePut.isSuccess() + " -> because peer1 already claimed this domain" );
         // peer 2 claims this domain
         futurePut =
             peer2.put( Number160.ONE ).data( new Data( "MINE!" ) ).domainKey( peer2Owner ).protectDomain().start();
         futurePut.awaitUninterruptibly();
-        System.out.println( "stored: " + futurePut.isSuccess() + " -> becaues peer2 is the owner" );
+        System.out.println( "stored: " + futurePut.isSuccess() + " -> because peer2 is the owner" );
         // get the data!
         FutureGet futureGet = peer1.get( Number160.ONE ).domainKey( peer2Owner ).start();
         futureGet.awaitUninterruptibly();
@@ -96,7 +96,7 @@ public class ExampleDomainProtection
         futurePut =
             peer2.put( Number160.ONE ).data( new Data( "MINE!" ) ).protectDomain().domainKey( peer2Owner ).start();
         futurePut.awaitUninterruptibly();
-        System.out.println( "stored: " + futurePut.isSuccess() + " -> becaues peer2 is the owner" );
+        System.out.println( "stored: " + futurePut.isSuccess() + " -> because peer2 is the owner" );
         // get the data!
         FutureGet futureGet = peer1.get( Number160.ONE ).domainKey( peer2Owner ).start();
         futureGet.awaitUninterruptibly();

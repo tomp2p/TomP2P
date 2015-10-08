@@ -348,7 +348,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
                 listener.exceptionCaught(e);
                 listener.operationComplete(this);
             } catch (final Exception e1) {
-                LOG.error("Unexcpected exception in exceptionCaught()", e1);
+                LOG.error("Unexpected exception in exceptionCaught()", e1);
             }
         }
     }

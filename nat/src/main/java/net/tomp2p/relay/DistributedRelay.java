@@ -176,7 +176,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 				iterator.remove();
 			}
 		}
-		LOG.trace("Found {} addtional relay candidates: {}", relayCandidates.size(), relayCandidates);
+		LOG.trace("Found {} additional relay candidates: {}", relayCandidates.size(), relayCandidates);
 		
 		return relayCandidates;
 	}

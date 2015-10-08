@@ -60,7 +60,7 @@ public class DistributedHashTable {
     private static final NavigableSet<PeerAddress> EMPTY_NAVIGABLE_SET = new TreeSet<PeerAddress>();
     
     public static final int REASON_CANCEL = 254;
-    public static final int REASON_UNKOWN = 255;
+    public static final int REASON_UNKNOWN = 255;
 
     private final DistributedRouting routing;
 
@@ -268,7 +268,7 @@ public class DistributedHashTable {
                                                 		rawData.put(future.request().recipient(), error);
                                                 	} else {
                                                 		logger.debug("future failed: "+future.failedReason());
-                                                		Map<Number640, Byte> error = Utils.setMapError(future.request().dataMap(0).dataMap(), (byte) REASON_UNKOWN);
+                                                		Map<Number640, Byte> error = Utils.setMapError(future.request().dataMap(0).dataMap(), (byte) REASON_UNKNOWN);
                                                         rawData.put(future.request().recipient(), error);
                                                 	}
                                                 }

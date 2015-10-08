@@ -195,13 +195,13 @@ public class PeerBuilderTracker {
 			}
 			TrackerData trackerData = new TrackerData(value);
 			
-			Map<PeerAddress, Data> peerStatatisticsMap = trackerData.peerAddresses();
+			Map<PeerAddress, Data> peerStatisticsMap = trackerData.peerAddresses();
 			
-			if(peerStatatisticsMap == null || peerStatatisticsMap.size() == 0) {
+			if(peerStatisticsMap == null || peerStatisticsMap.size() == 0) {
 				return null;
 			}
 			
-			Collection<PeerAddress> peerStatatistics = peerStatatisticsMap.keySet();
+			Collection<PeerAddress> peerStatatistics = peerStatisticsMap.keySet();
 			if (peerStatatistics.isEmpty()) {
 				return null;
 			}

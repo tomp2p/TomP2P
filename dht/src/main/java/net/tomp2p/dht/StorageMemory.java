@@ -225,7 +225,7 @@ public class StorageMemory implements Storage {
     	 Number160 peerId = responsibilityMap.remove(locationKey);
     	 if(peerId != null) {
 			removeRevResponsibility(peerId, locationKey);
-			LOG.debug("Remove responsiblity for {}.", locationKey);
+			LOG.debug("Remove responsibility for {}.", locationKey);
     	 }
     }
     

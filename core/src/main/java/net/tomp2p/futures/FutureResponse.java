@@ -43,7 +43,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     // the reply to this request
     protected Message responseMessage;
     
-    protected boolean reponseLater = false;
+    protected boolean responseLater = false;
 
     private final RTT roundTripTime = new RTT();
 
@@ -120,7 +120,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
             	}
                 return false;
             }
-            reponseLater = true;
+            responseLater = true;
             if (responseMessage != null) {
                 this.responseMessage = responseMessage;
                 // if its ok or nok, the communication was successful.
@@ -143,7 +143,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
             if(completed) {
                 return false;
             }
-            reponseLater = true;
+            responseLater = true;
             this.reason = stringWriter.toString();
             this.type = FutureType.FAILED;
         }
@@ -152,7 +152,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     
     public FutureResponse responseNow() {
         synchronized (lock) {
-        	if (!reponseLater && !completed) {
+        	if (!responseLater && !completed) {
         		failed("No future set beforehand, probably an early shutdown / timeout, or use setFailedLater() or setResponseLater()");
         		return this;
         	}
@@ -165,7 +165,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     }
     
     protected boolean completedAndNotify() {
-        if (reponseLater) {
+        if (responseLater) {
             return false;
         }
         return super.completedAndNotify();

@@ -50,7 +50,7 @@ public class FutureTask extends BaseFutureImpl<FutureTask> {
      * were created after the routing process.
      * 
      * @param futureResponse
-     *            The futurRepsonse that has been created
+     *            The futureResponse that has been created
      */
     public void addRequests(FutureAsyncTask futureResponse) {
         synchronized (lock) {

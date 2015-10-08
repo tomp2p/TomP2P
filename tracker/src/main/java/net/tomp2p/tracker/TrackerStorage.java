@@ -42,7 +42,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	final private boolean verifyPeersOnTracker;
 	private final int[] intervalSeconds;
 	private final PeerAddress self;
-	private final int trackerTimoutSeconds;
+	private final int trackerTimeoutSeconds;
 	private final PeerMap peerMap;
 	private final int replicationFactor;
 	//comes later
@@ -54,7 +54,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		        true);
 		dataMap = new ConcurrentCacheMap<Number320, Map<PeerAddress, Pair<PeerStatistic, Data>>>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
 		peerOffline = new ConcurrentCacheMap<Number160, Boolean>(trackerTimoutSeconds * 5, TRACKER_CACHE_SIZE, false);
-		this.trackerTimoutSeconds = trackerTimoutSeconds;
+		this.trackerTimeoutSeconds = trackerTimoutSeconds;
 		this.intervalSeconds = intervalSeconds;
 		this.self = self;
 		this.peerMap = peerMap;
@@ -62,7 +62,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		this.verifyPeersOnTracker = verifyPeersOnTracker;
 	}
 
-	public boolean put(Number320 key, PeerAddress peerAddress, PublicKey publicKey, Data attachement) {
+	public boolean put(Number320 key, PeerAddress peerAddress, PublicKey publicKey, Data attachment) {
 		if (peerOffline.containsKey(peerAddress.peerId())) {
 			return false;
 		}
@@ -90,11 +90,11 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 			}
 		}
 		
-		if(attachement == null) {
-			attachement = new Data();
+		if(attachment == null) {
+			attachment = new Data();
 		}
 		// now store
-		attachement.publicKey(publicKey);
+		attachment.publicKey(publicKey);
 		final Map<Number320, Map<PeerAddress, Pair<PeerStatistic, Data>>> dataMapToStore;
 		if(isUnverified) {
 			dataMapToStore = dataMapUnverified;
@@ -105,7 +105,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		} else {
 			dataMapToStore = dataMap;
 		}
-		return add(key, peerAddress, dataMapToStore, attachement);
+		return add(key, peerAddress, dataMapToStore, attachment);
 	}
 
 	private Pair<PeerStatistic, Data> findOld(Number320 key, PeerAddress peerAddress, Map<Number320, Map<PeerAddress, Pair<PeerStatistic, Data>>> dataMap) {
@@ -192,7 +192,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		return tmp.headSet(new PeerStatistic(peerAddress)).size() < replicationFactor;
 	}
 
-	private boolean add(Number320 key, PeerAddress peerAddress, Map<Number320, Map<PeerAddress, Pair<PeerStatistic, Data>>> map, Data attachement) {
+	private boolean add(Number320 key, PeerAddress peerAddress, Map<Number320, Map<PeerAddress, Pair<PeerStatistic, Data>>> map, Data attachment) {
 		
 		//check size
 		Map<PeerAddress, Pair<PeerStatistic, Data>> map2 = map.get(key);
@@ -202,11 +202,11 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		
 		Pair<PeerStatistic, Data> trackerData = findOld(key, peerAddress, map);
 		if (trackerData == null) {
-			trackerData = new Pair<PeerStatistic, Data>(new PeerStatistic(peerAddress), attachement);
+			trackerData = new Pair<PeerStatistic, Data>(new PeerStatistic(peerAddress), attachment);
 		}
 		
 		if(map2 == null) {
-			map2 = new ConcurrentCacheMap<PeerAddress, Pair<PeerStatistic, Data>>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
+			map2 = new ConcurrentCacheMap<PeerAddress, Pair<PeerStatistic, Data>>(trackerTimeoutSeconds, TRACKER_CACHE_SIZE, true);
 			map.put(key, map2);
 		}
 		map2.put(peerAddress, trackerData);
@@ -232,7 +232,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	    for (Map.Entry<Number320, Map<PeerAddress, Pair<PeerStatistic, Data>>> entry : map.entrySet()) {
 	    	Pair<PeerStatistic, Data> oldPair = entry.getValue().remove(remotePeer);
 	    	if(oldPair != null) {
-	    		Map<PeerAddress, Pair<PeerStatistic, Data>> map2 = new ConcurrentCacheMap<PeerAddress, Pair<PeerStatistic, Data>>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true); 
+	    		Map<PeerAddress, Pair<PeerStatistic, Data>> map2 = new ConcurrentCacheMap<PeerAddress, Pair<PeerStatistic, Data>>(trackerTimeoutSeconds, TRACKER_CACHE_SIZE, true);
 	    		map2.put(remotePeer, oldPair);
 	    		removed.put(entry.getKey(), map2);
 	    	}

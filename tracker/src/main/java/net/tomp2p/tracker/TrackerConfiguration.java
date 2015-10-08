@@ -70,7 +70,7 @@ public class TrackerConfiguration implements RequestConfiguration {
         return parallel;
     }
 
-    public int atLeastSucessfulRequestes() {
+    public int atLeastSuccessfulRequests() {
         return atLeastSuccessfulRequests;
     }
 

@@ -147,7 +147,7 @@ public class TestTrackerRPC {
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
             addTrackerBuilder.domainKey(dom);
-            addTrackerBuilder.attachement(new Data("data"));
+            addTrackerBuilder.attachment(new Data("data"));
 
             FutureResponse fr = sender.trackerRPC().addToTracker(recv1.peerAddress(),
                     addTrackerBuilder, cc);
@@ -158,7 +158,7 @@ public class TestTrackerRPC {
 
             GetTrackerBuilder getTrackerBuilder = new GetTrackerBuilder(sender, loc);
             getTrackerBuilder.domainKey(dom);
-            getTrackerBuilder.expectAttachement(true);
+            getTrackerBuilder.expectAttachment(true);
 
             fr = sender.trackerRPC().getFromTracker(recv1.peerAddress(), getTrackerBuilder, cc);
             fr.awaitUninterruptibly();
@@ -202,7 +202,7 @@ public class TestTrackerRPC {
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
             addTrackerBuilder.domainKey(dom);
-            addTrackerBuilder.attachement(new Data("data"));
+            addTrackerBuilder.attachment(new Data("data"));
             addTrackerBuilder.setBloomFilter(bloomFilter);
 
             FutureResponse fr = sender.trackerRPC().addToTracker(recv1.peerAddress(),
@@ -214,7 +214,7 @@ public class TestTrackerRPC {
             bloomFilter.add(sender.peerAddress().peerId());
 
             GetTrackerBuilder getTrackerBuilder = new GetTrackerBuilder(sender, loc);
-            getTrackerBuilder.expectAttachement(true);
+            getTrackerBuilder.expectAttachment(true);
             getTrackerBuilder.knownPeers(bloomFilter);
             getTrackerBuilder.domainKey(dom);
 

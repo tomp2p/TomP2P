@@ -301,25 +301,25 @@ public class TestTracker {
             Number160 trackerID = new Number160(rnd);
             FutureTracker ft = nodes[300].addTracker(trackerID).domainKey(Number160.createHash("test"))
                     .routingConfiguration(rc).trackerConfiguration(tc)
-                    .attachement(new Data(",.peoueuaoeue")).start();
+                    .attachment(new Data(",.peoueuaoeue")).start();
             ft.awaitUninterruptibly();
             ft = nodes[301].addTracker(trackerID).domainKey(Number160.createHash("test"))
                     .routingConfiguration(rc).trackerConfiguration(tc)
-                    .attachement(new Data(",.peoueuaoeue")).start();
+                    .attachment(new Data(",.peoueuaoeue")).start();
             ft.awaitUninterruptibly();
             ft = nodes[302].addTracker(trackerID).domainKey(Number160.createHash("test"))
                     .routingConfiguration(rc).trackerConfiguration(tc)
-                    .attachement(new Data(",.peoueuaoeue")).start();
+                    .attachment(new Data(",.peoueuaoeue")).start();
             ft.awaitUninterruptibly();
             ft = nodes[303].addTracker(trackerID).domainKey(Number160.createHash("test"))
                     .routingConfiguration(rc).trackerConfiguration(tc)
-                    .attachement(new Data(",.peoueuaoeue")).start();
+                    .attachment(new Data(",.peoueuaoeue")).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(2, ft.directTrackers().size());
             tc = new TrackerConfiguration(1, 1, 0, 1);
             ft = nodes[199].getTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).trackerConfiguration(tc).expectAttachement()
+                    .routingConfiguration(rc).trackerConfiguration(tc).expectAttachment()
                     .start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());

@@ -7,13 +7,13 @@ jdk:
 
 #script: mvn -Dtest=net.tomp2p.p2p.TestAnnounce test && exit 1
 
-install: mvn install -DskipTests=true
+install: mvn install -DskipTests=true -B
 
 before_script: 
- - sudo sh -c 'echo "$USER ALL=(ALL) NOPASSWD: ${pwd}/tomp2p-nat/src/test/resources/nat-net.sh/nat-net.sh" >> /etc/sudoers'
- - sudo sh -c 'echo "$USER ALL=(ALL) NOPASSWD: /sbin/ip" >> /etc/sudoers'
- - sudo cat /etc/sudoers
- - chmod a+x {pwd}/tomp2p-nat/src/test/resources/nat-net.sh/nat-net.sh
+ - chmod a+x /home/travis/build/tomp2p-nat/src/test/resources/nat-net.sh/nat-net.sh
  - ls -la
+ - sudo sh -c 'echo "travis ALL=(ALL) NOPASSWD: /home/travis/build/tomp2p-nat/src/test/resources/nat-net.sh/nat-net.sh" >> /etc/sudoers'
+ - sudo sh -c 'echo "travis ALL=(ALL) NOPASSWD: /sbin/ip" >> /etc/sudoers'
+ - sudo cat /etc/sudoers
 
 script: mvn test -Dmaven.javadoc.skip=true

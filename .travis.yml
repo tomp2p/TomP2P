@@ -10,9 +10,9 @@ jdk:
 install: mvn install -DskipTests=true -B
 
 before_script: 
- - chmod a+x /home/travis/build/tomp2p/TomP2P/tomp2p-nat/src/test/resources/nat-net.sh
+ - chmod a+x /home/travis/build/tomp2p/TomP2P/nat/src/test/resources/nat-net.sh
  - ls -la
- - sudo sh -c 'echo "travis ALL=(ALL) NOPASSWD: /home/travis/build/tomp2p/TomP2P/tomp2p-nat/src/test/resources/nat-net.sh" >> /etc/sudoers'
+ - sudo sh -c 'echo "travis ALL=(ALL) NOPASSWD: /home/travis/build/tomp2p/TomP2P/nat/src/test/resources/nat-net.sh" >> /etc/sudoers'
  - sudo sh -c 'echo "travis ALL=(ALL) NOPASSWD: /sbin/ip" >> /etc/sudoers'
  - sudo cat /etc/sudoers
 

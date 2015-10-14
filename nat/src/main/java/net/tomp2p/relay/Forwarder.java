@@ -44,7 +44,7 @@ public class Forwarder extends DispatchHandler {
 	
 	private final List<Message> buffer = Collections.synchronizedList(new ArrayList<Message>());
 	
-	//private int capacity = 16;
+	private int capacity = 16;
 	private long lastAccess = System.currentTimeMillis();
 	private int bufferTimeSec = 60;
 
@@ -266,12 +266,18 @@ public class Forwarder extends DispatchHandler {
 	public final void setPeerMap(List<Map<Number160, PeerStatistic>> peerMap, Message requestMessage,
 			Message preparedResponse) {
 		this.peerMap = peerMap;
+		checkSend();
 	}
 	
 	private void addToBuffer(Message requestMessage) {
 		buffer.add(requestMessage);
-		if(buffer.size() > 16 || lastAccess + (bufferTimeSec * 1000) < System.currentTimeMillis()) {
+		checkSend();
+	}
+	
+	private void checkSend() {
+		if(buffer.size() > capacity || lastAccess + (bufferTimeSec * 1000) < System.currentTimeMillis()) {
 			forwardMessages(buffer);
+			lastAccess = System.currentTimeMillis();
 		}
 	}
 	

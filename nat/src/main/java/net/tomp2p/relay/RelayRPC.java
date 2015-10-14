@@ -167,9 +167,6 @@ public class RelayRPC extends DispatchHandler {
 			// An unreachable peer requests the buffer at the relay peer
 			// or a buffer is transmitted to the unreachable peer directly
 			handleBuffer(message, responder);
-		} else if (message.type() == Type.REQUEST_5 && message.command() == RPC.Commands.RELAY.getNr()) {
-			// A late response
-			handleLateResponse(message, peerConnection, sign, responder);
 		} else {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
@@ -383,6 +380,7 @@ public class RelayRPC extends DispatchHandler {
 					}
 					
 					responseMessage.recipient(responseMessage.recipient().changeAddress(sender.getAddress()).changePorts(sender.getPort(), sender.getPort()));
+
 					FutureResponse fr = RelayUtils.connectAndSend(peer(), responseMessage);
 					final FutureDone<Void> fd = new FutureDone<Void>();
 					fr.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -405,15 +403,4 @@ public class RelayRPC extends DispatchHandler {
 		responder.response(createResponseMessage(message, Type.OK));
 	}
 	
-	private void handleLateResponse(Message message,
-			PeerConnection peerConnection, boolean sign, Responder responder) {
-		FutureResponse fr = connectionBean().dispatcher().getPendingRequests().get(message.messageId());
-		if(fr!=null) {
-			fr.response(message);
-			responder.response(createResponseMessage(message, Type.OK));
-		} else {
-			responder.response(createResponseMessage(message, Type.NOT_FOUND));
-		}
-		
-	}
 }

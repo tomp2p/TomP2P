@@ -267,15 +267,13 @@ public class RelayUtils {
 	 */
 	public static FutureResponse connectAndSend(final Peer peer, final Message message) {
 		final FutureResponse futureResponse = new FutureResponse(message);
-		final FuturePeerConnection fpc = peer.createPeerConnection(message.recipient());
+		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peer.peerBean(), peer.connectionBean(), peer.connectionBean().channelServer().channelServerConfiguration());
+		final FutureChannelCreator fpc = peer.connectionBean().reservation().create(0, 1);
+		
 		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
             public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
                 if (futurePeerConnection.isSuccess()) {
-                	// successfully created a connection to the other peer
-                	final PeerConnection peerConnection = futurePeerConnection.object();
-                	
-                	// send the message
-                	send(peerConnection, peer.peerBean(), peer.connectionBean(), futureResponse);
+                	requestHandler.sendTCP(fpc.channelCreator(), null);
                 } else {
                     futureResponse.failed(fpc);
                 }

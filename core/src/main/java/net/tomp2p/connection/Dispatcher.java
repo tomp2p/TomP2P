@@ -181,6 +181,18 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         
+        
+        //handle late responses from pending requests
+    	final FutureResponse lateRequests = getPendingRequests().get(message.messageId());
+    	if(lateRequests!=null) {
+    		lateRequests.response(message);
+    		Message responseMessage = DispatchHandler.createResponseMessage(message, Type.OK, peerBeanMaster.serverPeerAddress());
+    		response(ctx, responseMessage);
+    	} else {
+    		Message responseMessage = DispatchHandler.createResponseMessage(message, Type.NOT_FOUND, peerBeanMaster.serverPeerAddress());
+    		response(ctx, responseMessage);
+    	}
+        
         if (!message.isRequest()) {
             LOG.debug("Handing request message to the next handler. {}", message);
         	ctx.fireChannelRead(message);

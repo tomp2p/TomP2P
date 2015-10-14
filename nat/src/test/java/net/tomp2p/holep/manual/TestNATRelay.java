@@ -2,7 +2,6 @@ package net.tomp2p.holep.manual;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
@@ -12,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import net.tomp2p.connection.PeerConnection;
@@ -27,7 +27,10 @@ import net.tomp2p.relay.Forwarder;
 import net.tomp2p.relay.RelayCallback;
 import net.tomp2p.rpc.ObjectDataReply;
 
-//@Ignore
+//travis-ci cannot test this, the kernel does not support all the required features:
+//Perhaps iptables or your kernel needs to be upgraded
+//see also here: https://github.com/travis-ci/travis-ci/issues/1341
+@Ignore
 public class TestNATRelay implements Serializable {
 
 	private static final long serialVersionUID = 1L;

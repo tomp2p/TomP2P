@@ -7,6 +7,7 @@ import java.util.Random;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import net.tomp2p.dht.FuturePut;
@@ -23,6 +24,10 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.storage.Data;
 
+//travis-ci cannot test this, the kernel does not support all the required features:
+//Perhaps iptables or your kernel needs to be upgraded
+//see also here: https://github.com/travis-ci/travis-ci/issues/1341
+@Ignore
 public class TestUPNP implements Serializable {
 	
 	final static private Random RND = new Random(42);

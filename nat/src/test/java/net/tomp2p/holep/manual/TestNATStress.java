@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import net.tomp2p.connection.PeerConnection;
@@ -17,7 +18,6 @@ import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.nat.FutureNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
@@ -40,6 +40,11 @@ import net.tomp2p.storage.Data;
  * @author Thomas Bocek
  *
  */
+
+//travis-ci cannot test this, the kernel does not support all the required features:
+//Perhaps iptables or your kernel needs to be upgraded
+//see also here: https://github.com/travis-ci/travis-ci/issues/1341
+@Ignore
 public class TestNATStress implements Serializable {
 
 	final static private Random RND = new Random(42);

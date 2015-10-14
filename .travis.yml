@@ -3,17 +3,13 @@ language: java
 jdk:
  - openjdk7
 
+#solved in pom.xml
 #env: MAVEN_OPTS="-Dio.netty.leakDetectionLevel=paranoid"
 
-#script: mvn -Dtest=net.tomp2p.p2p.TestAnnounce test && exit 1
+#does not work as reported here: https://github.com/travis-ci/travis-ci/issues/1341
+#before_script: 
+# - chmod a+x /home/travis/build/tomp2p/TomP2P/nat/src/test/resources/nat-net.sh
+# - sudo sh -c 'echo "travis ALL=(ALL) NOPASSWD":" /home/travis/build/tomp2p/TomP2P/nat/src/test/resources/nat-net.sh" >> /etc/sudoers'
+# - sudo sh -c 'echo "travis ALL=(ALL) NOPASSWD":" /usr/bin/ip" >> /etc/sudoers'
 
-install: mvn install -DskipTests=true -B
 
-before_script: 
- - chmod a+x /home/travis/build/tomp2p/TomP2P/nat/src/test/resources/nat-net.sh
- - ls -la
- - sudo sh -c 'echo "travis ALL=(ALL) NOPASSWD":" /home/travis/build/tomp2p/TomP2P/nat/src/test/resources/nat-net.sh" >> /etc/sudoers'
- - sudo sh -c 'echo "travis ALL=(ALL) NOPASSWD":" /usr/bin/ip" >> /etc/sudoers'
- - sudo cat /etc/sudoers
-
-script: mvn test -Dmaven.javadoc.skip=true

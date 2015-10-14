@@ -81,14 +81,19 @@ public class RelayRPC extends DispatchHandler {
 	 * @param rconRPC the reverse connection RPC
 	 * @return
 	 */
-	public RelayRPC(Peer peer, RconRPC rconRPC, HolePRPC holePRPC) {
+	
+	final private int bufferTimeoutSeconds;
+	final private int bufferSize;
+	
+	public RelayRPC(Peer peer, RconRPC rconRPC, HolePRPC holePRPC, int bufferTimeoutSeconds, int bufferSize) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peer = peer;
 		//this.servers = new ConcurrentHashMap<Number160, BaseRelayServer>();
 		//this.clients = new ConcurrentHashMap<Number160, BaseRelayClient>();
 		this.rconRPC = rconRPC;
 		this.holePunchRPC = holePRPC;
-
+		this.bufferTimeoutSeconds = bufferTimeoutSeconds;
+		this.bufferSize = bufferSize;
 
 		// register this handler
 		register(RPC.Commands.RELAY.getNr());
@@ -255,7 +260,7 @@ public class RelayRPC extends DispatchHandler {
 				// arrives)
 				dispatcher().registerIoHandler(peer.peerID(), unreachablePeerId, this, command.getNr());
 			} else {
-				final Forwarder forwarder = new Forwarder(peer, unreachablePeerConnectionCopy, message.sender().isSlow());
+				final Forwarder forwarder = new Forwarder(peer, unreachablePeerConnectionCopy, message.sender().isSlow(), bufferTimeoutSeconds, bufferSize);
 				dispatcher().registerIoHandler(peer.peerID(), unreachablePeerId, forwarder, command.getNr());
 			}
 		}
@@ -360,6 +365,7 @@ public class RelayRPC extends DispatchHandler {
 		List<Message> buffered = RelayUtils.decomposeCompositeBuffer(
 				message.buffer(0).buffer(), message.recipient().createSocketTCP(), 
 				message.sender().createSocketTCP(), peer.connectionBean().sender().channelClientConfiguration().signatureFactory());
+		LOG.debug("got {} messages", buffered.size());
 		for(Message msg:buffered) {
 			DispatchHandler dh = connectionBean().dispatcher().associatedHandler(msg);
 			//TODO: add a custom responder and respond to the address found in the message
@@ -381,6 +387,7 @@ public class RelayRPC extends DispatchHandler {
 					
 					responseMessage.recipient(responseMessage.recipient().changeAddress(sender.getAddress()).changePorts(sender.getPort(), sender.getPort()));
 
+					LOG.debug("send late reply {}", responseMessage);
 					FutureResponse fr = RelayUtils.connectAndSend(peer(), responseMessage);
 					final FutureDone<Void> fd = new FutureDone<Void>();
 					fr.addListener(new BaseFutureAdapter<FutureResponse>() {

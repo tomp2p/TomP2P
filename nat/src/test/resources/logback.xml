@@ -45,7 +45,7 @@
     <logger name="net.tomp2p.message.TomP2PCumulationTCP" level="TRACE"/> -->
     
     <logger name="net.tomp2p.connection.Sender" level="TRACE"/>
-    <logger name="net.tomp2p.connection.Dispatcher" level="TRACE"/>
+<!--     <logger name="net.tomp2p.connection.Dispatcher" level="TRACE"/> -->
     <logger name="net.tomp2p.nat.PeerNAT" level="TRACE"/>
     <logger name="net.tomp2p.relay.RelayRPC" level="TRACE"/>
     <logger name="net.tomp2p.relay.RelayUtils" level="TRACE"/>

@@ -44,14 +44,16 @@ public class Forwarder extends DispatchHandler {
 	
 	private final List<Message> buffer = Collections.synchronizedList(new ArrayList<Message>());
 	
-	private int capacity = 16;
+	final private int bufferSize;
+	final private int bufferTimeoutSeconds;
 	private long lastAccess = System.currentTimeMillis();
-	private int bufferTimeSec = 60;
 
-	public Forwarder(Peer peer, PeerConnection unreachablePeerConnection, boolean isSlow) {
+	public Forwarder(Peer peer, PeerConnection unreachablePeerConnection, boolean isSlow, int bufferTimeoutSeconds, int bufferSize) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.unreachablePeerConnection = unreachablePeerConnection;
 		this.isSlow = isSlow;
+		this.bufferTimeoutSeconds = bufferTimeoutSeconds;
+		this.bufferSize = bufferSize;
 	}
 	
 	private FutureDone<Message> forwardOrBuffer(final Message requestMessage) {
@@ -270,18 +272,21 @@ public class Forwarder extends DispatchHandler {
 	}
 	
 	private void addToBuffer(Message requestMessage) {
+		LOG.debug("add msg on peer {}, {}"+System.identityHashCode(this), peerBean().serverPeerAddress(), requestMessage);
 		buffer.add(requestMessage);
 		checkSend();
 	}
 	
 	private void checkSend() {
-		if(buffer.size() > capacity || lastAccess + (bufferTimeSec * 1000) < System.currentTimeMillis()) {
+		LOG.debug("check buffer on peer {}"+System.identityHashCode(this), peerBean().serverPeerAddress());
+		if(buffer.size() > 0 && (buffer.size() > bufferSize || lastAccess + (bufferTimeoutSeconds * 1000) < System.currentTimeMillis())) {
 			forwardMessages(buffer);
 			lastAccess = System.currentTimeMillis();
 		}
 	}
 	
 	private void forwardMessages(List<Message> buffer2) {
+		LOG.debug("empty buffer on peer {}"+System.identityHashCode(this), peerBean().serverPeerAddress());
 		final Message envelope = createMessage(unreachablePeerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_4);
 		
 		// always keep the connection open

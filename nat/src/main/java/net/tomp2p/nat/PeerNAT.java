@@ -41,7 +41,7 @@ public class PeerNAT {
 	private final DistributedRelay distributedRelay;
 	private boolean relayMaintenance;
 	private BootstrapBuilder bootstrapBuilder;
-	private int peerMapUpdateIntervalSeconds;
+	private int peerMapUpdateIntervalSeconds;	
 	
 	PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, boolean manualPorts, DistributedRelay distributedRelay, 
 			boolean relayMaintenance, BootstrapBuilder bootstrapBuilder, int peerMapUpdateIntervalSeconds) {

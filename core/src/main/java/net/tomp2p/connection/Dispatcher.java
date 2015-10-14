@@ -243,27 +243,28 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     private class DirectResponder implements Responder {
         final ChannelHandlerContext ctx;
         final Message requestMessage;
+
         DirectResponder(final ChannelHandlerContext ctx, final Message requestMessage) {
             this.ctx = ctx;
             this.requestMessage = requestMessage;
         }
         
         @Override
-        public FutureDone<Void> response(Message responseMessage) {
-            return Dispatcher.this.response(ctx, responseMessage);
+        public FutureDone<Void> response(final Message responseMessage) {
+        	return Dispatcher.this.response(ctx, responseMessage);
         }
         
         @Override
         public void failed(Message.Type type, String reason) {
-            Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBeanMaster.serverPeerAddress());
+        	final Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBeanMaster.serverPeerAddress());
             Dispatcher.this.response(ctx, responseMessage);
         }
         
         @Override
 		public void responseFireAndForget() {
-            LOG.debug("The reply handler was a fire-and-forget handler. No message is sent back for {}.", requestMessage);
+           LOG.debug("The reply handler was a fire-and-forget handler. No message is sent back for {}.", requestMessage);
            if (!(ctx.channel() instanceof DatagramChannel)) {
-               String msg = "There is no TCP fire-and-forget. Use UDP in that case. ";
+               final String msg = "There is no TCP fire-and-forget. Use UDP in that case. ";
         	   LOG.warn(msg + requestMessage);
                throw new RuntimeException(msg);
            } else {

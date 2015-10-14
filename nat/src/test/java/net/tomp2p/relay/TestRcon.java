@@ -134,6 +134,7 @@ public class TestRcon {
 		System.err.println("testReverseConnection() start!");
 
 		final String requestString = "This is a test String";
+		final String replyString = "SUCCESS HIT";
 		final CountDownLatch cLatch = new CountDownLatch(1);
 
 		unreachable.objectDataReply(new ObjectDataReply() {
@@ -144,7 +145,7 @@ public class TestRcon {
 					System.err.println("received: " + (String) request);
 					cLatch.countDown();
 				}
-				return null;
+				return replyString;
 			}
 		});
 

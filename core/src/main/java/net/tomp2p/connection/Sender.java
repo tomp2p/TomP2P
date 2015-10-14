@@ -758,6 +758,7 @@ public class Sender {
 					afterSend(writeFuture, futureResponse, fireAndForget);
 				} else {
 					LOG.warn("Channel creation failed", future.cause());
+					LOG.warn("Faild message {}", message);
 					futureResponse.failed("Channel creation failed " + future.channel() + "/" + future.cause());
 					// may have been closed by the other side,
 					// or it may have been canceled from this side

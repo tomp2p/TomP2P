@@ -133,21 +133,40 @@ public class Forwarder extends DispatchHandler {
 					handleNeigbhor(message, responder);
 				} else {
 					messageCounter.incrementAndGet();
-					LOG.debug("Received message {} to forward to unreachable peer {}", message, unreachablePeerConnection.remotePeer());
+					LOG.debug("Received message {} to forward to unreachable peer 1 {}", message, unreachablePeerConnection.remotePeer());
 					FutureDone<Message> response = forwardOrBuffer(message);
 					response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 						@Override
 						public void operationComplete(FutureDone<Message> future) throws Exception {
 							if (future.isSuccess()) {
 								Message answerMessage = future.object();
-								LOG.debug("Returning from relay to requester: {}", answerMessage);
+								LOG.debug("Returning from relay to requester: 1 {}", answerMessage);
 								responder.response(answerMessage);
 							} else {
-								responder.failed(Type.DENIED, "Relaying message failed: " + future.failedReason());
+								responder.failed(Type.DENIED, "Relaying message failed: 1 " + future.failedReason());
 							}
 						}
 					});
 				}
+		
+	}
+	
+	public void handleForward(final Message forwardMessage, final Message message, final Responder responder) {
+		messageCounter.incrementAndGet();
+		LOG.debug("Received message {} to forward to unreachable peer  {}, orig: {}", forwardMessage, unreachablePeerConnection.remotePeer(), message);
+		final FutureDone<Message> response = forwardOrBuffer(forwardMessage);
+		response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+			@Override
+			public void operationComplete(FutureDone<Message> future) throws Exception {
+				if (future.isSuccess()) {
+					final Message answerMessage = createResponseMessage(message, Type.OK);
+					LOG.debug("Returning from relay to requester: 2 {}", answerMessage);
+					responder.response(answerMessage);
+				} else {
+					responder.failed(Type.DENIED, "Relaying message failed: 2 " + future.failedReason());
+				}
+			}
+		});
 		
 	}
 	

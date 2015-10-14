@@ -129,7 +129,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 	 * @return RelayFuture containing a {@link DistributedRelay} instance
 	 */
 	public DistributedRelay setupRelays(List<PeerAddress> relays) {
-		this.relays = relays;
+		this.relays = Collections.synchronizedList(relays);
 		executorService.submit(new Runnable() {
 			@Override
 			public void run() {
@@ -150,15 +150,12 @@ public class DistributedRelay implements PeerMapChangeListener {
 			// candidates are neighboring peers that are not relayed themselves and have
 			// not recently failed as relay or denied acting as relay.
 			relayCandidates = peer.distributedRouting().peerMap().all();
-			// remove those who we know have failed
-			relayCandidates.removeAll(failedRelays);
 		} else {
-			// if the user sets manual relays, the failed relays are not removed, as this has to be done by
-			// the user
 			synchronized (relays) {
 				relayCandidates = new ArrayList<PeerAddress>(relays);	
 			}
 		}
+		relayCandidates.removeAll(failedRelays);
 
 		//filterRelayCandidates
 		for (Iterator<PeerAddress> iterator = relayCandidates.iterator(); iterator.hasNext();) {
@@ -176,7 +173,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 				iterator.remove();
 			}
 		}
-		LOG.trace("Found {} additional relay candidates: {}", relayCandidates.size(), relayCandidates);
+		LOG.trace("Found {} additional relay candidates: {}, failed are {}", relayCandidates.size(), relayCandidates, failedRelays);
 		
 		return relayCandidates;
 	}
@@ -284,9 +281,11 @@ public class DistributedRelay implements PeerMapChangeListener {
 					});
 				} else {
 					LOG.debug("bad relay: {}", candidate);
+					failedRelays.add(candidate);
 					activeClients.remove(candidate);
 					updatePeerAddress();
 					relayCallback.onRelayRemoved(candidate, future.object());
+					
 				}
 				//loop again
 				startConnectionsLoop();

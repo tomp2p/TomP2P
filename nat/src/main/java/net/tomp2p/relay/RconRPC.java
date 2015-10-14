@@ -67,15 +67,15 @@ public class RconRPC extends DispatchHandler {
 		LOG.debug("received RconRPC message {}", message);
 		if (message.type() == Message.Type.REQUEST_1 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the relay peer
-			LOG.debug("handle RconForward for message: " + message);
+			LOG.debug("handle RconForward for message: {}", message);
 			handleRconForward(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_2 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the unreachable peer
-			LOG.debug("handle RconSetup for message: " + message);
+			LOG.debug("handle RconSetup for message: {}", message);
 			handleRconSetup(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_3 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the requesting peer
-			LOG.debug("handle RconAfterconnect for message: " + message);
+			LOG.debug("handle RconAfterconnect for message: {}", message);
 			handleRconAfterconnect(message, responder, peerConnection);
 		} else {
 			LOG.warn("received invalid RconRPC message {}", message);
@@ -98,7 +98,7 @@ public class RconRPC extends DispatchHandler {
 		final Forwarder forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardMessage(message, forwarder.unreachablePeerAddress());
-			forwarder.handleResponse(forwardMessage, null, true, responder);
+			forwarder.handleForward(forwardMessage, message, responder);
 		} else {
 			handleFail(message, responder, "No RelayForwarder registered for peerId="
 					+ message.recipient().peerId().toString());

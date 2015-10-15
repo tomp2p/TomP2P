@@ -16,11 +16,7 @@
 
 package net.tomp2p.p2p;
 
-import io.netty.channel.ChannelHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
-
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -30,6 +26,8 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import io.netty.channel.ChannelHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConfiguration;
@@ -344,8 +342,6 @@ public class PeerBuilder {
 		channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
 		channelClientConfiguration.pipelineFilter(new DefaultPipelineFilter());
 		channelClientConfiguration.signatureFactory(new DSASignatureFactory());
-		channelClientConfiguration.senderTCP(new InetSocketAddress(0).getAddress());
-		channelClientConfiguration.senderUDP(new InetSocketAddress(0).getAddress());
 		channelClientConfiguration.byteBufPool(false);
 		return channelClientConfiguration;
 	}

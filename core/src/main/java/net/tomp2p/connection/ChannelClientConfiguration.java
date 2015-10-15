@@ -40,8 +40,7 @@ public class ChannelClientConfiguration {
     private SignatureFactory signatureFactory;
     private Bindings bindings;
     
-    private InetAddress senderUDP;
-    private InetAddress senderTCP;
+    private InetAddress fromAddress = null;
     
     private boolean enablePool = false;
     private boolean enableHeap = false;
@@ -148,21 +147,12 @@ public class ChannelClientConfiguration {
         return this;
     }
 
-	public InetAddress senderUDP() {
-	    return senderUDP;
+	public InetAddress fromAddress() {
+	    return fromAddress;
     }
 	
-	public ChannelClientConfiguration senderUDP(InetAddress senderUDP) {
-		this.senderUDP = senderUDP;
-	    return this;
-    }
-
-	public InetAddress senderTCP() {
-	    return senderTCP;
-    }
-	
-	public ChannelClientConfiguration senderTCP(InetAddress senderUDP) {
-		this.senderTCP = senderUDP;
+	public ChannelClientConfiguration fromAddress(InetAddress fromAddress) {
+		this.fromAddress = fromAddress;
 	    return this;
     }
 	

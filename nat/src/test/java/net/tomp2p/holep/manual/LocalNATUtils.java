@@ -17,7 +17,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -280,9 +279,7 @@ public class LocalNATUtils {
 			throws UnknownHostException, IOException {
 		Bindings b = new Bindings();
 		b.addAddress(InetAddress.getByName(ip));
-		ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
-		ccc.senderTCP(InetAddress.getByName(ip));
-		Peer peer = new PeerBuilder(Number160.createHash(peerId)).channelClientConfiguration(ccc).ports(port).bindings(b).behindFirewall().start();
+		Peer peer = new PeerBuilder(Number160.createHash(peerId)).ports(port).bindings(b).behindFirewall().start();
 		System.out.println("Init "+peer.peerAddress());
 		return peer;
 	}
@@ -291,11 +288,7 @@ public class LocalNATUtils {
 			throws UnknownHostException, IOException {
 		Bindings b = new Bindings();
 		b.addAddress(InetAddress.getByName(ip));
-		
-		ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
-
-		ccc.senderTCP(InetAddress.getByName(ip));
-		Peer peer = new PeerBuilder(Number160.createHash(peerId)).portsExternal(forwardedPort).channelClientConfiguration(ccc).ports(port).bindings(b)
+		Peer peer = new PeerBuilder(Number160.createHash(peerId)).portsExternal(forwardedPort).ports(port).bindings(b)
 				.start();
 		System.out.println("Init "+peer.peerAddress());
 		return peer;

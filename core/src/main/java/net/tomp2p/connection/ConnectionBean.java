@@ -32,6 +32,7 @@ public class ConnectionBean {
     
     //non-final to be able to adapt changes
     public static int DEFAULT_TCP_IDLE_MILLIS = 5 * 1000;
+    public static int DEFAULT_TCP_IDLE_SLOW_MILLIS = 30 * 1000;
     public static int DEFAULT_UDP_IDLE_MILLIS = 5 * 1000;
     public static int DEFAULT_CONNECTION_TIMEOUT_TCP = 3 * 1000;
     public static int DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS = 60;

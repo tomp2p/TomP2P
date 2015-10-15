@@ -402,10 +402,17 @@ public class Sender {
 			ChannelHandler handler, TimeoutFactory timeoutHandler, int connectTimeoutMillis, FutureResponse futureResponse) {
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
+		
+		HeartBeat heartBeat = null;
+		int timeout = -1;
+		if (peerConnection != null) {
+			heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingBuilderFactory);
+			timeout = peerConnection.idleTCP();
+		}
 
 		if (timeoutHandler != null) {
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
-			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
+			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P(timeout)));
 			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
 		} else {
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
@@ -427,10 +434,8 @@ public class Sender {
 		if (timeoutHandler != null) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-
-		HeartBeat heartBeat = null;
+		
 		if (peerConnection != null) {
-			heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingBuilderFactory);
 			handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
 		}
 

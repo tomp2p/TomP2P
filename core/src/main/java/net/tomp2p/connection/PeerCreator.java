@@ -94,7 +94,7 @@ public class PeerCreator {
 		workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory(ConnectionBean.THREAD_NAME
 		        + "worker-client/server - "));
 		bossGroup = new NioEventLoopGroup(2, new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
-		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConfiguration.heartBeatMillis());
+		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConfiguration);
 		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup, channelServerConfiguration,
 		        dispatcher, peerBean.peerStatusListeners(), timer);
 		

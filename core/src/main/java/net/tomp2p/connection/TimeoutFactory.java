@@ -73,6 +73,15 @@ public class TimeoutFactory {
 	public ChannelHandler idleStateHandlerTomP2P() {
 		return new IdleStateHandlerTomP2P(timeoutMillis);
 	}
+	
+	public ChannelHandler idleStateHandlerTomP2P(int timeoutMillis) {
+		if(timeoutMillis <= 0) {
+			return new IdleStateHandlerTomP2P(this.timeoutMillis);
+		}
+		else {
+			return new IdleStateHandlerTomP2P(timeoutMillis);
+		}
+	}
 
 	/**
 	 * @return Two handlers, one default Netty that will call the second handler
@@ -87,6 +96,13 @@ public class TimeoutFactory {
 		}
 		if (ctx.channel().pipeline().names().contains("timeout1")) {
 			ctx.channel().pipeline().remove("timeout1");
+		}
+	}
+	
+	public static void resetTimeout(ChannelHandlerContext ctx, int timeoutMillis) {
+		if (ctx.channel().pipeline().names().contains("timeout0")) {
+			ChannelHandler old = ctx.channel().pipeline().get("timeout0");
+			ctx.channel().pipeline().replace(old, "timeout0-0", new IdleStateHandlerTomP2P(timeoutMillis));
 		}
 	}
 

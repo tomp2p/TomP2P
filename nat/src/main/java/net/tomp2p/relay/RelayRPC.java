@@ -84,8 +84,10 @@ public class RelayRPC extends DispatchHandler {
 	
 	final private int bufferTimeoutSeconds;
 	final private int bufferSize;
+	final private int heartBeatMillis;
+	final private int idleTCP;
 	
-	public RelayRPC(Peer peer, RconRPC rconRPC, HolePRPC holePRPC, int bufferTimeoutSeconds, int bufferSize) {
+	public RelayRPC(Peer peer, RconRPC rconRPC, HolePRPC holePRPC, int bufferTimeoutSeconds, int bufferSize, int heartBeatMillis, int idleTCP) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peer = peer;
 		//this.servers = new ConcurrentHashMap<Number160, BaseRelayServer>();
@@ -94,6 +96,8 @@ public class RelayRPC extends DispatchHandler {
 		this.holePunchRPC = holePRPC;
 		this.bufferTimeoutSeconds = bufferTimeoutSeconds;
 		this.bufferSize = bufferSize;
+		this.heartBeatMillis = heartBeatMillis;
+		this.idleTCP = idleTCP;
 
 		// register this handler
 		register(RPC.Commands.RELAY.getNr());
@@ -108,7 +112,7 @@ public class RelayRPC extends DispatchHandler {
 		message.keepAlive(true);
 
 		LOG.debug("Setting up relay connection to peer {}, message {}", candidate, message);
-		final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
+		final FuturePeerConnection fpc = peer.createPeerConnection(candidate, heartBeatMillis, idleTCP);
 		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
 			public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
 				if (futurePeerConnection.isSuccess()) {

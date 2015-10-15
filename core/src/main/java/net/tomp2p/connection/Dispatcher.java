@@ -68,7 +68,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 
     private final int p2pID;
     private final PeerBean peerBeanMaster;
-    private final int heartBeatMillis;
 
     //use locks instead copy on write as testcases became really slow
     final private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
@@ -83,7 +82,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	 */
     final private Map<Integer, FutureResponse> pendingRequests = new ConcurrentHashMap<Integer, FutureResponse>();
 
-    
+    final private ChannelServerConfiguration csc;
     /**
      * Creates a dispatcher.
      *
@@ -92,10 +91,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @param peerBeanMaster
      *            .
      */
-    public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, final int heartBeatMillis) {
+    public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, ChannelServerConfiguration csc) {
         this.p2pID = p2pID;
         this.peerBeanMaster = peerBeanMaster;
-        this.heartBeatMillis = heartBeatMillis;
+        this.csc = csc;
     }
     
     public PeerBean peerBean() {
@@ -181,7 +180,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         
-        
+        if(message.sender().isSlow() && message.isKeepAlive()) {
+        	//reset timer
+        	TimeoutFactory.resetTimeout(ctx, csc.idleTCPSlowMillis());
+        }
+            
         //handle late responses from pending requests
     	final FutureResponse lateRequest = findAndRemovePendingRequests(message.messageId());
     	if(lateRequest != null) {
@@ -203,7 +206,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
 			LOG.debug("About to respond to request message {}.", message);
-            PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
+            PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), 0, 0);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
         } else {
         	message.release();

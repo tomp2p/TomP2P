@@ -59,6 +59,8 @@ public class PeerBuilderNAT {
 	private Integer peerMapUpdateIntervalSeconds;
 	private Integer bufferTimeoutSeconds;
 	private Integer bufferSize;
+	private Integer heartBeatMillis;
+	private Integer idleTCP;
 
 	private static final int DEFAULT_NUMBER_OF_HOLEP_HOLES = 3;
 	private int holePNumberOfHoles = DEFAULT_NUMBER_OF_HOLEP_HOLES;
@@ -168,6 +170,24 @@ public class PeerBuilderNAT {
 		this.bufferSize = bufferSize;
 		return this;
 	}
+	
+	public Integer heartBeatMillis() {
+		return heartBeatMillis;
+	}
+	
+	public PeerBuilderNAT heartBeatMillis(Integer heartBeatMillis) {
+		this.heartBeatMillis = heartBeatMillis;
+		return this;
+	}
+	
+	public Integer idleTCP() {
+		return idleTCP;
+	}
+	
+	public PeerBuilderNAT idleTCP(Integer idleTCP) {
+		this.idleTCP = idleTCP;
+		return this;
+	}
 
 	public PeerNAT start() {
 		
@@ -195,6 +215,15 @@ public class PeerBuilderNAT {
 			bufferSize = 16;
 		}
 		
+		if(heartBeatMillis == null) {
+			heartBeatMillis = 2000;
+		}
+		
+		if(idleTCP == null) {
+			idleTCP = 5000;
+		}
+		
+		
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
 		final HolePRPC holePunchRPC = new HolePRPC(peer);
@@ -203,7 +232,7 @@ public class PeerBuilderNAT {
 		peer.peerBean().holePNumberOfHoles(holePNumberOfHoles);
 		peer.peerBean().holePNumberOfPunches(holePNumberOfPunches);
 
-		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC, bufferTimeoutSeconds, bufferSize);
+		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC, bufferTimeoutSeconds, bufferSize, heartBeatMillis, idleTCP);
 		
 		if(executorService == null) {
 			executorService = Executors.newSingleThreadExecutor();

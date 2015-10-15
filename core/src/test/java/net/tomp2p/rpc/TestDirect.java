@@ -240,7 +240,7 @@ public class TestDirect {
                     return "yes";
                 }
             });
-            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.peerAddress(), 8000);
+            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.peerAddress(), 8000, 2000);
             ccohTCP.reset();
             ccohUDP.reset();
 

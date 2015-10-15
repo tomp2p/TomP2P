@@ -32,6 +32,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     private boolean disableBind = false;
 
     private int idleTCPMillis = ConnectionBean.DEFAULT_TCP_IDLE_MILLIS;
+    private int idleTCPSlowMillis = ConnectionBean.DEFAULT_TCP_IDLE_SLOW_MILLIS;
     private int idleUDPMillis = ConnectionBean.DEFAULT_UDP_IDLE_MILLIS;
     private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
     private int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
@@ -126,6 +127,23 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
      */
     public ChannelServerConfiguration idleTCPMillis(final int idleTCPMillis) {
         this.idleTCPMillis = idleTCPMillis;
+        return this;
+    }
+    
+    /**
+     * @return The time that a connection can be idle before it is considered not active for short-lived connections
+     */
+    public int idleTCPSlowMillis() {
+        return idleTCPSlowMillis;
+    }
+
+    /**
+     * @param idleTCPSeconds
+     *            The time that a connection can be idle before its considered not active for short-lived connections
+     * @return This class
+     */
+    public ChannelServerConfiguration idleTCPSlowMillis(final int idleTCPSlowMillis) {
+        this.idleTCPSlowMillis = idleTCPSlowMillis;
         return this;
     }
 

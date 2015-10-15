@@ -2,6 +2,7 @@ package net.tomp2p.examples;
 
 import java.util.Date;
 
+import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.FutureBootstrap;
@@ -12,7 +13,6 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
-import net.tomp2p.storage.Data;
 
 public class ExampleBuffer {
 	public static void main(String[] args) throws Exception {
@@ -21,7 +21,9 @@ public class ExampleBuffer {
 		final Number160 idP3 = Number160.createHash("p3");
 		PeerDHT relay = new PeerBuilderDHT(new PeerBuilder(idP1).ports(1234).start()).start();
 		PeerDHT requester = new PeerBuilderDHT(new PeerBuilder(idP2).ports(1235).start()).start();
-		PeerDHT slow = new PeerBuilderDHT(new PeerBuilder(idP3).ports(1236).start()).start();
+		ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+		csc.idleTCPSlowMillis(35 * 1000);
+		PeerDHT slow = new PeerBuilderDHT(new PeerBuilder(idP3).channelServerConfiguration(csc).ports(1236).start()).start();
 		
 		PeerNAT pn1 = new PeerBuilderNAT(relay.peer()).bufferTimeoutSeconds(30).start();
 		PeerNAT pn2 = new PeerBuilderNAT(requester.peer()).bufferTimeoutSeconds(30).start();
@@ -35,7 +37,7 @@ public class ExampleBuffer {
 		futureBootstrap.awaitUninterruptibly();
 				
 		// setup relay
-		PeerNAT pn3 = new PeerBuilderNAT(slow.peer()).peerMapUpdateIntervalSeconds(30).start();
+		PeerNAT pn3 = new PeerBuilderNAT(slow.peer()).peerMapUpdateIntervalSeconds(30).heartBeatMillis(30 * 1000).idleTCP(35 * 1000).start();
 		pn3.startRelay(relay.peerAddress());
 		
 		slow.peer().objectDataReply(new ObjectDataReply() {
@@ -47,8 +49,8 @@ public class ExampleBuffer {
 			}
 		});
 		
-		Thread.sleep(3000);
 		System.err.println("RPC to ("+new Date()+") "+slow.peerAddress());
+		Thread.sleep(3000);
 		FutureDirect fd = requester.peer().sendDirect(slow.peerAddress()).object("REQUEST").start();
 		fd.awaitUninterruptibly();
 		System.err.println("GOT ("+new Date()+"): "+fd.object());

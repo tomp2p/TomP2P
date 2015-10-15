@@ -102,7 +102,7 @@ public final class ExamplePersistentConnection {
                     + ccohTCP.total()+ "/"+ccohUDP.total());
             
             // keep the connection for 20s alive. Setting -1 means to keep it open as long as possible
-            FuturePeerConnection futurePeerConnection = peer1.createPeerConnection(peer2.peerAddress(), timeout);
+            FuturePeerConnection futurePeerConnection = peer1.createPeerConnection(peer2.peerAddress(), timeout, timeout/2);
             
             fd = peer1.sendDirect(futurePeerConnection).object(sentObject).start();
             System.out.println("send " + sentObject);

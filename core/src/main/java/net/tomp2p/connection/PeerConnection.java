@@ -31,13 +31,14 @@ public class PeerConnection {
     final private Map<FutureChannelCreator, FutureResponse> map;
     final private FutureDone<Void> closeFuture;
     final private int heartBeatMillis;
+    final private int idleTCP;
 
     // these may be called from different threads, but they will never be called concurrently within this library
     private volatile ChannelFuture channelFuture;
     
     private PeerConnection(Semaphore oneConnection, PeerAddress remotePeer, ChannelCreator cc, 
     		boolean initiator, Map<FutureChannelCreator, FutureResponse> map, FutureDone<Void> closeFuture, 
-    		int heartBeatMillis, ChannelFuture channelFuture) {
+    		int heartBeatMillis, int idleTCP, ChannelFuture channelFuture) {
     	this.oneConnection = oneConnection;
     	this.remotePeer = remotePeer;
     	this.cc = cc;
@@ -45,6 +46,7 @@ public class PeerConnection {
     	this.map = map;
     	this.closeFuture = closeFuture;
     	this.heartBeatMillis = heartBeatMillis;
+    	this.idleTCP = idleTCP;
     	this.channelFuture = channelFuture;
     }
     
@@ -59,10 +61,11 @@ public class PeerConnection {
      * @param heartBeatMillis
      *            The heart beat in milliseconds
      */
-    public PeerConnection(PeerAddress remotePeer, ChannelCreator cc, int heartBeatMillis) {
+    public PeerConnection(PeerAddress remotePeer, ChannelCreator cc, int heartBeatMillis, int idleTCP) {
         this.remotePeer = remotePeer;
         this.cc = cc;
         this.heartBeatMillis = heartBeatMillis;
+        this.idleTCP = idleTCP;
         this.initiator = true;
         this.oneConnection = new Semaphore(1);
         this.map = new LinkedHashMap<FutureChannelCreator, FutureResponse>();
@@ -79,12 +82,13 @@ public class PeerConnection {
      * @param heartBeatMillis
      *            The heart beat in milliseconds
      */
-    public PeerConnection(PeerAddress remotePeer, ChannelFuture channelFuture, int heartBeatMillis) {
+    public PeerConnection(PeerAddress remotePeer, ChannelFuture channelFuture, int heartBeatMillis, int idleTCP) {
         this.remotePeer = remotePeer;
         this.channelFuture = channelFuture;
         addCloseListener(channelFuture);
         this.cc = null;
         this.heartBeatMillis = heartBeatMillis;
+        this.idleTCP = idleTCP;
         this.initiator = false;
         this.oneConnection = new Semaphore(1);
         this.map = new LinkedHashMap<FutureChannelCreator, FutureResponse>();
@@ -99,6 +103,10 @@ public class PeerConnection {
     
     public int heartBeatMillis() {
 	    return heartBeatMillis;
+    }
+    
+    public int idleTCP() {
+	    return idleTCP;
     }
 
     public ChannelFuture channelFuture() {
@@ -194,7 +202,7 @@ public class PeerConnection {
     }
     
     public PeerConnection changeRemotePeer(PeerAddress remotePeer) {
-    	return new PeerConnection(oneConnection, remotePeer, cc, initiator, map, closeFuture, heartBeatMillis, channelFuture);
+    	return new PeerConnection(oneConnection, remotePeer, cc, initiator, map, closeFuture, heartBeatMillis, idleTCP, channelFuture);
     }
     
 	@Override

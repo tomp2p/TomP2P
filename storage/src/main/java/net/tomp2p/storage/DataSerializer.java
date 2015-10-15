@@ -151,9 +151,12 @@ public class DataSerializer implements Serializer<Data>, Serializable {
 	    if(!retVal) {
 	    	throw new IOException("data could not be read");
 	    }
-	    me = new byte[signatureFactory.signatureSize()];
-	    in.readFully(me);
-	    buf = Unpooled.wrappedBuffer(me);
+	    if(data.isSigned()) {
+	    	me = new byte[signatureFactory.signatureSize()];
+	    	System.err.println("size: "+me.length);
+	    	in.readFully(me);
+	    	buf = Unpooled.wrappedBuffer(me);
+	    }
 	    retVal = data.decodeDone(buf, signatureFactory);
 	    if(!retVal) {
 	    	throw new IOException("signature could not be read");

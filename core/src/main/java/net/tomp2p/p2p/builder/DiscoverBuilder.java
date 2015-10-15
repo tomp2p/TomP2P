@@ -32,6 +32,7 @@ import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.Futures;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.peers.Number160;
@@ -255,7 +256,13 @@ public class DiscoverBuilder {
             @Override
             public void operationComplete(FutureResponse future) throws Exception {
                 PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
-                if (futureResponseTCP.isSuccess()) {
+                if (futureResponseTCP.isSuccess() && futureResponseTCP.responseMessage().type() == Type.NOT_FOUND) {
+                	//this was a ping to myself. This is pointless
+                	futureDiscover.failed("FutureDiscover to yourself",
+                            futureResponseTCP);
+                    return;
+                }
+                else if (futureResponseTCP.isSuccess()) {
                 	//now we know our internal address, set it as it could be a wrong one, e.g. 127.0.0.1
                 	serverAddress = serverAddress.changeAddress(futureResponseTCP.responseMessage().recipient().inetAddress());
                 	

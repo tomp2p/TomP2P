@@ -312,45 +312,60 @@ public class PingRPC extends DispatchHandler {
 		// probe
 		if (message.type() == Type.REQUEST_3) {
 			LOG.debug("Respond to probing. Firing message to {}.", message.sender());
-			responseMessage = createResponseMessage(message, Type.OK);
-
-			if (message.isUdp()) {
-				connectionBean().reservation().create(1, 0).addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-					@Override
-					public void operationComplete(final FutureChannelCreator future) throws Exception {
-						if (future.isSuccess()) {
-							LOG.debug("Fire UDP to {}.", message.sender());
-							FutureResponse futureResponse = fireUDP(message.sender(), future.channelCreator(),
-									connectionBean().channelServer().channelServerConfiguration());
-							Utils.addReleaseListener(future.channelCreator(), futureResponse);
-						} else {
-							Utils.addReleaseListener(future.channelCreator());
-							LOG.warn("handleResponse for REQUEST_3 failed (UDP) {}", future.failedReason());
-						}
+			if(message.isSendSelf()) {
+				responseMessage = createResponseMessage(message, Type.NOT_FOUND);
+				LOG.warn("Sending probe ping request to yourself? If those are two different peers, messages may be dropped");
+				if(!message.sender().inetAddress().equals(message.recipient().inetAddress())) {
+					if(message.sender().peerId().equals(message.recipient().peerId())) {
+						LOG.warn("You seem to use the same peerId for different peers. This may result in dropped messages");
 					}
-				});
+				}
 			} else {
-				connectionBean().reservation().create(0, 1).addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-					@Override
-					public void operationComplete(final FutureChannelCreator future) throws Exception {
-						if (future.isSuccess()) {
-							LOG.debug("Fire TCP to {}.", message.sender());
-							FutureResponse futureResponse = fireTCP(message.sender(), future.channelCreator(),
-									connectionBean().channelServer().channelServerConfiguration());
-							Utils.addReleaseListener(future.channelCreator(), futureResponse);
-						} else {
-							Utils.addReleaseListener(future.channelCreator());
-							LOG.warn("handleResponse for REQUEST_3 failed (TCP) {}", future.failedReason());
+				responseMessage = createResponseMessage(message, Type.OK);
+
+				if (message.isUdp()) {
+					connectionBean().reservation().create(1, 0).addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+						@Override
+						public void operationComplete(final FutureChannelCreator future) throws Exception {
+							if (future.isSuccess()) {
+								LOG.debug("Fire UDP to {}.", message.sender());
+								FutureResponse futureResponse = fireUDP(message.sender(), future.channelCreator(),
+										connectionBean().channelServer().channelServerConfiguration());
+								Utils.addReleaseListener(future.channelCreator(), futureResponse);
+							} else {
+								Utils.addReleaseListener(future.channelCreator());
+								LOG.warn("handleResponse for REQUEST_3 failed (UDP) {}", future.failedReason());
+							}
 						}
-					}
-				});
+					});
+				} else {
+					connectionBean().reservation().create(0, 1).addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+						@Override
+						public void operationComplete(final FutureChannelCreator future) throws Exception {
+							if (future.isSuccess()) {
+								LOG.debug("Fire TCP to {}.", message.sender());
+								FutureResponse futureResponse = fireTCP(message.sender(), future.channelCreator(),
+										connectionBean().channelServer().channelServerConfiguration());
+								Utils.addReleaseListener(future.channelCreator(), futureResponse);
+							} else {
+								Utils.addReleaseListener(future.channelCreator());
+								LOG.warn("handleResponse for REQUEST_3 failed (TCP) {}", future.failedReason());
+							}
+						}
+					});
+				}
 			}
 		} else if (message.type() == Type.REQUEST_2) { // discover
 			LOG.debug("Respond to discovering. Found {}.", message.sender());
-			responseMessage = createResponseMessage(message, Type.OK);
-			final int port = message.senderSocket().getPort();
-			responseMessage.neighborsSet(createNeighborSet(message.sender()));
-			responseMessage.intValue(port);
+			if(message.isSendSelf()) {
+				responseMessage = createResponseMessage(message, Type.NOT_FOUND);
+				LOG.warn("Sending discover ping request to yourself? If those are two different peers, messages may be dropped");
+			} else {
+				responseMessage = createResponseMessage(message, Type.OK);
+				final int port = message.senderSocket().getPort();
+				responseMessage.neighborsSet(createNeighborSet(message.sender()));
+				responseMessage.intValue(port);
+			}
 		} else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4) { // regular
 																							// ping
 			LOG.debug("Respond to regular ping {}.", message.sender());

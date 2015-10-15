@@ -272,13 +272,13 @@ public class Forwarder extends DispatchHandler {
 	}
 	
 	private void addToBuffer(Message requestMessage) {
-		LOG.debug("add msg on peer {}, {}"+System.identityHashCode(this), peerBean().serverPeerAddress(), requestMessage);
+		LOG.debug("add msg on peer {}, {}", peerBean().serverPeerAddress(), requestMessage);
 		buffer.add(requestMessage);
 		checkSend();
 	}
 	
 	private void checkSend() {
-		LOG.debug("check buffer on peer {}"+System.identityHashCode(this), peerBean().serverPeerAddress());
+		LOG.debug("check buffer on peer {}", peerBean().serverPeerAddress());
 		if(buffer.size() > 0 && (buffer.size() > bufferSize || lastAccess + (bufferTimeoutSeconds * 1000) < System.currentTimeMillis())) {
 			forwardMessages(buffer);
 			lastAccess = System.currentTimeMillis();
@@ -286,7 +286,7 @@ public class Forwarder extends DispatchHandler {
 	}
 	
 	private void forwardMessages(List<Message> buffer2) {
-		LOG.debug("empty buffer on peer {}"+System.identityHashCode(this), peerBean().serverPeerAddress());
+		LOG.debug("empty buffer on peer {}", peerBean().serverPeerAddress());
 		final Message envelope = createMessage(unreachablePeerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_4);
 		
 		// always keep the connection open

@@ -284,13 +284,13 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 		// RPC.Commands.RCON message on top of it. Therefore the response
 		// type will never be the same Type as the one the user initially
 		// used (e.g. DIRECT_DATA).
-		if (responseMessage.command() != RPC.Commands.RCON.getNr()
+		/*if (responseMessage.command() != RPC.Commands.RCON.getNr()
 				&& message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
 			String msg = "Response message [" + responseMessage + "] sent has a different relay flag than we sent with request message ["
 					+ this.message + "]. Recipient (" + message.recipient().isRelayed() + ") / Sender ("
 					+ responseMessage.sender().isRelayed() + ")";
 			LOG.warn(msg);
-        }
+        }*/
         
         //NAT reflection, change it back, as this will be stored in our peer map that may be queried from other peers
 		if(message.recipientReflected() != null) {

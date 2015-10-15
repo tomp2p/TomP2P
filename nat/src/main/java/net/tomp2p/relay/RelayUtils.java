@@ -29,7 +29,6 @@ import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Decoder;
@@ -270,9 +269,9 @@ public class RelayUtils {
 		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peer.peerBean(), peer.connectionBean(), peer.connectionBean().channelServer().channelServerConfiguration());
 		final FutureChannelCreator fpc = peer.connectionBean().reservation().create(0, 1);
 		
-		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
-            public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
-                if (futurePeerConnection.isSuccess()) {
+		fpc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+            public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception {
+                if (futureChannelCreator.isSuccess()) {
                 	requestHandler.sendTCP(fpc.channelCreator(), null);
                 } else {
                     futureResponse.failed(fpc);

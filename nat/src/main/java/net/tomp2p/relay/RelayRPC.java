@@ -171,7 +171,8 @@ public class RelayRPC extends DispatchHandler {
 		} else if (message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
 			// An unreachable peer requests the buffer at the relay peer
 			// or a buffer is transmitted to the unreachable peer directly
-			handleBuffer(message, responder);
+			handleBuffer(message);
+			responder.response(createResponseMessage(message, Type.OK));
 		} else {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
@@ -244,23 +245,27 @@ public class RelayRPC extends DispatchHandler {
 		//now we can add this peer to the map, as we have now set the flag
 		//its TCP, we have a connection to this peer, so mark it as first hand
 		peerBean().notifyPeerFound(unreachablePeerConnectionCopy.remotePeer(), null, unreachablePeerConnectionCopy, null);
+		final Forwarder forwarder = new Forwarder(peer, unreachablePeerConnectionCopy, message.sender().isSlow(), bufferTimeoutSeconds, bufferSize);
 		for (Commands command : RPC.Commands.values()) {
 			if (command == RPC.Commands.RCON) {
 				// We must register the rconRPC for every unreachable peer that
 				// we serve as a relay. Without this registration, no reverse
 				// connection setup is possible.
+				LOG.debug("register rcon for {}, {}",command.toString(), message);
 				dispatcher().registerIoHandler(peer.peerID(), unreachablePeerId, rconRPC, command.getNr());
 			} else if (command == RPC.Commands.HOLEP) {
 				// We must register the holePunchRPC for every unreachable peer that
 				// we serve as a relay. Without this registration, no reverse
 				// connection setup is possible.
+				LOG.debug("register holepunching for {}, {}",command.toString(), message);
 				dispatcher().registerIoHandler(peer.peerID(), unreachablePeerId, holePunchRPC, command.getNr());
 			} else if (command == RPC.Commands.RELAY) {
 				// Register this class to handle all relay messages (currently used when a slow message
 				// arrives)
+				LOG.debug("register this for {}, {}",command.toString(), message);
 				dispatcher().registerIoHandler(peer.peerID(), unreachablePeerId, this, command.getNr());
 			} else {
-				final Forwarder forwarder = new Forwarder(peer, unreachablePeerConnectionCopy, message.sender().isSlow(), bufferTimeoutSeconds, bufferSize);
+				LOG.debug("register forwarder for {}, {}",command.toString(), message);
 				dispatcher().registerIoHandler(peer.peerID(), unreachablePeerId, forwarder, command.getNr());
 			}
 		}
@@ -360,8 +365,11 @@ public class RelayRPC extends DispatchHandler {
 		}
 	}
 	
-	private void handleBuffer(final Message message, Responder responder) throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, IOException {
+	public void handleBuffer(final Message message) throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, IOException {
 		//the unreachable peer gets the buffered messages
+		if(message.bufferList().isEmpty()) {
+			return;
+		}
 		List<Message> buffered = RelayUtils.decomposeCompositeBuffer(
 				message.buffer(0).buffer(), message.recipient().createSocketTCP(), 
 				message.sender().createSocketTCP(), peer.connectionBean().sender().channelClientConfiguration().signatureFactory());
@@ -369,45 +377,41 @@ public class RelayRPC extends DispatchHandler {
 		for(Message msg:buffered) {
 			DispatchHandler dh = connectionBean().dispatcher().associatedHandler(msg);
 			//TODO: add a custom responder and respond to the address found in the message
-			dh.forwardMessage(msg, null, new Responder() {
-				
-				@Override
-				public void responseFireAndForget() {}
-				
-				@Override
-				public FutureDone<Void> response(Message responseMessage) {
-					// this contains the real sender
-					Collection<PeerSocketAddress> peerSocketAddresses = message.peerSocketAddresses();
-					final InetSocketAddress sender;
-					if (!peerSocketAddresses.isEmpty()) {
-						sender = PeerSocketAddress.createSocketTCP(peerSocketAddresses.iterator().next());
-					} else {
-						sender = new InetSocketAddress(0);
-					}
-					
-					responseMessage.recipient(responseMessage.recipient().changeAddress(sender.getAddress()).changePorts(sender.getPort(), sender.getPort()));
-
-					LOG.debug("send late reply {}", responseMessage);
-					FutureResponse fr = RelayUtils.connectAndSend(peer(), responseMessage);
-					final FutureDone<Void> fd = new FutureDone<Void>();
-					fr.addListener(new BaseFutureAdapter<FutureResponse>() {
-
-						@Override
-						public void operationComplete(FutureResponse future)
-								throws Exception {
-							fd.done();
-						}
-					});
-					return fd;
-				}
-				
-				@Override
-				public void failed(Type type, String reason) {
-					LOG.error("could not sent to peer. {}", reason);
-				}
-			});
+			dh.forwardMessage(msg, null, createResponder(peer, msg.sender().peerSocketAddress()));
 		}
-		responder.response(createResponseMessage(message, Type.OK));
+		
+	}
+
+	private static Responder createResponder(final Peer peer, final PeerSocketAddress sender) {
+		return new Responder() {
+			
+			@Override
+			public void responseFireAndForget() {}
+			
+			@Override
+			public FutureDone<Void> response(final Message responseMessage) {
+				
+				responseMessage.recipient(responseMessage.recipient().changeAddress(sender.inetAddress()).changePorts(sender.tcpPort(), sender.udpPort()));
+
+				LOG.debug("send late reply {}", responseMessage);
+				final FutureResponse fr = RelayUtils.connectAndSend(peer, responseMessage);
+				final FutureDone<Void> fd = new FutureDone<Void>();
+				fr.addListener(new BaseFutureAdapter<FutureResponse>() {
+
+					@Override
+					public void operationComplete(FutureResponse future)
+							throws Exception {
+						fd.done();
+					}
+				});
+				return fd;
+			}
+			
+			@Override
+			public void failed(Type type, String reason) {
+				LOG.error("could not sent to peer. {}", reason);
+			}
+		};
 	}
 	
 }

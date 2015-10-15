@@ -148,7 +148,9 @@ public class PeerCreator {
 			return futureServerDone.done();
 		}
 		// shutdown the timer
-		connectionBean.timer().shutdown();
+		for(Runnable runner: connectionBean.timer().shutdownNow()) {
+			runner.run();
+		}
 		
 		LOG.debug("Shutting down client...");
 		connectionBean.reservation().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {

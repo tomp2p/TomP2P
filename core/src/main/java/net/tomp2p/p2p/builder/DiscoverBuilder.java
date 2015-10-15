@@ -302,6 +302,7 @@ public class DiscoverBuilder {
                                     LOG.info("manual ports, change it to: {}", serverAddress);
                                 } else if(expectManualForwarding) {
                                 	final PeerAddress serverAddressOrig = serverAddress;
+                                	serverAddress = serverAddress.changePortForwarding(true);
                                 	serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
                                 	serverAddress = serverAddress.changeInternalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
                                     peer.peerBean().serverPeerAddress(serverAddress);

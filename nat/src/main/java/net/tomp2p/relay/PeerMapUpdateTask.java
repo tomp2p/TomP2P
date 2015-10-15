@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -62,7 +63,17 @@ public class PeerMapUpdateTask extends TimerTask {
 				// send the peer map to the relays
 				List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
 				for (final Map.Entry<PeerAddress, PeerConnection> entry : distributedRelay.activeClients().entrySet()) {
-					relayRPC.sendPeerMap(entry.getKey(), entry.getValue(), peerMapVerified);
+					FutureResponse fr = relayRPC.sendPeerMap(entry.getKey(), entry.getValue(), peerMapVerified);
+					//if we have buffered messages, send reply
+					fr.addListener(new BaseFutureAdapter<FutureResponse>() {
+						@Override
+						public void operationComplete(FutureResponse future) throws Exception {
+							if(future.isSuccess()) {
+								relayRPC.handleBuffer(future.responseMessage());
+							}
+							
+						}
+					});
 					LOG.debug("send peermap to {}", entry.getKey());
 				}
 			}

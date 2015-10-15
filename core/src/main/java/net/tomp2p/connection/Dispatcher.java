@@ -183,7 +183,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         
         
         //handle late responses from pending requests
-    	final FutureResponse lateRequest = getPendingRequests().get(message.messageId());
+    	final FutureResponse lateRequest = findAndRemovePendingRequests(message.messageId());
     	if(lateRequest != null) {
     		LOG.debug("Handing lates request. {}", message);
     		lateRequest.response(message);
@@ -477,8 +477,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	/**
 	 * @return all pending requests
 	 */
-	public Map<Integer, FutureResponse> getPendingRequests() {
-		return pendingRequests;
+	public FutureResponse findAndRemovePendingRequests(final int messageId) {
+		return pendingRequests.get(messageId);
 	}
 
 	public boolean responsibleFor(Number160 peerId) {

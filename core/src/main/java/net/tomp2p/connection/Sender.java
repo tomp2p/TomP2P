@@ -612,7 +612,8 @@ public class Sender {
 			//we don't have any internal address information in peersocketaddress -> TODO
 			while(!psa.isEmpty()) {
 				PeerSocketAddress ps = psa.remove(random.nextInt(psa.size()));
-				if(ps.inetAddress().equals(peerBean.serverPeerAddress().peerSocketAddress().inetAddress())) {
+				if(peerBean.serverPeerAddress().isPortForwarding() && 
+						ps.inetAddress().equals(peerBean.serverPeerAddress().peerSocketAddress().inetAddress())) {
 					continue;
 				}
 				message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));

@@ -219,4 +219,11 @@ public class PeerConnection {
 		}
         return remotePeer.equals(p.remotePeer);
     }
+    
+    @Override
+    public String toString() {
+    	StringBuilder sb = new StringBuilder("pconn: ");
+    	sb.append(remotePeer);
+    	return sb.toString();
+    }
 }

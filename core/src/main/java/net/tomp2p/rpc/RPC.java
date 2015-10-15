@@ -37,6 +37,14 @@ public class RPC {
 	public static Commands find(int nr) {
 		return values()[nr];
 	}
+	
+	public static String toString(int nr) {
+		return values()[nr].name();
+	}
+	
+	public String toString() {
+		return values()[ordinal()].name();
+	}
 		
 }
 }

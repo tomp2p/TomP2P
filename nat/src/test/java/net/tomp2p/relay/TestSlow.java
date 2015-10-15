@@ -29,7 +29,6 @@ public class TestSlow {
 	private Peer slow = null;
 	private Peer master = null;
 	private Peer[] peers = null;
-	private PeerNAT reachableNAT = null;
 
 	private static final int PORTS = 4001;
 	private static final int NUMBER_OF_NODES = 5;
@@ -45,11 +44,7 @@ public class TestSlow {
 		// every peer must own a PeerNAT in order to be able to be a relay and
 		// set up a reverse connection
 		for (Peer peer : peers) {
-			if (peer.equals(reachable)) {
-				reachableNAT = new PeerBuilderNAT(peer).start();
-			} else {
-				new PeerBuilderNAT(peer).bufferTimeoutSeconds(10).start();
-			}
+			new PeerBuilderNAT(peer).bufferTimeoutSeconds(10).start();
 		}
 
 		// Test setting up relay peers

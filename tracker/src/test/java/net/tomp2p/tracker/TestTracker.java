@@ -379,9 +379,10 @@ public class TestTracker {
                         nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null, null);
                 }
             }
+            
             FutureTracker ft = nodes[30].getTracker(trackerID).start();
             ft.awaitUninterruptibly();
-            Assert.assertEquals(3, ft.trackers().size());
+            Assert.assertEquals(2, ft.trackerPeers().size());
         } finally {
             if (master != null) {
                 master.peer().shutdown().await();

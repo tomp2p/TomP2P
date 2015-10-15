@@ -153,7 +153,6 @@ public class DataSerializer implements Serializer<Data>, Serializable {
 	    }
 	    if(data.isSigned()) {
 	    	me = new byte[signatureFactory.signatureSize()];
-	    	System.err.println("size: "+me.length);
 	    	in.readFully(me);
 	    	buf = Unpooled.wrappedBuffer(me);
 	    }

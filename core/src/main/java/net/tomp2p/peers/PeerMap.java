@@ -324,7 +324,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         		shutdownMap.containsKey(remotePeer.peerId()) || 
         		exceptionMap.containsKey(remotePeer.peerId());
         
-        if((secondHand || thirdHand) && probablyDead) {
+		// don't include secondHand as if we are contacted by an assumed offline
+		// peer and we see the peer is there, assume the peer is not dead.
+		if(thirdHand && probablyDead) {
         	LOG.debug("Most likely offline, reject");
         	return false;
         }

@@ -18,7 +18,7 @@ import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,10 +51,10 @@ public class TestRelayUtils {
 			InvalidKeySpecException {
 		Message message = UtilsNAT.createRandomMessage();
 
-		List<PeerSocketAddress> relays = new ArrayList<PeerSocketAddress>();
-		relays.add(new PeerSocketAddress(InetAddress.getLocalHost(), 8000, 9000));
-		relays.add(new PeerSocketAddress(InetAddress.getLocalHost(), 8001, 9001));
-		relays.add(new PeerSocketAddress(InetAddress.getLocalHost(), 8002, 9002));
+		List<PeerSocketAddress2> relays = new ArrayList<PeerSocketAddress2>();
+		relays.add(new PeerSocketAddress2(InetAddress.getLocalHost(), 8000, 9000));
+		relays.add(new PeerSocketAddress2(InetAddress.getLocalHost(), 8001, 9001));
+		relays.add(new PeerSocketAddress2(InetAddress.getLocalHost(), 8002, 9002));
 
 		PeerAddress sender = UtilsNAT.createRandomAddress().changeRelayed(true).changePeerSocketAddresses(relays)
 				.changeFirewalledTCP(true).changeFirewalledUDP(true);

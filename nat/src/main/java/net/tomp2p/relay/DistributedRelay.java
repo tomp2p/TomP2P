@@ -25,7 +25,7 @@ import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMapChangeListener;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.utils.ConcurrentCacheSet;
 
@@ -301,17 +301,17 @@ public class DistributedRelay implements PeerMapChangeListener {
 	 */
 	private void updatePeerAddress() {
 		final boolean hasRelays;
-		final Collection<PeerSocketAddress> socketAddresses;
+		final Collection<PeerSocketAddress2> socketAddresses;
 		synchronized (activeClients) {
 			// add relay addresses to peer address
 			hasRelays = !activeClients.isEmpty();
-			socketAddresses = new ArrayList<PeerSocketAddress>(activeClients.size());
+			socketAddresses = new ArrayList<PeerSocketAddress2>(activeClients.size());
 		
 			//we can have more than the max relay count in our active client list.
 			int max = 5;
 			int i = 0;
 			for (PeerAddress relay : activeClients.keySet()) {
-				socketAddresses.add(new PeerSocketAddress(relay.inetAddress(), relay.tcpPort(), relay.udpPort()));
+				socketAddresses.add(new PeerSocketAddress2(relay.inetAddress(), relay.tcpPort(), relay.udpPort()));
 				if(i++ >= max) {
 					break;
 				}

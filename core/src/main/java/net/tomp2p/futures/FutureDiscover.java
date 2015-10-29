@@ -16,12 +16,12 @@
 package net.tomp2p.futures;
 
 
-import java.net.InetAddress;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 
 /**
  * The future that keeps track of network discovery such as discovery if its behind a NAT, the status if UPNP or NAT-PMP
@@ -42,9 +42,9 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     
     private boolean isNat = false;
     
-    private InetAddress internalAddress;
+    private PeerSocket4Address internalAddress;
     
-    private InetAddress externalAddress;
+    private PeerSocket4Address externalAddress;
 
     /**
      * Constructor.
@@ -206,7 +206,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         return this;
     }
 
-	public FutureDiscover externalHost(String failed, InetAddress internalAddress, InetAddress externalAddress) {
+	public FutureDiscover externalHost(String failed, PeerSocket4Address internalAddress, PeerSocket4Address externalAddress) {
 		synchronized (lock) {
             if (!completedAndNotify()) {
                 return this;
@@ -222,13 +222,13 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
 	    
     }
 	
-	public InetAddress internalAddress() {
+	public PeerSocket4Address internalAddress() {
         synchronized (lock) {
             return internalAddress;
         }
     }
 	
-	public InetAddress externalAddress() {
+	public PeerSocket4Address externalAddress() {
         synchronized (lock) {
             return externalAddress;
         }

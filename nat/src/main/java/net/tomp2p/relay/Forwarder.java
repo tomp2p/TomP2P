@@ -27,7 +27,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;
@@ -88,8 +88,8 @@ public class Forwarder extends DispatchHandler {
 		envelope.keepAlive(true);
 
 		// this will be read RelayRPC.handlePiggyBackMessage
-		Collection<PeerSocketAddress> peerSocketAddresses = new ArrayList<PeerSocketAddress>(1);
-		peerSocketAddresses.add(new PeerSocketAddress(message.sender().inetAddress(), 0, 0));
+		Collection<PeerSocketAddress2> peerSocketAddresses = new ArrayList<PeerSocketAddress2>(1);
+		peerSocketAddresses.add(new PeerSocketAddress2(message.sender().inetAddress(), 0, 0));
 		envelope.peerSocketAddresses(peerSocketAddresses);
 
 		// holds the message that will be returned to he requester
@@ -295,8 +295,8 @@ public class Forwarder extends DispatchHandler {
 		envelope.buffer(new Buffer(bb));
 		
 		// this will be read RelayRPC.handlePiggyBackMessage
-		Collection<PeerSocketAddress> peerSocketAddresses = new ArrayList<PeerSocketAddress>(1);
-		peerSocketAddresses.add(new PeerSocketAddress(envelope.sender().inetAddress(), 0, 0));
+		Collection<PeerSocketAddress2> peerSocketAddresses = new ArrayList<PeerSocketAddress2>(1);
+		peerSocketAddresses.add(new PeerSocketAddress2(envelope.sender().inetAddress(), 0, 0));
 		envelope.peerSocketAddresses(peerSocketAddresses);
 
 		// Forward a message through the open peer connection to the unreachable peer.

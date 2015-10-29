@@ -29,7 +29,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
@@ -582,7 +582,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 */
 	private FutureDone<Message> createInitMessage(final List<ChannelFuture> channelFutures) throws Exception {
 		final FutureDone<Message> initMessageFutureDone = new FutureDone<Message>();
-		final PeerSocketAddress socketAddress = Utils.extractRandomRelay(originalMessage);
+		final PeerSocketAddress2 socketAddress = Utils.extractRandomRelay(originalMessage);
 		// we need to make a copy of the original Message
 		final PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
 				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);

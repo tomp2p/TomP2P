@@ -8,6 +8,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
@@ -36,12 +37,14 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
     		ctx.write(msg, promise);
             return;
     	}
-        try {
+        boolean ipv6 = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress() instanceof Inet6Address;
+			
+		try {
         	boolean done = false;
             buf = AlternativeCompositeByteBuf.compBuffer(byteBufAllocator, buf);
             
-            //null, means create signature
-            done = encoder.write(buf, (Message) msg, null);
+            //null, means create signature, as we did not have created one already
+            done = encoder.write(buf, (Message) msg, null, ipv6);
             
             final Message message = encoder.message();
 
@@ -55,14 +58,14 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                     	//in case of a request
                     	if(message.recipientRelay()!=null) {
                     		//in case of sending to a relay (the relayed flag is already set)
-                    		recipient = message.recipientRelay().createSocketUDP();
+                    		recipient = ipv6 ? message.recipientRelay().ipv6Socket().createUDPSocket(): message.recipientRelay().ipv4Socket().createUDPSocket();
                     	} else if(message.recipientReflected()!=null) {
                     		//in case we use nat reflection
-                    		recipient = message.recipientReflected().createSocketUDP();
+                    		recipient = ipv6 ? message.recipientReflected().ipv6Socket().createUDPSocket() : message.recipientReflected().ipv4Socket().createUDPSocket();
                     	} else {
-                    		recipient = message.recipient().createSocketUDP();
+                    		recipient = ipv6 ? message.recipient().ipv6Socket().createUDPSocket() : message.recipient().ipv4Socket().createUDPSocket();
                     	}
-                    	sender = message.sender().createSocketUDP(0);
+                    	sender = ipv6 ? message.sender().ipv6Socket().createSocket(0) : message.sender().ipv4Socket().createSocket(0);
                     } else {
                     	//in case of a reply
                     	recipient = message.senderSocket();
@@ -83,8 +86,6 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 }
                 if (done) {
                     message.setDone(true);
-                    // we wrote the complete message, reset state
-                    encoder.reset();
                 }
             } else {
                 buf.release();

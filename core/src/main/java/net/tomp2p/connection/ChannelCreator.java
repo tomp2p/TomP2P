@@ -165,7 +165,7 @@ public class ChannelCreator {
 			
 			LOG.debug("Create UDP, use from address: {}", sendFromAddress);
 			if(fireandforget) {
-				channelFuture = b.connect(futureResponse.request().recipient().createSocketUDP());
+				channelFuture = b.connect(futureResponse.request().recipient().ipv4Socket().createUDPSocket());
 			} else {
 				channelFuture = b.bind(new InetSocketAddress(sendFromAddress, 0));
 			}
@@ -283,7 +283,7 @@ public class ChannelCreator {
 						semaphore.release();
 
 						Message request = futureResponse.request();
-						if (request != null && futureResponse.responseMessage() == null && request.recipient().isSlow()
+						if (request != null && futureResponse.responseMessage() == null && request.recipient().slow()
 								&& request.command() != Commands.PING.getNr() && request.command() != Commands.NEIGHBOR.getNr()) {
 							// If the request goes to a slow peer, the channel
 							// can be closed until the response arrives

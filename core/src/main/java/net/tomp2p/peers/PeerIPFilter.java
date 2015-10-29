@@ -16,14 +16,12 @@
 
 package net.tomp2p.peers;
 
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.util.Collection;
 
 /**
- * Filter peers if the IP is the same. TODO: make subnetting configurable, IPv4
- * and IPv6. Being too strict does not mean to harm the network. Other peers
- * will have the information about the peer even if you excluded it.
+ * Filter peers if the IP is the same. Being too strict does not mean to harm
+ * the network. Other peers will have the information about the peer even if you
+ * excluded it.
  * 
  * @author Thomas Bocek
  * 
@@ -42,32 +40,28 @@ public class PeerIPFilter implements PeerMapFilter {
 	public boolean rejectPeerMap(final PeerAddress peerAddress, final PeerMap peerMap) {
 		return rejectPreRouting(peerAddress, peerMap.all());
 	}
-	
+
 	@Override
-    public boolean rejectPreRouting(PeerAddress peerAddress, Collection<PeerAddress> all) {
-		if (peerAddress.inetAddress() instanceof Inet4Address) {
-			IP.IPv4 ipv4 = IP.fromInet4Address(peerAddress.inetAddress());
-			for (PeerAddress inMap : all) {
-				if (inMap.inetAddress() instanceof Inet4Address) {
-					IP.IPv4 ipv4Test = IP.fromInet4Address(inMap.inetAddress());
-					if (ipv4.maskWithNetworkMask(mask4).equals(ipv4Test.maskWithNetworkMask(mask4))) {
-						return true;
-					}
-				}
-			}
-		} else {
-			IP.IPv6 ipv6 = IP.fromInet6Address( peerAddress.inetAddress());
-			for (PeerAddress inMap : all) {
-				if (inMap.inetAddress() instanceof Inet6Address) {
-					IP.IPv6 ipv6Test = IP.fromInet6Address(inMap.inetAddress());
-					if (ipv6.maskWithNetworkMask(mask6).equals(ipv6Test.maskWithNetworkMask(mask6))) {
-						return true;
-					}
-				}
+	public boolean rejectPreRouting(final PeerAddress peerAddress, final Collection<PeerAddress> all) {
+
+		final IP.IPv4 ipv4 = peerAddress.ipv4Socket().ipv4();
+		for (final PeerAddress inMap : all) {
+			final IP.IPv4 ipv4Test = inMap.ipv4Socket().ipv4();
+			if (ipv4.maskWithNetworkMask(mask4).equals(ipv4Test.maskWithNetworkMask(mask4))) {
+				return true;
 			}
 		}
+
+		final IP.IPv6 ipv6 = peerAddress.ipv6Socket().ipv6();
+		for (final PeerAddress inMap : all) {
+			final IP.IPv6 ipv6Test = inMap.ipv6Socket().ipv6();
+			if (ipv6.maskWithNetworkMask(mask6).equals(ipv6Test.maskWithNetworkMask(mask6))) {
+				return true;
+			}
+
+		}
+
 		return false;
 	}
 
-	
 }

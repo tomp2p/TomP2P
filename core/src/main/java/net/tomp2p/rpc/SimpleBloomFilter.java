@@ -361,7 +361,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	 * @param buf
 	 *            The byte buffer where the bloom filter will be written.
 	 */
-	public void toByteBuf(final ByteBuf buf) {
+	public void encode(final ByteBuf buf) {
 		buf.writeShort(byteArraySize + SIZE_HEADER_ELEMENTS + SIZE_HEADER_LENGTH);
 		buf.writeInt(expectedElements);
 		byte[] tmp = RPCUtils.toByteArray(bitSet);

@@ -31,7 +31,9 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.IP.IPv4;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,6 +150,7 @@ public class TimeoutFactory {
 
 					recipient = futureResponse.request().recipient();
 				} else {
+					//null if its a connection on the server
 					LOG.warn("Channel timeout for channel {} {}.", name, ctx.channel());
 					ctx.close();
 					// check if we have set an attribute at least (if we have
@@ -171,9 +174,9 @@ public class TimeoutFactory {
 								inetSocketAddress = pa.get();
 							}
 							if (inetSocketAddress != null) {
-								peerStatusListener.peerFailed(
-								        new PeerAddress(Number160.ZERO, inetSocketAddress.getAddress()),
-								        new PeerException(AbortCause.TIMEOUT, "Timeout!"));
+								PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inetSocketAddress.getAddress())).build();
+	                        	PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
+								peerStatusListener.peerFailed(peerAddress, new PeerException(AbortCause.TIMEOUT, "Timeout!"));
 							} else {
 								LOG.warn("Cannot determine the sender's address!");
 							}

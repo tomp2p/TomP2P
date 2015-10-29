@@ -16,26 +16,26 @@
 
 package net.tomp2p.connection;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.KeyPair;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.peers.IP.IPv4;
+import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 
 /**
  * Creates a peer and listens to incoming connections. The result of creating
@@ -121,7 +121,7 @@ public class PeerCreator {
 		this.bossGroup = parent.bossGroup;
 		this.connectionBean = parent.connectionBean;
 		this.peerBean = new PeerBean(keyPair);
-		PeerAddress self = parent.peerBean().serverPeerAddress().changePeerId(peerId);
+		PeerAddress self = parent.peerBean().serverPeerAddress().withPeerId(peerId);
 		this.peerBean.serverPeerAddress(self);
 		this.master = false;
 	}
@@ -223,11 +223,25 @@ public class PeerCreator {
 		if(outsideAddress == null) {
 			throw new IOException("Not listening to anything. Maybe the binding information is wrong.");
 		}
-		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConfiguration.
-				ports().tcpPort(), channelServerConfiguration.ports().udpPort());
-		final PeerAddress self = new PeerAddress(peerId, peerSocketAddress, null,
-		        channelServerConfiguration.isBehindFirewall(), channelServerConfiguration.isBehindFirewall(), false, false, false, false,
-		        PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
+		
+		final PeerSocket4Address peerSocketAddress = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(outsideAddress))
+				.tcpPort(channelServerConfiguration.ports().tcpPort())
+				.udpPort(channelServerConfiguration.ports().udpPort())
+				
+				.build(); 
+		
+		final PeerAddress self = PeerAddress.builder()
+				.peerId(peerId)
+				.ipv4Socket(peerSocketAddress)
+				.reachable4UDP(!channelServerConfiguration.isBehindFirewall())
+				.reachable4TCP(!channelServerConfiguration.isBehindFirewall())
+				.reachable4UDT(!channelServerConfiguration.isBehindFirewall())
+				.reachable6UDP(!channelServerConfiguration.isBehindFirewall())
+				.reachable6TCP(!channelServerConfiguration.isBehindFirewall())
+				.reachable6UDT(!channelServerConfiguration.isBehindFirewall())
+				.unreachable(channelServerConfiguration.isBehindFirewall())
+				.build();
+		
 		return self;
 	}
 }

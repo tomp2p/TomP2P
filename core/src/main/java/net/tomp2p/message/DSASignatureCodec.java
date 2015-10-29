@@ -103,10 +103,10 @@ public class DSASignatureCodec implements SignatureCodec {
 		me[1] = 2 * (20 + 2);
 		me[2] = 0x02;
 		me[3] = 20;
-		number1.toByteArray(me, 4);
+		number1.encode(me, 4);
 		me[24] = 0x02;
 		me[25] = 20;
-		number2.toByteArray(me, 26);
+		number2.encode(me, 26);
 		return me;
 	}
 	

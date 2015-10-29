@@ -16,7 +16,7 @@ import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 
 //travis-ci cannot test this, the kernel does not support all the required features:
 //Perhaps iptables or your kernel needs to be upgraded
@@ -52,7 +52,7 @@ public class TestNATForwarding implements Serializable {
 		try {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
 			
-			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			final PeerSocketAddress2 relayAddress = relayPeer.peerAddress().peerSocketAddress();
 			final PeerAddress relay = relayPeer.peerAddress();
 			System.out.println("relay peer at: "+relay);
 			
@@ -151,7 +151,7 @@ public class TestNATForwarding implements Serializable {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
 			final Peer regularPeer = LocalNATUtils.createRealNode(Number160.createHash(77), INF, 5003);
 			
-			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			final PeerSocketAddress2 relayAddress = relayPeer.peerAddress().peerSocketAddress();
 			final PeerAddress relay = relayPeer.peerAddress();
 			System.out.println("relay peer at: "+relay);
 			CommandSync sync = new CommandSync(2);

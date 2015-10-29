@@ -20,7 +20,6 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -35,7 +34,8 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.rpc.SimpleBloomFilter;
@@ -60,7 +60,7 @@ public class Message {
     public enum Content {
         EMPTY, KEY, MAP_KEY640_DATA, MAP_KEY640_KEYS, SET_KEY640, SET_NEIGHBORS, BYTE_BUFFER, 
         LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, MAP_KEY640_BYTE, 
-        PUBLIC_KEY, SET_PEER_SOCKET, USER1
+        PUBLIC_KEY, PEER_SOCKET4, PEER_SOCKET6
     };
 
     /**
@@ -188,7 +188,8 @@ public class Message {
     private List<Buffer> bufferList = null;
     private List<TrackerData> trackerDataList = null;
     private List<PublicKey> publicKeyList = null;
-    private List<PeerSocketAddress> peerSocketAddressList = null;
+    private List<PeerSocket4Address> peerSocket4AddressList = null;
+    private List<PeerSocket6Address> peerSocket6AddressList = null;
     private SignatureCodec signatureEncode = null;
     
     // this will not be transferred, status variables
@@ -879,27 +880,57 @@ public class Message {
         return publicKeyList.get(index);
     }
     
-    public Message peerSocketAddresses(Collection<PeerSocketAddress> peerSocketAddresses) {
+    public Message peerSocket4Address(final PeerSocket4Address peerSocket4Address) {
     	if (!presetContentTypes) {
-            contentType(Content.SET_PEER_SOCKET);
+            contentType(Content.PEER_SOCKET4);
         }
-    	if(this.peerSocketAddressList == null) {
-    		this.peerSocketAddressList = new ArrayList<PeerSocketAddress>(peerSocketAddresses.size());
+    	if(peerSocket4AddressList == null) {
+    		peerSocket4AddressList = new ArrayList<PeerSocket4Address>(1);
     	}
-    	this.peerSocketAddressList.addAll(peerSocketAddresses);
+    	peerSocket4AddressList.add(peerSocket4Address);
         return this;
     }
 
-    public List<PeerSocketAddress> peerSocketAddresses() {
-    	if (peerSocketAddressList == null) {
+    public List<PeerSocket4Address> peerSocket4AddressList() {
+    	if (peerSocket4AddressList == null) {
             return Collections.emptyList();
         }
-        return peerSocketAddressList;
+        return peerSocket4AddressList;
     }
     
-    /*public PublicKey getPublicKey() {
-        return publicKey;
-    }*/
+    public PeerSocket4Address peerSocket4Address(final int index) {
+        if (peerSocket4AddressList == null || index > peerSocket4AddressList.size() - 1) {
+            return null;
+        }
+        return peerSocket4AddressList.get(index);
+    }
+    
+    public Message peerSocket6Address(final PeerSocket6Address peerSocket6Address) {
+    	if (!presetContentTypes) {
+            contentType(Content.PEER_SOCKET6);
+        }
+    	if(peerSocket6AddressList == null) {
+    		peerSocket6AddressList = new ArrayList<PeerSocket6Address>(1);
+    	}
+    	peerSocket6AddressList.add(peerSocket6Address);
+        return this;
+    }
+
+    public List<PeerSocket6Address> peerSocket6AddressList() {
+    	if (peerSocket6AddressList == null) {
+            return Collections.emptyList();
+        }
+        return peerSocket6AddressList;
+    }
+    
+    public PeerSocket6Address peerSocket6Address(final int index) {
+        if (peerSocket6AddressList == null || index > peerSocket6AddressList.size() - 1) {
+            return null;
+        }
+        return peerSocket6AddressList.get(index);
+    }
+    
+    
 
     public PrivateKey privateKey() {
         return privateKey;
@@ -1153,7 +1184,8 @@ public class Message {
         message.bufferList = this.bufferList;
         message.trackerDataList = this.trackerDataList;
         message.publicKeyList = this.publicKeyList;
-        message.peerSocketAddressList = this.peerSocketAddressList;
+        message.peerSocket4AddressList = this.peerSocket4AddressList;
+        message.peerSocket6AddressList = this.peerSocket6AddressList;
         message.signatureEncode = this.signatureEncode;
         
         // these are transient, copy anyway
@@ -1201,7 +1233,7 @@ public class Message {
 	 * Returns the estimated message size. If the message contains data, a constant value of 1000bytes is added.
 	 */
 	public int estimateSize() {
-		int current = MessageHeaderCodec.HEADER_SIZE;
+		int current = MessageHeaderCodec.HEADER_SIZE_STATIC + sender.size();
 		
 		if(neighborsList != null) {
 			for (NeighborSet neighbors : neighborsList) {
@@ -1259,10 +1291,12 @@ public class Message {
 			}
 		}
 		
-		if(peerSocketAddressList != null) {
-			for (PeerSocketAddress address : peerSocketAddressList) {
-				current += address.size() + 1;
-			}
+		if(peerSocket4AddressList != null) {
+			current += (peerSocket4AddressList.size() * PeerSocket4Address.SIZE);
+		}
+		
+		if(peerSocket6AddressList != null) {
+			current += (peerSocket6AddressList.size() * PeerSocket6Address.SIZE);
 		}
 		
 		if(signatureEncode != null) {

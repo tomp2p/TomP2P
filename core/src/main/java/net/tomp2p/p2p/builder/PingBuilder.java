@@ -32,8 +32,10 @@ import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.utils.Utils;
 
 public class PingBuilder {
@@ -155,9 +157,9 @@ public class PingBuilder {
 			}
 		} else if (inetAddress != null) {
 			if (tcpPing) {
-				return ping(new InetSocketAddress(inetAddress, port), Number160.ZERO, false);
+				return ping(inetAddress, port, Number160.ZERO, false);
 			} else {
-				return ping(new InetSocketAddress(inetAddress, port), Number160.ZERO, true);
+				return ping(inetAddress, port, Number160.ZERO, true);
 			}
 		} else if (peerConnection != null) {
 			return pingPeerConnection(peerConnection);
@@ -177,8 +179,10 @@ public class PingBuilder {
      *            Set to true if UDP should be used, false for TCP.
      * @return The future response
      */
-    private FuturePing ping(final InetSocketAddress address, final Number160 peerId, final boolean isUDP) {
-        return ping(new PeerAddress(peerId, address), isUDP);
+    private FuturePing ping(final InetAddress address, int port, final Number160 peerId, final boolean isUDP) {
+    	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(address)).tcpPort(port).udpPort(port).build();
+    	PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(peerId).build();
+        return ping(peerAddress, isUDP);
     }
     
     /**
@@ -241,9 +245,10 @@ public class PingBuilder {
                     if (future.isSuccess()) {
                         addPingListener(futurePing, futureLateJoin);
                         for (InetAddress broadcastAddress: discoverResults.existingBroadcastAddresses()) {
-                            final PeerAddress peerAddress = new PeerAddress(Number160.ZERO, broadcastAddress,
-                                    port, port);
-                            FutureResponse validBroadcast = peer.pingRPC().pingBroadcastUDP(
+                        	
+                        	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(broadcastAddress)).tcpPort(port).udpPort(port).build();
+                        	PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
+                        	FutureResponse validBroadcast = peer.pingRPC().pingBroadcastUDP(
                                     peerAddress, future.channelCreator(), connectionConfiguration);
                             if (!futureLateJoin.add(validBroadcast)) {
                                 // the latejoin future is finished if the add returns false

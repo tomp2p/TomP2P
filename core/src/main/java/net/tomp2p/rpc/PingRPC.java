@@ -315,11 +315,6 @@ public class PingRPC extends DispatchHandler {
 			if(message.isSendSelf()) {
 				responseMessage = createResponseMessage(message, Type.NOT_FOUND);
 				LOG.warn("Sending probe ping request to yourself? If those are two different peers, messages may be dropped");
-				if(!message.sender().inetAddress().equals(message.recipient().inetAddress())) {
-					if(message.sender().peerId().equals(message.recipient().peerId())) {
-						LOG.warn("You seem to use the same peerId for different peers. This may result in dropped messages");
-					}
-				}
 			} else {
 				responseMessage = createResponseMessage(message, Type.OK);
 
@@ -404,7 +399,7 @@ public class PingRPC extends DispatchHandler {
 			PeerAddress serverAddress = peerBean().serverPeerAddress();
 			if (message.isUdp()) {
 				// UDP
-				PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
+				PeerAddress newServerAddress = serverAddress.withReachable4UDP(true);
 				peerBean().serverPeerAddress(newServerAddress);
 				synchronized (reachableListeners) {
 					for (PeerReachable listener : reachableListeners) {
@@ -414,7 +409,7 @@ public class PingRPC extends DispatchHandler {
 				responseMessage = message;
 			} else {
 				// TCP
-				PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
+				PeerAddress newServerAddress = serverAddress.withReachable4TCP(true);
 				peerBean().serverPeerAddress(newServerAddress);
 				synchronized (reachableListeners) {
 					for (PeerReachable listener : reachableListeners) {

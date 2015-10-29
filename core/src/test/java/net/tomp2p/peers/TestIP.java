@@ -8,8 +8,6 @@ import java.net.UnknownHostException;
 import org.junit.Assert;
 import org.junit.Test;
 
-import net.tomp2p.utils.Utils;
-
 public class TestIP {
 	@Test
 	public void testMask4() throws UnknownHostException {

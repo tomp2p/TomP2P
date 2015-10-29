@@ -5,23 +5,23 @@ import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Encoder {
 
@@ -29,8 +29,6 @@ public class Encoder {
 
     private final DataFilter dataFilterTTL = new DataFilterTTL();
     
-    private boolean header = false;
-    private boolean resume = false;
     private Message message;
 
     private final SignatureFactory signatureFactory;
@@ -39,23 +37,13 @@ public class Encoder {
         this.signatureFactory = signatureFactory;
     }
 
-    public boolean write(final AlternativeCompositeByteBuf buf, final Message message, SignatureCodec signatureCodec) throws InvalidKeyException,
+    public boolean write(final AlternativeCompositeByteBuf buf, final Message message, SignatureCodec signatureCodec, boolean ipv6) throws InvalidKeyException,
             SignatureException, IOException {
 
         this.message = message;
         LOG.debug("message for outbound {}", message);
-        
-        if (message.sender().isRelayed() && message.peerSocketAddresses().isEmpty()) {
-        	message.peerSocketAddresses(message.sender().peerSocketAddresses());
-        }
-
-        if (!header) {
-            MessageHeaderCodec.encodeHeader(buf, message);
-            header = true;
-        } else {
-            LOG.debug("send a follow-up message {}", message);
-            resume = true;
-        }
+      
+        MessageHeaderCodec.encodeHeader(buf, message, ipv6);
 
         boolean done = loop(buf);
         LOG.debug("message encoded {}", message);
@@ -83,7 +71,7 @@ public class Encoder {
         	final Content content = next.content(); 
             switch (content) {
             case KEY:
-                buf.writeBytes(message.key(next.index()).toByteArray());
+            	message.key(next.index()).encode(buf);
                 message.contentReferences().poll();
                 break;
             case INTEGER:
@@ -95,131 +83,117 @@ public class Encoder {
                 message.contentReferences().poll();
                 break;
             case SET_NEIGHBORS:
-                NeighborSet neighborSet = message.neighborsSet(next.index());
+            	final NeighborSet neighborSet = message.neighborsSet(next.index());
                 // length
                 buf.writeByte(neighborSet.size());
                 for (PeerAddress neighbor : neighborSet.neighbors()) {
-                    buf.writeBytes(neighbor.toByteArray());
+                	neighbor.encode(buf);
                 }
                 message.contentReferences().poll();
                 break;
-            case SET_PEER_SOCKET:
-                List<PeerSocketAddress> list = message.peerSocketAddresses();
-                // length
-                buf.writeByte(list.size());
-                for (PeerSocketAddress psa : list) {
-                	// IP version flag
-                	buf.writeByte(psa.isIPv4() ? 0:1);
-                    buf.writeBytes(psa.toByteArray());
-                }
+            case PEER_SOCKET4:
+            	final PeerSocket4Address psa4 = message.peerSocket4Address(next.index());
+            	psa4.encode(buf);
+                message.contentReferences().poll();
+                break;
+            case PEER_SOCKET6:
+            	final PeerSocket6Address psa6 = message.peerSocket6Address(next.index());
+            	psa6.encode(buf);
                 message.contentReferences().poll();
                 break;
             case BLOOM_FILTER:
-                SimpleBloomFilter<Number160> simpleBloomFilter = message.bloomFilter(next.index());
-                simpleBloomFilter.toByteBuf(buf);
+            	final SimpleBloomFilter<Number160> simpleBloomFilter = message.bloomFilter(next.index());
+                simpleBloomFilter.encode(buf);
                 message.contentReferences().poll();
                 break;
             case SET_KEY640:
-                KeyCollection keys = message.keyCollection(next.index());
+                final KeyCollection keys = message.keyCollection(next.index());
                 // length
                 buf.writeInt(keys.size());
                 if (keys.isConvert()) {
-                    for (Number160 key : keys.keysConvert()) {
-                        buf.writeBytes(keys.locationKey().toByteArray());
-                        buf.writeBytes(keys.domainKey().toByteArray());
-                        buf.writeBytes(key.toByteArray());
-                        buf.writeBytes(keys.versionKey().toByteArray());
+                    for (final Number160 key : keys.keysConvert()) {
+                    	keys.locationKey().encode(buf);
+                    	keys.domainKey().encode(buf);
+                    	key.encode(buf);
+                    	keys.versionKey().encode(buf);
                     }
                 } else {
-                    for (Number640 key : keys.keys()) {
-                        buf.writeBytes(key.locationKey().toByteArray());
-                        buf.writeBytes(key.domainKey().toByteArray());
-                        buf.writeBytes(key.contentKey().toByteArray());
-                        buf.writeBytes(key.versionKey().toByteArray());
+                    for (final Number640 key : keys.keys()) {
+                    	key.locationKey().encode(buf);
+                    	key.domainKey().encode(buf);
+                    	key.contentKey().encode(buf);
+                    	key.versionKey().encode(buf);
                     }
                 }
                 message.contentReferences().poll();
                 break;
             case MAP_KEY640_DATA:
-                DataMap dataMap = message.dataMap(next.index());
+                final DataMap dataMap = message.dataMap(next.index());
                 // length
                 buf.writeInt(dataMap.size());
                 if (dataMap.isConvert()) {
-                    for (Entry<Number160, Data> entry : dataMap.dataMapConvert().entrySet()) {
-                    	buf.writeBytes(dataMap.locationKey().toByteArray());
-                    	buf.writeBytes(dataMap.domainKey().toByteArray());
-                    	buf.writeBytes(entry.getKey().toByteArray());
-                    	buf.writeBytes(dataMap.versionKey().toByteArray());
+                    for (final Entry<Number160, Data> entry : dataMap.dataMapConvert().entrySet()) {
+                    	dataMap.locationKey().encode(buf);
+                    	dataMap.domainKey().encode(buf);
+                    	entry.getKey().encode(buf);
+                    	dataMap.versionKey().encode(buf);
                     	encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest(), message.command() == Commands.REPLICA_PUT.getNr());
                     }
                 } else {
-                    for (Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
-                        buf.writeBytes(entry.getKey().locationKey().toByteArray());
-                        buf.writeBytes(entry.getKey().domainKey().toByteArray());
-                        buf.writeBytes(entry.getKey().contentKey().toByteArray());
-                        buf.writeBytes(entry.getKey().versionKey().toByteArray());
+                    for (final Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
+                    	entry.getKey().locationKey().encode(buf);
+                    	entry.getKey().domainKey().encode(buf);
+                    	entry.getKey().contentKey().encode(buf);
+                    	entry.getKey().versionKey().encode(buf);
                         encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest(), message.command() == Commands.REPLICA_PUT.getNr());
                     }
                 }
                 message.contentReferences().poll();
                 break;
             case MAP_KEY640_KEYS:
-                KeyMap640Keys keyMap640Keys = message.keyMap640Keys(next.index());
+                final KeyMap640Keys keyMap640Keys = message.keyMap640Keys(next.index());
                 // length
                 buf.writeInt(keyMap640Keys.size());
-                for (Entry<Number640, Collection<Number160>> entry : keyMap640Keys.keysMap().entrySet()) {
-                    buf.writeBytes(entry.getKey().locationKey().toByteArray());
-                    buf.writeBytes(entry.getKey().domainKey().toByteArray());
-                    buf.writeBytes(entry.getKey().contentKey().toByteArray());
-                    buf.writeBytes(entry.getKey().versionKey().toByteArray());
+                for (final Entry<Number640, Collection<Number160>> entry : keyMap640Keys.keysMap().entrySet()) {
+                	entry.getKey().locationKey().encode(buf);
+                	entry.getKey().domainKey().encode(buf);
+                	entry.getKey().contentKey().encode(buf);
+                	entry.getKey().versionKey().encode(buf);
                     // write number of based-on keys
                     buf.writeByte(entry.getValue().size());
                     // write based-on keys
-                    for (Number160 basedOnKey : entry.getValue()) {
-                        buf.writeBytes(basedOnKey.toByteArray());
+                    for (final Number160 basedOnKey : entry.getValue()) {
+                    	basedOnKey.encode(buf);
                     }
                 }
                 message.contentReferences().poll();
                 break;
             case MAP_KEY640_BYTE:
-                KeyMapByte keysMap = message.keyMapByte(next.index());
+                final KeyMapByte keysMap = message.keyMapByte(next.index());
                 // length
                 buf.writeInt(keysMap.size());
-                for (Entry<Number640, Byte> entry : keysMap.keysMap().entrySet()) {
-                    buf.writeBytes(entry.getKey().locationKey().toByteArray());
-                    buf.writeBytes(entry.getKey().domainKey().toByteArray());
-                    buf.writeBytes(entry.getKey().contentKey().toByteArray());
-                    buf.writeBytes(entry.getKey().versionKey().toByteArray());
+                for (final Entry<Number640, Byte> entry : keysMap.keysMap().entrySet()) {
+                	entry.getKey().locationKey().encode(buf);
+                	entry.getKey().domainKey().encode(buf);
+                	entry.getKey().contentKey().encode(buf);
+                	entry.getKey().versionKey().encode(buf);
                     buf.writeByte(entry.getValue());
                 }
                 message.contentReferences().poll();
                 break;
             case BYTE_BUFFER:
-                Buffer buffer = message.buffer(next.index());
-                if (!resume) {
-                    buf.writeInt(buffer.length());
-                }
-                // length
-                int readable = buffer.readable();
-                buf.writeBytes(buffer.buffer(), readable);
-                if (buffer.incRead(readable) == buffer.length()) {
-                    message.contentReferences().poll();
-                } else if (message.isStreaming()) {
-                    LOG.debug("Partial message of length {} sent.", readable);
-                    return false;
-                } else {
-                	final String description = "Larger buffer has been announced, but not in message streaming mode. This is wrong.";
-                    LOG.error(description);
-                    throw new RuntimeException(description);
-                }
+            	final Buffer buffer = message.buffer(next.index());
+            	// length
+                buf.writeInt(buffer.length());
+                buf.addComponent(buffer.buffer());
+                message.contentReferences().poll();
                 break;
             case SET_TRACKER_DATA:
-                TrackerData trackerData = message.trackerData(next.index());
+            	final TrackerData trackerData = message.trackerData(next.index());
                 buf.writeByte(trackerData.peerAddresses().size()); // 1 bytes - length, max. 255
-                for (Map.Entry<PeerAddress, Data> entry : trackerData.peerAddresses().entrySet()) {
-                	byte[] me = entry.getKey().toByteArray();
-                    buf.writeBytes(me);
-                    Data data = entry.getValue().duplicate();
+                for (final Map.Entry<PeerAddress, Data> entry : trackerData.peerAddresses().entrySet()) {
+                	entry.getKey().encode(buf);
+                	final Data data = entry.getValue().duplicate();
                     encodeData(buf, data, false, !message.isRequest(), message.command() == Commands.REPLICA_PUT.getNr());
                 }
                 message.contentReferences().poll();
@@ -229,7 +203,7 @@ public class Encoder {
                 message.setHintSign();
                 // then do the regular public key stuff -> no break
             case PUBLIC_KEY:
-            	PublicKey publicKey = message.publicKey(next.index());
+            	final PublicKey publicKey = message.publicKey(next.index());
             	signatureFactory.encodePublicKey(publicKey, buf);
             	message.contentReferences().poll();
             	break;
@@ -237,7 +211,6 @@ public class Encoder {
                 throw new RuntimeException("Unknown type: " + next.content());
             }
             LOG.debug("wrote in encoder for {} {}", content, buf.writerIndex() - start);
-
         }
         return true;
     }
@@ -254,10 +227,5 @@ public class Encoder {
 
     public Message message() {
         return message;
-    }
-
-    public void reset() {
-        header = false;
-        resume = false;
     }
 }

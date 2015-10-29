@@ -24,7 +24,6 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.rpc.RPC;
 
 /**
  * Is able to send TCP and UDP messages (as a request) and processes incoming responses. It is important that
@@ -294,7 +293,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         
         //NAT reflection, change it back, as this will be stored in our peer map that may be queried from other peers
 		if(message.recipientReflected() != null) {
-			responseMessage.sender(message.recipient().changePeerSocketAddress(message.recipient().peerSocketAddress()));
+			responseMessage.sender(message.recipient().withIpv4Socket(message.recipient().ipv4Socket()));
 		}
 
         // Stop time measurement of RTT
@@ -314,7 +313,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         }
         
         // support slow, unreachable devices which cannot respond instantly
-        if(this.message.recipient().isRelayed() && this.message.recipient().isSlow() && responseMessage.type() == Message.Type.PARTIALLY_OK) {
+        if(this.message.recipient().relaySize() > 0 && this.message.recipient().slow() && responseMessage.type() == Message.Type.PARTIALLY_OK) {
         	LOG.debug("Received partially ok by the relay peer. Wait for answer of the unreachable peer.");
         	// wait for the (real) answer of the unreachable peer.
         	connectionBean.dispatcher().addPendingRequest(message.messageId(), futureResponse, slowResponseTimeoutSeconds, connectionBean.timer());

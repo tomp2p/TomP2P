@@ -1,11 +1,5 @@
 package net.tomp2p.message;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.socket.DatagramChannel;
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -20,11 +14,18 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.connection.TimeoutFactory;
 import net.tomp2p.message.Message.Content;
@@ -32,14 +33,12 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Decoder {
 
@@ -53,15 +52,12 @@ public class Decoder {
 	// private Message2 result = null;
 
 	// current state - needs to be deleted if we want to reuse
-	private Message message = null;
+	private final Message message = new Message();
 	private boolean headerDone = false;
 	private Signature signature = null;
 
 	private int neighborSize = -1;
 	private NeighborSet neighborSet = null;
-	
-	private int peerSocketAddressSize = -1;
-	private List<PeerSocketAddress> peerSocketAddresses = null;
 
 	private int keyCollectionSize = -1;
 	private KeyCollection keyCollection = null;
@@ -104,7 +100,7 @@ public class Decoder {
 			final Attribute<InetSocketAddress> attributeInet = ctx.attr(INET_ADDRESS_KEY);
 			attributeInet.set(sender);
 
-			if (message == null && !headerDone) {
+			if (!headerDone) {
 				headerDone = decodeHeader(buf, recipient, sender);
 				if (headerDone) {
 					// store the sender as an attribute
@@ -121,14 +117,6 @@ public class Decoder {
 			
 			final boolean donePayload = decodePayload(buf);
 			decodeSignature(buf, readerBefore, donePayload);
-			
-			if(donePayload) {
-				boolean isRelay = message.sender().isRelayed();
-				if(isRelay && !message.peerSocketAddresses().isEmpty()) {
-					PeerAddress tmpSender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
-					message.sender(tmpSender);
-	        	}
-			}
 			
 			// see https://github.com/netty/netty/issues/1976
 			buf.discardSomeReadBytes();
@@ -182,23 +170,23 @@ public class Decoder {
 
 	public boolean decodeHeader(final ByteBuf buf, InetSocketAddress recipient, final InetSocketAddress sender) {
 		if (message == null) {
-			if (buf.readableBytes() < MessageHeaderCodec.HEADER_SIZE) {
+			if (buf.readableBytes() < MessageHeaderCodec.HEADER_SIZE_MIN) {
 				// we don't have the header yet, we need the full header first
 				// wait for more data
 				return false;
 			}
-			message = MessageHeaderCodec.decodeHeader(buf, recipient, sender);
+			final int readerIndex = buf.readerIndex();
+			final boolean success = MessageHeaderCodec.decodeHeader(buf, recipient, sender, message);
+			if(!success) {
+				buf.readerIndex(readerIndex);
+				return false;
+			}
 		}
 		
-		if (message.sender().isNet4Private() && buf.readableBytes() < MessageHeaderCodec.HEADER_PRIVATE_ADDRESS_SIZE) {
-			return false;
-		} else if (message.sender().isNet4Private() && buf.readableBytes() >= MessageHeaderCodec.HEADER_PRIVATE_ADDRESS_SIZE){
-			PeerSocketAddress internalPeerSocketAddress = PeerSocketAddress.create(buf, true);
-			message.sender(message.sender().changeInternalPeerSocketAddress(internalPeerSocketAddress));
-		}
 		// we have set the content types already
 		message.presetContentTypes(true);
-			for (Content content : message.contentTypes()) {
+		
+		for (Content content : message.contentTypes()) {
 			if (content == Content.EMPTY) {
 				break;
 			}
@@ -270,15 +258,14 @@ public class Decoder {
 					neighborSet = new NeighborSet(-1, new ArrayList<PeerAddress>(neighborSize));
 				}
 				for (int i = neighborSet.size(); i < neighborSize; i++) {
-					if (buf.readableBytes() < Utils.SHORT_BYTE_SIZE) {
+					if (buf.readableBytes() < 4) {
 						return false;
 					}
-					int header = buf.getUnsignedShort(buf.readerIndex());
-					size = PeerAddress.size(header);
+					size = PeerAddress.size(buf.getInt(buf.readerIndex()));
 					if (buf.readableBytes() < size) {
 						return false;
 					}
-					PeerAddress pa = new PeerAddress(buf);
+					PeerAddress pa = PeerAddress.decode(buf);
 					neighborSet.add(pa);
 				}
 				message.neighborsSet(neighborSet);
@@ -286,34 +273,19 @@ public class Decoder {
 				neighborSize = -1;
 				neighborSet = null;
 				break;
-			case SET_PEER_SOCKET:
-				if (peerSocketAddressSize == -1 && buf.readableBytes() < Utils.BYTE_BYTE_SIZE) {
+			case PEER_SOCKET4:
+				if (buf.readableBytes() < PeerSocket4Address.SIZE) {
 					return false;
 				}
-				if (peerSocketAddressSize == -1) {
-					peerSocketAddressSize = buf.readUnsignedByte();
-				}
-				if (peerSocketAddresses == null) {
-					peerSocketAddresses = new ArrayList<PeerSocketAddress>(peerSocketAddressSize);
-				}
-				for (int i = peerSocketAddresses.size(); i < peerSocketAddressSize; i++) {
-					if (buf.readableBytes() < Utils.BYTE_BYTE_SIZE) {
-						return false;
-					}
-					int header = buf.getUnsignedByte(buf.readerIndex());
-					boolean isIPv4 = header == 0;
-					size = PeerSocketAddress.size(isIPv4);
-					if (buf.readableBytes() < size + Utils.BYTE_BYTE_SIZE) {
-						return false;
-					}
-					//skip the ipv4/ipv6 header
-					buf.skipBytes(1);
-					peerSocketAddresses.add(PeerSocketAddress.create(buf, isIPv4));
-				}
-				message.peerSocketAddresses(peerSocketAddresses);
+				message.peerSocket4Address(PeerSocket4Address.decode(buf));
 				lastContent = contentTypes.poll();
-				peerSocketAddressSize = -1;
-				peerSocketAddresses = null;
+				break;
+			case PEER_SOCKET6:
+				if (buf.readableBytes() < PeerSocket6Address.SIZE) {
+					return false;
+				}
+				message.peerSocket6Address(PeerSocket6Address.decode(buf));
+				lastContent = contentTypes.poll();
 				break;
 			case SET_KEY640:
 				if (keyCollectionSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
@@ -539,18 +511,16 @@ public class Decoder {
 				}
 				for (int i = trackerData.size(); i < trackerDataSize; i++) {
 
-					if (buf.readableBytes() < Utils.SHORT_BYTE_SIZE) {
+					if (buf.readableBytes() < 4) {
 						return false;
 					}
 
-					int header = buf.getUnsignedShort(buf.readerIndex());
-
-					size = PeerAddress.size(header);
+					size = PeerAddress.size(buf.getInt(buf.readerIndex()));
 
 					if (buf.readableBytes() < size) {
 						return false;
 					}
-					PeerAddress pa = new PeerAddress(buf);
+					PeerAddress pa = PeerAddress.decode(buf);
 
 					currentTrackerData = Data.decodeHeader(buf, signatureFactory);
 					if (currentTrackerData == null) {
@@ -611,7 +581,6 @@ public class Decoder {
 		Message ret = message;
 		message.setDone();
 		contentTypes.clear();
-		message = null;
 		headerDone = false;
 		neighborSize = -1;
 		neighborSet = null;

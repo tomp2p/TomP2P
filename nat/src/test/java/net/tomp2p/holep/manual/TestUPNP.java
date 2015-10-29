@@ -21,7 +21,7 @@ import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.storage.Data;
 
 //travis-ci cannot test this, the kernel does not support all the required features:
@@ -58,7 +58,7 @@ public class TestUPNP implements Serializable {
 		try {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
 			pd = new PeerBuilderDHT(relayPeer).start();
-			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			final PeerSocketAddress2 relayAddress = relayPeer.peerAddress().peerSocketAddress();
 			final PeerAddress relay = relayPeer.peerAddress();
 			System.out.println("relay peer at: "+relay);
 

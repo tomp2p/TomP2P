@@ -26,7 +26,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.relay.RelayCallback;
 import net.tomp2p.storage.Data;
 
@@ -94,8 +94,8 @@ public class TestNATStress implements Serializable {
 			relayDHT1 = new PeerBuilderDHT(relayPeer1).start();
 			final Peer relayPeer11 = relayPeer1;
 			relayPeer2 = createRelay(relayPeerId2, 5003);
-			final PeerSocketAddress relayAddress1 = relayPeer1.peerAddress().peerSocketAddress();
-			final PeerSocketAddress relayAddress2 = relayPeer2.peerAddress().peerSocketAddress();
+			final PeerSocketAddress2 relayAddress1 = relayPeer1.peerAddress().peerSocketAddress();
+			final PeerSocketAddress2 relayAddress2 = relayPeer2.peerAddress().peerSocketAddress();
 			
 			System.out.println("relay 1:"+relayPeer1.peerAddress());
 			System.out.println("relay 2:"+relayPeer2.peerAddress());

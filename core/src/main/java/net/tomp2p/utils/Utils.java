@@ -15,8 +15,6 @@
  */
 package net.tomp2p.utils;
 
-import io.netty.buffer.ByteBuf;
-
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -55,17 +53,20 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import io.netty.buffer.ByteBuf;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TrackerData;
+import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.storage.DataBuffer;
 
 /**
@@ -428,10 +429,80 @@ public class Utils {
     public static final byte[] intToByteArray(int value) {
         return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
     }
+    
+    public static final byte[] mediumToByteArray(int value) {
+        return new byte[] { (byte) (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
+    }
+    
+    public static final int shortToByteArray(int value, byte[] array, int offset) {
+        array[offset++] =  (byte) (value >>> 8);
+        array[offset++] =  (byte) value;
+        return offset;
+    }
+    
+    public static final int mediumToByteArray(int value, byte[] array, int offset) {
+        array[offset++] =  (byte) (value >>> 16);
+        array[offset++] =  (byte) (value >>> 8);
+        array[offset++] =  (byte) value;
+        return offset;
+    }
+    
+    public static final int intToByteArray(int value, byte[] array, int offset) {
+        array[offset++] =  (byte) (value >>> 24);
+        array[offset++] =  (byte) (value >>> 16);
+        array[offset++] =  (byte) (value >>> 8);
+        array[offset++] =  (byte) value;
+        return offset;
+    }
+    
+    public static int longToByteArray(long longHi, long longLo, byte[] array, int offset) {
+    	array[offset++] =  (byte) (longHi >>> 56);
+    	array[offset++] =  (byte) (longHi >>> 48);
+    	array[offset++] =  (byte) (longHi >>> 40);
+    	array[offset++] =  (byte) (longHi >>> 32);
+    	array[offset++] =  (byte) (longHi >>> 24);
+        array[offset++] =  (byte) (longHi >>> 16);
+        array[offset++] =  (byte) (longHi >>> 8);
+        array[offset++] =  (byte) longHi;
+        
+        array[offset++] =  (byte) (longLo >>> 56);
+    	array[offset++] =  (byte) (longLo >>> 48);
+    	array[offset++] =  (byte) (longLo >>> 40);
+    	array[offset++] =  (byte) (longLo >>> 32);
+    	array[offset++] =  (byte) (longLo >>> 24);
+        array[offset++] =  (byte) (longLo >>> 16);
+        array[offset++] =  (byte) (longLo >>> 8);
+        array[offset++] =  (byte) longLo;
+        
+		return offset;
+	}
 
     public static final int byteArrayToInt(byte[] b) {
         return (b[0] << 24) + ((b[1] & 0xFF) << 16) + ((b[2] & 0xFF) << 8) + (b[3] & 0xFF);
     }
+    
+    public static final int byteArrayToShort(byte[] b, int offset) {
+        return ((b[offset] & 0xFF) << 8) + (b[offset + 1] & 0xFF);
+    }
+    
+    public static final int byteArrayToMedium(byte[] b, int offset) {
+        return ((b[offset] & 0xFF) << 16) + ((b[offset + 1] & 0xFF) << 8) + (b[offset + 2] & 0xFF);
+    }
+    
+    public static final int byteArrayToInt(byte[] b, int offset) {
+        return ((b[offset] & 0xFF) << 24) + ((b[offset + 1] & 0xFF) << 16) + ((b[offset + 2] & 0xFF) << 8) + (b[offset + 3] & 0xFF);
+    }
+    
+    public static long byteArrayToLong(byte[] b, int offset) {
+    	return  (((long)b[offset    ] & 0xFFl) << 56) | 
+    			(((long)b[offset + 1] & 0xFFl) << 48) |
+    			(((long)b[offset + 2] & 0xFFl) << 40) |
+    			(((long)b[offset + 3] & 0xFFl) << 32) |
+    			(((long)b[offset + 4] & 0xFFl) << 24) |
+    			(((long)b[offset + 5] & 0xFFl) << 16) |
+    			(((long)b[offset + 6] & 0xFFl) << 8) | 
+    			( (long)b[offset + 7] & 0xFFl);
+	}
 
     /**
 	 * Returns a random element from a collection. This method is pretty slow O(n), but the Java collection
@@ -938,18 +1009,24 @@ public class Utils {
 		return randomInt;
 	}
 	
-	public static boolean canReflect(PeerAddress recipient, PeerAddress self) {
-		return recipient.inetAddress().equals(self.inetAddress()) 
-				&& self.internalPeerSocketAddress() != null 
-				&& recipient.internalPeerSocketAddress()!=null;
+	public static boolean canReflect(final PeerAddress recipient, final PeerAddress self) {
+		return recipient.ipv4Socket().ipv4().equals(self.ipv4Socket().ipv4()) 
+				&& self.ipInternalSocket() != null 
+				&& recipient.ipInternalSocket()!=null;
 	}
 
-	public static PeerSocketAddress natReflection(PeerAddress recipient, PeerAddress self) {
+	
+	public static PeerSocket4Address natReflection(final PeerAddress recipient, final PeerAddress self) {
 		//check for NAT reflection
 	    if(canReflect(recipient, self)) {
 	    	//the recipient and me have the same external IP, this means we either send it to us, or to a peer in our network. Since NAT reflection is rarly properly implemented in routers, we need to change the IP address here in order to reach the peer.
-	    	InetAddress a = self.calcInternalInetAddress(recipient.internalPeerSocketAddress().inetAddress());
-	    	return new PeerSocketAddress(a, recipient.internalPeerSocketAddress().tcpPort(), recipient.internalPeerSocketAddress().udpPort());
+	    	IPv4 a = self.calcInternalInetAddress(recipient.ipInternalSocket().ipv4());
+	    	
+	    	return PeerSocket4Address.builder().ipv4(a)
+	    		.udpPort(recipient.ipInternalSocket().udpPort())
+	    		.tcpPort(recipient.ipInternalSocket().tcpPort())
+	    		.udtPort(recipient.ipInternalSocket().udtPort())
+	    		.build();
 	    }
 	    return null;
     }
@@ -962,7 +1039,7 @@ public class Utils {
 	 * @return socketAddress
 	 */
 	public static PeerSocketAddress extractRandomRelay(final Message message) {
-		Object[] relayInetAddresses = message.recipient().peerSocketAddresses().toArray();
+		Object[] relayInetAddresses = message.recipient().relays().toArray();
 		PeerSocketAddress socketAddress = null;
 		if (relayInetAddresses.length > 0) {
 			// we should be fair and choose one of the relays randomly
@@ -973,6 +1050,17 @@ public class Utils {
 		}
 		return socketAddress;
 	}
+
+	public static int hashCode(Object obj) {
+		if(obj == null) {
+			return 0;
+		}
+		return obj.hashCode();
+	}
+
+	
+
+	
 	
 	
 }

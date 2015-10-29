@@ -305,19 +305,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         
         //if we have first hand information, that means we send a message to that peer and we received a reply. 
         //So its not firewalled. This happens in the discovery phase
-        if (remotePeer.isFirewalledTCP() || remotePeer.isFirewalledUDP()) {
+        if (remotePeer.unreachable()) {
         	if(firstHand) {
-        		remotePeer = remotePeer.changeFirewalledTCP(false).changeFirewalledUDP(false);
+        		remotePeer = remotePeer.withUnreachable(false);
         	} else {
-        		LOG.debug("peer is firewalled, reject");
+        		LOG.debug("peer is unreachable, reject");
         		return false;
         	}
-        }
-        
-        //if a peer is relayed but cannot provide any relays, it is useless
-        if (remotePeer.isRelayed() && remotePeer.peerSocketAddresses().isEmpty()) {
-        	LOG.debug("relayed without any relays, reject");
-        	return false;
         }
         
         final boolean probablyDead = offlineMap.containsKey(remotePeer.peerId()) || 

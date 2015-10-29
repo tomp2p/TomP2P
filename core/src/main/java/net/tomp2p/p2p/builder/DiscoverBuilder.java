@@ -37,7 +37,8 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ public class DiscoverBuilder {
 
     private int portUDP = Ports.DEFAULT_PORT;
     private int portTCP = Ports.DEFAULT_PORT;
+    //private int portUDT = Ports.DEFAULT_PORT + 1;
 
     private PeerAddress peerAddress;
 
@@ -93,8 +95,8 @@ public class DiscoverBuilder {
         return this;
     }
     
-    public DiscoverBuilder peerSocketAddress(PeerSocketAddress peerSocketAddress) {
-    	 this.inetAddress = peerSocketAddress.inetAddress();
+    public DiscoverBuilder peerSocketAddress(PeerSocket4Address peerSocketAddress) {
+    	 this.inetAddress = peerSocketAddress.ipv4().toInetAddress();
          this.portTCP = peerSocketAddress.tcpPort();
          this.portUDP = peerSocketAddress.udpPort();
          return this;
@@ -170,7 +172,8 @@ public class DiscoverBuilder {
         }
 
         if (peerAddress == null && inetAddress != null) {
-            peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
+        	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inetAddress)).tcpPort(portTCP).udpPort(portUDP).build();
+        	peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
         }
         if (peerAddress == null) {
             throw new IllegalArgumentException("Peer address or inet address required.");
@@ -264,7 +267,7 @@ public class DiscoverBuilder {
                 }
                 else if (futureResponseTCP.isSuccess()) {
                 	//now we know our internal address, set it as it could be a wrong one, e.g. 127.0.0.1
-                	serverAddress = serverAddress.changeAddress(futureResponseTCP.responseMessage().recipient().inetAddress());
+                	serverAddress = serverAddress.withIpv4Socket(futureResponseTCP.responseMessage().recipient().ipv4Socket());
                 	
                     Collection<PeerAddress> tmp = futureResponseTCP.responseMessage().neighborsSet(0)
                             .neighbors();
@@ -272,18 +275,18 @@ public class DiscoverBuilder {
                     if (tmp.size() == 1) {
                         PeerAddress seenAs = tmp.iterator().next();
                         LOG.info("This peer is seen as {} by peer {}. This peer sees itself as {}.",
-                                seenAs, peerAddress, peer.peerAddress().inetAddress());
-                        if (!peer.peerAddress().inetAddress().equals(seenAs.inetAddress())) {
+                                seenAs, peerAddress, peer.peerAddress());
+                        if (!peer.peerAddress().ipv4Socket().equalsWithoutPorts(seenAs.ipv4Socket())) {
                             // check if we have this interface in that we can
                             // listen to
-                            Bindings bindings2 = new Bindings().addAddress(seenAs.inetAddress());
+                            Bindings bindings2 = new Bindings().addAddress(seenAs.ipv4Socket().ipv4().toInetAddress());
                           
                             DiscoverResults discoverResults = DiscoverNetworks.discoverInterfaces(bindings2);
                             String status = discoverResults.status();
                             LOG.info("2nd interface discovery: {}", status);
                             if (discoverResults.newAddresses().size() > 0
-                                    && discoverResults.newAddresses().contains(seenAs.inetAddress())) {
-                                serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
+                                    && discoverResults.newAddresses().contains(seenAs.ipv4Socket().ipv4().toInetAddress())) {
+                                serverAddress = serverAddress.withIpv4Socket(seenAs.ipv4Socket());
                                 peer.peerBean().serverPeerAddress(serverAddress);
                                 LOG.info("This peer had the wrong interface. Changed it to {}.", serverAddress);
                             } else {
@@ -292,27 +295,24 @@ public class DiscoverBuilder {
                                 final Ports ports = peer.connectionBean().channelServer().channelServerConfiguration().portsForwarding();
                                 if (ports.isManualPort()) {
                                 	final PeerAddress serverAddressOrig = serverAddress;
-                                    serverAddress = serverAddress.changePorts(ports.tcpPort(),
-                                            ports.udpPort());
-                                    serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
+                                	PeerSocket4Address serverSocket = serverAddress.ipv4Socket();
+                                	serverSocket = serverSocket.withTcpPort(ports.tcpPort()).withUdpPort(ports.udpPort());
+                                	serverSocket = serverSocket.withIpv4(seenAs.ipv4Socket().ipv4());
                                     //manual port forwarding detected, set flag
-                                    serverAddress = serverAddress.changePortForwarding(true);
-                                    serverAddress = serverAddress.changeInternalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
-                                    peer.peerBean().serverPeerAddress(serverAddress);
+                                    peer.peerBean().serverPeerAddress(serverAddress.withIpv4Socket(serverSocket).withIpInternalSocket(serverAddressOrig.ipv4Socket()));
                                     LOG.info("manual ports, change it to: {}", serverAddress);
                                 } else if(expectManualForwarding) {
                                 	final PeerAddress serverAddressOrig = serverAddress;
-                                	serverAddress = serverAddress.changePortForwarding(true);
-                                	serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
-                                	serverAddress = serverAddress.changeInternalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
-                                    peer.peerBean().serverPeerAddress(serverAddress);
+                                	PeerSocket4Address serverSocket = serverAddress.ipv4Socket();
+                                	serverSocket = serverSocket.withIpv4(seenAs.ipv4Socket().ipv4());
+                                	peer.peerBean().serverPeerAddress(serverAddress.withIpv4Socket(serverSocket).withIpInternalSocket(serverAddressOrig.ipv4Socket()));
                                     LOG.info("we were manually forwarding, change it to: {}", serverAddress);
                                 }
                                 else {
                                     // we need to find a relay, because there is a NAT in the way.
                                 	// we cannot use futureResponseTCP.responseMessage().recipient() as this may return also IPv6 addresses
-                                	LOG.info("We are most likely behind NAT, try to UPNP, NATPMP or relay. PeerAddress: {}, ServerAddress: {}, Seen as: {}" + peerAddress, serverAddress.inetAddress(), seenAs.inetAddress());
-                                    futureDiscover.externalHost("We are most likely behind NAT, try to UPNP, NATPMP or relay. Using peerAddress " + peerAddress, serverAddress.inetAddress(), seenAs.inetAddress());
+                                	LOG.info("We are most likely behind NAT, try to UPNP, NATPMP or relay. PeerAddress: {}, ServerAddress: {}, Seen as: {}" + peerAddress, serverAddress, seenAs);
+                                    futureDiscover.externalHost("We are most likely behind NAT, try to UPNP, NATPMP or relay. Using peerAddress " + peerAddress, serverAddress.ipv4Socket(), seenAs.ipv4Socket());
                                     return;
                                 }
                             }

@@ -30,8 +30,8 @@ public class DefaultSendBehavior implements SendBehavior {
 			return SendMethod.DIRECT;
 		}
 
-		if (message.recipient().isRelayed()) {
-			if (message.sender().isRelayed()) {
+		if (message.recipient().relaySize() > 0) {
+			if (message.sender().relaySize() > 0) {
 				// reverse connection is not possible because both peers are
 				// relayed. Thus send the message to
 				// one of the receiver's relay peers
@@ -65,7 +65,7 @@ public class DefaultSendBehavior implements SendBehavior {
 			return SendMethod.DIRECT;
 		}
 		
-		if(message.recipient().isRelayed()) {
+		if(message.recipient().relaySize() > 0) {
 			return SendMethod.RELAY;
 		}
 

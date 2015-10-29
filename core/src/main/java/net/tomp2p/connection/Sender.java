@@ -51,6 +51,7 @@ import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
@@ -199,12 +200,12 @@ public class Sender {
 			final TimeoutFactory timeoutHandler) {
 		message.keepAlive(true);
 		
-		PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().peerSocketAddress());
+		PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().ipInternalSocket());
 		if(ps == null) {
 			futureResponse.failed("no relay provided, but relay indicated RCON");
 			return;
 		}
-		if(ps.equals(peerBean.serverPeerAddress().peerSocketAddress())) {
+		if(ps.equals(peerBean.serverPeerAddress().ipv4Socket())) {
 			LOG.debug("Send to self-relay RCON");
 			sendSelf(futureResponse, message);
 			return;
@@ -279,8 +280,20 @@ public class Sender {
 	 */
 	private static void readyToSend(final Message originalMessage, PeerSocketAddress socketAddress, Message newMessage, byte RPCCommand,
 			Type messageType) {
-		PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
-				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
+		PeerSocket4Address psa = originalMessage.recipient().ipv4Socket();
+		
+		if(socketAddress instanceof PeerSocket4Address) {
+			PeerSocket4Address socketAddress4 = (PeerSocket4Address) socketAddress;
+		
+		psa = psa.withIpv4(socketAddress4.ipv4())
+				.withTcpPort(socketAddress4.tcpPort())
+				.withUdpPort(socketAddress4.udpPort());
+		
+		}
+				
+		PeerAddress recipient = originalMessage.recipient().withIpv4Socket(psa)
+				.withRelaySize(0);
+		
 		newMessage.recipient(recipient);
 
 		newMessage.command(RPCCommand);
@@ -304,9 +317,9 @@ public class Sender {
 			final TimeoutFactory timeoutHandler, final Message message) {
 		final InetSocketAddress recipient; 
 		if(message.recipientReflected() != null) {
-			recipient = message.recipientReflected().createSocketTCP();
+			recipient = message.recipientReflected().ipv4Socket().createTCPSocket();
 		} else {
-			recipient = message.recipient().createSocketTCP();
+			recipient = message.recipient().ipv4Socket().createTCPSocket();
 		}
 				
 		final ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler,
@@ -331,17 +344,17 @@ public class Sender {
 			final Message message, final ChannelCreator channelCreator, final int idleTCPMillis, final int connectTimeoutMillis,
 			final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
 		
-		PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().peerSocketAddress());
+		PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().ipv4Socket());
 		if(ps == null) {
 			futureResponse.failed("no relay provided, but relay indicated TCP");
 			return;
 		}
-		if(ps.equals(peerBean.serverPeerAddress().peerSocketAddress())) {
+		if(ps.equals(peerBean.serverPeerAddress().ipv4Socket())) {
 			LOG.debug("Send to self-relay TCP");
 			sendSelf(futureResponse, message);
 			return;
 		}
-		InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(ps);
+		InetSocketAddress recipient = ps.createTCPSocket();
 		ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler, connectTimeoutMillis, futureResponse);
 		afterConnect(futureResponse, message, channelFuture, handler == null);
 	}
@@ -557,12 +570,12 @@ public class Sender {
 				}
 				break;
 			case RELAY:
-				PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().peerSocketAddress());
+				PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().ipv4Socket());
 				if(ps == null) {
 					futureResponse.failed("no relay provided, but relay indicated UDP");
 					return;
 				}
-				if(ps.equals(peerBean.serverPeerAddress().peerSocketAddress())) {
+				if(ps.equals(peerBean.serverPeerAddress().ipv4Socket())) {
 					LOG.debug("Send to self-relay UDP, {}", message);
 					sendSelf(futureResponse, message);
 					return;
@@ -585,9 +598,9 @@ public class Sender {
 	}
 
 	private void handleReflection(final Message message) {
-		PeerSocketAddress reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
+		PeerSocket4Address reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
 		if(reflectedRecipient != null) {
-			message.recipientReflected(message.recipient().changePeerSocketAddress(reflectedRecipient));
+			message.recipientReflected(message.recipient().withIpv4Socket(reflectedRecipient));
 			LOG.debug("reflect recipient UDP {}", message);
 		}
 	}
@@ -605,23 +618,18 @@ public class Sender {
 	 * @return
 	 * @throws Exception
 	 */
-	private PeerSocketAddress prepareRelaySend(final Message message, final PeerSocketAddress preferredAddress) {
-		List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().peerSocketAddresses());
+	private PeerSocketAddress prepareRelaySend(final Message message, final PeerSocket4Address preferredAddress) {
+		List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().relays());
 		if (psa.size() > 0) {
 			if(psa.contains(preferredAddress)) {
 				LOG.debug("send neighbor request to preferred relay peer {} out of {}", preferredAddress, psa);
 				return preferredAddress;
 			}
 			
-			//check for any reflected addresses. Those are *not* preferred. Although they may be more efficient, 
-			//we don't have any internal address information in peersocketaddress -> TODO
 			while(!psa.isEmpty()) {
 				PeerSocketAddress ps = psa.remove(random.nextInt(psa.size()));
-				if(peerBean.serverPeerAddress().isPortForwarding() && 
-						ps.inetAddress().equals(peerBean.serverPeerAddress().peerSocketAddress().inetAddress())) {
-					continue;
-				}
-				message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+				//TODO: prefer local ones
+				message.recipientRelay(message.recipient().withIPSocket(ps));
 				LOG.debug("send neighbor request to random relay peer {} out of {}", ps, psa);
 				return ps;
 			}
@@ -665,12 +673,12 @@ public class Sender {
 			private void doRelayFallback(final FutureResponse futureResponse, final Message message, final boolean broadcast,
 					final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, ChannelFuture channelFuture) {
 				
-				PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().peerSocketAddress());
+				PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().ipv4Socket());
 				if(ps == null) {
 					futureResponse.failed("no relay provided, but relay indicated HP");
 					return;
 				}
-				if(ps.equals(peerBean.serverPeerAddress().peerSocketAddress())) {
+				if(ps.equals(peerBean.serverPeerAddress().ipv4Socket())) {
 					LOG.debug("Send to self-relay HP");
 					sendSelf(futureResponse, message);
 					return;
@@ -846,7 +854,7 @@ public class Sender {
 			@Override
 			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isFailed()) {
-					if (message.recipient().isRelayed()) {
+					if (message.recipient().relaySize() > 0) {
 						// TODO: make the relay go away if failed
 					} else if (message.command() == RPC.Commands.HOLEP.getNr() && message.type().ordinal() == Message.Type.REQUEST_3.ordinal()) {
 						//do nothing, because such a (dummy) message will never reach its target the first time

@@ -155,7 +155,7 @@ public abstract class DispatchHandler {
         // we can contact the peer with its address. The peer may be behind a NAT.
     	
     	//TODO: figure out how to include this. The only thing we currently missing are the ports
-    	if(requestMessage.sender().isNet4Private() || 
+    	if(requestMessage.sender().net4Internal() || 
     			(requestMessage.type() == Type.REQUEST_1 && requestMessage.command() == RPC.Commands.RELAY.getNr()) ||
     			(requestMessage.type() == Type.REQUEST_2 && requestMessage.command() == RPC.Commands.PING.getNr()) ) {
     		//request 2/ping is a ping discover, where we don't know our external address and port. Don't add this!

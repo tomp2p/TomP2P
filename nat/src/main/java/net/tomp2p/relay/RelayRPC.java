@@ -31,7 +31,7 @@ import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
@@ -239,8 +239,8 @@ public class RelayRPC extends DispatchHandler {
 	private void handleSetup(Message message, final PeerConnection unreachablePeerConnectionOrig, final Responder responder) {
 		final Number160 unreachablePeerId = unreachablePeerConnectionOrig.remotePeer().peerId();
 		//add myself as relay
-		Collection<PeerSocketAddress> psa = unreachablePeerConnectionOrig.remotePeer().peerSocketAddresses();
-		Collection<PeerSocketAddress> psa2 = new ArrayList<PeerSocketAddress>(psa);
+		Collection<PeerSocketAddress2> psa = unreachablePeerConnectionOrig.remotePeer().peerSocketAddresses();
+		Collection<PeerSocketAddress2> psa2 = new ArrayList<PeerSocketAddress2>(psa);
 
 		psa2.add(peer().peerAddress().peerSocketAddress());
 		final PeerConnection unreachablePeerConnectionCopy = unreachablePeerConnectionOrig.changeRemotePeer(
@@ -283,10 +283,10 @@ public class RelayRPC extends DispatchHandler {
 		// TODO: check if we have right setup
 
 		// this contains the real sender
-		Collection<PeerSocketAddress> peerSocketAddresses = message.peerSocketAddresses();
+		Collection<PeerSocketAddress2> peerSocketAddresses = message.peerSocketAddresses();
 		final InetSocketAddress sender;
 		if (!peerSocketAddresses.isEmpty()) {
-			sender = PeerSocketAddress.createSocketTCP(peerSocketAddresses.iterator().next());
+			sender = PeerSocketAddress2.createSocketTCP(peerSocketAddresses.iterator().next());
 		} else {
 			sender = new InetSocketAddress(0);
 		}
@@ -386,7 +386,7 @@ public class RelayRPC extends DispatchHandler {
 		
 	}
 
-	private static Responder createResponder(final Peer peer, final PeerSocketAddress sender) {
+	private static Responder createResponder(final Peer peer, final PeerSocketAddress2 sender) {
 		return new Responder() {
 			
 			@Override

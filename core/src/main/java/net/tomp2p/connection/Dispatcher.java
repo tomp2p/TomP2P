@@ -180,7 +180,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         
-        if(message.sender().isSlow() && message.isKeepAlive()) {
+        if(message.sender().slow() && message.isKeepAlive()) {
         	//reset timer
         	TimeoutFactory.resetTimeout(ctx, csc.idleTCPSlowMillis());
         }

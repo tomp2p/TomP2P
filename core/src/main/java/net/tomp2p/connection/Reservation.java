@@ -379,10 +379,10 @@ public class Reservation {
 					fromAddress = channelClientConfiguration.fromAddress();
 				} else if(peerBean.serverPeerAddress() == null) {
 					fromAddress = Inet4Address.getByAddress(new byte[4]);
-				} else if(peerBean.serverPeerAddress().internalPeerSocketAddress() != null) {
-					fromAddress = peerBean.serverPeerAddress().internalPeerSocketAddress().inetAddress();
+				} else if(peerBean.serverPeerAddress().net4Internal()) {
+					fromAddress = peerBean.serverPeerAddress().ipInternalSocket().ipv4().toInetAddress();
 				} else {
-					fromAddress = peerBean.serverPeerAddress().inetAddress();
+					fromAddress = peerBean.serverPeerAddress().ipv4Socket().ipv4().toInetAddress();
 				}
 				
 				LOG.debug("channel from {}", fromAddress);
@@ -461,10 +461,10 @@ public class Reservation {
 					fromAddress = channelClientConfiguration.fromAddress();
 				} else if(peerBean.serverPeerAddress() == null) {
 					fromAddress = Inet4Address.getByAddress(new byte[4]);
-				} else if(peerBean.serverPeerAddress().internalPeerSocketAddress() != null) {
-					fromAddress = peerBean.serverPeerAddress().internalPeerSocketAddress().inetAddress();
+				} else if(peerBean.serverPeerAddress().net4Internal()) {
+					fromAddress = peerBean.serverPeerAddress().ipInternalSocket().ipv4().toInetAddress();
 				} else {
-					fromAddress = peerBean.serverPeerAddress().inetAddress();
+					fromAddress = peerBean.serverPeerAddress().ipInternalSocket().ipv4().toInetAddress();
 				}
 				
 				LOG.debug("channel from {}", fromAddress);

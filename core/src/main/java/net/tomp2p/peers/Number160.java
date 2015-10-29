@@ -17,6 +17,8 @@ package net.tomp2p.peers;
 
 import java.util.Random;
 
+import io.netty.buffer.ByteBuf;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -253,6 +255,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      *            where to start in the byte array
      * @return the offset we have read
      */
+    @Deprecated
     public int toByteArray(final byte[] me, final int offset) {
         if (offset + BYTE_ARRAY_SIZE > me.length) {
             throw new RuntimeException("array too small");
@@ -472,4 +475,22 @@ public final class Number160 extends Number implements Comparable<Number160> {
     public static Number160 createHash(final String string) {
         return Utils.makeSHAHash(string);
     }
+
+	public static Pair<Number160, Integer> decode(byte[] me, int offset) {
+		Number160 number160 = new Number160(me, offset, 20);
+		return new Pair<Number160, Integer>(number160, offset + 20);
+	}
+
+	public static Number160 decode(ByteBuf buf) {
+		return new Number160(buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
+	}
+
+	public int encode(byte[] me, int offset) {
+		return toByteArray(me, offset);
+	}
+
+	public Number160 encode(ByteBuf buf) {
+		buf.writeInt(val[0]).writeInt(val[1]).writeInt(val[2]).writeInt(val[3]).writeInt(val[4]).writeInt(val[5]);
+		return this;
+	}
 }

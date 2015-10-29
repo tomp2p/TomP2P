@@ -54,7 +54,7 @@ import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
@@ -456,7 +456,7 @@ public class TestMessage {
 		m1.buffer(new Buffer(Unpooled.buffer()));
 		Encoder e = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
-		e.write(buf, m1, null);
+		e.write(buf, m1, null, true);
 		Decoder d = new Decoder(null);
 		boolean header = d.decodeHeader(buf, new InetSocketAddress(0),
 				new InetSocketAddress(0));
@@ -485,9 +485,10 @@ public class TestMessage {
 	public void testRelayAddresses1() throws Exception { // encode
 		Message m1 = Utils2.createDummyMessage();
 		m1.type(Message.Type.NOT_FOUND);
-		List<PeerSocketAddress> tmp = new ArrayList<PeerSocketAddress>();
-		tmp.add(new PeerSocketAddress(InetAddress.getLocalHost(), 15, 17));
-		tmp.add(new PeerSocketAddress(InetAddress.getByName("0:0:0:0:0:0:0:1"), 16, 18));
+		List<PeerSocketAddress2> tmp = new ArrayList<PeerSocketAddress2>();
+		
+		tmp.add(Utils2.creatPeerSocket(InetAddress.getLocalHost(), 15, 17));
+		tmp.add(Utils2.creatPeerSocket(InetAddress.getByName("0:0:0:0:0:0:0:1"), 16, 18));
 		m1.peerSocketAddresses(tmp);
 		Message m2 = encodeDecode(m1);
 		Assert.assertEquals(tmp, m2.peerSocketAddresses());
@@ -496,20 +497,21 @@ public class TestMessage {
 	
 	@Test
 	public void testRelay() throws Exception {
-		Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
+		Collection<PeerSocketAddress2> psa = new ArrayList<PeerSocketAddress2>();
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
-                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), null, true, true, true, true, false, false,
-                psa);
+        PeerSocketAddress2 psaa = Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        PeerAddress pa3 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"),psaa, psa);
+        
+        
         
         Message m1 = Utils2.createDummyMessage();
         Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
@@ -517,27 +519,26 @@ public class TestMessage {
         m1.neighborsSet(new NeighborSet(-1, tmp));
         
         Message m2 = encodeDecode(m1);
-		Assert.assertArrayEquals(psa.toArray(), m2.neighborsSet(0).neighbors().iterator().next().peerSocketAddresses().toArray());
+		Assert.assertArrayEquals(psa.toArray(), m2.neighborsSet(0).neighbors().iterator().next().relays().toArray());
 		compareMessage(m1, m2);
 		
 	}
 	
 	@Test
 	public void testRelay2() throws Exception {	
-        Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
+        Collection<PeerSocketAddress2> psa = new ArrayList<PeerSocketAddress2>();
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
-                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), null, true, true, true, true, true, false,
-                psa);
+        PeerSocketAddress2 psaa = Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        PeerAddress pa3 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"),psaa, psa);
         
         Message m1 = Utils2.createDummyMessage();
         Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
@@ -552,21 +553,22 @@ public class TestMessage {
 	
 	@Test
 	public void testInternalPeerSocket() throws Exception {	
-        Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
+        Collection<PeerSocketAddress2> psa = new ArrayList<PeerSocketAddress2>();
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
-                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), new PeerSocketAddress(
-                        InetAddress.getByName("0.0.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true, true, true, true,
-                psa);
+        
+        PeerSocketAddress2 psaa1 = Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        PeerSocketAddress2 psaa2 = Utils2.creatPeerSocket(InetAddress.getByName("0.0.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        PeerAddress pa3 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"),psaa1, psaa2, psa);
+        
         
         Message m1 = Utils2.createDummyMessage();
         Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
@@ -579,23 +581,14 @@ public class TestMessage {
 		
 	}
 	
-	@Test
-	public void testRelayFlag() throws Exception { // encode
-		Message m1 = Utils2.createDummyMessage();
-		m1.sender(m1.sender().changeRelayed(true));
-		
-		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(m1.sender().isRelayed(), m2.sender().isRelayed());
-		compareMessage(m1, m2);
-	}
 	
 	@Test
 	public void testSlowFlag() throws Exception { // encode
 		Message m1 = Utils2.createDummyMessage();
-		m1.sender(m1.sender().changeSlow(true));
+		m1.sender(m1.sender().withSlow(true));
 		
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(m1.sender().isSlow(), m2.sender().isSlow());
+		Assert.assertEquals(m1.sender().slow(), m2.sender().slow());
 		compareMessage(m1, m2);
 	}
 	
@@ -635,11 +628,11 @@ public class TestMessage {
 		AtomicReference<Message> m2 = new AtomicReference<Message>();
 		final AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		Encoder encoder = new Encoder(new DSASignatureFactory());
-		encoder.write(buf, m1, null);
+		encoder.write(buf, m1, null, false);
 		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
 		Decoder decoder = new Decoder(new DSASignatureFactory());
-		decoder.decode(ctx, buf, m1.recipient().createSocketTCP(), m1
-				.sender().createSocketTCP());
+		decoder.decode(ctx, buf, m1.recipient().createSocket4TCP(), m1
+				.sender().createSocket4TCP());
 		buf.release();
 		return decoder.message();
 	}
@@ -712,11 +705,11 @@ public class TestMessage {
 		Assert.assertEquals(m1.version(), m2.version());
 		Assert.assertEquals(m1.command(), m2.command());
 		compareContentTypes(m1, m2);
-		Assert.assertEquals(m1.recipient(), m2.recipient());
+		
 		Assert.assertEquals(m1.type(), m2.type());
-		Assert.assertEquals(m1.sender(), m2.sender());
-		Assert.assertEquals(m1.sender().tcpPort(), m2.sender().tcpPort());
-
+		comparePeerAddresses(m1.sender(), m2.sender(), true);
+		comparePeerAddresses(m1.recipient(), m2.recipient(), false);
+		
 		Assert.assertEquals(true, Utils.isSameSets(m1.bloomFilterList(), m2.bloomFilterList()));
 		Assert.assertEquals(true, Utils.isSameSets(m1.bufferList(), m2.bufferList()));
 
@@ -739,11 +732,29 @@ public class TestMessage {
 			Assert.assertEquals(true, Utils.isSameSets(iter1.next().neighbors(), iter2.next().neighbors()));
 		}
 
-		Assert.assertEquals(m1.sender().isFirewalledTCP(), m2.sender().isFirewalledTCP());
-		Assert.assertEquals(m1.sender().isFirewalledUDP(), m2.sender().isFirewalledUDP());
-		Assert.assertEquals(m1.sender().isRelayed(), m2.sender().isRelayed());
-		Assert.assertEquals(m1.sender().isSlow(), m2.sender().isSlow());
-		Assert.assertEquals(m1.sender().isPortForwarding(), m2.sender().isPortForwarding());
+		
+	}
+	
+	private void comparePeerAddresses(final PeerAddress p1, final PeerAddress p2, boolean isSender) {
+		
+		Assert.assertEquals(p1.peerId(), p2.peerId());
+		
+		if(isSender) {
+			Assert.assertEquals(p1.peerSocketAddress(), p2.peerSocketAddress());
+			Assert.assertEquals(p1.unreachable(), p2.unreachable());
+			Assert.assertEquals(p1.relays(), p2.relays());
+			Assert.assertEquals(p1.relaySize(), p2.relaySize());
+			Assert.assertEquals(p1.slow(), p2.slow());
+			Assert.assertEquals(p1.holePunching(), p2.holePunching());
+		
+			//tests are currently only IPv4
+			Assert.assertEquals(p1.peerSocketAddress().ipv6Flag(), p2.peerSocketAddress().ipv6Flag());
+		
+			Assert.assertEquals(p1.peerSocketAddress().net4Internal(), p1.peerSocketAddress().net4Internal());
+			Assert.assertEquals(p1.peerSocketAddress().reachableTCP(), p1.peerSocketAddress().reachableTCP());
+			Assert.assertEquals(p1.peerSocketAddress().reachableUDP(), p1.peerSocketAddress().reachableUDP());
+			Assert.assertEquals(p1.peerSocketAddress().reachableUDT(), p1.peerSocketAddress().reachableUDT());
+		}
 	}
 
 	/**

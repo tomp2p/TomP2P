@@ -13,7 +13,7 @@ import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress2;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -68,7 +68,7 @@ public class TestNATLocal implements Serializable {
 		RemotePeer unr1 = null;
 		try {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
-			final PeerSocketAddress relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			final PeerSocketAddress2 relayAddress = relayPeer.peerAddress().peerSocketAddress();
 			
 			CommandSync sync = new CommandSync(1);
 			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
@@ -95,7 +95,7 @@ public class TestNATLocal implements Serializable {
 						// now peer1 and peer2 know each other locally.
 						PeerAddress punr2 = peer2.peerAddress();
 						InetAddress internal = InetAddress.getByName("0.0.0.3");
-						punr2 = punr2.changeInternalPeerSocketAddress(new PeerSocketAddress(internal, 5001, 5001));
+						punr2 = punr2.changeInternalPeerSocketAddress(new PeerSocketAddress2(internal, 5001, 5001));
 						punr2 = punr2.changePortForwarding(true);
 						FuturePing fp1 = peer1.ping().peerAddress(punr2).start().awaitUninterruptibly();
 						sb.append(fp1.isSuccess());

@@ -21,6 +21,9 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
@@ -31,14 +34,12 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RoutingConfiguration;
+import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Bootstraps to a known peer. First, channels are reserved, then discover(PeerAddress) is called to verify this Internet
@@ -122,8 +123,8 @@ public class BootstrapBuilder {
 	    return this;
     }
     
-    public BootstrapBuilder peerSocketAddress(PeerSocketAddress socket) {
-    	this.inetAddress = socket.inetAddress();
+    public BootstrapBuilder peerSocketAddress(PeerSocket4Address socket) {
+    	this.inetAddress = socket.ipv4().toInetAddress();
     	this.portTCP = socket.tcpPort();
     	this.portUDP = socket.udpPort();
 	    return this;
@@ -185,9 +186,9 @@ public class BootstrapBuilder {
             routingConfiguration = new RoutingConfiguration(8, 10, 2);
         }
         if (peerAddress == null && inetAddress != null && bootstrapTo == null) {
-            peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
+        	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inetAddress)).tcpPort(portTCP).udpPort(portUDP).build();
+        	PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
             return bootstrapPing(peerAddress);
-
         } 
         if (peerAddress != null && bootstrapTo == null) {
             bootstrapTo = new ArrayList<PeerAddress>(1);

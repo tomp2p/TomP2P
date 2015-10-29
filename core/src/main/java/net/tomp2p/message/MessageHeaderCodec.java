@@ -15,18 +15,22 @@
  */
 package net.tomp2p.message;
 
-import io.netty.buffer.ByteBuf;
-
+import java.net.Inet4Address;
 import java.net.InetSocketAddress;
-
-import net.tomp2p.message.Message.Content;
-import net.tomp2p.message.Message.Type;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.netty.buffer.ByteBuf;
+import net.tomp2p.message.Message.Content;
+import net.tomp2p.message.Message.Type;
+import net.tomp2p.peers.IP.IPv4;
+import net.tomp2p.peers.IP.IPv6;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
+import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Utils;
 
 /**
  * Encodes and decodes the header of a {@code Message} sing a Netty Buffer.
@@ -44,14 +48,25 @@ public final class MessageHeaderCodec {
     private MessageHeaderCodec() {
     }
 
-    public static final int HEADER_SIZE = 59;
-    public static final int HEADER_PRIVATE_ADDRESS_SIZE = 8;
+    public static final int HEADER_SIZE_STATIC = 34;
+    public static final int HEADER_SIZE_MIN = HEADER_SIZE_STATIC + PeerAddress.MIN_SIZE_HEADER; //63
 
     /**
      * Encodes a message object.
      * 
-     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit message id - 8bit message command - 160bit
-     * sender id - 16bit sender tcp port - 16bit sender udp port - 160bit recipient id - 32bit content types - 8bit sender options - 8bit message options. It total,
+     * The format looks as follows: 
+     *  - 28bit p2p version 
+     *  - 4bit message type 	//4 bytes
+     *  - 32bit message id  	//8 bytes
+     *  - 8bit message command  //9 bytes
+     *  - 160bit recipient id 	//29 bytes
+     *  - 32bit content types   //33 bytes
+     *  - 8bit message options. //34 bytes
+     *  - sender peeraddress, without current IP (variable). The size is 
+     *    determined by the first 3 byte. Minimun size is 29 bytes
+     *    //total minimun 63 bytes
+     *  
+     *  It total,
      * the header is of size 59 bytes.
      * 
      * @param buffer
@@ -60,23 +75,17 @@ public final class MessageHeaderCodec {
      *            The message with the header that will be encoded
      * @return The buffer passed as an argument
      */
-    public static void encodeHeader(final ByteBuf buffer, final Message message) {
+    public static void encodeHeader(final ByteBuf buf, final Message message, final boolean ipv6) {
     	final int versionAndType = message.version() << 4 | (message.type().ordinal() & Utils.MASK_0F);
-        buffer.writeInt(versionAndType); // 4
-        buffer.writeInt(message.messageId()); // 8
-        buffer.writeByte(message.command()); // 9
-        buffer.writeBytes(message.sender().peerId().toByteArray()); // 29
-        buffer.writeShort((short) message.sender().tcpPort()); // 31
-        buffer.writeShort((short) message.sender().udpPort()); // 33
-        buffer.writeBytes(message.recipient().peerId().toByteArray()); // 53
-        buffer.writeInt(encodeContentTypes(message.contentTypes())); // 57
+    	buf.writeInt(versionAndType); // 4
+    	buf.writeInt(message.messageId()); // 8
+    	buf.writeByte(message.command()); // 9
+    	buf.writeBytes(message.recipient().peerId().toByteArray()); // 29
+    	buf.writeInt(encodeContentTypes(message.contentTypes())); // 33
         // three bits for the message options, 5 bits for the sender options
-        buffer.writeByte(message.sender().options());  //58 
-        buffer.writeByte(message.options()); // 59
-        if(message.sender().isNet4Private()) {
-        	byte[] ext = message.sender().strip().toByteArray();
-        	buffer.writeBytes(ext);
-        }
+    	buf.writeByte(message.options()); // 34
+    	final PeerAddress sender = ipv6 ? message.sender().withSkipIPv6(true) : message.sender().withSkipIPv4(true);
+    	sender.encode(buf);
     }
 
     /**
@@ -94,50 +103,43 @@ public final class MessageHeaderCodec {
      *            The sender of the packet, which has been set in the socket class
      * @return The partial message where only the header fields are set
      */
-    public static Message decodeHeader(final ByteBuf buffer, final InetSocketAddress recipientSocket,
-            final InetSocketAddress senderSocket) {
+    public static boolean decodeHeader(final ByteBuf buffer, final InetSocketAddress recipientSocket,
+            final InetSocketAddress senderSocket, final Message message) {
         LOG.debug("Decode message. Recipient: {}, Sender:{}.", recipientSocket, senderSocket);
-        final Message message = new Message();
         final int versionAndType = buffer.readInt();
         message.version(versionAndType >>> 4);
         message.type(Type.values()[(versionAndType & Utils.MASK_0F)]);
         message.messageId(buffer.readInt());
         final int command = buffer.readUnsignedByte();
         message.command((byte) command);
-        final Number160 senderID = readID(buffer);
-        final int tcpPort = buffer.readUnsignedShort();
-        final int udpPort = buffer.readUnsignedShort();
-        final Number160 recipientID = readID(buffer);
-        message.recipient(new PeerAddress(recipientID, recipientSocket));
+        final Number160 recipientID = Number160.decode(buffer);
+        message.recipient(PeerAddress.builder().peerId(recipientID).build());
         final int contentTypes = buffer.readInt();
         message.hasContent(contentTypes != 0);
         message.contentTypes(decodeContentTypes(contentTypes, message));
         // set the address as we see it, important for port forwarding
         // identification
-        final int senderOptions = buffer.readUnsignedByte();
-        final PeerAddress peerAddress = new PeerAddress(senderID, 
-        		senderSocket.getAddress(), tcpPort, udpPort, senderOptions);
         final int messageOptions = buffer.readUnsignedByte();
         message.options(messageOptions);
         
-        message.sender(peerAddress);
+        final int header = buffer.readUnsignedMedium();
+        final int peerAddressSize = PeerAddress.size(header);
+        if(buffer.readableBytes() < peerAddressSize) {
+        	return false;
+        }
+        PeerAddress peerAddress = PeerAddress.decode(buffer);
+        if(senderSocket.getAddress() instanceof Inet4Address) {
+        	PeerSocket4Address psa4 = peerAddress.ipv4Socket().withIpv4(IPv4.fromInet4Address(senderSocket.getAddress()));
+        	message.sender(peerAddress.withIpv4Socket(psa4));	
+        } else {
+        	PeerSocket6Address psa6 = peerAddress.ipv6Socket().withIpv6(IPv6.fromInet6Address(senderSocket.getAddress()));
+        	message.sender(peerAddress.withIpv6Socket(psa6));	
+        }
+        
         message.senderSocket(senderSocket);
         message.recipientSocket(recipientSocket);
         
-        return message;
-    }
-
-    /**
-     * Reads a {@code Number160} number from a Netty buffer. I did not want to include ChannelBuffer in the class Number160.
-     * 
-     * @param buffer
-     *            The Netty buffer
-     * @return A 160bit number from the Netty buffer (deserialized)
-     */
-    private static Number160 readID(final ByteBuf buffer) {
-        byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
-        buffer.readBytes(me);
-        return new Number160(me);
+        return true;
     }
 
     /**

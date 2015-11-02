@@ -34,6 +34,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.rpc.RPC;
@@ -880,6 +881,21 @@ public class Message {
         return publicKeyList.get(index);
     }
     
+    public Message peerSocketAddress(final PeerSocketAddress peerSocketAddress) {
+    	if(peerSocketAddress instanceof PeerSocket4Address) {
+    		return peerSocket4Address((PeerSocket4Address)peerSocketAddress);
+    	} else {
+    		return peerSocket6Address((PeerSocket6Address)peerSocketAddress);
+    	}
+    }
+    
+    public List<PeerSocketAddress> peerSocketAddressList() {
+    	List<PeerSocketAddress> retVal = new ArrayList<PeerSocketAddress>();
+    	retVal.addAll(peerSocket4AddressList());
+    	retVal.addAll(peerSocket6AddressList());
+    	return retVal;
+    }
+    
     public Message peerSocket4Address(final PeerSocket4Address peerSocket4Address) {
     	if (!presetContentTypes) {
             contentType(Content.PEER_SOCKET4);
@@ -1000,7 +1016,7 @@ public class Message {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("msgid=");
-        return sb.append(messageId()).append(",t=").append(type.toString()).
+        return sb.append(messageId()).append(",t=").append(type).
         	append(",c=").append(RPC.Commands.find(command).toString()).append(",").append(isUdp()?"udp":"tcp").
         	append(",s=").append(sender).append(",r=").append(recipient).toString();        
     }

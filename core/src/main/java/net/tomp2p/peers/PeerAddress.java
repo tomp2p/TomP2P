@@ -213,6 +213,54 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 		
 	}
 	
+	public PeerAddress withRelays(Collection<PeerSocketAddress> relays) {
+		if(this.relays == relays) {
+			return this;
+		}
+		
+		final int relaySize;
+		final BitSet relayTypes = new BitSet(8);
+		if(relays != null) {
+			relaySize = relays.size();
+			int index=0;
+			for(PeerSocketAddress relay: relays) {
+				if(relay instanceof PeerSocket4Address) {
+					relayTypes.set(index++, false);
+				}
+				else {
+					relayTypes.set(index++, true);
+				}
+			}
+		} else {
+			relaySize = 0;
+		}
+		
+		
+		return this.relays == relays ? this : new PeerAddress(ipInternalSocket, 
+		    		 ipInternalNetworkPrefix, 
+		    		 ipv4Socket, 
+		    		 ipv6Socket, 
+		    		 ipv4Flag, 
+		    		 ipv6Flag, 
+		    		 reachable4UDP, 
+		    		 reachable4TCP, 
+		    		 reachable4UDT, 
+		    		 reachable6UDP, 
+		    		 reachable6TCP, 
+		    		 reachable6UDT, 
+		    		 peerId, 
+		    		 relaySize, 
+		    		 slow, 
+		    		 holePunching, 
+		    		 unreachable, 
+		    		 net4Internal, 
+		    		 skipIPv4, 
+		    		 skipIPv6, 
+		    		 relayTypes, 
+		    		 hashCode, 
+		    		 relays);
+	  }
+	
 	
 	
 	public Collection<PeerSocketAddress> relays() {
@@ -241,22 +289,15 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     	return decode(array, 0);
     }
 
-    /**
-     * Creates a PeerAddress from a continuous byte array. This is useful if you don't know the size beforehand. The new
-     * offset can be accessed with offset().
-     * 
-     * @param me
-     *            The serialized array
-     * @param initialOffset
-     *            the offset, where to start
-     */
     public static Pair<PeerAddress, Integer> decode(final byte[] array, int offset) {
+    	final int header = Utils.byteArrayToMedium(array, offset);
+		offset+=3;
+		return decode(header, array, offset);
+    }
+    public static Pair<PeerAddress, Integer> decode(final int header, final byte[] array, int offset) {
     	final PeerAddressBuilder builder = new PeerAddressBuilder();
     	
-		final int header = Utils.byteArrayToMedium(array, offset);
-		offset+=3;
-				
-		decodeHeader(builder, header);
+    	decodeHeader(builder, header);
 			
 		//relays
     	for(int i = 0; i<builder.relaySize; i++) {
@@ -292,23 +333,20 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 		return new Pair<PeerAddress, Integer>(peerAddress, pair.element1());
     }
 
-    /**
-     * Creates a PeerAddress from a Netty ByteBuf.
-     * 
-     * @param channelBuffer
-     *            The channel buffer to read from
-     */
     public static PeerAddress decode(final ByteBuf buf) {
+    	final int header = buf.readUnsignedMedium();
+    	return decode(header, buf);
+    }
+    public static PeerAddress decode(final int header, final ByteBuf buf) {
     	final PeerAddressBuilder builder = new PeerAddressBuilder();
-		final int header = buf.readUnsignedMedium();
 		decodeHeader(builder, header);
 		
 		//relays
 		for(int i=0;i<builder.relaySize;i++) {
 			if(builder.relayTypes.get(i)) {
-				builder.relay(PeerSocket6Address.decode(buf));
+				builder.relay(PeerSocket6Address.decode(buf), i);
 			} else {
-				builder.relay(PeerSocket4Address.decode(buf));
+				builder.relay(PeerSocket4Address.decode(buf), i);
 			}
 		}
 		if(builder.ipv4Flag) {
@@ -415,9 +453,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
     
     public PeerAddress encode(final ByteBuf buf) {
-    	buf.writeMedium(encodeHeader());
+    	final int header = encodeHeader() ;
+    	buf.writeMedium(header);
     	
-    	for(final PeerSocketAddress relay:relays) {
+    	for(final PeerSocketAddress relay:relays()) {
     		relay.encode(buf);
     	}
     	

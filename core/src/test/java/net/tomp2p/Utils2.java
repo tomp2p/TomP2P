@@ -397,6 +397,25 @@ public class Utils2 {
 					.build();
 		}
 	}
+	
+	public static PeerAddress createPeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP,
+			Collection<PeerSocketAddress> psa, PeerSocket4Address ipv4Socket) {
+		if(address instanceof Inet4Address) {
+			return PeerAddress.builder()
+					.peerId(id)
+					.ipv4Socket((PeerSocket4Address)creatPeerSocket(address, portTCP, portUDP))
+					.relay(psa)
+					.ipInternalSocket(ipv4Socket)
+					.build();
+		} else {
+			return PeerAddress.builder()
+					.peerId(id)
+					.ipv6Socket((PeerSocket6Address)creatPeerSocket(address, portTCP, portUDP))
+					.ipv4Socket(ipv4Socket)
+					.relay(psa)
+					.build();
+		}
+	}
 
 	public static PeerAddress createPeerAddress(Number160 id, Inet6Address address, int portTCP, int portUDP,
 			Collection<PeerSocketAddress> psa, PeerSocket4Address creatPeerSocket, PeerSocket4Address creatPeerSocket2) {
@@ -409,6 +428,10 @@ public class Utils2 {
 					.ipInternalSocket(creatPeerSocket2)
 					.build();
 		
+	}
+
+	public static PeerAddress createPeerAddress(Number160 id1) {
+		return PeerAddress.builder().peerId(id1).build();
 	}
 
 	

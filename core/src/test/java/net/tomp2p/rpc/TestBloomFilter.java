@@ -56,7 +56,7 @@ public class TestBloomFilter {
     	Assert.assertEquals(false, bloomFilter.contains(hash));
     	// convert and back
     	ByteBuf buf = Unpooled.buffer(SimpleBloomFilter.SIZE_HEADER);
-        bloomFilter.toByteBuf(buf);
+        bloomFilter.encode(buf);
         SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
         Assert.assertEquals(true, bloomFilter2.isVoid());
     }
@@ -69,7 +69,7 @@ public class TestBloomFilter {
     	Assert.assertEquals(true, bloomFilter.contains(hash));
     	// convert and back, minimun size is a long
     	ByteBuf buf = Unpooled.buffer(8 + SimpleBloomFilter.SIZE_HEADER);
-        bloomFilter.toByteBuf(buf);
+        bloomFilter.encode(buf);
         SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
         Assert.assertEquals(true, bloomFilter2.isFull());
     }
@@ -81,7 +81,7 @@ public class TestBloomFilter {
     	bloomFilter.add(hash);
     	// convert and back, minimun size is a long
     	ByteBuf buf = Unpooled.buffer();
-        bloomFilter.toByteBuf(buf);
+        bloomFilter.encode(buf);
         SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
         Assert.assertEquals(true, bloomFilter2.contains(hash));
     }
@@ -93,7 +93,7 @@ public class TestBloomFilter {
     	bloomFilter.add(hash);
     	// convert and back, minimun size is a long
     	ByteBuf buf = Unpooled.buffer();
-        bloomFilter.toByteBuf(buf);
+        bloomFilter.encode(buf);
         SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
         Assert.assertEquals(true, bloomFilter2.contains(hash));
     }
@@ -115,7 +115,7 @@ public class TestBloomFilter {
 
         // convert and back
         ByteBuf buf = Unpooled.buffer(filterSize + SimpleBloomFilter.SIZE_HEADER);
-        bloomFilter.toByteBuf(buf);       
+        bloomFilter.encode(buf);       
         SimpleBloomFilter<Number160> bloomFilter2 = new SimpleBloomFilter<Number160>(buf);
         Assert.assertEquals(true, bloomFilter2.contains(Number160.MAX_VALUE));
         Assert.assertEquals(false, bloomFilter2.contains(Number160.ONE));

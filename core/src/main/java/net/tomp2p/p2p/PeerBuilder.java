@@ -194,7 +194,11 @@ public class PeerBuilder {
 			channelServerConfiguration.ports(new Ports(tcpPort, udpPort, udpPort + 1));
 		}
 		
-		channelServerConfiguration.portsForwarding(new Ports(tcpPortForwarding, udpPortForwarding, udpPortForwarding + 1));
+		if(tcpPortForwarding == -1 && udpPortForwarding == -1) {
+			channelServerConfiguration.portsForwarding(new Ports());
+		} else {
+			channelServerConfiguration.portsForwarding(new Ports(tcpPortForwarding, udpPortForwarding, udpPortForwarding + 1));
+		}
 		
 		if (channelClientConfiguration == null) {
 			channelClientConfiguration = createDefaultChannelClientConfiguration();

@@ -95,12 +95,12 @@ public class TestPeerMap {
         Assert.assertEquals(1, PeerMap.classMember(Number160.ZERO, id1));
         Assert.assertEquals(159, PeerMap.classMember(Number160.ZERO, Number160.MAX_VALUE));
         //
-        PeerAddress pa1 = new PeerAddress(id1);
-        PeerAddress pa2 = new PeerAddress(id2);
-        PeerAddress pa3 = new PeerAddress(id3);
-        PeerAddress pa4 = new PeerAddress(id4);
-        PeerAddress pa5 = new PeerAddress(id5);
-        PeerAddress pa6 = new PeerAddress(id6);
+        PeerAddress pa1 = Utils2.createPeerAddress(id1);
+        PeerAddress pa2 = Utils2.createPeerAddress(id2);
+        PeerAddress pa3 = Utils2.createPeerAddress(id3);
+        PeerAddress pa4 = Utils2.createPeerAddress(id4);
+        PeerAddress pa5 = Utils2.createPeerAddress(id5);
+        PeerAddress pa6 = Utils2.createPeerAddress(id6);
         peerMap.peerFound(pa1, null, null, null);
         peerMap.peerFound(pa2, null, null, null);
         peerMap.peerFound(pa3, null, null, null);
@@ -136,12 +136,12 @@ public class TestPeerMap {
         Number160 id5 = new Number160("0x6");
         Number160 id6 = new Number160("0x7");
         //
-        PeerAddress pa1 = new PeerAddress(id1);
-        PeerAddress pa2 = new PeerAddress(id2);
-        PeerAddress pa3 = new PeerAddress(id3);
-        PeerAddress pa4 = new PeerAddress(id4);
-        PeerAddress pa5 = new PeerAddress(id5);
-        PeerAddress pa6 = new PeerAddress(id6);
+        PeerAddress pa1 = Utils2.createPeerAddress(id1);
+        PeerAddress pa2 = Utils2.createPeerAddress(id2);
+        PeerAddress pa3 = Utils2.createPeerAddress(id3);
+        PeerAddress pa4 = Utils2.createPeerAddress(id4);
+        PeerAddress pa5 = Utils2.createPeerAddress(id5);
+        PeerAddress pa6 = Utils2.createPeerAddress(id6);
         peerMap.peerFound(pa1, null, null, null);
         peerMap.peerFound(pa2, null, null, null);
         peerMap.peerFound(pa3, null, null, null);
@@ -182,13 +182,13 @@ public class TestPeerMap {
 
     @Test
     public void testCloser() throws UnknownHostException {
-        PeerAddress rn1 = new PeerAddress(new Number160("0x7f"));
-        PeerAddress rn2 = new PeerAddress(new Number160("0x40"));
+        PeerAddress rn1 = Utils2.createPeerAddress(new Number160("0x7f"));
+        PeerAddress rn2 = Utils2.createPeerAddress(new Number160("0x40"));
         Number160 key = new Number160("0xff");
         Assert.assertEquals(-1, PeerMap.isKadCloser(key, rn1, rn2));
         //
-        rn1 = new PeerAddress(new Number160("0x10"));
-        rn2 = new PeerAddress(new Number160("0x11"));
+        rn1 = Utils2.createPeerAddress(new Number160("0x10"));
+        rn2 = Utils2.createPeerAddress(new Number160("0x11"));
         key = new Number160("0xff");
         System.err.println("0x7f xor 0xff " + rn1.peerId().xor(key));
         System.err.println("0x40 xor 0xff " + rn2.peerId().xor(key));
@@ -197,9 +197,9 @@ public class TestPeerMap {
 
     @Test
     public void testCloser2() throws UnknownHostException {
-        PeerAddress rn1 = new PeerAddress(new Number160(98));
-        PeerAddress rn2 = new PeerAddress(new Number160(66));
-        PeerAddress rn3 = new PeerAddress(new Number160(67));
+        PeerAddress rn1 = Utils2.createPeerAddress(new Number160(98));
+        PeerAddress rn2 = Utils2.createPeerAddress(new Number160(66));
+        PeerAddress rn3 = Utils2.createPeerAddress(new Number160(67));
         PeerMapConfiguration conf = new PeerMapConfiguration(ID);
         conf.setFixedVerifiedBagSizes(3).setFixedOverflowBagSizes(3);
         conf.offlineCount(1000).offlineTimeout(60);
@@ -220,7 +220,7 @@ public class TestPeerMap {
         conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i < 12; i++) {
-            PeerAddress r1 = new PeerAddress(new Number160(i));
+            PeerAddress r1 = Utils2.createPeerAddress(new Number160(i));
             peerMap.peerFound(r1, null, null, null);
         }
         SortedSet<PeerStatistic> close = peerMap.closePeers(new Number160(2), 2);
@@ -237,7 +237,7 @@ public class TestPeerMap {
         conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i < 12; i++) {
-            PeerAddress r1 = new PeerAddress(new Number160((i % 6) + 1));
+            PeerAddress r1 = Utils2.createPeerAddress(new Number160((i % 6) + 1));
             peerMap.peerFound(r1, null, null, null);
         }
         SortedSet<PeerStatistic> close = peerMap.closePeers(new Number160(2), 2);
@@ -254,19 +254,19 @@ public class TestPeerMap {
         conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i <= 200; i++) {
-            PeerAddress r1 = new PeerAddress(new Number160(i + 1));
+            PeerAddress r1 = Utils2.createPeerAddress(new Number160(i + 1));
             peerMap.peerFound(r1, null, null, null);
         }
         Assert.assertEquals(20, peerMap.size());
-        peerMap.peerFailed(new PeerAddress(new Number160(100)), new PeerException(AbortCause.PROBABLY_OFFLINE, "probably offline"));
-        Assert.assertTrue(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(100))));
+        peerMap.peerFailed(Utils2.createPeerAddress(new Number160(100)), new PeerException(AbortCause.PROBABLY_OFFLINE, "probably offline"));
+        Assert.assertTrue(peerMap.isPeerRemovedTemporarly(Utils2.createPeerAddress(new Number160(100))));
         Assert.assertEquals(20, peerMap.size());
-        peerMap.peerFailed(new PeerAddress(new Number160(2)), new PeerException(AbortCause.PROBABLY_OFFLINE, "probably offline"));
+        peerMap.peerFailed(Utils2.createPeerAddress(new Number160(2)), new PeerException(AbortCause.PROBABLY_OFFLINE, "probably offline"));
         Assert.assertEquals(19, peerMap.size());
-        Assert.assertTrue(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(2))));
+        Assert.assertTrue(peerMap.isPeerRemovedTemporarly(Utils2.createPeerAddress(new Number160(2))));
         Thread.sleep(1000);
-        Assert.assertFalse(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(2))));
-        Assert.assertFalse(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(100))));
+        Assert.assertFalse(peerMap.isPeerRemovedTemporarly(Utils2.createPeerAddress(new Number160(2))));
+        Assert.assertFalse(peerMap.isPeerRemovedTemporarly(Utils2.createPeerAddress(new Number160(100))));
 
     }
 
@@ -278,7 +278,7 @@ public class TestPeerMap {
         conf.addMapPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
         final PeerMap peerMap = new PeerMap(conf);
         for (int i = 1; i <= 200; i++) {
-            PeerAddress r1 = new PeerAddress(new Number160(i + 1));
+            PeerAddress r1 = Utils2.createPeerAddress(new Number160(i + 1));
             peerMap.peerFound(r1, null, null, null);
         }
         Assert.assertEquals(20, peerMap.size());
@@ -286,7 +286,7 @@ public class TestPeerMap {
             @Override
             public void run() {
                 for (int i = 1; i <= 50; i++) {
-                    peerMap.peerFailed(new PeerAddress(new Number160(i + 1)), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
+                    peerMap.peerFailed(Utils2.createPeerAddress(new Number160(i + 1)), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
                 }
             }
         });
@@ -295,7 +295,7 @@ public class TestPeerMap {
             @Override
             public void run() {
                 for (int i = 1; i <= 100; i++) {
-                    peerMap.peerFailed(new PeerAddress(new Number160(i + 1)), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
+                    peerMap.peerFailed(Utils2.createPeerAddress(new Number160(i + 1)), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
                 }
             }
         });
@@ -304,7 +304,7 @@ public class TestPeerMap {
         t1.join();
         t2.join();
 
-        Assert.assertTrue(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(100))));
+        Assert.assertTrue(peerMap.isPeerRemovedTemporarly(Utils2.createPeerAddress(new Number160(100))));
         Assert.assertEquals(3, peerMap.size());
     }
 
@@ -319,7 +319,7 @@ public class TestPeerMap {
             @Override
             public void run() {
                 for (int i = 1; i <= 50; i++) {
-                    peerMap.peerFound(new PeerAddress(new Number160(i + 1)), null, null, null);
+                    peerMap.peerFound(Utils2.createPeerAddress(new Number160(i + 1)), null, null, null);
                 }
             }
         });
@@ -328,7 +328,7 @@ public class TestPeerMap {
             @Override
             public void run() {
                 for (int i = 1; i <= 100; i++) {
-                    peerMap.peerFound(new PeerAddress(new Number160(i + 1)), null, null, null);
+                    peerMap.peerFound(Utils2.createPeerAddress(new Number160(i + 1)), null, null, null);
                 }
             }
         });
@@ -378,13 +378,13 @@ public class TestPeerMap {
                 public void run() {
                     for (int i = 1; i <= rounds + diff; i++) {
                         if (i + diff < rounds) {
-                            boolean retVal = peerMap.peerFound(new PeerAddress(new Number160(i + 1)), null, null, null);
+                            boolean retVal = peerMap.peerFound(Utils2.createPeerAddress(new Number160(i + 1)), null, null, null);
                             if (retVal) {
                                 add.incrementAndGet();
                             }
                         }
                         if (i - diff > 1) {
-                            boolean retVal = peerMap.peerFailed(new PeerAddress(new Number160(i - diff)), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
+                            boolean retVal = peerMap.peerFailed(Utils2.createPeerAddress(new Number160(i - diff)), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
                             if (retVal) {
                                 del.incrementAndGet();
                             }
@@ -418,7 +418,7 @@ public class TestPeerMap {
         long start = System.currentTimeMillis();
         int size = 500000;
         for (int i = 1; i <= size; i++) {
-            PeerAddress r1 = new PeerAddress(new Number160(random));
+            PeerAddress r1 = Utils2.createPeerAddress(new Number160(random));
             listAdded.add(r1);
         }
         for (PeerAddress r1 : listAdded) {
@@ -461,10 +461,10 @@ public class TestPeerMap {
         Number160 b2 = new Number160("0x32");
         Number160 b3 = new Number160("0x1F4");
         Number160 b4 = new Number160("0x1388");
-        PeerAddress n1 = new PeerAddress(b1);
-        PeerAddress n2 = new PeerAddress(b2);
-        PeerAddress n3 = new PeerAddress(b3);
-        PeerAddress n4 = new PeerAddress(b4);
+        PeerAddress n1 = Utils2.createPeerAddress(b1);
+        PeerAddress n2 = Utils2.createPeerAddress(b2);
+        PeerAddress n3 = Utils2.createPeerAddress(b3);
+        PeerAddress n4 = Utils2.createPeerAddress(b4);
         final NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createXORAddressComparator(b3));
         queue.add(n1);
         queue.add(n2);
@@ -525,7 +525,7 @@ public class TestPeerMap {
             final PeerMap peerMap = new PeerMap(conf);
             List<PeerAddress> peers = new ArrayList<PeerAddress>();
             for (int i = 0; i < round; i++) {
-                PeerAddress r1 = new PeerAddress(new Number160(rnd));
+                PeerAddress r1 = Utils2.createPeerAddress(new Number160(rnd));
                 peers.add(r1);
                 peerMap.peerFound(r1, null, null, null);
             }

@@ -249,7 +249,7 @@ public class TestPeerAddress {
      * @param pa2
      *            The second PeerAddress
      */
-    private void compare(final PeerAddress pa1, final PeerAddress pa2) {
+    public static void compare(final PeerAddress pa1, final PeerAddress pa2) {
         Assert.assertEquals(pa1.peerId(), pa2.peerId());
         Assert.assertEquals(pa1.ipInternalNetworkPrefix(), pa2.ipInternalNetworkPrefix());
         Assert.assertEquals(pa1.holePunching(), pa2.holePunching());

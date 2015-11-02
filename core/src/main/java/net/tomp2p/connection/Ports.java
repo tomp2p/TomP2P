@@ -58,7 +58,7 @@ public class Ports {
      */
     public Ports(final int tcpPort, final int udpPort, final int udtPort) {
     	if(tcpPort < 1 || udpPort < 1 || udtPort < 1) {
-    		throw new IllegalArgumentException("manual ports need to be > 1");
+    		throw new IllegalArgumentException("manual ports need to be > 1. TCP: "+tcpPort+", UDP:"+udpPort+", UDT:"+udtPort);
     	}
     	this.tcpPort = tcpPort;
         this.udpPort = udpPort;

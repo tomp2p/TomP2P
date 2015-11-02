@@ -169,15 +169,15 @@ public class Decoder {
 	}
 
 	public boolean decodeHeader(final ByteBuf buf, InetSocketAddress recipient, final InetSocketAddress sender) {
-		if (message == null) {
+		if (!headerDone) {
 			if (buf.readableBytes() < MessageHeaderCodec.HEADER_SIZE_MIN) {
 				// we don't have the header yet, we need the full header first
 				// wait for more data
 				return false;
 			}
 			final int readerIndex = buf.readerIndex();
-			final boolean success = MessageHeaderCodec.decodeHeader(buf, recipient, sender, message);
-			if(!success) {
+			headerDone = MessageHeaderCodec.decodeHeader(buf, recipient, sender, message);
+			if(!headerDone) {
 				buf.readerIndex(readerIndex);
 				return false;
 			}

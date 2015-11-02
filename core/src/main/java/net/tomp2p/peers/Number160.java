@@ -490,7 +490,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
 	}
 
 	public Number160 encode(ByteBuf buf) {
-		buf.writeInt(val[0]).writeInt(val[1]).writeInt(val[2]).writeInt(val[3]).writeInt(val[4]).writeInt(val[5]);
+		buf.writeInt(val[0]).writeInt(val[1]).writeInt(val[2]).writeInt(val[3]).writeInt(val[4]);
 		return this;
 	}
 }

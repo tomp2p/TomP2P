@@ -80,7 +80,7 @@ public final class MessageHeaderCodec {
     	buf.writeInt(versionAndType); // 4
     	buf.writeInt(message.messageId()); // 8
     	buf.writeByte(message.command()); // 9
-    	buf.writeBytes(message.recipient().peerId().toByteArray()); // 29
+    	message.recipient().peerId().encode(buf); //29
     	buf.writeInt(encodeContentTypes(message.contentTypes())); // 33
         // three bits for the message options, 5 bits for the sender options
     	buf.writeByte(message.options()); // 34
@@ -127,7 +127,7 @@ public final class MessageHeaderCodec {
         if(buffer.readableBytes() < peerAddressSize) {
         	return false;
         }
-        PeerAddress peerAddress = PeerAddress.decode(buffer);
+        PeerAddress peerAddress = PeerAddress.decode(header, buffer);
         if(senderSocket.getAddress() instanceof Inet4Address) {
         	PeerSocket4Address psa4 = peerAddress.ipv4Socket().withIpv4(IPv4.fromInet4Address(senderSocket.getAddress()));
         	message.sender(peerAddress.withIpv4Socket(psa4));	

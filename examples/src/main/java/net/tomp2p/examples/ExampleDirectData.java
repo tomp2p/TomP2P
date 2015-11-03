@@ -24,7 +24,7 @@ public class ExampleDirectData {
 		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(idP1).ports(1234).start()).start();
 		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(idP2).ports(1235).start()).start();
 		BootstrapBuilder b = p2.peer().bootstrap();
-		b.bootstrapTo(Arrays.asList(new PeerAddress(idP1, "localhost", 1234, 1234)));
+		b.bootstrapTo(Arrays.asList(PeerAddress.create(idP1, "localhost", 1234, 1234, 1235)));
 		b.start().awaitUninterruptibly();
 
 		p1.peer().objectDataReply(new ObjectDataReply() {

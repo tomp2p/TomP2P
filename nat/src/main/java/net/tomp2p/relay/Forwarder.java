@@ -27,7 +27,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;

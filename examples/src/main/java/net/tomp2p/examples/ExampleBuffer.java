@@ -29,7 +29,7 @@ public class ExampleBuffer {
 		PeerNAT pn2 = new PeerBuilderNAT(requester.peer()).bufferTimeoutSeconds(30).start();
 		
 		PeerAddress pa = slow.peerBean().serverPeerAddress();
-		pa = pa.changeFirewalledTCP(true).changeFirewalledUDP(true).changeSlow(true);
+		pa = pa.withSlow(true).withUnreachable(true);
 		slow.peerBean().serverPeerAddress(pa);
 		
 		// find neighbors

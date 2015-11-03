@@ -222,7 +222,7 @@ public class DiscoverBuilder {
      */
     private void discover(final FutureDiscover futureDiscover, final PeerAddress peerAddress,
             final ChannelCreator cc, final ConnectionConfiguration configuration) {
-    	
+    	LOG.debug("starting discover to {}",peerAddress);
     	final FutureDone<Void> pingDone = new FutureDone<Void>();
 
         peer.pingRPC().addPeerReachableListener(new PeerReachable() {

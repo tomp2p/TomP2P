@@ -18,6 +18,9 @@ package net.tomp2p.peers;
 
 import java.util.Collection;
 
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
+
 /**
  * Filter peers if the IP is the same. Being too strict does not mean to harm
  * the network. Other peers will have the information about the peer even if you
@@ -44,21 +47,30 @@ public class PeerIPFilter implements PeerMapFilter {
 	@Override
 	public boolean rejectPreRouting(final PeerAddress peerAddress, final Collection<PeerAddress> all) {
 
-		final IP.IPv4 ipv4 = peerAddress.ipv4Socket().ipv4();
-		for (final PeerAddress inMap : all) {
-			final IP.IPv4 ipv4Test = inMap.ipv4Socket().ipv4();
-			if (ipv4.maskWithNetworkMask(mask4).equals(ipv4Test.maskWithNetworkMask(mask4))) {
-				return true;
+		if(peerAddress.ipv4Socket() != null) {
+			final IP.IPv4 ipv4 = peerAddress.ipv4Socket().ipv4();
+			for (final PeerAddress inMap : all) {
+				final PeerSocket4Address ps4a = inMap.ipv4Socket();
+				if(ps4a == null) {
+					continue;
+				}
+				if (ipv4.maskWithNetworkMask(mask4).equals(ps4a.ipv4().maskWithNetworkMask(mask4))) {
+					return true;
+				}
 			}
 		}
 
-		final IP.IPv6 ipv6 = peerAddress.ipv6Socket().ipv6();
-		for (final PeerAddress inMap : all) {
-			final IP.IPv6 ipv6Test = inMap.ipv6Socket().ipv6();
-			if (ipv6.maskWithNetworkMask(mask6).equals(ipv6Test.maskWithNetworkMask(mask6))) {
-				return true;
+		if(peerAddress.ipv6Socket() != null) {
+			final IP.IPv6 ipv6 = peerAddress.ipv6Socket().ipv6();
+			for (final PeerAddress inMap : all) {
+				final PeerSocket6Address ps6a = inMap.ipv6Socket();
+				if(ps6a == null) {
+					continue;
+				}
+				if (ipv6.maskWithNetworkMask(mask6).equals(ps6a.ipv6().maskWithNetworkMask(mask6))) {
+					return true;
+				}
 			}
-
 		}
 
 		return false;

@@ -75,7 +75,7 @@ public final class MessageHeaderCodec {
      *            The message with the header that will be encoded
      * @return The buffer passed as an argument
      */
-    public static void encodeHeader(final ByteBuf buf, final Message message, final boolean ipv6) {
+    public static void encodeHeader(final ByteBuf buf, final Message message) {
     	final int versionAndType = message.version() << 4 | (message.type().ordinal() & Utils.MASK_0F);
     	buf.writeInt(versionAndType); // 4
     	buf.writeInt(message.messageId()); // 8
@@ -84,8 +84,7 @@ public final class MessageHeaderCodec {
     	buf.writeInt(encodeContentTypes(message.contentTypes())); // 33
         // three bits for the message options, 5 bits for the sender options
     	buf.writeByte(message.options()); // 34
-    	final PeerAddress sender = ipv6 ? message.sender().withSkipIPv6(true) : message.sender().withSkipIPv4(true);
-    	sender.encode(buf);
+    	message.sender().encode(buf);
     }
 
     /**
@@ -124,7 +123,7 @@ public final class MessageHeaderCodec {
         
         final int header = buffer.readUnsignedMedium();
         final int peerAddressSize = PeerAddress.size(header);
-        if(buffer.readableBytes() < peerAddressSize) {
+        if(3 + buffer.readableBytes() < peerAddressSize) {
         	return false;
         }
         PeerAddress peerAddress = PeerAddress.decode(header, buffer);

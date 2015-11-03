@@ -147,7 +147,7 @@ public class TestBootstrap {
         Peer peer = null;
         try {
             peer = new PeerBuilder(new Number160(rnd)).ports(4000).start();
-            PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000, 4000);
+            PeerAddress pa = PeerAddress.create(new Number160(rnd), "192.168.77.77", 4000, 4000, 4001);
             FutureBootstrap tmp = peer.bootstrap().peerAddress(pa).start();
             tmp.awaitUninterruptibly();
             Assert.assertEquals(false, tmp.isSuccess());
@@ -193,7 +193,7 @@ public class TestBootstrap {
             peer = new PeerBuilder(new Number160(rnd)).ports(4000).start();
 
             Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(2);
-            PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000, 4000);
+            PeerAddress pa = PeerAddress.create(new Number160(rnd), "192.168.77.77", 4000, 4000, 4001);
             bootstrapTo.add(peer.peerAddress());
             bootstrapTo.add(pa);
             FutureBootstrap tmp = peer.bootstrap().bootstrapTo(bootstrapTo).start();

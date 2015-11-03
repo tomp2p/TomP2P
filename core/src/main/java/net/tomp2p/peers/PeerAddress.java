@@ -16,6 +16,10 @@
 package net.tomp2p.peers;
 
 import java.io.Serializable;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -139,6 +143,12 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     private final Collection<PeerSocketAddress> relays;
     public static final Collection<PeerSocketAddress> EMPTY_PEER_SOCKET_ADDRESSES = Collections.emptySet();
     public static final byte EMPTY_RELAY_TYPES = 0;
+    
+    public static final boolean preferIPv6Addresses;
+    
+    static {
+    	preferIPv6Addresses = "true".equalsIgnoreCase(System.getProperty("java.net.preferIPv6Addresses"));
+    }
     
     //Change lomboks default behavior
 	public static class PeerAddressBuilder {
@@ -545,7 +555,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 		sb.append('}');
 		
 		sb.append("r:").append(relaySize).append("(");
-		for(final PeerSocketAddress relay:relays) {
+		for(final PeerSocketAddress relay:relays()) {
 			sb.append(relay);
     	}
 		sb.append(')');
@@ -596,6 +606,92 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 			return withIpv4Socket((PeerSocket4Address) ps);
 		} else {
 			return withIpv6Socket((PeerSocket6Address) ps);	
+		}
+	}
+	
+	public static PeerAddress create(final Number160 peerId) {
+		return builder().peerId(peerId).build();
+	}
+	
+	public static PeerAddress create(final Number160 peerId, String host, int udpPort, int tcpPort, int udtPort) throws UnknownHostException {
+		return create(peerId, InetAddress.getByName(host), udpPort, tcpPort, udtPort);
+	}
+	
+	public static PeerAddress create(final Number160 peerId, InetAddress inet, int port) {
+		return create(peerId, inet, port, port, port + 1); 
+	}
+	
+	public static PeerAddress create(final Number160 peerId, InetSocketAddress inetSocket) {
+		return create(peerId, inetSocket.getAddress(), inetSocket.getPort(), inetSocket.getPort(), inetSocket.getPort() + 1); 
+	}
+	
+	public static PeerAddress create(final Number160 peerId, InetAddress inet, int udpPort, int tcpPort, int udtPort) {
+		if(inet instanceof Inet4Address) {
+			final PeerSocket4Address ps4a = PeerSocket4Address.builder()
+					.ipv4(IP.IPv4.fromInet4Address(inet))
+					.udpPort(udpPort)
+					.tcpPort(tcpPort)
+					.udtPort(udtPort)
+					.build();
+			return builder()
+					.peerId(peerId)
+					.ipv4Socket(ps4a)
+					.build();
+		} else {
+			final PeerSocket6Address ps6a = PeerSocket6Address.builder()
+					.ipv6(IP.IPv6.fromInet6Address(inet))
+					.udpPort(udpPort)
+					.tcpPort(tcpPort)
+					.udtPort(udtPort)
+					.build();
+			return builder()
+					.peerId(peerId)
+					.ipv6Socket(ps6a)
+					.build();
+		}
+	}
+
+	
+
+	public InetSocketAddress createUDPSocket(final PeerAddress sender) {
+		final boolean canIPv6 = ipv6Flag && sender.ipv6Flag;
+		final boolean canIPv4 = ipv4Flag && sender.ipv4Flag;
+		if((preferIPv6Addresses && canIPv6) || 
+				(!canIPv4 && canIPv6)) {
+			if(ipv6Socket == null) {
+				throw new RuntimeException("Flag indicates that ipv6 is present, but its not");
+			}
+			return ipv6Socket.createUDPSocket();
+		} else if(canIPv4) {
+			if(ipv4Socket == null) {
+				throw new RuntimeException("Flag indicates that ipv4 is present, but its not");
+			}
+			return ipv4Socket.createUDPSocket();
+		}
+		else {
+			throw new RuntimeException("No matching protocal found");
+		}
+	}
+
+
+
+	public InetSocketAddress createSocket(final PeerAddress recipient, final int port) {
+		final boolean canIPv6 = ipv6Flag && recipient.ipv6Flag;
+		final boolean canIPv4 = ipv4Flag && recipient.ipv4Flag;
+		if((preferIPv6Addresses && canIPv6) || 
+				(!canIPv4 && canIPv6)) {
+			if(ipv6Socket == null) {
+				throw new RuntimeException("Flag indicates that ipv6 is present, but its not");
+			}
+			return ipv6Socket.createSocket(port);
+		} else if(canIPv4) {
+			if(ipv4Socket == null) {
+				throw new RuntimeException("Flag indicates that ipv4 is present, but its not");
+			}
+			return ipv4Socket.createSocket(port);
+		}
+		else {
+			throw new RuntimeException("No matching protocal found");
 		}
 	}
 	

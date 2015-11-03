@@ -464,7 +464,7 @@ public class Reservation {
 				} else if(peerBean.serverPeerAddress().net4Internal()) {
 					fromAddress = peerBean.serverPeerAddress().ipInternalSocket().ipv4().toInetAddress();
 				} else {
-					fromAddress = peerBean.serverPeerAddress().ipInternalSocket().ipv4().toInetAddress();
+					fromAddress = peerBean.serverPeerAddress().ipv4Socket().ipv4().toInetAddress();
 				}
 				
 				LOG.debug("channel from {}", fromAddress);

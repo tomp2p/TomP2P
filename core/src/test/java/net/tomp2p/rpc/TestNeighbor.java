@@ -75,7 +75,7 @@ public class TestNeighbor {
             Assert.assertEquals(true, fr.isSuccess());
             NeighborSet pas = fr.responseMessage().neighborsSet(0);
             // we are able to fit 40 neighbors into 1400 bytes
-            Assert.assertEquals(33, pas.size());
+            Assert.assertEquals(30, pas.size());
             Assert.assertEquals(new Number160("0x1"), pas.neighbors().iterator().next().peerId());
             Assert.assertEquals(PORT_TCP, pas.neighbors().iterator().next().ipv4Socket().tcpPort());
             Assert.assertEquals(PORT_UDP, pas.neighbors().iterator().next().ipv4Socket().udpPort());
@@ -120,7 +120,7 @@ public class TestNeighbor {
             Assert.assertEquals(true, fr.isSuccess());
             NeighborSet pas = fr.responseMessage().neighborsSet(0);
             // we are able to fit 40 neighbors into 1400 bytes
-            Assert.assertEquals(33, pas.size());
+            Assert.assertEquals(30, pas.size());
             Assert.assertEquals(new Number160("0x1"), pas.neighbors().iterator().next().peerId());
             Assert.assertEquals(PORT_TCP, pas.neighbors().iterator().next().ipv4Socket().tcpPort());
             Assert.assertEquals(PORT_UDP, pas.neighbors().iterator().next().ipv4Socket().udpPort());

@@ -276,7 +276,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		Map<PeerAddress, Pair<PeerStatistic, Data>> trackerData = dataMap.get(new Number320(locationKey, domainKey));
 		if(trackerData!=null) {
 			if(contentKey!=null) {
-				PeerAddress tmpAddress = new PeerAddress(contentKey);
+				PeerAddress tmpAddress = PeerAddress.create(contentKey);
 				Pair<PeerStatistic, Data> pair = trackerData.get(tmpAddress);
 				if(pair != null) {
 					contentDigest = pair.element1().hash();

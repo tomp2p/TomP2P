@@ -1,5 +1,7 @@
 package net.tomp2p.peers;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import io.netty.buffer.ByteBuf;
@@ -328,6 +330,14 @@ public abstract class PeerSocketAddress {
 			return ((PeerSocket4Address)this).createTCPSocket();
 		} else {
 			return ((PeerSocket6Address)this).createTCPSocket();
+		}
+		
+	}
+	public static PeerSocketAddress create(InetAddress inet, int udpPort, int tcpPort, int udtPort) {
+		if(inet instanceof Inet4Address) {
+			return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inet)).udpPort(udpPort).tcpPort(tcpPort).udtPort(udtPort).build();
+		} else {
+			return PeerSocket6Address.builder().ipv6(IPv6.fromInet6Address(inet)).udpPort(udpPort).tcpPort(tcpPort).udtPort(udtPort).build();
 		}
 		
 	}

@@ -40,7 +40,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.peers.PeerSocketAddress2;
 
 public class UtilsDHT2 {
     /**
@@ -82,9 +81,7 @@ public class UtilsDHT2 {
     public static PeerAddress createAddress(Number160 idSender, String inetSender, int tcpPortSender,
             int udpPortSender, boolean firewallUDP, boolean firewallTCP) throws UnknownHostException {
         InetAddress inetSend = InetAddress.getByName(inetSender);
-        PeerSocketAddress2 peerSocketAddress = new PeerSocketAddress2(inetSend, tcpPortSender, udpPortSender);
-        PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, null, firewallTCP, firewallUDP, false, false, false,false,
-                PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
+        PeerAddress n1 = PeerAddress.create(idSender, inetSend, tcpPortSender, udpPortSender, udpPortSender + 1);
         return n1;
     }
 
@@ -345,18 +342,18 @@ public class UtilsDHT2 {
 	    return createAddress(Number160.createHash(inet), inet, 8005, 8006, false, false);
     }
 	
-	public static PeerAddress[] createDummyAddress(int size, int portTCP, int portUDP) throws UnknownHostException {
+	public static PeerAddress[] createDummyAddress(int size, int portUDP, int portTCP, int portUDT) throws UnknownHostException {
         PeerAddress[] pa = new PeerAddress[size];
         for (int i = 0; i < size; i++) {
-            pa[i] = createAddress(i + 1, portTCP, portUDP);
+            pa[i] = createAddress(i + 1, portUDP, portTCP, portUDT);
         }
         return pa;
     }
 
-	public static PeerAddress createAddress(int iid, int portTCP, int portUDP) throws UnknownHostException {
+	public static PeerAddress createAddress(int iid, int portUDP, int portTCP, int portUDT) throws UnknownHostException {
         Number160 id = new Number160(iid);
         InetAddress address = InetAddress.getByName("127.0.0.1");
-        return new PeerAddress(id, address, portTCP, portUDP);
+        return PeerAddress.create(id, address, portUDP, portTCP, portUDT);
     }
 
 }

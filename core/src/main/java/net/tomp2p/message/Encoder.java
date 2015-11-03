@@ -37,13 +37,13 @@ public class Encoder {
         this.signatureFactory = signatureFactory;
     }
 
-    public boolean write(final AlternativeCompositeByteBuf buf, final Message message, SignatureCodec signatureCodec, boolean ipv6) throws InvalidKeyException,
+    public boolean write(final AlternativeCompositeByteBuf buf, final Message message, SignatureCodec signatureCodec) throws InvalidKeyException,
             SignatureException, IOException {
 
         this.message = message;
         LOG.debug("message for outbound {}", message);
       
-        MessageHeaderCodec.encodeHeader(buf, message, ipv6);
+        MessageHeaderCodec.encodeHeader(buf, message);
 
         boolean done = loop(buf);
         LOG.debug("message encoded {}", message);

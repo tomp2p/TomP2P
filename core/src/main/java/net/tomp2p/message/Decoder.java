@@ -52,7 +52,8 @@ public class Decoder {
 	// private Message2 result = null;
 
 	// current state - needs to be deleted if we want to reuse
-	private final Message message = new Message();
+	private Message message = new Message();
+	
 	private boolean headerDone = false;
 	private Signature signature = null;
 
@@ -258,10 +259,10 @@ public class Decoder {
 					neighborSet = new NeighborSet(-1, new ArrayList<PeerAddress>(neighborSize));
 				}
 				for (int i = neighborSet.size(); i < neighborSize; i++) {
-					if (buf.readableBytes() < 4) {
+					if (buf.readableBytes() < PeerAddress.HEADER_SIZE) {
 						return false;
 					}
-					size = PeerAddress.size(buf.getInt(buf.readerIndex()));
+					size = PeerAddress.size(buf.getUnsignedMedium(buf.readerIndex()));
 					if (buf.readableBytes() < size) {
 						return false;
 					}
@@ -578,8 +579,9 @@ public class Decoder {
 	}
 
 	public Message prepareFinish() {
-		Message ret = message;
-		message.setDone();
+		final Message ret = message;
+		message = new Message();
+		ret.setDone();
 		contentTypes.clear();
 		headerDone = false;
 		neighborSize = -1;
@@ -614,6 +616,7 @@ public class Decoder {
     }
 
 	public void release() {
+		
 		if(message!=null) {
 			message.release();
 		}

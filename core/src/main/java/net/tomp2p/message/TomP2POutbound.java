@@ -1,5 +1,11 @@
 package net.tomp2p.message;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -7,16 +13,9 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
-
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-
 import net.tomp2p.connection.SignatureFactory;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
 
@@ -37,14 +36,13 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
     		ctx.write(msg, promise);
             return;
     	}
-        boolean ipv6 = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress() instanceof Inet6Address;
-			
+        	
 		try {
         	boolean done = false;
             buf = AlternativeCompositeByteBuf.compBuffer(byteBufAllocator, buf);
             
             //null, means create signature, as we did not have created one already
-            done = encoder.write(buf, (Message) msg, null, ipv6);
+            done = encoder.write(buf, (Message) msg, null);
             
             final Message message = encoder.message();
 
@@ -52,20 +50,22 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 // this will release the buffer
                 if (ctx.channel() instanceof DatagramChannel) {
                 	
+                	final PeerAddress recipientAddress;
                 	InetSocketAddress recipient;
                 	InetSocketAddress sender;
                     if (message.senderSocket() == null) {
                     	//in case of a request
                     	if(message.recipientRelay()!=null) {
                     		//in case of sending to a relay (the relayed flag is already set)
-                    		recipient = ipv6 ? message.recipientRelay().ipv6Socket().createUDPSocket(): message.recipientRelay().ipv4Socket().createUDPSocket();
+                    		recipientAddress = message.recipientRelay();
                     	} else if(message.recipientReflected()!=null) {
                     		//in case we use nat reflection
-                    		recipient = ipv6 ? message.recipientReflected().ipv6Socket().createUDPSocket() : message.recipientReflected().ipv4Socket().createUDPSocket();
+                    		recipientAddress = message.recipientReflected();
                     	} else {
-                    		recipient = ipv6 ? message.recipient().ipv6Socket().createUDPSocket() : message.recipient().ipv4Socket().createUDPSocket();
+                    		recipientAddress = message.recipient();
                     	}
-                    	sender = ipv6 ? message.sender().ipv6Socket().createSocket(0) : message.sender().ipv4Socket().createSocket(0);
+                    	recipient = recipientAddress.createUDPSocket(message.sender());
+                    	sender = message.sender().createSocket(recipientAddress, 0) ;
                     } else {
                     	//in case of a reply
                     	recipient = message.senderSocket();

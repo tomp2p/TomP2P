@@ -75,7 +75,7 @@ public class ExampleDiscover {
 
 		InetAddress address = Inet4Address.getByName(ipAddress);
 		int masterPort = 4000;
-		PeerAddress pa = new PeerAddress(Number160.ZERO, address, masterPort, masterPort);
+		PeerAddress pa = PeerAddress.create(Number160.ZERO, address, masterPort, masterPort, masterPort +1 );
 
 		System.out.println("PeerAddress: " + pa);
 		

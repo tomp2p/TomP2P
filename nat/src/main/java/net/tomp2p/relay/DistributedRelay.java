@@ -25,7 +25,6 @@ import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMapChangeListener;
-import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.utils.ConcurrentCacheSet;
 
@@ -163,7 +162,7 @@ public class DistributedRelay implements PeerMapChangeListener {
 			PeerAddress candidate = iterator.next();
 
 			// filter peers that are relayed themselves
-			if (candidate.isRelayed()) {
+			if (candidate.relaySize() > 0) {
 				iterator.remove();
 				continue;
 			}

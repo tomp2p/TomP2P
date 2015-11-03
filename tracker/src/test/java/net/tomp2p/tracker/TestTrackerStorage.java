@@ -23,7 +23,7 @@ public class TestTrackerStorage {
 	@Test
 	public void testStoragePutGetVerified() throws IOException, ClassNotFoundException {
 		Number160 self = Number160.ONE;
-		PeerAddress selfAddress = new PeerAddress(self);
+		PeerAddress selfAddress = PeerAddress.create(self);
 		PeerMapConfiguration pmc = new PeerMapConfiguration(self);
 		PeerMap pm = new PeerMap(pmc);
 		TrackerStorage trackerStorage = new TrackerStorage(10, new int[] { 10 }, 1, pm, selfAddress, false);
@@ -41,7 +41,7 @@ public class TestTrackerStorage {
 	@Test
 	public void testStoragePutGetUnverified() throws IOException, ClassNotFoundException {
 		Number160 self = Number160.ONE;
-		PeerAddress selfAddress = new PeerAddress(self);
+		PeerAddress selfAddress = PeerAddress.create(self);
 		PeerMapConfiguration pmc = new PeerMapConfiguration(self);
 		PeerMap pm = new PeerMap(pmc);
 		TrackerStorage trackerStorage = new TrackerStorage(10, new int[] { 10 }, 1, pm, selfAddress, true);
@@ -58,7 +58,7 @@ public class TestTrackerStorage {
 	@Test
 	public void testStoragePutGetUnverifiedVerified() throws IOException, ClassNotFoundException {
 		Number160 self = Number160.ONE;
-		PeerAddress selfAddress = new PeerAddress(self);
+		PeerAddress selfAddress = PeerAddress.create(self);
 		PeerMapConfiguration pmc = new PeerMapConfiguration(self);
 		PeerMap pm = new PeerMap(pmc);
 		TrackerStorage trackerStorage = new TrackerStorage(Integer.MAX_VALUE, new int[] { 10 }, 1, pm, selfAddress, true);
@@ -76,7 +76,7 @@ public class TestTrackerStorage {
 	@Test
 	public void testStoragePutGetUnverifiedVerifiedSecurity() throws IOException, ClassNotFoundException, NoSuchAlgorithmException {
 		Number160 self = Number160.ONE;
-		PeerAddress selfAddress = new PeerAddress(self);
+		PeerAddress selfAddress = PeerAddress.create(self);
 		PeerMapConfiguration pmc = new PeerMapConfiguration(self);
 		PeerMap pm = new PeerMap(pmc);
 		TrackerStorage trackerStorage = new TrackerStorage(Integer.MAX_VALUE, new int[] { 10 }, 1, pm, selfAddress, true);
@@ -98,7 +98,7 @@ public class TestTrackerStorage {
 	@Test
 	public void testTrackerRemove1() throws IOException {
 		Number160 self = Number160.ONE;
-		PeerAddress selfAddress = new PeerAddress(self);
+		PeerAddress selfAddress = PeerAddress.create(self);
 		PeerMapConfiguration pmc = new PeerMapConfiguration(self);
 		PeerMap pm = new PeerMap(pmc);
 		TrackerStorage trackerStorage = new TrackerStorage(10, new int[] { 10 }, 1, pm, selfAddress, false);
@@ -113,7 +113,7 @@ public class TestTrackerStorage {
 	@Test
 	public void testTrackerRemove2() throws IOException {
 		Number160 self = Number160.ONE;
-		PeerAddress selfAddress = new PeerAddress(self);
+		PeerAddress selfAddress = PeerAddress.create(self);
 		PeerMapConfiguration pmc = new PeerMapConfiguration(self);
 		PeerMap pm = new PeerMap(pmc);
 		TrackerStorage trackerStorage = new TrackerStorage(10, new int[] { 10 }, 1, pm, selfAddress, true);
@@ -128,7 +128,7 @@ public class TestTrackerStorage {
 	@Test
 	public void testTrackerMaintenance1() throws IOException {
 		Number160 self = Number160.ONE;
-		PeerAddress selfAddress = new PeerAddress(self);
+		PeerAddress selfAddress = PeerAddress.create(self);
 		PeerMapConfiguration pmc = new PeerMapConfiguration(self);
 		PeerMap pm = new PeerMap(pmc);
 		TrackerStorage trackerStorage = new TrackerStorage(10, new int[] { 10 }, 1, pm, selfAddress, true);
@@ -143,7 +143,7 @@ public class TestTrackerStorage {
 	@Test
 	public void testTrackerMaintenance2() throws IOException {
 		Number160 self = Number160.ONE;
-		PeerAddress selfAddress = new PeerAddress(self);
+		PeerAddress selfAddress = PeerAddress.create(self);
 		PeerMapConfiguration pmc = new PeerMapConfiguration(self);
 		PeerMap pm = new PeerMap(pmc);
 		TrackerStorage trackerStorage = new TrackerStorage(10, new int[] { 10 }, 1, pm, selfAddress, true);

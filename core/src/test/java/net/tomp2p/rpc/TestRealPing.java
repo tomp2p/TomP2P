@@ -73,7 +73,7 @@ public class TestRealPing {
         Peer sender = null;
         ChannelCreator cc = null;
         try {
-            PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
+            PeerAddress pa = PeerAddress.create(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT, PORT+1);
             sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).enableMaintenance(false)
                     .start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
@@ -107,7 +107,7 @@ public class TestRealPing {
         Peer sender = null;
         ChannelCreator cc = null;
         try {
-            PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
+            PeerAddress pa = PeerAddress.create(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT, PORT + 1);
             sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).enableMaintenance(false)
                     .start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
@@ -141,7 +141,7 @@ public class TestRealPing {
         Peer sender = null;
         ChannelCreator cc = null;
         try {
-            PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
+            PeerAddress pa = PeerAddress.create(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT, PORT + 1);
             sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).enableMaintenance(false)
                     .start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());

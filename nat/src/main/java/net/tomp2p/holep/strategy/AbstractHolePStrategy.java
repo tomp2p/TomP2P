@@ -29,7 +29,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress2;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
@@ -289,7 +289,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		for (int i = 0; i < channelFutures.size(); i++) {
 			final Message dummyMessage = createDummyMessage(i);
 			final FutureResponse futureResponse = new FutureResponse(dummyMessage);
-			LOG.debug("FIRE! remotePort: " + dummyMessage.recipient().udpPort() + ", localPort: " + dummyMessage.sender().udpPort());
+			LOG.debug("FIRE! remote: {}, local: {}", dummyMessage.recipient(), dummyMessage.sender());
 			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 		}
 	}
@@ -458,11 +458,11 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 					mainFutureDone.done(msg);
 					ctx.close();
 				} else if (Message.Type.REQUEST_3 == msg.type() && Commands.HOLEP.getNr() == msg.command()) {
-					LOG.debug("Holes successfully punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
-							+ msg.sender().udpPort() + "}!");
+					LOG.debug("Holes successfully punched with ports = {local = " + msg.recipient() + " , remote = "
+							+ msg.sender() + "}!");
 				} else {
-					LOG.debug("Holes punche not punched with ports = {localPort = " + msg.recipient().udpPort() + " , remotePort = "
-							+ msg.sender().udpPort() + "} yet!");
+					LOG.debug("Holes punche not punched with ports = {local = " + msg.recipient() + " , remote = "
+							+ msg.sender() + "} yet!");
 				}
 			}
 		};
@@ -582,7 +582,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 */
 	private FutureDone<Message> createInitMessage(final List<ChannelFuture> channelFutures) throws Exception {
 		final FutureDone<Message> initMessageFutureDone = new FutureDone<Message>();
-		final PeerSocketAddress2 socketAddress = Utils.extractRandomRelay(originalMessage);
+		final PeerSocketAddress socketAddress = Utils.extractRandomRelay(originalMessage);
 		// we need to make a copy of the original Message
 		final PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
 				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);

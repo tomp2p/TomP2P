@@ -94,7 +94,7 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).start();
-            PeerAddress[] pa = UtilsDHT2.createDummyAddress(300, PORT_TCP, PORT_UDP);
+            PeerAddress[] pa = UtilsDHT2.createDummyAddress(300, PORT_TCP, PORT_UDP, PORT_UDP + 1);
             for (int i = 0; i < pa.length; i++) {
                 sender.peerBean().peerMap().peerFound(pa[i], null, null, null);
             }
@@ -122,11 +122,11 @@ public class TestStorageDHT {
             Assert.assertEquals(true, fr.isSuccess());
             NeighborSet pas = fr.responseMessage().neighborsSet(0);
             // we are able to fit 40 neighbors into 1400 bytes
-            Assert.assertEquals(33, pas.size());
+            Assert.assertEquals(30, pas.size());
             Assert.assertEquals(10, (int) fr.responseMessage().intAt(0));
             Assert.assertEquals(new Number160("0x1"), pas.neighbors().iterator().next().peerId());
-            Assert.assertEquals(PORT_TCP, pas.neighbors().iterator().next().tcpPort());
-            Assert.assertEquals(PORT_UDP, pas.neighbors().iterator().next().udpPort());
+            Assert.assertEquals(PORT_TCP, pas.neighbors().iterator().next().ipv4Socket().tcpPort());
+            Assert.assertEquals(PORT_UDP, pas.neighbors().iterator().next().ipv4Socket().udpPort());
             cc.shutdown();
         } finally {
             if (sender != null) {

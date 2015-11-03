@@ -470,10 +470,10 @@ public class TestMessage {
 		m1.buffer(new Buffer(Unpooled.buffer()));
 		Encoder e = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
-		e.write(buf, m1, null, true);
+		e.write(buf, m1, null);
 		Decoder d = new Decoder(null);
-		boolean header = d.decodeHeader(buf, new InetSocketAddress(0),
-				new InetSocketAddress(0));
+		boolean header = d.decodeHeader(buf, m1.recipient().ipv4Socket().createTCPSocket(),
+				m1.sender().ipv4Socket().createTCPSocket());
 		boolean payload = d.decodePayload(buf);
 		Assert.assertEquals(true, header);
 		Assert.assertEquals(true, payload);
@@ -621,7 +621,6 @@ public class TestMessage {
 	@Test
 	public void testSlowFlag() throws Exception { // encode
 		Message m1 = Utils2.createDummyMessage();
-		m1.sender(m1.sender().withSlow(true));
 		
 		Message m2 = encodeDecode(m1);
 		m1.sender(m1.sender().withSkipIPv4(true));
@@ -649,8 +648,11 @@ public class TestMessage {
 		message.intValue(-1);
 		message.longValue(9l);
 		
+		
+		Message m2 = encodeDecode(message);
+		message.sender(message.sender().withSkipIPv4(true));
 		int size = message.estimateSize();
-		Assert.assertEquals(size, encodeDecode(message).estimateSize());
+		Assert.assertEquals(size, m2.estimateSize());
 	}
 
 	/**
@@ -665,7 +667,7 @@ public class TestMessage {
 		AtomicReference<Message> m2 = new AtomicReference<Message>();
 		final AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		Encoder encoder = new Encoder(new DSASignatureFactory());
-		encoder.write(buf, m1, null, false);
+		encoder.write(buf, m1, null);
 		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
 		Decoder decoder = new Decoder(new DSASignatureFactory());
 		decoder.decode(ctx, buf, m1.recipient().ipv4Socket().createTCPSocket(), m1

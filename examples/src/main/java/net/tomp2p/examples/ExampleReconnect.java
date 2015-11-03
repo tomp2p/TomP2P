@@ -24,7 +24,7 @@ public class ExampleReconnect {
 		} else {
 			final Peer peer = new PeerBuilder(Number160.createHash("client")).ports(1235).start();
             List<PeerAddress> bootstrap = new ArrayList<PeerAddress>();
-            bootstrap.add(new PeerAddress(Number160.createHash("master"), "localhost", 1234,1234));
+            bootstrap.add(PeerAddress.create(Number160.createHash("master"), "localhost", 1234, 1234, 1235));
             peer.bootstrap().bootstrapTo(bootstrap).start();
 
             peer.objectDataReply(new ObjectDataReply() {

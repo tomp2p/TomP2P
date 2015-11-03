@@ -415,7 +415,6 @@ public class TestPing {
                             new DefaultConnectionConfiguration());
                     list.add(fr);
                 }
-                int ii = 0;
                 for (FutureResponse fr2 : list) {
                     fr2.awaitUninterruptibly();
                     Assert.assertEquals(true, fr2.isSuccess());

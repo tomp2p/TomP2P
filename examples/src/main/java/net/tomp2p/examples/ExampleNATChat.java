@@ -65,7 +65,7 @@ public class ExampleNATChat {
 	public static void startClientNAT(String ip) throws Exception {
 		Random r = new Random(43L);
 		PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160(r)).ports(clientPort).behindFirewall().start()).start();
-		PeerAddress bootStrapServer = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), serverPort, serverPort);
+		PeerAddress bootStrapServer = PeerAddress.create(Number160.ZERO, InetAddress.getByName(ip), serverPort, serverPort, serverPort + 1);
 		FutureDiscover fd = peer.peer().discover().peerAddress(bootStrapServer).start();
 		System.out.println("About to wait...");
 		fd.awaitUninterruptibly();

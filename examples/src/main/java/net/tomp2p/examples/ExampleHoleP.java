@@ -86,7 +86,7 @@ public class ExampleHoleP {
 		// Bootstrap natpeer
 		Peer unreachable = new PeerBuilder(Number160.createHash(RND.nextInt())).ports(PORT + 1).start();
 		PeerAddress pa = unreachable.peerBean().serverPeerAddress();
-		pa = pa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+		pa = pa.withUnreachable(true).withSlow(true);
 		unreachable.peerBean().serverPeerAddress(pa);
 
 		// find neighbors

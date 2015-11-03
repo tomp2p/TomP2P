@@ -34,7 +34,7 @@ public class TestDirect {
 			recv1.objectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
-					System.err.println(sender.inetAddress());
+					System.err.println(sender);
 					return "yes";
 				}
 			});

@@ -39,9 +39,9 @@ public class TestRTTRoutingComparator {
      */
     @Test
     public void testEquality() {
-        PeerAddress peer1 = new PeerAddress(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c60"));
+        PeerAddress peer1 = PeerAddress.create(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c60"));
         PeerStatistic peer1Statistic = new PeerStatistic(peer1).addRTT(new RTT(13, false).setEstimated());
-        PeerAddress peer2 = new PeerAddress(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c60"));
+        PeerAddress peer2 = PeerAddress.create(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c60"));
         PeerStatistic peer2Statistic = new PeerStatistic(peer2).addRTT(new RTT(44, true));
 
         Comparator<PeerStatistic> comp = new RTTPeerStatisticComparator().getComparator(new Number160("0xfff"));
@@ -56,9 +56,9 @@ public class TestRTTRoutingComparator {
      */
     @Test
     public void testUnequality() {
-        PeerAddress peer1 = new PeerAddress(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c61"));
+        PeerAddress peer1 = PeerAddress.create(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c61"));
         PeerStatistic peer1Statistic = new PeerStatistic(peer1).addRTT(new RTT(44, true));
-        PeerAddress peer2 = new PeerAddress(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c62"));
+        PeerAddress peer2 = PeerAddress.create(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c62"));
         PeerStatistic peer2Statistic = new PeerStatistic(peer2).addRTT(new RTT(44, true));
 
         Comparator<PeerStatistic> comp = new RTTPeerStatisticComparator().getComparator(new Number160("0xfff"));
@@ -77,10 +77,10 @@ public class TestRTTRoutingComparator {
         Number160 location =                new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c40");
 
         // 4 Peers with different (bucket)distances to location
-        PeerAddress peer1 = new PeerAddress(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c60"));
-        PeerAddress peer2 = new PeerAddress(new Number160("0xa3fb3982c38193f12c40a3fb3982000000000000"));
-        PeerAddress peer3 = new PeerAddress(new Number160("0xa3fb3982c38193f12c40a3fb3982700000000000"));
-        PeerAddress peer4 = new PeerAddress(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c70"));
+        PeerAddress peer1 = PeerAddress.create(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c60"));
+        PeerAddress peer2 = PeerAddress.create(new Number160("0xa3fb3982c38193f12c40a3fb3982000000000000"));
+        PeerAddress peer3 = PeerAddress.create(new Number160("0xa3fb3982c38193f12c40a3fb3982700000000000"));
+        PeerAddress peer4 = PeerAddress.create(new Number160("0xa3fb3982c38193f12c40a3fb3982c38193f12c70"));
 
         // Test all bucket distances to location (this will be the first sorting criteria)
         Assert.assertEquals(6, PeerMap.classMember(peer1.peerId(), location) + 1);

@@ -12,7 +12,7 @@ public class SlowReplicationFilter implements ReplicationFilter {
 
 	@Override
 	public boolean rejectReplication(PeerAddress targetAddress) {
-		return targetAddress.isSlow();
+		return targetAddress.slow();
 	}
 
 }

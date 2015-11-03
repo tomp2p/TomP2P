@@ -88,7 +88,7 @@ public class ExampleNAT {
 				System.out.println("shutdown");
 			}
 		}).start();
-		final PeerAddress pa = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), PORT_SERVER, PORT_SERVER);
+		final PeerAddress pa = PeerAddress.create(Number160.ZERO, InetAddress.getByName(ip), PORT_SERVER, PORT_SERVER, PORT_SERVER + 1);
 		
 		final FutureDiscover fd = peer.discover().peerAddress(pa).start();
 		final FutureNAT fn = peerNAT.portForwarding(fd);

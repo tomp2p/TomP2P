@@ -78,7 +78,7 @@ public class Utils2 {
 	    Message message = new Message();
 	    PeerAddress n1 = createAddress(idSender, inetSender, tcpPortSender, udpPortSender, firewallUDP,
 	            firewallTCP);
-	    message.sender(n1);
+	    message.sender(n1.withSkipIPv4(true));
 	    //
 	    PeerAddress n2 = createAddress(idRecipient, inetRecipient, tcpPortRecipient, udpPortRecipient,
 	            firewallUDP, firewallTCP);

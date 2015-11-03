@@ -83,13 +83,13 @@ public abstract class IP {
 		@Override
 		public String toString() {
 			final StringBuilder sb = new StringBuilder("/");
-			sb.append((byte) (bits >>> 24));
+			sb.append((bits >>> 24) & 0xff);
 			sb.append('.');
-			sb.append((byte) (bits >>> 16));
+			sb.append((bits >>> 16) & 0xff);
 			sb.append('.');
-			sb.append((byte) (bits >>> 8));
+			sb.append((bits >>> 8) & 0xff );
 			sb.append('.');
-			sb.append((byte) bits);
+			sb.append(bits & 0xff);
 			return sb.toString();
 		}
 	}

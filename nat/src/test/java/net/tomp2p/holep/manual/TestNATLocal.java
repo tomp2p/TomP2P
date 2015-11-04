@@ -13,7 +13,8 @@ import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress2;
+import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -68,7 +69,7 @@ public class TestNATLocal implements Serializable {
 		RemotePeer unr1 = null;
 		try {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
-			final PeerSocketAddress2 relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress = relayPeer.peerAddress().ipv4Socket();
 			
 			CommandSync sync = new CommandSync(1);
 			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {

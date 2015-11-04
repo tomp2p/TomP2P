@@ -272,7 +272,7 @@ public class LocalNATUtils {
 	}
 	
 	public static PeerAddress peerAddress(String ip, int port, int peerId) throws UnknownHostException {
-		return new PeerAddress(Number160.createHash(peerId), ip, port, port);
+		return PeerAddress.create(Number160.createHash(peerId), ip, port, port, port);
 	}
 	
 	public static Peer init(String ip, int port, int peerId)

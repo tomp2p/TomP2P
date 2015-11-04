@@ -30,6 +30,8 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
@@ -553,10 +555,13 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 * @return
 	 */
 	private Message createSendOriginalMessage(final int localPort, final int remotePort) {
-		final PeerAddress sender = originalMessage.sender().changePorts(-1, localPort).changeFirewalledTCP(false).changeFirewalledUDP(false)
-				.changeRelayed(false);
-		final PeerAddress recipient = originalMessage.recipient().changePorts(-1, remotePort).changeFirewalledTCP(false)
-				.changeFirewalledUDP(false).changeRelayed(false);
+		
+		final PeerSocket4Address ps4a1 = originalMessage.sender().ipv4Socket().withUdpPort(localPort);
+		final PeerAddress sender = originalMessage.sender().withUnreachable(false).withIPSocket(ps4a1).withRelaySize(0);
+		
+		final PeerSocket4Address ps4a2 = originalMessage.recipient().ipv4Socket().withUdpPort(remotePort);
+		final PeerAddress recipient = originalMessage.recipient().withUnreachable(false).withIPSocket(ps4a2).withRelaySize(0);
+				
 		final Message sendMessage = createHolePMessage(recipient, sender, originalMessage.command(), originalMessage.type());
 		sendMessage.version(originalMessage.version());
 		sendMessage.intValue(originalMessage.messageId());
@@ -584,8 +589,15 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 		final FutureDone<Message> initMessageFutureDone = new FutureDone<Message>();
 		final PeerSocketAddress socketAddress = Utils.extractRandomRelay(originalMessage);
 		// we need to make a copy of the original Message
-		final PeerAddress recipient = originalMessage.recipient().changeAddress(socketAddress.inetAddress())
-				.changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
+		
+		final PeerAddress recipient;
+		if(socketAddress instanceof PeerSocket4Address) {
+			recipient = originalMessage.recipient().withIpv4Socket((PeerSocket4Address)socketAddress).withRelaySize(0).withIpv6Socket(null);
+		} else {
+			recipient = originalMessage.recipient().withIpv6Socket((PeerSocket6Address)socketAddress).withRelaySize(0).withIpv4Socket(null);
+		}
+		
+		
 		final Message initMessage = createHolePMessage(recipient, originalMessage.sender(), RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_1);
 		initMessage.version(originalMessage.version());
 		initMessage.udp(true);
@@ -606,8 +618,13 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	private Message createDummyMessage(final int index) {
 		final int remotePort = portMappings.get(index).element0();
 		final int localPort = portMappings.get(index).element1();
-		final PeerAddress recipient = originalSender.changeFirewalledUDP(false).changeRelayed(false).changePorts(-1, remotePort);
-		final PeerAddress sender = peer.peerBean().serverPeerAddress().changePorts(-1, localPort);
+		
+		final PeerSocket4Address ps4a1 = peer.peerBean().serverPeerAddress().ipv4Socket().withUdpPort(localPort);
+		final PeerAddress sender = peer.peerBean().serverPeerAddress().withIPSocket(ps4a1);
+		
+		final PeerSocket4Address ps4a2 = originalMessage.recipient().ipv4Socket().withUdpPort(remotePort);
+		final PeerAddress recipient = originalMessage.recipient().withUnreachable(false).withIPSocket(ps4a2);
+		
 		final Message dummyMessage = createHolePMessage(recipient, sender, RPC.Commands.HOLEP.getNr(), Message.Type.REQUEST_3);
 		dummyMessage.udp(true);
 		return dummyMessage;

@@ -16,7 +16,8 @@ import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress2;
+import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 
 //travis-ci cannot test this, the kernel does not support all the required features:
 //Perhaps iptables or your kernel needs to be upgraded
@@ -52,7 +53,7 @@ public class TestNATForwarding implements Serializable {
 		try {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
 			
-			final PeerSocketAddress2 relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress = relayPeer.peerAddress().ipv4Socket();
 			final PeerAddress relay = relayPeer.peerAddress();
 			System.out.println("relay peer at: "+relay);
 			
@@ -79,7 +80,7 @@ public class TestNATForwarding implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					final Peer peer1 = (Peer) get("p1");
-					PeerAddress peer2 = new PeerAddress(Number160.createHash(1), "172.20.1.1", 4000, 4000);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(1), "172.20.1.1", 4000, 4000, 4001);
 					FutureDirect fdir = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer2", fdir.object());
 					return "done";
@@ -113,7 +114,7 @@ public class TestNATForwarding implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					final Peer peer1 = (Peer) get("p1");
-					PeerAddress peer2 = new PeerAddress(Number160.createHash(0), "172.20.0.1", 4000, 4000);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(0), "172.20.0.1", 4000, 4000, 4001);
 					FutureDirect fdir = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer1", fdir.object());
 					return "done";
@@ -151,7 +152,7 @@ public class TestNATForwarding implements Serializable {
 			relayPeer = LocalNATUtils.createRealNode(relayPeerId, INF, 5002);
 			final Peer regularPeer = LocalNATUtils.createRealNode(Number160.createHash(77), INF, 5003);
 			
-			final PeerSocketAddress2 relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress = relayPeer.peerAddress().ipv4Socket();
 			final PeerAddress relay = relayPeer.peerAddress();
 			System.out.println("relay peer at: "+relay);
 			CommandSync sync = new CommandSync(2);
@@ -162,7 +163,7 @@ public class TestNATForwarding implements Serializable {
 				public void run() {
 					try {
 					Thread.sleep(5000);
-					PeerAddress peer2 = new PeerAddress(Number160.createHash(1), "172.20.1.1", 4000, 4000);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(1), "172.20.1.1", 4000, 4000, 4001);
 					FutureDirect fdir = regularPeer.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer2", fdir.object());
 					} catch (Exception e) {
@@ -197,7 +198,7 @@ public class TestNATForwarding implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					final Peer peer1 = (Peer) get("p1");
-					PeerAddress peer2 = new PeerAddress(Number160.createHash(1), "172.20.1.1", 4000, 4000);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(1), "172.20.1.1", 4000, 4000, 4001);
 					FutureDirect fdir = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer2", fdir.object());
 					return "done";
@@ -231,7 +232,7 @@ public class TestNATForwarding implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					final Peer peer1 = (Peer) get("p1");
-					PeerAddress peer2 = new PeerAddress(Number160.createHash(0), "172.20.0.1", 4000, 4000);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(0), "172.20.0.1", 4000, 4000, 4001);
 					FutureDirect fdir = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer1", fdir.object());
 					return "done";

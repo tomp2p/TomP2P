@@ -25,6 +25,7 @@ import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMapChangeListener;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.utils.ConcurrentCacheSet;
 
@@ -300,17 +301,24 @@ public class DistributedRelay implements PeerMapChangeListener {
 	 */
 	private void updatePeerAddress() {
 		final boolean hasRelays;
-		final Collection<PeerSocketAddress2> socketAddresses;
+		final Collection<PeerSocketAddress> socketAddresses;
 		synchronized (activeClients) {
 			// add relay addresses to peer address
 			hasRelays = !activeClients.isEmpty();
-			socketAddresses = new ArrayList<PeerSocketAddress2>(activeClients.size());
+			socketAddresses = new ArrayList<PeerSocketAddress>(activeClients.size());
 		
 			//we can have more than the max relay count in our active client list.
 			int max = 5;
 			int i = 0;
 			for (PeerAddress relay : activeClients.keySet()) {
-				socketAddresses.add(new PeerSocketAddress2(relay.inetAddress(), relay.tcpPort(), relay.udpPort()));
+				
+				if(relay.ipv4Flag()) {
+					socketAddresses.add(relay.ipv4Socket());	
+				}
+				if(relay.ipv6Flag()) {
+					socketAddresses.add(relay.ipv6Socket());	
+				}
+				
 				if(i++ >= max) {
 					break;
 				}
@@ -318,8 +326,8 @@ public class DistributedRelay implements PeerMapChangeListener {
 		}
 
 		// update firewalled and isRelayed flags
-		PeerAddress newAddress = peer.peerAddress().changeFirewalledTCP(!hasRelays).changeFirewalledUDP(!hasRelays)
-				.changeRelayed(hasRelays).changePeerSocketAddresses(socketAddresses);
+		PeerAddress newAddress = peer.peerAddress().withRelays(socketAddresses); 
+			
 		peer.peerBean().serverPeerAddress(newAddress);
 		LOG.debug("Updated peer address {}, isrelay = {}", newAddress, hasRelays);
 	}

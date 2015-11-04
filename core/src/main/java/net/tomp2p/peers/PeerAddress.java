@@ -653,9 +653,9 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
 	
 
-	public InetSocketAddress createUDPSocket(final PeerAddress sender) {
-		final boolean canIPv6 = ipv6Flag && sender.ipv6Flag;
-		final boolean canIPv4 = ipv4Flag && sender.ipv4Flag;
+	public InetSocketAddress createUDPSocket(final PeerAddress other) {
+		final boolean canIPv6 = ipv6Flag && other.ipv6Flag;
+		final boolean canIPv4 = ipv4Flag && other.ipv4Flag;
 		if((preferIPv6Addresses && canIPv6) || 
 				(!canIPv4 && canIPv6)) {
 			if(ipv6Socket == null) {
@@ -672,12 +672,32 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 			throw new RuntimeException("No matching protocal found");
 		}
 	}
+	
+	public InetSocketAddress createTCPSocket(final PeerAddress other) {
+		final boolean canIPv6 = ipv6Flag && other.ipv6Flag;
+		final boolean canIPv4 = ipv4Flag && other.ipv4Flag;
+		if((preferIPv6Addresses && canIPv6) || 
+				(!canIPv4 && canIPv6)) {
+			if(ipv6Socket == null) {
+				throw new RuntimeException("Flag indicates that ipv6 is present, but its not");
+			}
+			return ipv6Socket.createTCPSocket();
+		} else if(canIPv4) {
+			if(ipv4Socket == null) {
+				throw new RuntimeException("Flag indicates that ipv4 is present, but its not");
+			}
+			return ipv4Socket.createTCPSocket();
+		}
+		else {
+			throw new RuntimeException("No matching protocal found");
+		}
+	}
 
 
 
-	public InetSocketAddress createSocket(final PeerAddress recipient, final int port) {
-		final boolean canIPv6 = ipv6Flag && recipient.ipv6Flag;
-		final boolean canIPv4 = ipv4Flag && recipient.ipv4Flag;
+	public InetSocketAddress createSocket(final PeerAddress other, final int port) {
+		final boolean canIPv6 = ipv6Flag && other.ipv6Flag;
+		final boolean canIPv4 = ipv4Flag && other.ipv4Flag;
 		if((preferIPv6Addresses && canIPv6) || 
 				(!canIPv4 && canIPv6)) {
 			if(ipv6Socket == null) {

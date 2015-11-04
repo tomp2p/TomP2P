@@ -23,6 +23,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress2;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.relay.Forwarder;
 import net.tomp2p.relay.RelayCallback;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -70,8 +71,8 @@ public class TestNATRelay implements Serializable {
 		try {
 			relayPeer1 = createRelay(relayPeerId1, 5002);
 			relayPeer2 = createRelay(relayPeerId2, 5003);
-			final PeerSocketAddress2 relayAddress1 = relayPeer1.peerAddress().peerSocketAddress();
-			final PeerSocketAddress2 relayAddress2 = relayPeer2.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress1 = relayPeer1.peerAddress().ipv4Socket();
+			final PeerSocket4Address relayAddress2 = relayPeer2.peerAddress().ipv4Socket();
 			
 			final Peer relayPeer1Copy = relayPeer1;
 			CommandSync sync = new CommandSync(1);
@@ -161,9 +162,9 @@ public class TestNATRelay implements Serializable {
 		RemotePeer unr1 = null;
 		try {
 			relayPeer1 = createRelay(relayPeerId1, 5002);
-			final PeerSocketAddress2 relayAddress1 = relayPeer1.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress1 = relayPeer1.peerAddress().ipv4Socket();
 			relayPeer2 = createRelay(relayPeerId2, 5003);
-			final PeerSocketAddress2 relayAddress2 = relayPeer2.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress2 = relayPeer2.peerAddress().ipv4Socket();
 			
 			final Peer relayPeer1Copy = relayPeer1;
 			final Peer relayPeer2Copy = relayPeer2;
@@ -257,15 +258,15 @@ public class TestNATRelay implements Serializable {
 		RemotePeer unr1 = null;
 		try {
 			relayPeer1 = createRelay(relayPeerId1, 5002);
-			final PeerSocketAddress2 relayAddress1 = relayPeer1.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress1 = relayPeer1.peerAddress().ipv4Socket();
 			relayPeer2 = createRelay(relayPeerId2, 5003);
-			final PeerSocketAddress2 relayAddress2 = relayPeer2.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress2 = relayPeer2.peerAddress().ipv4Socket();
 			relayPeer3 = createRelay(relayPeerId3, 5004);
-			final PeerSocketAddress2 relayAddress3 = relayPeer3.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress3 = relayPeer3.peerAddress().ipv4Socket();
 			relayPeer4 = createRelay(relayPeerId4, 5005);
-			final PeerSocketAddress2 relayAddress4 = relayPeer4.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress4 = relayPeer4.peerAddress().ipv4Socket();
 			relayPeer5 = createRelay(relayPeerId5, 5006);
-			final PeerSocketAddress2 relayAddress5 = relayPeer5.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress5 = relayPeer5.peerAddress().ipv4Socket();
 			CommandSync sync = new CommandSync(1);
 			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 
@@ -330,9 +331,9 @@ public class TestNATRelay implements Serializable {
 		RemotePeer unr1 = null;
 		try {
 			relayPeer1 = createRelay(relayPeerId1, 5002);
-			final PeerSocketAddress2 relayAddress1 = relayPeer1.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress1 = relayPeer1.peerAddress().ipv4Socket();
 			relayPeer2 = createRelay(relayPeerId2, 5003);
-			final PeerSocketAddress2 relayAddress2 = relayPeer2.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress2 = relayPeer2.peerAddress().ipv4Socket();
 			CommandSync sync = new CommandSync(1);
 			
 			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
@@ -458,7 +459,7 @@ public class TestNATRelay implements Serializable {
 		RemotePeer unr2 = null;
 		try {
 			relayPeer = createRelay(relayPeerId1, 5002);
-			final PeerSocketAddress2 relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress = relayPeer.peerAddress().ipv4Socket();
 			CommandSync sync = new CommandSync(2);
 			
 			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
@@ -611,7 +612,7 @@ public class TestNATRelay implements Serializable {
 		RemotePeer unr1 = null;
 		try {
 			relayPeer = createRelay(relayPeerId1, 5002);
-			final PeerSocketAddress2 relayAddress = relayPeer.peerAddress().peerSocketAddress();
+			final PeerSocket4Address relayAddress = relayPeer.peerAddress().ipv4Socket();
 			CommandSync sync = new CommandSync(1);
 			unr1 = LocalNATUtils.executePeer(0, sync, new Command() {
 				

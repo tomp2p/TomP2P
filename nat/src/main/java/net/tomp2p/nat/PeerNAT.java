@@ -1,5 +1,6 @@
 package net.tomp2p.nat;
 
+import java.net.Inet4Address;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +25,7 @@ import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.PeerMapUpdateTask;
 import net.tomp2p.relay.RelayRPC;
@@ -101,13 +103,18 @@ public class PeerNAT {
 				}
 
 				if (future.isFailed() && future.isNat() && !manualPorts) {
-					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress(), peer
+					Ports externalPorts = setupPortforwarding(future.internalAddress().ipv4().toInetAddress().getHostAddress(), peer
 							.connectionBean().channelServer().channelServerConfiguration().portsForwarding());
 					if (externalPorts != null) {
 						final PeerAddress serverAddressOrig = peer.peerBean().serverPeerAddress();
-						final PeerAddress serverAddress = serverAddressOrig.changePorts(externalPorts.tcpPort(),
-								externalPorts.udpPort()).changeAddress(future.externalAddress()).
-								changeInternalPeerSocketAddress(serverAddressOrig.peerSocketAddress());
+						final PeerAddress serverAddress = serverAddressOrig
+								.withIpv4Socket(
+										PeerSocket4Address.create(
+												(Inet4Address)future.externalAddress().ipv4().toInetAddress(), 
+												externalPorts.udpPort(), 
+												externalPorts.tcpPort(), 
+												externalPorts.udpPort() + 1))
+								.withIpInternalSocket(serverAddressOrig.ipv4Socket());
 
 						// set the new address regardless wheter it will succeed
 						// or not.
@@ -123,13 +130,12 @@ public class PeerNAT {
 										if (future.isSuccess()) {
 											// UPNP or NAT-PMP was
 											// successful, set flag
-											PeerAddress newServerAddress = serverAddress.changePortForwarding(true);
+											PeerAddress newServerAddress = serverAddress.withUnreachable(false);
 											peer.peerBean().serverPeerAddress(newServerAddress);
 											futureNAT.done(future.peerAddress(), future.reporter());
 										} else {
 											// indicate relay
-											PeerAddress pa = serverAddressOrig
-													.changeFirewalledTCP(true).changeFirewalledUDP(true);
+											PeerAddress pa = serverAddressOrig.withUnreachable(true);
 											peer.peerBean().serverPeerAddress(pa);
 											futureNAT.failed(future);
 										}
@@ -137,8 +143,7 @@ public class PeerNAT {
 								});
 					} else {
 						// indicate relay
-						PeerAddress pa = peer.peerBean().serverPeerAddress().changeFirewalledTCP(true)
-								.changeFirewalledUDP(true);
+						PeerAddress pa = peer.peerBean().serverPeerAddress().withUnreachable(true);
 						peer.peerBean().serverPeerAddress(pa);
 						futureNAT.failed("could not setup NAT");
 					}
@@ -169,7 +174,7 @@ public class PeerNAT {
 		boolean success;
 
 		try {
-			success = natUtils.mapUPNP(internalHost, peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
+			success = natUtils.mapUPNP(internalHost, peer.peerAddress().ipv4Socket().tcpPort(), peer.peerAddress().ipv4Socket().udpPort(),
 					ports.udpPort(), ports.tcpPort());
 		} catch (Exception e) {
 			LOG.error("cannot map UPNP", e);
@@ -181,7 +186,7 @@ public class PeerNAT {
 				LOG.warn("cannot find UPNP devices");
 			}
 			try {
-				success = natUtils.mapPMP(peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(), ports.udpPort(),
+				success = natUtils.mapPMP(peer.peerAddress().ipv4Socket().tcpPort(), peer.peerAddress().ipv4Socket().udpPort(), ports.udpPort(),
 						ports.tcpPort());
 				if (!success) {
 					if (LOG.isWarnEnabled()) {
@@ -322,7 +327,7 @@ public class PeerNAT {
 				Message setUpMessage = new Message();
 				setUpMessage.version(peer.connectionBean().p2pId());
 				setUpMessage.sender(peer.peerAddress());
-				setUpMessage.recipient(relayPeerAddress.changePeerId(unreachablePeerAddress.peerId()));
+				setUpMessage.recipient(relayPeerAddress.withPeerId(unreachablePeerAddress.peerId()));
 				setUpMessage.command(RPC.Commands.RCON.getNr());
 				setUpMessage.type(Type.REQUEST_1);
 				// setUpMessage.keepAlive(true);

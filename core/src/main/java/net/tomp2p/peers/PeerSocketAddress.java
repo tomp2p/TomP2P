@@ -170,6 +170,10 @@ public abstract class PeerSocketAddress {
 	    public int hashCode() {
 	    	return Utils.hashCode(ipv4) ^ (tcpPort << 16)  ^ udpPort ^ udtPort;
 	    }
+	    
+	    public static PeerSocket4Address create(Inet4Address inet, int udpPort, int tcpPort, int udtPort) {
+			return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inet)).udpPort(udpPort).tcpPort(tcpPort).udtPort(udtPort).build();
+		}
 
 		
 	}

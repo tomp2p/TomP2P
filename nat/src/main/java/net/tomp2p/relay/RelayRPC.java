@@ -6,7 +6,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,7 @@ import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress2;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
@@ -239,17 +238,16 @@ public class RelayRPC extends DispatchHandler {
 	private void handleSetup(Message message, final PeerConnection unreachablePeerConnectionOrig, final Responder responder) {
 		final Number160 unreachablePeerId = unreachablePeerConnectionOrig.remotePeer().peerId();
 		//add myself as relay
-		Collection<PeerSocketAddress2> psa = unreachablePeerConnectionOrig.remotePeer().peerSocketAddresses();
-		Collection<PeerSocketAddress2> psa2 = new ArrayList<PeerSocketAddress2>(psa);
-
-		psa2.add(peer().peerAddress().peerSocketAddress());
+		Collection<PeerSocketAddress> psa = unreachablePeerConnectionOrig.remotePeer().relays();
+		psa.addAll(peer().peerAddress().relays());
+		
 		final PeerConnection unreachablePeerConnectionCopy = unreachablePeerConnectionOrig.changeRemotePeer(
-				unreachablePeerConnectionOrig.remotePeer().changeRelayed(true).changeFirewalledTCP(false).changeFirewalledUDP(false).changePeerSocketAddresses(psa2));
+				unreachablePeerConnectionOrig.remotePeer().withRelays(psa));
 		
 		//now we can add this peer to the map, as we have now set the flag
 		//its TCP, we have a connection to this peer, so mark it as first hand
 		peerBean().notifyPeerFound(unreachablePeerConnectionCopy.remotePeer(), null, unreachablePeerConnectionCopy, null);
-		final Forwarder forwarder = new Forwarder(peer, unreachablePeerConnectionCopy, message.sender().isSlow(), bufferTimeoutSeconds, bufferSize);
+		final Forwarder forwarder = new Forwarder(peer, unreachablePeerConnectionCopy, message.sender().slow(), bufferTimeoutSeconds, bufferSize);
 		for (Commands command : RPC.Commands.values()) {
 			if (command == RPC.Commands.RCON) {
 				// We must register the rconRPC for every unreachable peer that
@@ -283,10 +281,10 @@ public class RelayRPC extends DispatchHandler {
 		// TODO: check if we have right setup
 
 		// this contains the real sender
-		Collection<PeerSocketAddress2> peerSocketAddresses = message.peerSocketAddresses();
+		PeerSocketAddress peerSocketAddress  = message.peerSocket4Address(0);
 		final InetSocketAddress sender;
-		if (!peerSocketAddresses.isEmpty()) {
-			sender = PeerSocketAddress2.createSocketTCP(peerSocketAddresses.iterator().next());
+		if (peerSocketAddress != null) {
+			sender = peerSocketAddress.createTCPSocket();
 		} else {
 			sender = new InetSocketAddress(0);
 		}
@@ -306,9 +304,6 @@ public class RelayRPC extends DispatchHandler {
 				final FutureDone<Void> futureDone = new FutureDone<Void>();
 				LOG.debug("Send reply message to relay peer: {}", responseMessage);
 				try {
-					if (responseMessage.sender().isRelayed() && !responseMessage.sender().peerSocketAddresses().isEmpty()) {
-						responseMessage.peerSocketAddresses(responseMessage.sender().peerSocketAddresses());
-					}
 					envelope.buffer(RelayUtils.encodeMessage(responseMessage, signatureFactory()));
 				} catch (Exception e) {
 					LOG.error("Cannot piggyback the response", e);
@@ -375,18 +370,18 @@ public class RelayRPC extends DispatchHandler {
 			return;
 		}
 		List<Message> buffered = RelayUtils.decomposeCompositeBuffer(
-				message.buffer(0).buffer(), message.recipient().createSocketTCP(), 
-				message.sender().createSocketTCP(), peer.connectionBean().sender().channelClientConfiguration().signatureFactory());
+				message.buffer(0).buffer(), message.recipient().createTCPSocket(message.sender()), 
+				message.sender().createTCPSocket(message.recipient()), peer.connectionBean().sender().channelClientConfiguration().signatureFactory());
 		LOG.debug("got {} messages", buffered.size());
 		for(Message msg:buffered) {
 			DispatchHandler dh = connectionBean().dispatcher().associatedHandler(msg);
 			//TODO: add a custom responder and respond to the address found in the message
-			dh.forwardMessage(msg, null, createResponder(peer, msg.sender().peerSocketAddress()));
+			dh.forwardMessage(msg, null, createResponder(peer, msg.sender().ipv4Socket()));
 		}
 		
 	}
 
-	private static Responder createResponder(final Peer peer, final PeerSocketAddress2 sender) {
+	private static Responder createResponder(final Peer peer, final PeerSocketAddress sender) {
 		return new Responder() {
 			
 			@Override
@@ -395,7 +390,7 @@ public class RelayRPC extends DispatchHandler {
 			@Override
 			public FutureDone<Void> response(final Message responseMessage) {
 				
-				responseMessage.recipient(responseMessage.recipient().changeAddress(sender.inetAddress()).changePorts(sender.tcpPort(), sender.udpPort()));
+				responseMessage.recipient(responseMessage.recipient().withIPSocket(sender));			
 
 				LOG.debug("send late reply {}", responseMessage);
 				final FutureResponse fr = RelayUtils.connectAndSend(peer, responseMessage);

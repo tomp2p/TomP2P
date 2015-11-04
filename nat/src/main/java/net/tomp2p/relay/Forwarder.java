@@ -87,9 +87,12 @@ public class Forwarder extends DispatchHandler {
 		envelope.keepAlive(true);
 
 		// this will be read RelayRPC.handlePiggyBackMessage
-		Collection<PeerSocketAddress2> peerSocketAddresses = new ArrayList<PeerSocketAddress2>(1);
-		peerSocketAddresses.add(new PeerSocketAddress2(message.sender().inetAddress(), 0, 0));
-		envelope.peerSocketAddresses(peerSocketAddresses);
+		if(envelope.sender().ipv4Flag()) {
+			envelope.peerSocket4Address(envelope.sender().ipv4Socket());
+		} 
+		if(envelope.sender().ipv6Flag()) {
+			envelope.peerSocket6Address(envelope.sender().ipv6Socket());
+		}
 
 		// holds the message that will be returned to he requester
 		final FutureDone<Message> futureDone = new FutureDone<Message>();
@@ -101,11 +104,11 @@ public class Forwarder extends DispatchHandler {
 				if (future.isSuccess()) {
 					InetSocketAddress senderSocket = message.recipientSocket();
 					if (senderSocket == null) {
-						senderSocket = unreachablePeerConnection.remotePeer().createSocketTCP();
+						senderSocket = unreachablePeerConnection.remotePeer().ipv4Socket().createTCPSocket();
 					}
 					InetSocketAddress recipientSocket = message.senderSocket();
 					if (recipientSocket == null) {
-						recipientSocket = message.sender().createSocketTCP();
+						recipientSocket = message.sender().ipv4Socket().createTCPSocket();
 					}
 
 					Buffer buffer = future.responseMessage().buffer(0);
@@ -294,9 +297,12 @@ public class Forwarder extends DispatchHandler {
 		envelope.buffer(new Buffer(bb));
 		
 		// this will be read RelayRPC.handlePiggyBackMessage
-		Collection<PeerSocketAddress2> peerSocketAddresses = new ArrayList<PeerSocketAddress2>(1);
-		peerSocketAddresses.add(new PeerSocketAddress2(envelope.sender().inetAddress(), 0, 0));
-		envelope.peerSocketAddresses(peerSocketAddresses);
+		if(envelope.sender().ipv4Flag()) {
+			envelope.peerSocket4Address(envelope.sender().ipv4Socket());
+		} 
+		if(envelope.sender().ipv6Flag()) {
+			envelope.peerSocket6Address(envelope.sender().ipv6Socket());
+		}
 
 		// Forward a message through the open peer connection to the unreachable peer.
 		RelayUtils.send(unreachablePeerConnection, peerBean(), connectionBean(), envelope);

@@ -154,18 +154,12 @@ public class RelayUtils {
 	 * {@link MessageUtils#decodeMessage(Buffer, InetSocketAddress, InetSocketAddress, SignatureFactory)}, but
 	 * in addition checks that the relay peers of the decoded message are set correctly
 	 */
-	/*public static Message decodeRelayedMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender,
+	public static Message decodeRelayedMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender,
 			SignatureFactory signatureFactory) throws InvalidKeyException, NoSuchAlgorithmException,
 			InvalidKeySpecException, SignatureException, IOException {
 		final Message decodedMessage = decodeMessage(buf, recipient, sender, signatureFactory);
-		final boolean isRelay = decodedMessage.sender().relaySize() > 0;
-		if (isRelay) {
-			PeerAddress tmpSender = decodedMessage.sender().withRelays(relays);
-					changePeerSocketAddresses(decodedMessage.peerSocketAddresses());
-			decodedMessage.sender(tmpSender);
-		}
 		return decodedMessage;
-	}*/
+	}
 	
 	/**
 	 * Calculates the size of the message

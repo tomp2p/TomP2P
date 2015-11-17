@@ -112,7 +112,12 @@ public final class MessageHeaderCodec {
         final int command = buffer.readUnsignedByte();
         message.command((byte) command);
         final Number160 recipientID = Number160.decode(buffer);
-        message.recipient(PeerAddress.builder().peerId(recipientID).build());
+        
+        //we only get the id for the recipient, the rest we already know
+        final PeerAddress recipient = PeerAddress.builder().peerId(recipientID).build();
+        message.recipient(recipient);
+        
+        
         final int contentTypes = buffer.readInt();
         message.hasContent(contentTypes != 0);
         message.contentTypes(decodeContentTypes(contentTypes, message));
@@ -126,15 +131,17 @@ public final class MessageHeaderCodec {
         if(3 + buffer.readableBytes() < peerAddressSize) {
         	return false;
         }
-        PeerAddress peerAddress = PeerAddress.decode(header, buffer);
+        
+        final PeerAddress sender = PeerAddress.decode(header, buffer);
         if(senderSocket.getAddress() instanceof Inet4Address) {
-        	PeerSocket4Address psa4 = peerAddress.ipv4Socket().withIpv4(IPv4.fromInet4Address(senderSocket.getAddress()));
-        	message.sender(peerAddress.withIpv4Socket(psa4));	
+        	PeerSocket4Address psa4 = sender.ipv4Socket().withIpv4(IPv4.fromInet4Address(senderSocket.getAddress()));
+        	message.sender(sender.withIpv4Socket(psa4));	
         } else {
-        	PeerSocket6Address psa6 = peerAddress.ipv6Socket().withIpv6(IPv6.fromInet6Address(senderSocket.getAddress()));
-        	message.sender(peerAddress.withIpv6Socket(psa6));	
+        	PeerSocket6Address psa6 = sender.ipv6Socket().withIpv6(IPv6.fromInet6Address(senderSocket.getAddress()));
+        	message.sender(sender.withIpv6Socket(psa6));	
         }
         
+        //keep the original sockets
         message.senderSocket(senderSocket);
         message.recipientSocket(recipientSocket);
         

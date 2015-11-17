@@ -101,8 +101,13 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 			this.buf = buf;
 		}
 
-		int endOffset() {
+		int readable() {
 			return offset + buf.readableBytes();
+			
+		}
+		
+		int capacity() {
+			return offset + buf.capacity();
 		}
 	}
 
@@ -327,7 +332,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 				c.offset = prev.offset + prev.buf.capacity();
 			} else {
 				// the buffer may not get filled
-				c.offset = prev.endOffset();
+				c.offset = prev.readable();
 			}
 		}
 		writerIndex0(writerIndex() + c.buf.writerIndex());
@@ -524,11 +529,11 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 				c.offset = c.offset - offsetAdjustment;
 			}
 			
-			if(readerIndex >= c.endOffset()) {
+			if(readerIndex >= c.readable()) {
 				c.buf.release();
 				iterator.remove();
 				isOffsetAdjustment = true;
-				int adjust = c.endOffset() - c.offset;
+				int adjust = c.readable() - c.offset;
 				setIndex0(readerIndex - adjust, writerIndex - adjust);
 				offsetAdjustment += adjust;
 			} else {
@@ -705,7 +710,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	@Override
 	public short getShort(int index) {
 		Component c = findComponent(index);
-		if (index + 2 <= c.endOffset()) {
+		if (index + 2 <= c.readable()) {
 			return c.buf.getShort(index - c.offset);
 		} else if (order() == ByteOrder.BIG_ENDIAN) {
 			return (short) ((getByte(index) & 0xff) << 8 | getByte(index + 1) & 0xff);
@@ -731,7 +736,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	@Override
 	public int getUnsignedMedium(int index) {
 		Component c = findComponent(index);
-		if (index + 3 <= c.endOffset()) {
+		if (index + 3 <= c.readable()) {
 			return c.buf.getUnsignedMedium(index - c.offset);
 		} else if (order() == ByteOrder.BIG_ENDIAN) {
 			return (getShort(index) & 0xffff) << 8 | getByte(index + 2) & 0xff;
@@ -743,7 +748,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	@Override
 	public int getInt(int index) {
 		Component c = findComponent(index);
-		if (index + 4 <= c.endOffset()) {
+		if (index + 4 <= c.readable()) {
 			return c.buf.getInt(index - c.offset);
 		} else if (order() == ByteOrder.BIG_ENDIAN) {
 			return (getShort(index) & 0xffff) << 16 | getShort(index + 2)
@@ -762,7 +767,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	@Override
 	public long getLong(int index) {
 		Component c = findComponent(index);
-		if (index + 8 <= c.endOffset()) {
+		if (index + 8 <= c.readable()) {
 			return c.buf.getLong(index - c.offset);
 		} else if (order() == ByteOrder.BIG_ENDIAN) {
 			return (getInt(index) & 0xffffffffL) << 32 | getInt(index + 4)
@@ -958,7 +963,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	@Override
 	public AlternativeCompositeByteBuf setShort(int index, int value) {
 		Component c = findComponent(index);
-		if (index + 2 <= c.endOffset()) {
+		if (index + 2 <= c.capacity()) {
 			c.buf.setShort(index - c.offset, value);
 		} else if (order() == ByteOrder.BIG_ENDIAN) {
 			setByte(index, (byte) (value >>> 8));
@@ -973,7 +978,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	@Override
 	public AlternativeCompositeByteBuf setMedium(int index, int value) {
 		Component c = findComponent(index);
-		if (index + 3 <= c.endOffset()) {
+		if (index + 3 <= c.capacity()) {
 			c.buf.setMedium(index - c.offset, value);
 		} else if (order() == ByteOrder.BIG_ENDIAN) {
 			setShort(index, (short) (value >> 8));
@@ -988,7 +993,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	@Override
 	public AlternativeCompositeByteBuf setInt(int index, int value) {
 		Component c = findComponent(index);
-		if (index + 4 <= c.endOffset()) {
+		if (index + 4 <= c.capacity()) {
 			c.buf.setInt(index - c.offset, value);
 		} else if (order() == ByteOrder.BIG_ENDIAN) {
 			setShort(index, (short) (value >>> 16));
@@ -1003,7 +1008,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	@Override
 	public AlternativeCompositeByteBuf setLong(int index, long value) {
 		Component c = findComponent(index);
-		if (index + 8 <= c.endOffset()) {
+		if (index + 8 <= c.capacity()) {
 			c.buf.setLong(index - c.offset, value);
 		} else if (order() == ByteOrder.BIG_ENDIAN) {
 			setInt(index, (int) (value >>> 32));
@@ -1509,6 +1514,10 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		int index = findIndex(writerIndex);
 		while (maxIncrease < increase) {
 			Component c = components.get(index);
+			//recursively adjust the index
+			if(c.buf.unwrap() instanceof AlternativeCompositeByteBuf) {
+				((AlternativeCompositeByteBuf)c.buf.unwrap()).increaseComponentWriterIndex(currentIncrease);
+			}
 			int writable = c.buf.writableBytes();
 			writable = Math.min(writable, currentIncrease);
 			c.buf.writerIndex(c.buf.writerIndex() + writable);

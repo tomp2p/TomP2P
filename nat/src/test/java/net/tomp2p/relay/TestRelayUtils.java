@@ -18,7 +18,7 @@ import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress2;
+import net.tomp2p.peers.PeerSocketAddress;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,23 +51,24 @@ public class TestRelayUtils {
 			InvalidKeySpecException {
 		Message message = UtilsNAT.createRandomMessage();
 
-		List<PeerSocketAddress2> relays = new ArrayList<PeerSocketAddress2>();
-		relays.add(new PeerSocketAddress2(InetAddress.getLocalHost(), 8000, 9000));
-		relays.add(new PeerSocketAddress2(InetAddress.getLocalHost(), 8001, 9001));
-		relays.add(new PeerSocketAddress2(InetAddress.getLocalHost(), 8002, 9002));
+		List<PeerSocketAddress> relays = new ArrayList<PeerSocketAddress>();
+		relays.add(PeerSocketAddress.create(InetAddress.getLocalHost(), 8000, 9000, 9001));
+		relays.add(PeerSocketAddress.create(InetAddress.getLocalHost(), 8001, 9001, 9002));
+		relays.add(PeerSocketAddress.create(InetAddress.getLocalHost(), 8002, 9002, 9003));
 
-		PeerAddress sender = UtilsNAT.createRandomAddress().changeRelayed(true).changePeerSocketAddresses(relays)
-				.changeFirewalledTCP(true).changeFirewalledUDP(true);
-		message.sender(sender);
-		message.senderSocket(sender.createSocketTCP());
-		
+		PeerAddress sender = UtilsNAT.createRandomAddress().withRelays(relays);;
 		PeerAddress receiver = UtilsNAT.createRandomAddress();
+		
+		message.sender(sender);
+		message.senderSocket(sender.createTCPSocket(receiver));
+		
+		
 		message.recipient(receiver);
-		message.recipientSocket(receiver.createSocketTCP());
+		message.recipientSocket(receiver.createTCPSocket(sender));
 		
 		Buffer encoded = RelayUtils.encodeMessage(message, signature);
 		Message decoded = RelayUtils.decodeMessage(encoded.buffer(), message.recipientSocket(), message.senderSocket(), signature);
-		Assert.assertEquals(message.peerSocketAddresses().size(), decoded.peerSocketAddresses().size());
+		Assert.assertEquals(message.sender().relays(), decoded.sender().relays());
 	}
 	
 	@Test

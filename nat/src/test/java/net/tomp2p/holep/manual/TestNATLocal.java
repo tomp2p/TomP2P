@@ -2,6 +2,7 @@ package net.tomp2p.holep.manual;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.Random;
 
@@ -95,9 +96,9 @@ public class TestNATLocal implements Serializable {
 					if(fn1.isSuccess() && fn2.isSuccess()) {
 						// now peer1 and peer2 know each other locally.
 						PeerAddress punr2 = peer2.peerAddress();
-						InetAddress internal = InetAddress.getByName("0.0.0.3");
-						punr2 = punr2.changeInternalPeerSocketAddress(new PeerSocketAddress2(internal, 5001, 5001));
-						punr2 = punr2.changePortForwarding(true);
+						InetAddress internal = Inet4Address.getByName("0.0.0.3");
+						punr2 = punr2.withIpInternalSocket((PeerSocket4Address)PeerSocketAddress.create(internal, 5001, 5001, 5002));
+						//TODO: mark reachable
 						FuturePing fp1 = peer1.ping().peerAddress(punr2).start().awaitUninterruptibly();
 						sb.append(fp1.isSuccess());
 						System.out.println(fp1.failedReason() + " /" + fp1.remotePeer());
@@ -106,7 +107,7 @@ public class TestNATLocal implements Serializable {
 						System.out.println(fp1.failedReason() + " /" + fp2.remotePeer());
 						sb.append(fp2.isSuccess());
 						System.out.println(peer1.peerBean().peerMap().getPeerStatistic(punr2).peerAddress());
-						sb.append(peer1.peerBean().peerMap().getPeerStatistic(punr2).peerAddress().inetAddress());
+						sb.append(peer1.peerBean().peerMap().getPeerStatistic(punr2).peerAddress());
 					} else {
 						System.err.println("failed: "+ fn1.failedReason() + fn2.failedReason());
 						return fn1.failedReason() + fn2.failedReason();

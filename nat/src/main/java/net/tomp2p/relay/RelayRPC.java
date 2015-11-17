@@ -370,8 +370,8 @@ public class RelayRPC extends DispatchHandler {
 			return;
 		}
 		List<Message> buffered = RelayUtils.decomposeCompositeBuffer(
-				message.buffer(0).buffer(), message.recipient().createTCPSocket(message.sender()), 
-				message.sender().createTCPSocket(message.recipient()), peer.connectionBean().sender().channelClientConfiguration().signatureFactory());
+				message.buffer(0).buffer(), message.recipientSocket(), 
+				message.senderSocket(), peer.connectionBean().sender().channelClientConfiguration().signatureFactory());
 		LOG.debug("got {} messages", buffered.size());
 		for(Message msg:buffered) {
 			DispatchHandler dh = connectionBean().dispatcher().associatedHandler(msg);

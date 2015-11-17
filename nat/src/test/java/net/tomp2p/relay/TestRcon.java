@@ -55,7 +55,7 @@ public class TestRcon {
 		// Test setting up relay peers
 		unreachable = new PeerBuilder(Number160.createHash(RND.nextInt())).ports(PORTS + 1).start();
 		PeerAddress pa = unreachable.peerBean().serverPeerAddress();
-		pa = pa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+		pa = pa.withUnreachable(true);
 		unreachable.peerBean().serverPeerAddress(pa);
 		
 		// find neighbors
@@ -69,9 +69,7 @@ public class TestRcon {
 		Thread.sleep(5000);
 
 		// Check if flags are set correctly
-		Assert.assertTrue(unreachable.peerAddress().isRelayed());
-		Assert.assertFalse(unreachable.peerAddress().isFirewalledTCP());
-		Assert.assertFalse(unreachable.peerAddress().isFirewalledUDP());
+		Assert.assertTrue(unreachable.peerAddress().relays().size() > 0);
 
 		System.err.println("master = " + master.peerAddress());
 		System.err.println("reachable = " + reachable.peerAddress());

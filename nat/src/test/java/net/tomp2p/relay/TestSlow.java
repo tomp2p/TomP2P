@@ -9,12 +9,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FutureDone;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
@@ -50,7 +47,7 @@ public class TestSlow {
 		// Test setting up relay peers
 		slow = new PeerBuilder(Number160.createHash(RND.nextInt())).ports(PORTS + 1).start();
 		PeerAddress pa = slow.peerBean().serverPeerAddress();
-		pa = pa.changeFirewalledTCP(true).changeFirewalledUDP(true).changeSlow(true);
+		pa = pa.withUnreachable(true).withSlow(true);
 		slow.peerBean().serverPeerAddress(pa);
 		
 		// find neighbors
@@ -64,10 +61,8 @@ public class TestSlow {
 		Thread.sleep(5000);
 
 		// Check if flags are set correctly
-		Assert.assertTrue(slow.peerAddress().isRelayed());
-		Assert.assertFalse(slow.peerAddress().isFirewalledTCP());
-		Assert.assertFalse(slow.peerAddress().isFirewalledUDP());
-		Assert.assertTrue(slow.peerAddress().isSlow());
+		Assert.assertTrue(slow.peerAddress().relays().size() > 0);
+		Assert.assertTrue(slow.peerAddress().slow());
 
 		System.err.println("master = " + master.peerAddress());
 		System.err.println("reachable = " + reachable.peerAddress());

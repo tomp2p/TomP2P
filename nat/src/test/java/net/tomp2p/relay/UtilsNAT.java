@@ -33,7 +33,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.peers.PeerSocketAddress2;
 import net.tomp2p.rpc.RPC.Commands;
 
 public class UtilsNAT {
@@ -211,10 +210,7 @@ public class UtilsNAT {
 
 	public static PeerAddress createAddress(Number160 idSender, String inetSender, int tcpPortSender, int udpPortSender,
 			boolean firewallUDP, boolean firewallTCP) throws UnknownHostException {
-		InetAddress inetSend = InetAddress.getByName(inetSender);
-		PeerSocketAddress2 peerSocketAddress = new PeerSocketAddress2(inetSend, tcpPortSender, udpPortSender);
-		PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, null, firewallTCP, firewallUDP, false, false, false, false,
-				PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
+		PeerAddress n1 = PeerAddress.create(idSender, inetSender, udpPortSender, tcpPortSender, udpPortSender + 1);
 		return n1;
 	}
 
@@ -228,9 +224,9 @@ public class UtilsNAT {
 		message.command(Commands.values()[rnd.nextInt(Commands.values().length)].getNr());
 		message.type(Type.values()[rnd.nextInt(Type.values().length)]);
 		message.recipientSocket(new InetSocketAddress(1234));
-		message.recipient(new PeerAddress(new Number160(rnd), message.recipientSocket()));
+		message.recipient(PeerAddress.create(new Number160(rnd), message.recipientSocket()));
 		message.senderSocket(new InetSocketAddress(5678));
-		message.sender(new PeerAddress(new Number160(rnd), message.senderSocket()));
+		message.sender(PeerAddress.create(new Number160(rnd), message.senderSocket()));
 		return message;
 	}
 
@@ -241,9 +237,7 @@ public class UtilsNAT {
 				&& m1.command() == m2.command()
 				&& m1.sender().equals(m2.sender()) 
 				&& m1.recipient().equals(m2.recipient())
-				&& m1.sender().tcpPort() == m2.sender().tcpPort()
-				&& m1.sender().udpPort() == m2.sender().udpPort()
-				&& m1.recipient().tcpPort() == m2.recipient().tcpPort()
-				&& m1.recipient().udpPort() == m2.recipient().udpPort();
+				&& m1.sender().equals(m2.sender())
+				&& m1.recipient().equals(m2.recipient());
 	}
 }

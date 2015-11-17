@@ -133,6 +133,7 @@ public class RelayUtils {
 		Encoder e = new Encoder(signatureFactory);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
 		e.write(buf, message, message.receivedSignature());
+		System.err.println("got: "+buf);
 		return new Buffer(buf);
 	}
 

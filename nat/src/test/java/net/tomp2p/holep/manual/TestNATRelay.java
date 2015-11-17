@@ -22,7 +22,7 @@ import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress2;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.relay.Forwarder;
 import net.tomp2p.relay.RelayCallback;
@@ -479,10 +479,9 @@ public class TestNATRelay implements Serializable {
 					Thread.sleep(500);
 
 					PeerAddress peer2 = LocalNATUtils.peerAddress("10.0.1.2", 5000, 1);
-					Collection<PeerSocketAddress2> psa = new ArrayList<PeerSocketAddress2>();
+					Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
 					psa.add(relayAddress);
-					peer2 = peer2.changePeerSocketAddresses(psa);
-					peer2 = peer2.changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
+					peer2 = peer2.withRelays(psa);
 					FutureDirect fdir1 = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					System.out.println(fdir1.failedReason());
 					Assert.assertTrue(fdir1.isSuccess());
@@ -520,10 +519,9 @@ public class TestNATRelay implements Serializable {
 					Thread.sleep(500);	
 
 					PeerAddress peer2 = LocalNATUtils.peerAddress("10.0.0.2", 5000, 0);
-					Collection<PeerSocketAddress2> psa = new ArrayList<PeerSocketAddress2>();
+					Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
 					psa.add(relayAddress);
-					peer2 = peer2.changePeerSocketAddresses(psa);
-					peer2 = peer2.changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
+					peer2 = peer2.withRelays(psa);
 					FutureDirect fdir1 = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					System.out.println(fdir1.failedReason());
 					Assert.assertTrue(fdir1.isSuccess());

@@ -161,7 +161,7 @@ public class DataBuffer {
 		} else {
 			final DataBuffer copy = shallowCopyIntern();
 			//wrap does a slice, so a derived buffer, not increasing ref count
-			return Unpooled.wrappedBuffer(copy.buffers.toArray(new ByteBuf[0]));
+			return Unpooled.wrappedBuffer(copy.buffers.toArray(new ByteBuf[copy.buffers.size()]));
 		}
 	}
 

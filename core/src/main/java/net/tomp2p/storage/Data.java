@@ -26,6 +26,7 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.BitSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import net.tomp2p.connection.DSASignatureFactory;
@@ -816,7 +817,8 @@ public class Data {
 	 * @return The ByteBuffers that is the payload. We do not make a copy here
 	 */
 	public ByteBuffer[] toByteBuffers() {
-		return buffer.bufferList().toArray(new ByteBuffer[0]);
+		List<ByteBuffer> byteBuffers = buffer.bufferList();
+		return byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]);
 	}
 
 	public PublicKey publicKey() {

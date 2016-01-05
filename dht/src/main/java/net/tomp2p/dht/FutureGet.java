@@ -25,7 +25,7 @@ import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 /**
- * The future object for put() operations including routing.
+ * The future object for get() operations including routing.
  * 
  * @author Thomas Bocek
  */

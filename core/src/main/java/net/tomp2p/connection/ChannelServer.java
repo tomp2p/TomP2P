@@ -159,9 +159,14 @@ public final class ChannelServer implements DiscoverNetworkListener{
     	}
     	
     	final InetSocketAddress udpSocket = new InetSocketAddress(channelServerConfiguration.ports().udpPort());
-    	final boolean udpStart = startupUDP(udpSocket, channelServerConfiguration, true); 
+    	final boolean udpStart = startupUDP(udpSocket, channelServerConfiguration, true);
     	if(!udpStart) {
-    		LOG.warn("cannot bind UDP on socket {}",udpSocket);
+                final boolean udpStart2 = startupUDP(udpSocket, channelServerConfiguration, false);
+                if(!udpStart2) {
+                    LOG.warn("cannot bind UDP on socket at all {}", udpSocket);
+                } else {
+                    LOG.warn("can only bind to UDP without broadcast support {}", udpSocket);
+                }
     	} else {
     		LOG.info("Listening UDP on socket {}",udpSocket);
     	}

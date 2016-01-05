@@ -1,7 +1,7 @@
 language: java
 
 jdk:
- - oraclejdk8
+ - openjdk7
 
 #solved in pom.xml
 #env: MAVEN_OPTS="-Dio.netty.leakDetectionLevel=paranoid"

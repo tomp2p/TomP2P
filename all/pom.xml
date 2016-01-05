@@ -19,7 +19,7 @@
 	<artifactId>tomp2p-all</artifactId>
 	<packaging>jar</packaging>
 
-	<name>TomP2P all-in-one</name>
+	<name>TomP2P All-in-One</name>
 
 	<dependencies>
 		<dependency>

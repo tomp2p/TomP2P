@@ -17,7 +17,7 @@
 	</parent>
 
 	<artifactId>tomp2p-nat</artifactId>
-	<name>TomP2P nat</name>
+	<name>TomP2P NAT</name>
 	<packaging>jar</packaging>
 
 	<properties>

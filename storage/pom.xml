@@ -24,7 +24,7 @@
 	</parent>
 
 	<artifactId>tomp2p-storage</artifactId>
-	<name>TomP2P storage</name>
+	<name>TomP2P Storage</name>
 	<packaging>jar</packaging>
 
 	<properties>

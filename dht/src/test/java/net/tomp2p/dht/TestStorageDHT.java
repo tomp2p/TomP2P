@@ -94,7 +94,7 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).start();
-            PeerAddress[] pa = UtilsDHT2.createDummyAddress(300, PORT_TCP, PORT_UDP, PORT_UDP + 1);
+            PeerAddress[] pa = UtilsDHT2.createDummyAddress(300, PORT_UDP, PORT_TCP, PORT_UDP + 1);
             for (int i = 0; i < pa.length; i++) {
                 sender.peerBean().peerMap().peerFound(pa[i], null, null, null);
             }

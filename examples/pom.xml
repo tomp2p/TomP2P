@@ -24,7 +24,7 @@
   	</parent>
 	
 	<artifactId>tomp2p-examples</artifactId>
-	<name>TomP2P examples</name>
+	<name>TomP2P Examples</name>
 	<packaging>jar</packaging>
 
 	<properties>

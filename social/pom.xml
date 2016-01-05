@@ -24,7 +24,7 @@
 	</parent>
 
 	<artifactId>tomp2p-social</artifactId>
-	<name>TomP2P social</name>
+	<name>TomP2P Social</name>
 	<packaging>jar</packaging>
 
 	<properties>

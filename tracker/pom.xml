@@ -24,7 +24,7 @@
 	</parent>
 
 	<artifactId>tomp2p-tracker</artifactId>
-	<name>TomP2P tracker</name>
+	<name>TomP2P Tracker</name>
 	<packaging>jar</packaging>
 
 	<properties>

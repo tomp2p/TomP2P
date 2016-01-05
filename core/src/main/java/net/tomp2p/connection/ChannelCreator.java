@@ -150,8 +150,8 @@ public class ChannelCreator {
 			b.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(ConnectionBean.UDP_LIMIT));
 			
 			//we don't need to increase the buffers as we limit the connections in tomp2p
-			//b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
-			//b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
+			b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
+			b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
 			if (broadcast) {
 				b.option(ChannelOption.SO_BROADCAST, true);
 			}

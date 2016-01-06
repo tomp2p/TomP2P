@@ -11,6 +11,8 @@ before_install:
   - sed -e "s/^\\(127\\.0\\.0\\.1.*\\)/\\1 $(hostname | cut -c1-63)/" /etc/hosts | sudo tee /etc/hosts
   - cat /etc/hosts # optionally check the content *after*
   - ifconfig
+  - apt-cache search nc | grep netcat
+  - nc -lu 4444
 
 #solved in pom.xml
 #env: MAVEN_OPTS="-Dio.netty.leakDetectionLevel=paranoid"

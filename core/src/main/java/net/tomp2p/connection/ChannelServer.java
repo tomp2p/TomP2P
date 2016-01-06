@@ -16,6 +16,7 @@
 
 package net.tomp2p.connection;
 
+import com.sun.javafx.scene.control.skin.VirtualFlow;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -34,6 +35,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -175,6 +177,19 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	//this method has blocking calls in it
 	private void listenSpecificInetAddresses(DiscoverResults discoverResults) {
 	    
+            /**
+             * Travis-ci has the same inet address as the broadcast adress, handle it properly.
+             * 
+             * eth0      Link encap:Ethernet  HWaddr 42:01:0a:f0:00:19  
+             * inet addr:10.240.0.25  Bcast:10.240.0.25  Mask:255.255.255.255
+             * UP BROADCAST RUNNING MULTICAST  MTU:1460  Metric:1
+             * RX packets:849 errors:0 dropped:0 overruns:0 frame:0
+             * TX packets:914 errors:0 dropped:0 overruns:0 carrier:0
+             * collisions:0 txqueuelen:1000 
+             * RX bytes:1080397 (1.0 MB)  TX bytes:123816 (123.8 KB)
+             */
+            final List<InetSocketAddress> broadcastAddresses = new ArrayList<InetSocketAddress>();
+            
 	    for (InetAddress inetAddress : discoverResults.newBroadcastAddresses()) {
 	    	InetSocketAddress udpBroadcastSocket = new InetSocketAddress(inetAddress, channelServerConfiguration.ports()
 	                .udpPort());
@@ -184,6 +199,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	    	if (udpStartBroadcast) {
 	    		//if one broadcast address was found, then we don't need to bind to 0.0.0.0
 	    		broadcastAddressSupported = true;
+                        broadcastAddresses.add(udpBroadcastSocket);
 	    		LOG.info("Listening on broadcast address: {} on port udp: {}"
 		   		        , udpBroadcastSocket, channelServerConfiguration.ports().udpPort());
 	    	} else {
@@ -222,8 +238,12 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	    	
 	    	//as we are listening to anything on UDP, we don't need to listen to any other interfaces
 	    	if(!udpStartBroadcast) {
-	    		InetSocketAddress udpSocket = new InetSocketAddress(inetAddress, 
+                        InetSocketAddress udpSocket = new InetSocketAddress(inetAddress, 
 	    				channelServerConfiguration.ports().udpPort());
+                        //if we already bound to the inetaddress as bcast and inet are the same
+                        if(broadcastAddresses.contains(udpSocket)) {
+                                return;
+                        }
 	    		boolean udpStart = startupUDP(udpSocket, channelServerConfiguration, false); 
 	    		if(!udpStart) {
 	    			LOG.warn("cannot bind UDP on socket {}",udpSocket);

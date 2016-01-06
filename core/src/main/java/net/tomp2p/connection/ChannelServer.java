@@ -16,7 +16,6 @@
 
 package net.tomp2p.connection;
 
-import com.sun.javafx.scene.control.skin.VirtualFlow;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;

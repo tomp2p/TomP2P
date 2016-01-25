@@ -103,6 +103,18 @@ public class Reservation {
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.peerBean = peerBean;
 	}
+        
+        public int availablePermitsUDP() {
+            return semaphoreUPD.availablePermits();
+        }
+        
+        public int availablePermitsTCP() {
+            return semaphoreTCP.availablePermits();
+        }
+        
+        public int availablePermitsPermanentTCP() {
+            return semaphorePermanentTCP.availablePermits();
+        }
 
 	/**
 	 * @return The pending number of requests that are scheduled but not

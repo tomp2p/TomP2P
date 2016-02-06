@@ -18,9 +18,14 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatistic;
+import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.rpc.SimpleBloomFilter;
+import net.tomp2p.storage.DigestStorage;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -451,6 +456,77 @@ public class TestRouting {
             Assert.assertEquals(true, ns.contains(peers[3].peerAddress()));
             Assert.assertEquals(true, ns.contains(peers[4].peerAddress()));
             Assert.assertEquals(6, ns.size());
+        } finally {
+            if (cc != null) {
+                cc.shutdown().awaitListenersUninterruptibly();
+            }
+            for (Peer n : peers) {
+                n.shutdown().await();
+            }
+        }
+    }
+    
+    @Test
+    public void testRoutingDirectHit() throws Exception {
+        Peer[] peers = null;
+        ChannelCreator cc = null;
+        try {
+            // setup
+            peers = createSpecialPeers(7);
+            for(Peer peer:peers) {
+                peer.peerBean().digestStorage(new DigestStorage(){
+                    @Override
+                    public DigestInfo digest(Number640 from, Number640 to, int limit, boolean ascending) {
+                        return new DigestInfo(Number160.ONE, Number160.ONE, 1);
+                    }
+
+                    @Override
+                    public DigestInfo digest(Number320 locationAndDomainKey, SimpleBloomFilter<Number160> keyBloomFilter, SimpleBloomFilter<Number160> contentBloomFilter, int limit, boolean ascending, boolean isBloomFilterAnd) {
+                        return new DigestInfo(Number160.ONE, Number160.ONE, 1);
+                    }
+
+                    @Override
+                    public DigestInfo digest(Collection<Number640> number640s) {
+                        return new DigestInfo(Number160.ONE, Number160.ONE, 1);
+                    }
+                });
+            }
+            addToPeerMap(peers[0], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[1], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress());
+            addToPeerMap(peers[2], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress(), peers[4].peerAddress(),
+                    peers[5].peerAddress());
+            addToPeerMap(peers[3], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[4], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[5], peers[0].peerAddress(), peers[1].peerAddress());
+            // do testing
+
+            
+            FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(3, 0);
+            fcc.awaitUninterruptibly();
+            cc = fcc.channelCreator();
+            
+
+            RoutingBuilder routingBuilder = new RoutingBuilder();
+           
+            routingBuilder.locationKey(Number160.ONE);
+            routingBuilder.domainKey(Number160.ONE);
+            routingBuilder.maxDirectHits(1);
+            routingBuilder.setMaxNoNewInfo(0);
+            routingBuilder.maxFailures(0);
+            routingBuilder.maxSuccess(100);
+            routingBuilder.parallel(3);
+
+            FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, Type.REQUEST_2, cc);
+
+            fr.awaitUninterruptibly();
+            // do verification
+            Assert.assertEquals(true, fr.isSuccess());
+            SortedSet<PeerAddress> dh = fr.directHits();
+            SortedSet<PeerAddress> ph = fr.potentialHits();
+            Assert.assertEquals(1, dh.size());
+            Assert.assertEquals(1, ph.size());
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();

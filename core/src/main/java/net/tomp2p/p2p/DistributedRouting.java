@@ -227,6 +227,12 @@ public class DistributedRouting {
         routingMechanism.directHits(directHits);
         routingMechanism.alreadyAsked(alreadyAsked);
         
+        //evaluate direct hits early
+        if(routingMechanism.getMaxDirectHits() >= directHits.size()) {
+            futureRouting.neighbors(directHits, potentialHits, alreadyAsked, randomSearch, randomSearch);
+            return futureRouting;
+        }     
+        
         if (peerAddresses.isEmpty()) {
         	routingBuilder.routingOnlyToSelf(false);
         	routingMechanism.neighbors(routingBuilder);

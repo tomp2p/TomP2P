@@ -247,7 +247,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
     	if (!isReplication()) {
             return;
         }
-	    // TODO Auto-generated method stub
+	backend.removeResponsibility(locationKey, keepData);
     }
 
     /**

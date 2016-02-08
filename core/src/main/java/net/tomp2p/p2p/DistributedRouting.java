@@ -228,7 +228,7 @@ public class DistributedRouting {
         routingMechanism.alreadyAsked(alreadyAsked);
         
         //evaluate direct hits early
-        if(routingMechanism.getMaxDirectHits() >= directHits.size()) {
+        if(directHits.size() >= routingMechanism.getMaxDirectHits()) {
             futureRouting.neighbors(directHits, potentialHits, alreadyAsked, randomSearch, randomSearch);
             return futureRouting;
         }     

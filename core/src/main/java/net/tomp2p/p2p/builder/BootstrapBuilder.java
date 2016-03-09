@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,11 +45,11 @@ import net.tomp2p.utils.Utils;
 /**
  * Bootstraps to a known peer. First, channels are reserved, then discover(PeerAddress) is called to verify this Internet
  * connection settings using the "peerAddress" argument . Then the routing is initiated to the peers specified in
- * "bootstrapTo". Please be aware that in order to boostrap, you need to know the peer ID of all peers in the "bootstrapTo" collection.
- * Passing Number160.ZERO does *not* work.
+ * "bootstrapTo". Please be aware that in order to bootstrap, you need to know the peer ID of all peers in the
+ * "bootstrapTo" collection. * Passing Number160.ZERO does *not* work.
  */
+public class BootstrapBuilder extends DefaultConnectionConfiguration {
 
-public class BootstrapBuilder {
     private static final Logger logger = LoggerFactory.getLogger(BootstrapBuilder.class);
 
     private static final FutureBootstrap FUTURE_BOOTSTRAP_SHUTDOWN = new FutureWrappedBootstrap<FutureBootstrap>()
@@ -76,7 +77,7 @@ public class BootstrapBuilder {
     public BootstrapBuilder(Peer peer) {
         this.peer = peer;
     }
-    
+
     public PeerAddress peerAddress() {
         return peerAddress;
     }
@@ -111,18 +112,45 @@ public class BootstrapBuilder {
         return inetAddress;
     }
 
+    /**
+     * In case the peerID is not known, only the known inet address can be specified.
+     *
+     * If the inetAddress is set and {@link #bootstrapTo()} and {@link #peerAddress()} are null, a ping will be
+     * triggered first to discover the distant peerID, then, on success, the normal bootstrap will continue.
+     *
+     * The discovered Peer (with its ID) will be accessible through {@link #bootstrapTo()}.
+     *
+     * @param inetAddress the address to bootstrap to.
+     * @return the builder instance
+     */
     public BootstrapBuilder inetAddress(InetAddress inetAddress) {
         this.inetAddress = inetAddress;
         return this;
     }
-    
+
+    /**
+     * See {@link #inetAddress(java.net.InetAddress)} for details.
+     * 
+     * Use given socket ports instead of default ports to reach the distant peer.
+     *
+     * @param socket the socket address to bootstrap to
+     * @return the builder instance
+     */
     public BootstrapBuilder inetSocketAddress(InetSocketAddress socket) {
     	this.inetAddress = socket.getAddress();
     	this.portTCP = socket.getPort();
     	this.portUDP = socket.getPort();
 	    return this;
     }
-    
+
+    /**
+     * See {@link #inetAddress(java.net.InetAddress)} for details.
+     *
+     * Use given socket ports instead of default ports to reach the distant peer.
+     *
+     * @param socket the PeerSocket4Address to bootstrap to
+     * @return the builder instance
+     */
     public BootstrapBuilder peerSocketAddress(PeerSocket4Address socket) {
     	this.inetAddress = socket.ipv4().toInetAddress();
     	this.portTCP = socket.tcpPort();
@@ -205,7 +233,14 @@ public class BootstrapBuilder {
         final FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>> result = new FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>>();
         result.bootstrapTo(bootstrapTo);
         int conn = routingConfiguration.parallel();
-        FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn, 0);
+        FutureChannelCreator fcc;
+
+        if (this.forceTCP) {
+            fcc = peer.connectionBean().reservation().create(0, conn);
+        } else {
+            //The actual bootstrap defaults to UDP
+            fcc = peer.connectionBean().reservation().create(conn, 0);
+        }
         Utils.addReleaseListener(fcc, result);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -236,7 +271,14 @@ public class BootstrapBuilder {
 
     private FutureWrappedBootstrap<FutureBootstrap> bootstrapPing(PeerAddress address) {
         final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-        final FuturePing futurePing = peer.ping().peerAddress(address).tcpPing().start();
+
+        final FuturePing futurePing;
+        if (this.forceUDP) {
+            futurePing = peer.ping().peerAddress(address).start();
+        } else {
+            //Bootstrap ping defaults to TCP
+            futurePing = peer.ping().peerAddress(address).tcpPing().start();
+        }
         futurePing.addListener(new BaseFutureAdapter<FuturePing>() {
             @Override
             public void operationComplete(final FuturePing future) throws Exception {

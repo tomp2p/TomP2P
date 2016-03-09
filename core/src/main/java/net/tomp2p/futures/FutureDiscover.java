@@ -75,7 +75,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     }
 
     /**
-     * Gets called if the discovery was a success and an other peer could ping us with TCP and UDP.
+     * Gets called if the discovery was a success and an other peer could ping us with TCP and/or UDP.
      * 
      * @param ourPeerAddress
      *            The peerAddress of our server
@@ -187,9 +187,9 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         
         @Override
         public void run() {
-        	failed(serverPeerAddress, "Timeout in Discover: " +
-                    (System.currentTimeMillis() - start) + "ms. Seems like pingTCPProbe or pingUDPProbe did not " +
-                    "succeed in time. However my address reported from pingTCPDiscover is " + serverPeerAddress);
+            failed(serverPeerAddress, "Timeout in Discover: " + (System.currentTimeMillis() - start)
+                    + "ms. Seems like pingTCPProbe or pingUDPProbe did not succeed in time."
+                    + " However my address reported from pingDiscover is " + serverPeerAddress);
         }
     }
     

@@ -97,7 +97,7 @@ public class ExampleVDHT {
 	private static void storeDHT(PeerDHT peerDHT, String string)
 			throws ClassNotFoundException, InterruptedException, IOException {
 		FutureGet fg = peerDHT.get(Number160.ONE).getLatest().start()
-				.awaitUninterruptibly();
+				.awaitUninterruptibly();                
 		FuturePut fp = peerDHT.put(Number160.ONE)
 				.data(new Data(fg.data().object() + string)).start()
 				.awaitUninterruptibly();
@@ -154,7 +154,7 @@ public class ExampleVDHT {
 		FutureGet fg = peers[5].get(Number160.ONE).getLatest().start()
 				.awaitUninterruptibly();
 		// you will see all three versions, however, not in the right order
-		System.out.println("res : "
+                System.out.println("res : "
 				+ fg.rawData().values().iterator().next().values().iterator()
 						.next().object());
 
@@ -174,7 +174,7 @@ public class ExampleVDHT {
 					.put(Number160.ONE)
 					.data(Number160.ZERO, pair.element1().prepareFlag(),
 							pair.element0()).start().awaitUninterruptibly();
-			pair2 = checkVersions(fp.rawResult());
+                        pair2 = checkVersions(fp.rawResult());
 			// 1 is PutStatus.OK_PREPARED
 			if (pair2 != null && pair2.element1() == 1) {
 				break;
@@ -206,7 +206,7 @@ public class ExampleVDHT {
 					.awaitUninterruptibly();
 			// check if all the peers agree on the same latest version, if not
 			// wait a little and try again
-			pair = checkVersions(fg.rawData());
+                        pair = checkVersions(fg.rawData());
 			if (pair != null) {
 				break;
 			}

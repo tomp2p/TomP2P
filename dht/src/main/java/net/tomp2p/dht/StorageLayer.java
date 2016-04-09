@@ -259,10 +259,10 @@ public class StorageLayer implements DigestStorage {
 				Number640 minVersion = new Number640(key, Number160.ZERO);
 				Number640 maxVersion = new Number640(key, Number160.MAX_VALUE);
 				NavigableMap<Number640, Data> tmp = backend.subMap(minVersion, maxVersion);
-				tmp = filterCopyOrig(tmp, -1, true);
-				NavigableMap<Number640, Data> heads = getLatestInternalOrig(tmp);
+                                tmp = filterCopyOrig(tmp, -1, true, false);
+                                NavigableMap<Number640, Data> heads = getLatestInternalOrig(tmp);
 				
-				final boolean forked = heads.size() > 1; 
+                                final boolean forked = heads.size() > 1; 
 				for(final Map.Entry<Number640, Data> entry:heads.entrySet()) {
 					if(forked) {
 						if(retVal.containsKey(entry.getKey())) {
@@ -365,7 +365,7 @@ public class StorageLayer implements DigestStorage {
 		RangeLock<Number640>.Range lock = lock(key.locationAndDomainAndContentKey());
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey());
-			tmp = filterCopyOrig(tmp, -1, true);
+			tmp = filterCopyOrig(tmp, -1, true, true);
 			return getLatestInternal(tmp);
 		} finally {
 			lock.unlock();
@@ -414,11 +414,12 @@ public class StorageLayer implements DigestStorage {
 		return retVal;
     }
 	
-	private NavigableMap<Number640, Data> filterCopyOrig(final NavigableMap<Number640, Data> tmp, int limit, boolean ascending) {
+	private NavigableMap<Number640, Data> filterCopyOrig(final NavigableMap<Number640, Data> tmp, int limit, 
+                boolean ascending, boolean filterPrepared) {
 		NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
 		int counter = 0;
 		for(Map.Entry<Number640, Data> entry : ascending ? tmp.entrySet() : tmp.descendingMap().entrySet()) {
-	    	if (!entry.getValue().hasPrepareFlag()) {
+	    	if (!filterPrepared || !entry.getValue().hasPrepareFlag()) {
 	    		if(limit >= 0 && counter++ >= limit) {
 	    			break;
 	    		}
@@ -610,7 +611,7 @@ public class StorageLayer implements DigestStorage {
 		RangeLock<Number640>.Range lock = rangeLock.lock(from, to);
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
-			tmp = filterCopyOrig(tmp, limit, ascending);
+			tmp = filterCopyOrig(tmp, limit, ascending, true);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
 				if (!entry.getValue().hasPrepareFlag()) {
 					digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
@@ -634,7 +635,7 @@ public class StorageLayer implements DigestStorage {
 			Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
 			Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
 			NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
-			tmp = filterCopyOrig(tmp, limit, ascending);
+			tmp = filterCopyOrig(tmp, limit, ascending, true);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
 				if (isBloomFilterAnd) {
 					if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().contentKey())) {

@@ -18,9 +18,11 @@ public interface SendBehavior {
 		DIRECT,
 
 		/**
-		 * Send the message to the relay which forwards it to the receiver
+		 * Send the message after a direct connection via hole punching is
+		 * established. If it fails, use a relay
+                 * Send the message to the relay which forwards it to the receiver
 		 */
-		RELAY,
+		HOLEP_RELAY,
 
 		/**
 		 * Open a reverse connection to the receiver and send the message. The
@@ -33,12 +35,6 @@ public interface SendBehavior {
 		 * own dispatcher
 		 */
 		SELF,
-
-		/**
-		 * Send the message after a direct connection via hole punching is
-		 * established. The connection is closed afterwards. This is not possible via TCP.
-		 */
-		HOLEP
 	}
 
 	/**

@@ -41,7 +41,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 
 /**
@@ -57,7 +56,7 @@ public final class ExampleDST {
 	private final static int n = 2;
 	
 	//The range of the values, needs to be power of 2
-	private final static int m = 8; //1024*1024; // m is th
+	private final static int m = 1024*1024; // m is th
 
     /**
      * Empty constructor.
@@ -138,7 +137,7 @@ public final class ExampleDST {
         				
         		}
         		
-        		@Override
+        		/*@Override
         		public NavigableMap<Number640, Data> get(Number640 from,
         				Number640 to,
         				SimpleBloomFilter<Number160> contentKeyBloomFilter,
@@ -149,7 +148,7 @@ public final class ExampleDST {
         			NavigableMap<Number640, Data> tmp = super.get(from, to, contentKeyBloomFilter, versionKeyBloomFilter,
         					contentBloomFilter, limit, ascending, isBloomFilterAnd);
         			return wrap(tmp);
-        		}
+        		}*/
         		
         		 /**
                  * We need to tell if our bag is full and if the peer should contact other peers.
@@ -158,7 +157,7 @@ public final class ExampleDST {
                  *            The original data
                  * @return The enriched data with a boolean flag
                  */
-        		private NavigableMap<Number640, Data> wrap(final SortedMap<Number640, Data> tmp) {
+        	/*	private NavigableMap<Number640, Data> wrap(final SortedMap<Number640, Data> tmp) {
         			NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
                     for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
                         try {
@@ -171,7 +170,7 @@ public final class ExampleDST {
                         }
                     }
                     return retVal;
-                }
+                }*/
         	};
             return sl;
         
@@ -269,9 +268,9 @@ public final class ExampleDST {
             for (Map.Entry<Number640, Data> entry : futureGet.dataMap().entrySet()) {
                 // with each result we get a flag if we should query the children (this should be returned in the
                 // future, e.g., partially_ok)
-                StringBoolean stringBoolean = (StringBoolean) entry.getValue().object();
-                result.add(stringBoolean.string);
-                if (!stringBoolean.bool && inter2.size() > bagSize) {
+                String stringBoolean = (String) entry.getValue().object();
+                result.add(stringBoolean);
+                if (inter2.size() > bagSize) {
                     // we need to query our children
                     getDSTRec(peer, inter2.split(), result, already, dhtCounter, bagSize);
                 }
@@ -375,7 +374,7 @@ public final class ExampleDST {
      * @author Thomas Bocek
      * 
      */
-    private static final class StringBoolean implements Serializable {
+    /*private static final class StringBoolean implements Serializable {
         private static final long serialVersionUID = -3947493823227587011L;
 
         private final Boolean bool;
@@ -387,11 +386,11 @@ public final class ExampleDST {
          * @param bool A boolean value
          * @param string A string value
          */
-        private StringBoolean(final boolean bool, final String string) {
+        /*private StringBoolean(final boolean bool, final String string) {
             this.bool = bool;
             this.string = string;
         }
-    }
+    }*/
 
     /**
      * A helper class that stores the interval.

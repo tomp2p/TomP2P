@@ -61,17 +61,21 @@ public class TestNATHolePunching implements Serializable {
 		LocalNATUtils.executeNatSetup("stop", "1");
 	}
 
-	private static Serializable discover(final String address, Peer peer)
+	private static FutureDone<NATType> discover(final String address, Peer peer)
 			throws UnknownHostException {
 		PeerAddress relayP = PeerAddress.create(relayPeerId, address, 5002, 5002, 5003);
-		FutureDone<NATType> type = NATTypeDetection.checkNATType(peer, relayP)
-				.awaitUninterruptibly();
+		return NATTypeDetection.checkNATType(peer, relayP);
+		
+	}
+        
+        private static Serializable discover(FutureDone<NATType> type)
+			throws UnknownHostException {
 		return type.isSuccess() ? type.object().name() : type.failedReason();
 	}
 
 	@SuppressWarnings("serial")
 	@Test
-	public void testDetection() throws Exception {
+	public void testHolePunching() throws Exception {
 		Peer relayPeer = null;
 		RemotePeer unr1 = null;
 		RemotePeer unr2 = null;
@@ -94,7 +98,7 @@ public class TestNATHolePunching implements Serializable {
 						@Override
 						public Serializable execute() throws Exception {
 							Peer peer = (Peer) get("peer");
-							return discover(address, peer);
+							return "TODO";
 						}
 					}, new Command() {
 						//shutdown
@@ -119,7 +123,8 @@ public class TestNATHolePunching implements Serializable {
 						@Override
 						public Serializable execute() throws Exception {
 							Peer peer = (Peer) get("peer");
-							return discover(address, peer);
+							FutureDone<NATType> type = discover(address, peer);
+                                                        return "TODO";
 						}
 					}, new Command() {
 						//shutdown

@@ -38,7 +38,7 @@ import net.tomp2p.peers.PeerAddress;
 //travis-ci cannot test this, the kernel does not support all the required features:
 //Perhaps iptables or your kernel needs to be upgraded
 //see also here: https://github.com/travis-ci/travis-ci/issues/1341
-@Ignore
+//@Ignore
 public class TestNATTypeDetection implements Serializable {
 	
 	private static final long serialVersionUID = 1L;

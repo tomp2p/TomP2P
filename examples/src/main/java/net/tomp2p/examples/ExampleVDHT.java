@@ -154,7 +154,7 @@ public class ExampleVDHT {
 		FutureGet fg = peers[5].get(Number160.ONE).getLatest().start()
 				.awaitUninterruptibly();
 		// you will see all three versions, however, not in the right order
-		System.out.println("res: "
+		System.out.println("res : "
 				+ fg.rawData().values().iterator().next().values().iterator()
 						.next().object());
 

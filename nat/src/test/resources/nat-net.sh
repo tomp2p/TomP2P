@@ -89,31 +89,47 @@ start () {
   ip link add "nat$1_lan" type veth peer name "unr$1_lan"
   ip link set "nat$1_lan" netns "nat$1"
   ip link set "unr$1_lan" netns "unr$1"
+
+  ip link set "nat$1_real" up
+  ip netns exec "nat$1" ip link set "nat$1_wan" up
+  ip netns exec "nat$1" ip link set "nat$1_lan" up
+  ip netns exec "unr$1" ip link set "unr$1_lan" up
+  # adding a virtual interface to simulate two peers behind same NAT
+  ip netns exec "unr$1" ip link set "unr$1_lan:0" up 
+
   echo "nat$1_real, nat$1_wan created in namespace nat$1."
   echo "nat$1_lan,  unr$1_lan created in namespace unr$1."
-  
+
   # assign IPs
-  ifconfig "nat$1_real" "$NAT_REAL"/24 up
-  ip netns exec "nat$1" ifconfig "nat$1_wan" "$NAT_WAN"/24 up
-  ip netns exec "nat$1" ifconfig "nat$1_lan" "$NAT_LAN"/24 up
-  ip netns exec "unr$1" ifconfig "unr$1_lan" "$UNR_LAN1"/24 up
+  # ifconfig "nat$1_real" "$NAT_REAL"/24 up
   
-  # adding a virtual interface to simulate two peers behind same NAT
-  #
-  ip netns exec "unr$1" ifconfig "unr$1_lan:0" "$UNR_LAN2"/24 up 
+  ip address add "$NAT_REAL"/24 dev "nat$1_real"
+  ip netns exec "nat$1" ip address add "$NAT_WAN"/24 dev "nat$1_wan"
+  ip netns exec "nat$1" ip address add "$NAT_LAN"/24 dev "nat$1_lan"
+  ip netns exec "unr$1" ip address add "$UNR_LAN1"/24 dev "unr$1_lan"
+  ip netns exec "unr$1" ip address add "$UNR_LAN2"/24 dev "unr$1_lan:0"
+
+  echo "1"
+
+  
   # alternatively, one can use a tun device
   #ip netns exec "unr$1" ip tuntap add dev "unr$1_lan2" mode tun
   #ip netns exec "unr$1" ifconfig "unr$1_lan2" "$UNR_LAN2"/24 up
-  
+
+  echo "2"  
+
   # loopback is important or getLocalHost() will hang for a long time!
   ip netns exec "unr$1" ifconfig "lo" 127.0.0.1 up
   ip netns exec "nat$1" ifconfig "lo" 127.0.0.1 up
   
+  echo "3"
   
   # add, modify routing
   #route del -net "$NAT_REAL_NET"/24 dev "nat$1_real"
-  route add -net "$NAT_WAN_NET"/24 dev "nat$1_real"
+  ip route add "$NAT_WAN_NET"/24 dev "nat$1_real"
+  echo "4"
   ip netns exec "unr$1" route add default gw "$NAT_LAN"
+  echo "5"
   ip netns exec "nat$1" route add default gw "$NAT_WAN"
   echo "routing set."
 

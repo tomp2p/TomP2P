@@ -35,13 +35,13 @@ public class DefaultSendBehavior implements SendBehavior {
 				// reverse connection is not possible because both peers are
 				// relayed. Thus send the message to
 				// one of the receiver's relay peers
-				return SendMethod.RELAY;
+				return SendMethod.HOLEP_RELAY;
 			} else {
 				// Messages with small size can be sent over relay, other messages should be sent directly (more efficient)
 				if(message.estimateSize() > MTU) {
 					return SendMethod.RCON;
 				} else {
-					return SendMethod.RELAY;
+					return SendMethod.HOLEP_RELAY;
 				}
 			}
 		}
@@ -66,7 +66,7 @@ public class DefaultSendBehavior implements SendBehavior {
 		}
 		
 		if(message.recipient().relaySize() > 0) {
-			return SendMethod.RELAY;
+			return SendMethod.HOLEP_RELAY;
 		}
 
 		return SendMethod.DIRECT;

@@ -45,7 +45,7 @@ public class SyncStat {
         StringBuilder sb = new StringBuilder("sync stats from [");
         sb.append(fromPeer).append("] to [").append(toPeer).append(":");
         sb.append("send=").append(dataCopy).append("(orig=").append(dataOrig).append(")");
-        sb.append(",ratio: ").append(dataOrig/(double)dataCopy);
+        sb.append(",ratio: 1:").append(dataOrig/(double)dataCopy);
         return sb.toString();
     }
 }

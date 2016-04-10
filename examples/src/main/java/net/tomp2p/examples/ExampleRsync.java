@@ -53,9 +53,13 @@ public class ExampleRsync {
 		new PeerSync(peers[2]);
 		
 		//change second byte
-		test[1]=1;
+                byte test2[] = new byte[100000];
+                test2[1]=1;
+                final NavigableMap<Number640, Data> dataMap2 = new TreeMap<Number640, Data>();
+		dataMap2.put(new Number640(peers[1].peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO), new Data(test2)); 
 		
-		FutureDone<SyncStat> fd = ps1.synchronize(peers[2].peerAddress()).dataMap(new DataMap(dataMap)).start().awaitUninterruptibly();
+		
+		FutureDone<SyncStat> fd = ps1.synchronize(peers[2].peerAddress()).dataMap(new DataMap(dataMap2)).start().awaitUninterruptibly();
 		System.out.println(fd.object().toString());
 		
 		

@@ -129,7 +129,7 @@ public class TestRouting {
             testRouting1(false, Type.REQUEST_2);
         }
     }
-
+    
     private void testRouting1(boolean tcp, Type request) throws Exception {
         Peer[] peers = null;
         ChannelCreator cc = null;
@@ -162,7 +162,7 @@ public class TestRouting {
                 routingBuilder.forceTCP(true);
             }
             routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.maxDirectHits(1);
             routingBuilder.setMaxNoNewInfo(0);
             routingBuilder.maxFailures(0);
             routingBuilder.maxSuccess(100);
@@ -235,7 +235,7 @@ public class TestRouting {
                 routingBuilder.forceTCP(true);
             }
             routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.maxDirectHits(1);
             routingBuilder.setMaxNoNewInfo(0);
             routingBuilder.maxFailures(0);
             routingBuilder.maxSuccess(100);
@@ -303,7 +303,7 @@ public class TestRouting {
                 routingBuilder.forceTCP(true);
             }
             routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.maxDirectHits(1);
             routingBuilder.setMaxNoNewInfo(0);
             routingBuilder.maxFailures(0);
             routingBuilder.maxSuccess(100);
@@ -370,7 +370,7 @@ public class TestRouting {
                 routingBuilder.forceTCP(true);
             }
             routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.maxDirectHits(1);
             routingBuilder.setMaxNoNewInfo(0);
             routingBuilder.maxFailures(0);
             routingBuilder.maxSuccess(100);
@@ -440,7 +440,7 @@ public class TestRouting {
                 routingBuilder.forceTCP(true);
             }
             routingBuilder.locationKey(peers[6].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.maxDirectHits(1);
             routingBuilder.setMaxNoNewInfo(0);
             routingBuilder.maxFailures(0);
             routingBuilder.maxSuccess(100);
@@ -615,7 +615,7 @@ public class TestRouting {
                 routingBuilder.forceTCP(true);
             }
             routingBuilder.locationKey(peers[20].peerID());
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.maxDirectHits(1);
             routingBuilder.setMaxNoNewInfo(0);
             routingBuilder.maxFailures(0);
             routingBuilder.maxSuccess(100);
@@ -638,6 +638,7 @@ public class TestRouting {
         }
     }
 
+    //this is a stress test, takes a long time ~100s!
     @Ignore
     @Test
     public void testRoutingConcurrently() throws Exception {
@@ -684,7 +685,7 @@ public class TestRouting {
                     routingBuilder.forceTCP(true);
                 }
                 routingBuilder.locationKey(peers[rnd1.nextInt(peers.length)].peerID());
-                routingBuilder.maxDirectHits(0);
+                routingBuilder.maxDirectHits(1);
                 routingBuilder.setMaxNoNewInfo(0);
                 routingBuilder.maxFailures(0);
                 routingBuilder.maxSuccess(100);
@@ -748,7 +749,7 @@ public class TestRouting {
                 if (tcp) {
                     routingBuilder.forceTCP(true);
                 }
-                routingBuilder.maxDirectHits(0);
+                routingBuilder.maxDirectHits(1);
                 routingBuilder.setMaxNoNewInfo(5);
                 routingBuilder.maxFailures(100);
                 routingBuilder.maxSuccess(100);

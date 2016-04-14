@@ -157,7 +157,7 @@ public class TestRTTRoutingComparator {
             cc = fcc.channelCreator();
             RoutingBuilder routingBuilder = new RoutingBuilder();
             routingBuilder.locationKey(location);
-            routingBuilder.maxDirectHits(0);
+            routingBuilder.maxDirectHits(1);
             routingBuilder.setMaxNoNewInfo(0);
             routingBuilder.maxFailures(0);
             routingBuilder.maxSuccess(1); // Only allow 1 success

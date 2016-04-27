@@ -17,11 +17,15 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.message.Message;
+import net.tomp2p.p2p.BroadcastHandler;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
+import net.tomp2p.p2p.StructuredBroadcastHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.tracker.PeerBuilderTracker;
 import net.tomp2p.tracker.PeerTracker;
@@ -95,5 +99,41 @@ public class ExampleUtils {
             peers2[i] = new PeerBuilderTracker(peers[i].peer()).verifyPeersOnTracker(false).start();
         }
         return peers2;
+    }
+    
+    public static Peer[] createAndAttachPeersBroadcast(int nr, int port) throws IOException {
+        Peer[] peers = new Peer[nr];
+        final AtomicInteger counter = new AtomicInteger();
+        class MyStructuredBroadcastHandler extends StructuredBroadcastHandler {
+
+            final private AtomicInteger counter;
+
+            public MyStructuredBroadcastHandler(AtomicInteger counter) {
+                this.counter = counter;
+            }
+
+            @Override
+            public StructuredBroadcastHandler receive(Message message) {
+                System.out.println("received message (" + counter.incrementAndGet() + "): " + message);
+                return super.receive(message);
+            }
+
+            @Override
+            public StructuredBroadcastHandler init(Peer peer) {
+                return super.init(peer);
+            }
+        };
+
+        for (int i = 0; i < nr; i++) {
+
+            MyStructuredBroadcastHandler b = new MyStructuredBroadcastHandler(counter);
+            if (i == 0) {
+                peers[0] = new PeerBuilder(new Number160(RND)).broadcastHandler(b).ports(port).start();
+            } else {
+                peers[i] = new PeerBuilder(new Number160(RND)).broadcastHandler(b).masterPeer(peers[0])
+                        .start();
+            }
+        }
+        return peers;
     }
 }

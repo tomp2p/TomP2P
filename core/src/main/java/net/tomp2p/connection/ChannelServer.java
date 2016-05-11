@@ -28,6 +28,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -366,17 +367,16 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	 * @return The channel handlers that may have been modified by the user
 	 */
 	private Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers(final boolean tcp) {
-		TimeoutFactory timeoutFactory = new TimeoutFactory(null, channelServerConfiguration.idleTCPMillis(),
-		        peerStatusListeners, "Server");
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 		if (tcp) {
 			final int nrTCPHandlers = 8; // 6 / 0.75 = 7;
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
 			handlers.put("dropconnection", new Pair<EventExecutorGroup, ChannelHandler>(null, tcpDropConnectionInboundHandler));
-			handlers.put("timeout0",
-			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.idleStateHandlerTomP2P()));
-			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.timeHandler()));
-			handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(
+                        
+                        handlers.put("timeout", new Pair<EventExecutorGroup, ChannelHandler>(
+                                null, new IdleStateHandler(channelServerConfiguration.idleTCPMillis(), 0, 0)));
+                        
+                        handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(
 			        channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator())));
 		} else {
 			// we don't need here a timeout since we receive a packet or

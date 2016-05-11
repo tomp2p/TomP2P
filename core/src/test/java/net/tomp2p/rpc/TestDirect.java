@@ -9,11 +9,12 @@ import java.util.Map;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServerConfiguration;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.CountConnectionOutboundHandler;
 import net.tomp2p.p2p.Peer;
@@ -177,7 +178,7 @@ public class TestDirect {
                     return "yes";
                 }
             });
-            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.peerAddress());
+            FutureDoneAttachment<PeerConnection, PeerAddress> peerConnection = sender.createPeerConnection(recv1.peerAddress());
             ccohTCP.reset();
             ccohUDP.reset();
 
@@ -195,7 +196,7 @@ public class TestDirect {
             Assert.assertEquals(1, ccohTCP.total());
             Assert.assertEquals(0, ccohUDP.total());
             Assert.assertEquals(true, fd2.isSuccess());
-            peerConnection.close().await();
+            peerConnection.object().close().await();
             System.err.println("done");
         } finally {
             if (sender != null) {
@@ -240,7 +241,7 @@ public class TestDirect {
                     return "yes";
                 }
             });
-            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.peerAddress(), 8000, 2000);
+            FutureDoneAttachment<PeerConnection, PeerAddress> peerConnection = sender.createPeerConnection(recv1.peerAddress(), 8000, 2000);
             ccohTCP.reset();
             ccohUDP.reset();
 
@@ -255,7 +256,7 @@ public class TestDirect {
             System.out.println("request 2");
             FutureDirect fd2 = sender.sendDirect(peerConnection).object("test").start();
             fd2.awaitUninterruptibly();
-            peerConnection.close().await();
+            peerConnection.object().close().await();
             Assert.assertEquals(2, ccohTCP.total());
             System.out.println("done");
         } finally {

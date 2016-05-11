@@ -7,18 +7,18 @@ import java.net.InetAddress;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConfiguration;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.connection.StandardProtocolFamily;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.message.CountConnectionOutboundHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -85,7 +85,7 @@ public class TestConnection {
             FutureBootstrap anotherMaster = peer2.bootstrap().peerAddress(peer1.peerAddress()).start();
             masterAnother.awaitUninterruptibly();
             anotherMaster.awaitUninterruptibly();
-            FuturePeerConnection fpc = peer1.createPeerConnection(peer2.peerAddress());
+            FutureDoneAttachment<PeerConnection, PeerAddress> fpc = peer1.createPeerConnection(peer2.peerAddress());
             // fpc.awaitUninterruptibly();
             // PeerConnection peerConnection = fpc.peerConnection();
             String sentObject = "Hello";
@@ -108,7 +108,7 @@ public class TestConnection {
             // now we don't want to keep the connection open anymore:
             double duration = (System.currentTimeMillis() - start) / 1000d;
             System.out.println("Send and get in s:" + duration);
-            fpc.close().await();
+            fpc.object().close().await();
             System.out.println("done");
         } finally {
             if (peer1 != null) {
@@ -149,7 +149,7 @@ public class TestConnection {
             anotherMaster.awaitUninterruptibly();
             
             int before = peer1.connectionBean().reservation().availablePermitsPermanentTCP();
-            final FuturePeerConnection fpc = peer1.createPeerConnection(peer2.peerAddress());
+            final FutureDoneAttachment<PeerConnection, PeerAddress> fpc = peer1.createPeerConnection(peer2.peerAddress());
             
             // fpc.awaitUninterruptibly();
             // PeerConnection peerConnection = fpc.peerConnection();
@@ -161,10 +161,10 @@ public class TestConnection {
             
             peer2.shutdown().await();
             
-            fpc.peerConnection().closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+            fpc.object().closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
                 @Override
                 public void operationComplete(FutureDone<Void> future) throws Exception {
-                    fpc.peerConnection().close().await();
+                    fpc.object().close().await();
                 }
             });
             //TODO: make this not wait
@@ -184,7 +184,7 @@ public class TestConnection {
             // now we don't want to keep the connection open anymore:
             double duration = (System.currentTimeMillis() - start) / 1000d;
             System.out.println("Send and get in s:" + duration);*/
-            fpc.close().await();
+            fpc.object().close().await();
             System.out.println("done");
         } finally {
             if (peer1 != null) {

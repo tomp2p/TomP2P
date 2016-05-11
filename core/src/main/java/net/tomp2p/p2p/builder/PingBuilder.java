@@ -248,7 +248,7 @@ public class PingBuilder {
                         	
                         	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(broadcastAddress)).tcpPort(port).udpPort(port).build();
                         	PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
-                        	FutureResponse validBroadcast = peer.pingRPC().pingBroadcastUDP(
+                        	FutureResponse validBroadcast = peer.pingRPC().pingUDP(
                                     peerAddress, future.channelCreator(), connectionConfiguration);
                             if (!futureLateJoin.add(validBroadcast)) {
                                 // the latejoin future is finished if the add returns false
@@ -268,23 +268,12 @@ public class PingBuilder {
     
     private FuturePing pingPeerConnection(final PeerConnection peerConnection) {
     	final FuturePing futurePing = new FuturePing();
-    	
         final RequestHandler<FutureResponse> request = peer.pingRPC().ping(
                 peerConnection.remotePeer(), connectionConfiguration);
-        FutureChannelCreator futureChannelCreator = peerConnection.acquire(request.futureResponse());
-        futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-
-            @Override
-            public void operationComplete(FutureChannelCreator future) throws Exception {
-                if(future.isSuccess()) {
-                    request.futureResponse().request().keepAlive(true);
-                    FutureResponse futureResponse = request.sendTCP(peerConnection);
-                    addPingListener(futurePing, futureResponse);
-                } else {
-                	futurePing.failed(future);
-                }
-            }
-        });
+        request.futureResponse().request().keepAlive(true);
+        //TODO: if same connection reused, send in order
+        FutureResponse futureResponse = request.sendTCP(peerConnection);
+        addPingListener(futurePing, futureResponse);
         return futurePing;
     }
     

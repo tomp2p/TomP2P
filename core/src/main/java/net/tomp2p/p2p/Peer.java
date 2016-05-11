@@ -18,7 +18,6 @@ package net.tomp2p.p2p;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -29,8 +28,8 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.futures.FutureLateJoin;
-import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
@@ -231,7 +230,7 @@ public class Peer {
         directDataRPC().objectDataReply(objectDataReply);
     }
     
-    public FuturePeerConnection createPeerConnection(final PeerAddress destination) {
+    public FutureDoneAttachment<PeerConnection, PeerAddress> createPeerConnection(final PeerAddress destination) {
     	return createPeerConnection(destination, PeerConnection.HEART_BEAT_MILLIS, ConnectionBean.DEFAULT_TCP_IDLE_MILLIS);
     }
 
@@ -250,15 +249,16 @@ public class Peer {
      * @return A class that needs to be passed to those methods that should use the already open connection. If the
      *         connection could not be reserved, maybe due to a shutdown, null is returned.
      */
-    public FuturePeerConnection createPeerConnection(final PeerAddress destination, final int heartBeatMillis, final int idleTCP) {
-        final FuturePeerConnection futureDone = new FuturePeerConnection(destination);
+    public FutureDoneAttachment<PeerConnection, PeerAddress> createPeerConnection(final PeerAddress destination, final int heartBeatMillis, final int idleTCP) {
+        final FutureDoneAttachment<PeerConnection, PeerAddress> futureDone = new FutureDoneAttachment<PeerConnection, PeerAddress>(destination);
         final FutureChannelCreator fcc = connectionBean().reservation().createPermanent(1);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
                     final ChannelCreator cc = fcc.channelCreator();
-                    final PeerConnection peerConnection = new PeerConnection(destination, cc, heartBeatMillis, idleTCP);
+                    final PeerConnection peerConnection = PeerConnection.newPermanentPeerConnectionTCP(cc,
+                            destination, idleTCP, heartBeatMillis);
                     futureDone.done(peerConnection);
                 } else {
                     futureDone.failed(future);
@@ -274,7 +274,7 @@ public class Peer {
         return new SendDirectBuilder(this, recipientAddress);
     }
 
-    public SendDirectBuilder sendDirect(FuturePeerConnection recipientConnection) {
+    public SendDirectBuilder sendDirect(FutureDoneAttachment<PeerConnection, PeerAddress> recipientConnection) {
         return new SendDirectBuilder(this, recipientConnection);
     }
     

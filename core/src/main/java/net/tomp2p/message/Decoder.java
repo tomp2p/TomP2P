@@ -26,8 +26,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.SignatureFactory;
-import net.tomp2p.connection.TimeoutFactory;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -109,7 +109,8 @@ public class Decoder {
 					attributePeerAddress.set(message.sender());
 					message.udp(ctx.channel() instanceof DatagramChannel);
 					if (message.isFireAndForget() && message.isUdp()) {
-						TimeoutFactory.removeTimeout(ctx);
+                                            //TODO: find better place for this
+                                            Dispatcher.removeTimeout(ctx);
 					}
 				} else {
 					return false;

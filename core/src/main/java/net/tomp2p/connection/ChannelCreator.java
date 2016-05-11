@@ -132,8 +132,9 @@ public class ChannelCreator {
 	 *            The handlers to filter and set
 	 * @return The channel future object or null if we are shut down
 	 */
-	public ChannelFuture createUDP(final boolean broadcast, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers,
-			FutureResponse futureResponse, boolean fireandforget) {
+	public ChannelFuture createUDP(final SocketAddress socketAddress,  
+                final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers,
+			boolean fireandforget) {
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
@@ -152,9 +153,8 @@ public class ChannelCreator {
 			//we don't need to increase the buffers as we limit the connections in tomp2p
 			b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
 			b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
-			if (broadcast) {
-				b.option(ChannelOption.SO_BROADCAST, true);
-			}
+			b.option(ChannelOption.SO_BROADCAST, true);
+			
 			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(
 					channelHandlers, false, true);
 			addHandlers(b, channelHandlers2);
@@ -165,12 +165,11 @@ public class ChannelCreator {
 			
 			LOG.debug("Create UDP, use from address: {}", sendFromAddress);
 			if(fireandforget) {
-				channelFuture = b.connect(futureResponse.request().recipient().ipv4Socket().createUDPSocket());
+				channelFuture = b.connect(socketAddress);
 			} else {
 				channelFuture = b.bind(new InetSocketAddress(sendFromAddress, 0));
 			}
 			recipients.add(channelFuture.channel());
-			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;
 		} finally {
 			readUDP.unlock();
@@ -192,7 +191,7 @@ public class ChannelCreator {
 	 * @return The channel future object or null if we are shut down.
 	 */
 	public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
-			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, final FutureResponse futureResponse) {
+			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
 		readTCP.lock();
 		try {
 			if (shutdownTCP) {
@@ -221,7 +220,6 @@ public class ChannelCreator {
 			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(sendFromAddress, 0));
 
 			recipients.add(channelFuture.channel());
-			setupCloseListener(channelFuture, semaphoreTCP, futureResponse);
 			return channelFuture;
 		} finally {
 			readTCP.unlock();
@@ -267,7 +265,7 @@ public class ChannelCreator {
 	 *            The semaphore to release
 	 * @return The same future that was passed as an argument
 	 */
-	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore,
+	/*private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore,
 			final FutureResponse futureResponse) {
 		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
@@ -301,26 +299,7 @@ public class ChannelCreator {
 			}
 		});
 		return channelFuture;
-	}
-
-	/**
-	 * Setup the close listener for a channel that was already created
-	 * 
-	 * @param channelFuture
-	 *            The channel future
-	 * @param futureResponse
-	 *            The future response
-	 * @return The same future that was passed as an argument
-	 */
-	public ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final FutureResponse futureResponse) {
-		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
-			@Override
-			public void operationComplete(final ChannelFuture future) throws Exception {
-				futureResponse.responseNow();
-			}
-		});
-		return channelFuture;
-	}
+	}*/
 
 	public boolean isShutdown() {
 		return shutdownTCP || shutdownUDP;

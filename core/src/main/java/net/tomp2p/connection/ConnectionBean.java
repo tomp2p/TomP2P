@@ -25,6 +25,8 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class ConnectionBean {
 
+    public enum Protocol {UDP, TCP, UDT}
+    
     /**
      * The thread name is important to identify threads where blocking (wait) is possible.
      */
@@ -35,13 +37,14 @@ public class ConnectionBean {
     public static int DEFAULT_TCP_IDLE_SLOW_MILLIS = 30 * 1000;
     public static int DEFAULT_UDP_IDLE_MILLIS = 5 * 1000;
     public static int DEFAULT_CONNECTION_TIMEOUT_TCP = 3 * 1000;
-    public static int DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS = 60;
+    public static int DEFAULT_HEARTBEAT_SECONDS = 2;
     
     public static int UDP_LIMIT = 1400;
 
     private final int p2pId;
     private final Dispatcher dispatcher;
     private final Sender sender;
+    private final Connect connect;
     private final ChannelServer channelServer;
     private final Reservation reservation;
     private final ChannelClientConfiguration resourceConfiguration;
@@ -66,11 +69,12 @@ public class ConnectionBean {
      * @param timer
      *            The timer for the discovery process
      */
-    public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final Sender sender,
+    public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final Connect connect, final Sender sender,
             final ChannelServer channelServer, final Reservation reservation,
             final ChannelClientConfiguration resourceConfiguration, final ScheduledExecutorService timer) {
         this.p2pId = p2pId;
         this.dispatcher = dispatcher;
+        this.connect = connect;
         this.sender = sender;
         this.channelServer = channelServer;
         this.reservation = reservation;
@@ -97,6 +101,10 @@ public class ConnectionBean {
      */
     public Sender sender() {
         return sender;
+    }
+    
+    public Connect connect() {
+        return connect;
     }
     
     /**

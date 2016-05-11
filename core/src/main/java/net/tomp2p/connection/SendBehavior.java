@@ -1,6 +1,7 @@
 package net.tomp2p.connection;
 
 import net.tomp2p.message.Message;
+import net.tomp2p.peers.PeerAddress;
 
 /**
  * Decice how a direct message is sent.
@@ -12,6 +13,7 @@ import net.tomp2p.message.Message;
 public interface SendBehavior {
 
 	public enum SendMethod {
+                EXISTING_CONNECTION,
 		/**
 		 * Send the message directly to the receiver
 		 */
@@ -44,7 +46,8 @@ public interface SendBehavior {
 	 *            the message to be sent
 	 * @return the sending behavior which should be used
 	 */
-	SendMethod tcpSendBehavior(Dispatcher dispatcher, Message message);
+	SendMethod tcpSendBehavior(Dispatcher dispatcher, PeerAddress sender, 
+                PeerAddress recipient, boolean isReflected);
 
 	/**
 	 * Returns the send behavior depending on the message to be sent over UDP.
@@ -55,5 +58,6 @@ public interface SendBehavior {
 	 * @throws UnsupportedOperationException
 	 *             sending over UDP is not allowed for this message.
 	 */
-	SendMethod udpSendBehavior(Dispatcher dispatcher, Message message) throws UnsupportedOperationException;
+	SendMethod udpSendBehavior(Dispatcher dispatcher, PeerAddress sender, 
+                PeerAddress recipient, boolean isReflected);
 }

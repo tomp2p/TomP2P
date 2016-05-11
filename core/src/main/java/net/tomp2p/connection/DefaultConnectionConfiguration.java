@@ -29,7 +29,7 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
     protected int idleTCPMillis = ConnectionBean.DEFAULT_TCP_IDLE_MILLIS;
     protected int idleUDPMillis = ConnectionBean.DEFAULT_UDP_IDLE_MILLIS;
     protected int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
-    protected int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
+    protected int heartBeatSeconds = ConnectionBean.DEFAULT_HEARTBEAT_SECONDS;
 
     @Override
     public int idleTCPMillis() {
@@ -126,8 +126,8 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
     
 
 	@Override
-	public int slowResponseTimeoutSeconds() {
-		return slowResponseTimeoutSeconds;
+	public int heartBeatSeconds() {
+		return heartBeatSeconds;
 	}
 	
 	/**
@@ -137,8 +137,8 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
 	 *            timeout is very likely.
 	 * @return This class
 	 */
-	public DefaultConnectionConfiguration slowResponseTimeoutSeconds(final int slowResponseTimeoutSeconds) {
-		this.slowResponseTimeoutSeconds = slowResponseTimeoutSeconds;
+	public DefaultConnectionConfiguration heartBeatSeconds(final int heartBeatSeconds) {
+		this.heartBeatSeconds = heartBeatSeconds;
 		return this;
 	}
 }

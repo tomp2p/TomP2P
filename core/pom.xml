@@ -41,6 +41,11 @@
 			<groupId>io.netty</groupId>
 			<artifactId>netty-buffer</artifactId>
 		</dependency>
+                <!-- only needed for timeouts -->
+                <dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-handler</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>ch.qos.logback</groupId>

@@ -15,11 +15,12 @@
     </encoder>
   </appender>
   
-  <!--  <logger name="net" level="TRACE"/> -->
+  <logger name="net.tomp2p" level="TRACE"/>
   
 <!--   <logger name="net.tomp2p.p2p.builder.DiscoverBuilder" level="TRACE"/> -->
 <!--   <logger name="net.tomp2p.rpc.PingRPC" level="TRACE"/> -->
 <!--   <logger name="net.tomp2p.connection.Sender" level="TRACE"/> -->
+<logger name="net.tomp2p.connection.DefaultSendBehavior" level="TRACE"/>
 <!--   <logger name="net.tomp2p.message.Decoder" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.connection.ChannelCreator" level="TRACE"/> -->

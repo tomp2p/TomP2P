@@ -25,7 +25,8 @@ import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
@@ -44,7 +45,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
 	private DataBuffer dataBuffer;
 
-	private FuturePeerConnection recipientConnection;
+	private FutureDoneAttachment<PeerConnection, PeerAddress> recipientConnection;
 	private PeerConnection peerConnection;
 
 	private Object object;
@@ -60,7 +61,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	private int idleTCPMillis = ConnectionBean.DEFAULT_TCP_IDLE_MILLIS;
 	private int idleUDPMillis = ConnectionBean.DEFAULT_UDP_IDLE_MILLIS;
 	private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
-	private int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
+	private int heartBeatSeconds = ConnectionBean.DEFAULT_HEARTBEAT_SECONDS;
 
 	private boolean forceTCP = false;
 
@@ -70,7 +71,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		this.recipientConnection = null;
 	}
 
-	public SendDirectBuilder(Peer peer, FuturePeerConnection recipientConnection) {
+	public SendDirectBuilder(Peer peer, FutureDoneAttachment<PeerConnection, PeerAddress> recipientConnection) {
 		this.peer = peer;
 		this.recipientAddress = null;
 		this.recipientConnection = recipientConnection;
@@ -95,11 +96,11 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return this;
 	}
 
-	public FuturePeerConnection connection() {
+	public FutureDoneAttachment<PeerConnection, PeerAddress> connection() {
 		return recipientConnection;
 	}
 
-	public SendDirectBuilder connection(FuturePeerConnection connection) {
+	public SendDirectBuilder connection(FutureDoneAttachment<PeerConnection, PeerAddress> connection) {
 		this.recipientConnection = connection;
 		return this;
 	}
@@ -161,7 +162,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 			remotePeer = recipientAddress;
 		} else if (recipientAddress == null && recipientConnection != null) {
 			keepAlive = true;
-			remotePeer = recipientConnection.remotePeer();
+			remotePeer = recipientConnection.attachment();
 		} else if (peerConnection != null) {
 			keepAlive = true;
 			remotePeer = peerConnection.remotePeer();
@@ -182,11 +183,11 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 			if (peerConnection != null) {
 				sendDirectRequest(request, peerConnection);
 			} else {
-				recipientConnection.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
+				recipientConnection.addListener(new BaseFutureAdapter<FutureDone<PeerConnection>>() {
 					@Override
-					public void operationComplete(final FuturePeerConnection future) throws Exception {
+					public void operationComplete(final FutureDone<PeerConnection> future) throws Exception {
 						if (future.isSuccess()) {
-							sendDirectRequest(request, future.peerConnection());
+							sendDirectRequest(request, future.object());
 						} else {
 							request.futureResponse().failed("Could not acquire channel (1).", future);
 						}
@@ -216,19 +217,9 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	}
 
 	private static void sendDirectRequest(final RequestHandler<FutureResponse> request, final PeerConnection peerConnection) {
-		FutureChannelCreator futureChannelCreator2 = peerConnection.acquire(request.futureResponse());
-		futureChannelCreator2.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-			@Override
-			public void operationComplete(FutureChannelCreator future) throws Exception {
-				if (future.isSuccess()) {
-					request.futureResponse().request().keepAlive(true);
-					request.sendTCP(peerConnection.channelCreator(), peerConnection);
-				} else {
-					request.futureResponse().failed("Could not acquire channel (2).", future);
-				}
-			}
-
-		});
+            //TODO: if same connection reused, send in order
+            request.futureResponse().request().keepAlive(true);
+            request.sendTCP(peerConnection);
 	}
 
 	public boolean isForceUDP() {
@@ -339,8 +330,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	
 
 	@Override
-	public int slowResponseTimeoutSeconds() {
-		return slowResponseTimeoutSeconds;
+	public int heartBeatSeconds() {
+		return heartBeatSeconds;
 	}
 	
 	/**
@@ -348,8 +339,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 *            slow peer. If the slow peer does not answer within this time, the request fails.
 	 * @return This class
 	 */
-	public SendDirectBuilder slowResponseTimeoutSeconds(final int slowResponseTimeoutSeconds) {
-		this.slowResponseTimeoutSeconds = slowResponseTimeoutSeconds;
+	public SendDirectBuilder heartBeatSeconds(final int heartBeatSeconds) {
+		this.heartBeatSeconds = heartBeatSeconds;
 		return this;
 	}
 

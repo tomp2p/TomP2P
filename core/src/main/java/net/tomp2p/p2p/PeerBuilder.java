@@ -36,7 +36,6 @@ import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.DefaultSendBehavior;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerCreator;
-import net.tomp2p.connection.PingBuilderFactory;
 import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.SendBehavior;
@@ -309,14 +308,6 @@ public class PeerBuilder {
 		}
 		peerBean.maintenanceTask(maintenanceTask);
 
-
-		// set the ping builder for the heart beat
-		connectionBean.sender().pingBuilderFactory(new PingBuilderFactory() {			
-			@Override
-			public PingBuilder create() {
-				return peer.ping();
-			}
-		});
 				
 		for (PeerInit peerInit : toInitialize) {
 			peerInit.init(peer);

@@ -21,18 +21,24 @@ package net.tomp2p.futures;
  * 
  * @author Thomas Bocek
  * 
- * @param <K>
+ * @param <K, T>
  */
-public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
+public class FutureDoneAttachment<K, T> extends BaseFutureImpl<FutureDoneAttachment<K, T>> {
 	
-    public static FutureDone<Void> SUCCESS = new FutureDone<Void>().done();
+    public static FutureDoneAttachment<Void, Void> SUCCESS = new FutureDoneAttachment<Void, Void>().done();
 
     private K object;
+    private T attachment;
+    
+    public FutureDoneAttachment(T attachment) {
+        self(this);
+        attachment(attachment);
+    }
 
     /**
      * Creates a new future for the shutdown operation.
      */
-    public FutureDone() {
+    public FutureDoneAttachment() {
         self(this);
     }
 
@@ -41,7 +47,7 @@ public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
      * 
      * @return This class
      */
-    public FutureDone<K> done() {
+    public FutureDoneAttachment<K, T> done() {
         done(null);
         return this;
     }
@@ -53,7 +59,7 @@ public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
      *            An object that can be attached.
      * @return This class
      */
-    public FutureDone<K> done(final K object) {
+    public FutureDoneAttachment<K, T> done(final K object) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return this;
@@ -72,5 +78,18 @@ public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
         synchronized (lock) {
             return object;
         }
+    }
+    
+    public T attachment() {
+        synchronized (lock) {
+            return attachment;
+        }
+    }
+    
+    public FutureDoneAttachment<K, T> attachment(T attachment) {
+        synchronized (lock) {
+            this.attachment = attachment;
+        }
+        return this;
     }
 }

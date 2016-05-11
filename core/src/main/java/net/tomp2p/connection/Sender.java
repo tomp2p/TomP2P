@@ -83,8 +83,6 @@ public class Sender {
 	// connection setup
 	private final ConcurrentCacheMap<Integer, Pair<FutureResponse, FutureResponse>> cachedRequests = new ConcurrentCacheMap<Integer, Pair<FutureResponse, FutureResponse>>(30, 1024);
 
-	private PingBuilderFactory pingBuilderFactory;
-
 	/**
 	 * Creates a new sender with the listeners for offline peers.
 	 * 
@@ -106,245 +104,9 @@ public class Sender {
 		this.peerBean = peerBean;
 	}
 
-	public ChannelClientConfiguration channelClientConfiguration() {
-		return channelClientConfiguration;
-	}
-
-	public PingBuilderFactory pingBuilderFactory() {
-		return pingBuilderFactory;
-	}
-
-	public Sender pingBuilderFactory(PingBuilderFactory pingBuilderFactory) {
-		this.pingBuilderFactory = pingBuilderFactory;
-		return this;
-	}
-
-	/**
-	 * Sends a message via TCP.
-	 * 
-	 * @param handler
-	 *            The handler to deal with a reply message.
-	 * @param futureResponse
-	 *            The future to set the response.
-	 * @param message
-	 *            The message to send
-	 * @param channelCreator
-	 *            The channel creator for the TCP channel.
-	 * @param idleTCPSeconds
-	 *            The idle time until message fail.
-	 * @param connectTimeoutMillis
-	 *            The idle time for the connection setup.
-	 * @param peerConnection
-	 *
-	 */
-	public void sendTCP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int idleTCPMillis, final int connectTimeoutMillis,
-			final PeerConnection peerConnection) {
-		// no need to continue if we already finished
-		if (futureResponse.isCompleted()) {
-			return;
-		}
-		// NAT reflection - rewrite recipient if we found a local address for
-		// the recipient
-		handleReflection(message);
-		
-		removePeerIfFailed(futureResponse, message);
-
-		// RTT calculation
-		futureResponse.startRTTMeasurement(false);
-
-		final ChannelFuture channelFuture;
-		if (peerConnection != null && peerConnection.channelFuture() != null && peerConnection.channelFuture().channel().isActive()) {
-			channelFuture = sendTCPPeerConnection(peerConnection, handler, channelCreator, futureResponse);
-			LOG.debug("go for peer connection / TCP");
-			afterConnect(futureResponse, message, channelFuture, handler == null);
-		} else if (channelCreator != null) {
-			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPMillis, handler == null);
-
-			switch (sendBehavior.tcpSendBehavior(dispatcher, message)) {
-			case DIRECT:
-				connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
-				break;
-			case RCON:
-				handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler);
-				break;
-                        case HOLEP_RELAY:
-                                //handleHolePunch(futureResponse, message, channelCreator, idleTCPMillis, handler, true, handler, channelFuture);
-                                doRelayFallbackTCP(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection,
-						timeoutHandler);
-				break;
-			case SELF:
-				sendSelf(futureResponse, message);
-				break;
-			default:
-				throw new IllegalArgumentException("Illegal sending behavior");
-			}
-		}
-	}
-
-	/**
-	 * This method initiates the reverse connection setup (or short: rconSetup).
-	 * It creates a new Message and sends it via relay to the unreachable peer
-	 * which then connects to this peer again. After the connectMessage from the
-	 * unreachable peer this peer will send the original Message and its content
-	 * directly.
-	 * 
-	 * @param handler
-	 * @param futureResponse
-	 * @param message
-	 * @param channelCreator
-	 * @param connectTimeoutMillis
-	 * @param peerConnection
-	 * @param timeoutHandler
-	 */
-	private void handleRcon(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
-			final TimeoutFactory timeoutHandler) {
-		message.keepAlive(true);
-		
-		PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().ipInternalSocket());
-		if(ps == null) {
-			futureResponse.failed("no relay provided, but relay indicated RCON");
-			return;
-		}
-		if(ps.equals(peerBean.serverPeerAddress().ipv4Socket())) {
-			LOG.debug("Send to self-relay RCON");
-			sendSelf(futureResponse, message);
-			return;
-		}
-
-		LOG.debug("initiate reverse connection setup to peer with peerAddress {}", message.recipient());
-		Message rconMessage = createRconMessage(ps, message);
-		final FutureResponse rconResponse = new FutureResponse(rconMessage);
-
-		// cache the original message until the connection is established
-		cachedRequests.put(message.messageId(), new Pair<FutureResponse, FutureResponse>(futureResponse, rconResponse));
-
-		// wait for response (whether the reverse connection setup was
-		// successful)
-
-		SimpleChannelInboundHandler<Message> rconInboundHandler = new SimpleChannelInboundHandler<Message>() {
-			@Override
-			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-				if (msg.command() == Commands.RCON.getNr() && msg.type() == Type.OK) {
-					LOG.debug("Successfully set up the reverse connection to peer {}", message.recipient().peerId());
-					rconResponse.response(msg);
-				} else {
-					LOG.debug("Could not acquire a reverse connection, msg: {}", message);
-					rconResponse.failed("Could not acquire a reverse connection, msg: " + message);
-					futureResponse.failed(rconResponse);
-					cachedRequests.remove(message.messageId());
-				}
-			}
-		};
-
-		// send reverse connection request instead of normal message
-		sendTCP(rconInboundHandler, rconResponse, rconMessage, channelCreator, connectTimeoutMillis, connectTimeoutMillis, peerConnection);
-	}
-
-	/**
-	 * This method makes a copy of the original Message and prepares it for
-	 * sending it to the relay.
-	 * 
-	 * @param message
-	 * @return rconMessage
-	 */
-	private static Message createRconMessage(PeerSocketAddress ps, final Message message) {
-		// get Relay InetAddress from unreachable peer
-		
-
-		// we need to make a copy of the original message
-		Message rconMessage = new Message();
-		rconMessage.sender(message.sender());
-		rconMessage.version(message.version());
-
-		// store the message id in the payload to get the cached message later
-		rconMessage.intValue(message.messageId());
-
-		// the message must have set the keepAlive Flag true. If not, the relay
-		// peer will close the PeerConnection to the unreachable peer.
-		rconMessage.keepAlive(true);
-		// making the message ready to send
-		readyToSend(message, ps, rconMessage, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_1);
-
-		return rconMessage;
-	}
-
-	/**
-	 * This method was extracted from createRconMessage(...), in order to avoid
-	 * duplicate code in createHolePMessage(...).
-	 * 
-	 * @param originalMessage
-	 * @param socketAddress
-	 * @param newMessage
-	 * @param RPCCommand
-	 * @param messageType
-	 */
-	private static void readyToSend(final Message originalMessage, PeerSocketAddress socketAddress, Message newMessage, byte RPCCommand,
-			Type messageType) {
-		PeerSocket4Address psa = originalMessage.recipient().ipv4Socket();
-		
-		if(socketAddress instanceof PeerSocket4Address) {
-			PeerSocket4Address socketAddress4 = (PeerSocket4Address) socketAddress;
-		
-		psa = psa.withIpv4(socketAddress4.ipv4())
-				.withTcpPort(socketAddress4.tcpPort())
-				.withUdpPort(socketAddress4.udpPort());
-		
-		}
-				
-		PeerAddress recipient = originalMessage.recipient().withIpv4Socket(psa)
-				.withRelaySize(0);
-		
-		newMessage.recipient(recipient);
-
-		newMessage.command(RPCCommand);
-		newMessage.type(messageType);
-	}
-
-	/**
-	 * This method is extracted by @author jonaswagner to ensure that no
-	 * duplicate code exist.
-	 * 
-	 * @param handler
-	 * @param futureResponse
-	 * @param channelCreator
-	 * @param connectTimeoutMillis
-	 * @param peerConnection
-	 * @param timeoutHandler
-	 * @param message
-	 */
-	private void connectAndSend(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
-			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
-			final TimeoutFactory timeoutHandler, final Message message) {
-		final InetSocketAddress recipient; 
-		if(message.recipientReflected() != null) {
-			recipient = message.recipientReflected().ipv4Socket().createTCPSocket();
-		} else {
-			recipient = message.recipient().ipv4Socket().createTCPSocket();
-		}
-				
-		final ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler,
-				connectTimeoutMillis, futureResponse);
-		afterConnect(futureResponse, message, channelFuture, handler == null);
-	}
-
-	/**
-	 * Both peers are relayed, thus sending directly or over reverse connection
-	 * is not possible. Send the message to one of the receiver's relays.
-	 * 
-	 * @param handler
-	 * @param futureResponse
-	 * @param message
-	 * @param channelCreator
-	 * @param idleTCPSeconds
-	 * @param connectTimeoutMillis
-	 * @param peerConnection
-	 * @param timeoutHandler
-	 */
 	
-
-	/**
+        
+        /**
 	 * In case a message is sent to the sender itself, this is the cutoff.
 	 * 
 	 * @param futureResponse
@@ -396,349 +158,6 @@ public class Sender {
 		});
 	}
 
-	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator, PeerConnection peerConnection,
-			ChannelHandler handler, TimeoutFactory timeoutHandler, int connectTimeoutMillis, FutureResponse futureResponse) {
-
-		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
-		
-		HeartBeat heartBeat = null;
-		int timeout = -1;
-		if (peerConnection != null) {
-			heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingBuilderFactory);
-			timeout = peerConnection.idleTCP();
-		}
-
-		if (timeoutHandler != null) {
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
-			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P(timeout)));
-			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
-		} else {
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
-		}
-
-		handlers.put("decoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(channelClientConfiguration.signatureFactory(), 
-						channelClientConfiguration.byteBufAllocator())));
-		handlers.put(
-				"encoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(channelClientConfiguration.signatureFactory(),
-						channelClientConfiguration.byteBufAllocator())));
-
-		if (peerConnection != null) {
-			// we expect replies on this connection
-			handlers.put("dispatcher", new Pair<EventExecutorGroup, ChannelHandler>(null, dispatcher));
-		}
-
-		if (timeoutHandler != null) {
-			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
-		}
-		
-		if (peerConnection != null) {
-			handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
-		}
-
-		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers, futureResponse);
-
-		if (peerConnection != null && channelFuture != null) {
-			peerConnection.channelFuture(channelFuture);
-			heartBeat.peerConnection(peerConnection);
-		}
-		return channelFuture;
-	}
-
-	private ChannelFuture sendTCPPeerConnection(PeerConnection peerConnection, ChannelHandler handler, final ChannelCreator channelCreator,
-			final FutureResponse futureResponse) {
-		// if the channel gets closed, the future should get notified
-		ChannelFuture channelFuture = peerConnection.channelFuture();
-		// channelCreator can be null if we don't need to create any channels
-		if (channelCreator != null) {
-			channelCreator.setupCloseListener(channelFuture, futureResponse);
-		}
-		ChannelPipeline pipeline = channelFuture.channel().pipeline();
-
-		// we need to replace the handler if this comes from the peer that
-		// create a peerConnection, otherwise we
-		// need to add a handler
-		addOrReplace(pipeline, "dispatcher", "handler", handler);
-		// uncomment this if the recipient should also heartbeat
-		// addIfAbsent(pipeline, "handler", "heartbeat",
-		// new HeartBeat(2, pingBuilder).peerConnection(peerConnection));
-		return channelFuture;
-	}
-
-	// private boolean addIfAbsent(ChannelPipeline pipeline, String before,
-	// String name,
-	// ChannelHandler channelHandler) {
-	// List<String> names = pipeline.names();
-	// if (names.contains(name)) {
-	// return false;
-	// } else {
-	// if (before == null) {
-	// pipeline.addFirst(name, channelHandler);
-	// } else {
-	// pipeline.addBefore(before, name, channelHandler);
-	// }
-	// return true;
-	// }
-	// }
-
-	private boolean addOrReplace(ChannelPipeline pipeline, String before, String name, ChannelHandler channelHandler) {
-		List<String> names = pipeline.names();
-		if (names.contains(name)) {
-			pipeline.replace(name, name, channelHandler);
-			return false;
-		} else {
-			if (before == null) {
-				pipeline.addFirst(name, channelHandler);
-			} else {
-				pipeline.addBefore(before, name, channelHandler);
-			}
-			return true;
-		}
-	}
-
-	/**
-	 * Sends a message via UDP.
-	 * 
-	 * @param handler
-	 *            The handler to deal with a response message
-	 * @param futureResponse
-	 *            The future to set the response
-	 * @param message
-	 *            The message to send
-	 * @param channelCreator
-	 *            The channel creator for the UDP channel
-	 * @param idleUDPSeconds
-	 *            The idle time of a message until fail
-	 * @param broadcast
-	 *            True, if the message is to be sent via layer 2 broadcast
-	 */
-	// TODO: if message.getRecipient() is me, than call dispatcher directly
-	// without sending over Internet.
-	public void sendUDP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int idleUDPMillis, final boolean broadcast) {
-
-		// no need to continue if we already finished
-		if (futureResponse.isCompleted()) {
-			return;
-		}
-
-		// NAT reflection - rewrite recipient if we found a local address for
-		// the recipient
-		handleReflection(message);
-
-		removePeerIfFailed(futureResponse, message);
-
-		final boolean isFireAndForget = handler == null;
-
-		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = configureHandlers(handler, futureResponse, idleUDPMillis,
-				isFireAndForget);
-
-		// RTT calculation
-		futureResponse.startRTTMeasurement(true);
-
-		try {
-			ChannelFuture channelFuture = null;
-                        
-			switch (sendBehavior.udpSendBehavior(dispatcher, message)) {
-			case DIRECT:
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, isFireAndForget);
-                                afterConnect(futureResponse, message, channelFuture, handler == null);
-                                return;
-			case HOLEP_RELAY:
-				if (peerBean.holePunchInitiator() != null) {
-					handleHolePunch(futureResponse, message, channelCreator, idleUDPMillis, handler, broadcast, handlers);
-                                        // all the send mechanics are done in a
-					// AbstractHolePuncherStrategy class.
-					// Therefore we must execute this return statement.
-					return;
-                                }
-				LOG.debug("No hole punching possible, because There is no PeerNAT. New Attempt with Relaying");
-                                doRelayFallbackUDP(futureResponse, message, broadcast, handlers, channelCreator, handler);
-                                return;
-			case SELF:
-				LOG.debug("Send to self");
-				sendSelf(futureResponse, message);
-				return;
-			default:
-				throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");
-			}
-			
-		} catch (UnsupportedOperationException e) {
-			LOG.warn(e.getMessage());
-			futureResponse.failed(e);
-
-		}
-	}
-
-	private void handleReflection(final Message message) {
-		PeerSocket4Address reflectedRecipient = Utils.natReflection(message.recipient(), dispatcher.peerBean().serverPeerAddress());
-		if(reflectedRecipient != null) {
-			message.recipientReflected(message.recipient().withIpv4Socket(reflectedRecipient));
-			LOG.debug("reflect recipient UDP {}", message);
-		}
-	}
-
-	/**
-	 * This method needed to be extracted from sendUDP(...), because it is also
-	 * needed by the method handleHolePunch(...).
-	 * 
-	 * @param futureResponse
-	 * @param message
-	 * @param channelCreator
-	 * @param broadcast
-	 * @param handlers
-	 * @param channelFuture
-	 * @return
-	 * @throws Exception
-	 */
-	private PeerSocketAddress prepareRelaySend(final Message message, final PeerSocket4Address preferredAddress) {
-		List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient().relays());
-		if (psa.size() > 0) {
-			if(psa.contains(preferredAddress)) {
-				LOG.debug("send neighbor request to preferred relay peer {} out of {}", preferredAddress, psa);
-				return preferredAddress;
-			}
-			
-			while(!psa.isEmpty()) {
-				PeerSocketAddress ps = psa.remove(random.nextInt(psa.size()));
-				//TODO: prefer local ones
-				message.recipientRelay(message.recipient().withIPSocket(ps));
-				LOG.debug("send neighbor request to random relay peer {} out of {}", ps, psa);
-				return ps;
-			}
-			LOG.error("no non-reflected relays found");
-			return null;
-		} else {
-			LOG.error("Peer is relayed, but no relay given");
-			return null;
-		}
-	}
-
-	private FutureDone<Message> handleHolePunch(final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int idleUDPMillis, final SimpleChannelInboundHandler<Message> handler,
-			final boolean broadcast, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers) {
-		// start hole punching
-		FutureDone<Message> fDone = peerBean.holePunchInitiator().handleHolePunch(idleUDPMillis, futureResponse, message);
-		fDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
-
-			@Override
-			public void operationComplete(FutureDone<Message> future) throws Exception {
-				if (future.isSuccess()) {
-					futureResponse.response(future.object());
-				} else {
-					LOG.error(future.failedReason());
-					LOG.error("Message could not be sent with hole punching! New send attempt with relaying.");
-					// futureResponse.failed(future.failedReason());
-					// throw new Exception(future.failedReason());
-					doRelayFallbackUDP(futureResponse, message, broadcast, handlers, channelCreator, handler);
-				}
-			}
-
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				// futureResponse.failed(t);
-				// throw new Exception(t);
-				LOG.error("The setup of a connection via has been canceled, because an error was thrown");
-				t.printStackTrace();
-				doRelayFallbackUDP(futureResponse, message, broadcast, handlers, channelCreator, handler);
-			}
-
-			
-		});
-		return fDone;
-	}
-        
-        private void doRelayFallbackUDP(final FutureResponse futureResponse, final Message message, final boolean broadcast,
-		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers, 
-                final ChannelCreator channelCreator, final SimpleChannelInboundHandler<Message> handler) {
-				
-		PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().ipv4Socket());
-		if(ps == null) {
-			futureResponse.failed("no relay provided, but relay indicated HP");
-			return;
-		}
-		if(ps.equals(peerBean.serverPeerAddress().ipv4Socket())) {
-			LOG.debug("Send to self-relay HP");
-			sendSelf(futureResponse, message);
-			return;
-		}
-                
-                ChannelFuture channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse, false);
-                afterConnect(futureResponse, message, channelFuture, handler == null);
-	}
-        
-        private void doRelayFallbackTCP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
-			final Message message, final ChannelCreator channelCreator, final int connectTimeoutMillis,
-			final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
-		
-		PeerSocketAddress ps = prepareRelaySend(message, peerBean.serverPeerAddress().ipv4Socket());
-		if(ps == null) {
-			futureResponse.failed("no relay provided, but relay indicated TCP");
-			return;
-		}
-		if(ps.equals(peerBean.serverPeerAddress().ipv4Socket())) {
-			LOG.debug("Send to self-relay TCP");
-			sendSelf(futureResponse, message);
-			return;
-		}
-		InetSocketAddress recipient = ps.createTCPSocket();
-		ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler, connectTimeoutMillis, futureResponse);
-		afterConnect(futureResponse, message, channelFuture, handler == null);
-	}
-
-	/**
-	 * This method was extracted in order to avoid duplicate code in the
-	 * {@link HolePInitiator} and in the initHolePunch(...) method.
-	 * 
-	 * @param handler
-	 * @param futureResponse
-	 * @param idleUDPSeconds
-	 * @param isFireAndForget
-	 * @return handlers
-	 */
-	public Map<String, Pair<EventExecutorGroup, ChannelHandler>> configureHandlers(final SimpleChannelInboundHandler<Message> handler,
-			final FutureResponse futureResponse, final int idleUDPMillis, boolean isFireAndForget) {
-		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
-		if (isFireAndForget) {
-			final int nrTCPHandlers = 3; // 2 / 0.75
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
-		} else {
-			final int nrTCPHandlers = 7; // 5 / 0.75
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
-			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPMillis, isFireAndForget);
-			handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
-			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
-		}
-
-		handlers.put(
-				"decoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(channelClientConfiguration.signatureFactory())));
-		handlers.put(
-				"encoder",
-				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(channelClientConfiguration.signatureFactory(), channelClientConfiguration.byteBufAllocator())));
-		if (!isFireAndForget) {
-			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
-		}
-		return handlers;
-	}
-
-	/**
-	 * Creates a timeout handler or null if it is a fire and forget message.
-	 * In this case we don't expect a response and we don't need a timeout.
-	 * 
-	 * @param futureResponse
-	 *            The future to set the response
-	 * @param idleMillis
-	 *            The timeout
-	 * @param fireAndForget
-	 *            True, if we don't expect a response
-	 * @return The timeout factory that will create timeout handlers
-	 */
-	private TimeoutFactory createTimeoutHandler(final FutureResponse futureResponse, final int idleMillis, final boolean fireAndForget) {
-		return fireAndForget ? null : new TimeoutFactory(futureResponse, idleMillis, peerStatusListeners, "Sender");
-	}
-
 	/**
 	 * After connecting, we check if the connect was successful.
 	 * 
@@ -751,11 +170,10 @@ public class Sender {
 	 * @param fireAndForget
 	 *            True, if we don't expect a message
 	 */
-	public void afterConnect(final FutureResponse futureResponse, final Message message, final ChannelFuture channelFuture,
+	public FutureResponse sendMessage(final FutureResponse futureResponse, final Message message, final ChannelFuture channelFuture,
 			final boolean fireAndForget) {
 		if (channelFuture == null) {
-			futureResponse.failed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
-			return;
+			return futureResponse.failed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
 		}
 		LOG.debug("about to connect to {} with channel {}, ff={}, msg={}", message.recipient(), channelFuture.channel(), fireAndForget, message);
 		final Cancel connectCancel = createCancel(channelFuture);
@@ -780,6 +198,53 @@ public class Sender {
 				}
 			}
 		});
+                return futureResponse;
+	}
+        
+        public ChannelFuture sendTCPPeerConnection(PeerConnection peerConnection, ChannelHandler replHandler) {
+		// if the channel gets closed, the future should get notified
+		ChannelFuture channelFuture = peerConnection.channelFuture();
+		// channelCreator can be null if we don't need to create any channels
+		ChannelPipeline pipeline = channelFuture.channel().pipeline();
+		// we need to replace the handler if this comes from the peer that
+		// create a peerConnection, otherwise we
+		// need to add a handler
+		addOrReplace(pipeline, "dispatcher", "handler", replHandler);
+		// uncomment this if the recipient should also heartbeat
+		// addIfAbsent(pipeline, "handler", "heartbeat",
+		// new HeartBeat(2, pingBuilder).peerConnection(peerConnection));
+		return channelFuture;
+	}
+        
+        // private boolean addIfAbsent(ChannelPipeline pipeline, String before,
+	// String name,
+	// ChannelHandler channelHandler) {
+	// List<String> names = pipeline.names();
+	// if (names.contains(name)) {
+	// return false;
+	// } else {
+	// if (before == null) {
+	// pipeline.addFirst(name, channelHandler);
+	// } else {
+	// pipeline.addBefore(before, name, channelHandler);
+	// }
+	// return true;
+	// }
+	// }
+        
+        private boolean addOrReplace(ChannelPipeline pipeline, String before, String name, ChannelHandler channelHandler) {
+		List<String> names = pipeline.names();
+		if (names.contains(name)) {
+			pipeline.replace(name, name, channelHandler);
+			return false;
+		} else {
+			if (before == null) {
+				pipeline.addFirst(name, channelHandler);
+			} else {
+				pipeline.addBefore(before, name, channelHandler);
+			}
+			return true;
+		}
 	}
 
 	/**
@@ -846,30 +311,8 @@ public class Sender {
 		};
 	}
 
-	private void removePeerIfFailed(final FutureResponse futureResponse, final Message message) {
-		futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-			@Override
-			public void operationComplete(FutureResponse future) throws Exception {
-				if (future.isFailed()) {
-					if (message.recipient().relaySize() > 0) {
-						// TODO: make the relay go away if failed
-					} else if (message.command() == RPC.Commands.HOLEP.getNr() && message.type().ordinal() == Message.Type.REQUEST_3.ordinal()) {
-						//do nothing, because such a (dummy) message will never reach its target the first time
-					}
-					if(!future.isCanceled()) {
-						LOG.debug("peer failed: {}, {}", message, future);
-						synchronized (peerStatusListeners) {
-							for (PeerStatusListener peerStatusListener : peerStatusListeners) {
-								peerStatusListener.peerFailed(message.recipient(), new PeerException(future));
-							}
-						}
-					}
-				}
-			}
-		});
-	}
-
-	/**
+	
+        /**
 	 * Get currently cached requests. They are cached because for example the
 	 * receiver is behind a NAT. Instead of sending the message directly, a
 	 * reverse connection is set up beforehand. After a successful connection

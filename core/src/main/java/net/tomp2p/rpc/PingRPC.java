@@ -126,22 +126,6 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	/**
-	 * Ping a UDP peer using layer 2 broadcast.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
-	 * @param configuration
-	 *
-	 * @return The future that will be triggered when we receive an answer or something fails.
-	 */
-	public FutureResponse pingBroadcastUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
-			final ConnectionConfiguration configuration) {
-		return createHandler(remotePeer, Type.REQUEST_4, configuration).sendBroadcastUDP(channelCreator);
-	}
-
-	/**
 	 * Ping a UDP peer, but don't expect an answer.
 	 * 
 	 * @param remotePeer
@@ -304,7 +288,7 @@ public class PingRPC extends DispatchHandler {
 			Responder responder) throws Exception {
 		if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
 				|| message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3
-				|| message.type() == Type.REQUEST_4) && message.command() == RPC.Commands.PING
+				|| message.type() == Type.REQUEST_4 || message.type() == Type.REQUEST_5) && message.command() == RPC.Commands.PING
 				.getNr())) {
 			throw new IllegalArgumentException("Request message type or command is wrong for this handler.");
 		}
@@ -361,7 +345,8 @@ public class PingRPC extends DispatchHandler {
 				responseMessage.neighborsSet(createNeighborSet(message.sender()));
 				responseMessage.intValue(port);
 			}
-		} else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4) { // regular
+		} else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4 
+                        || message.type() == Type.REQUEST_5) { // regular
 																							// ping
 			LOG.debug("Respond to regular ping {}.", message.sender());
 			// test if this is a broadcast message to ourselves. If it is, do
@@ -373,7 +358,11 @@ public class PingRPC extends DispatchHandler {
 				responder.responseFireAndForget();
 			}
 			if (enable) {
+                            if(message.type() == Type.REQUEST_5) {
+                                responseMessage = createResponseMessage(message, Type.PARTIALLY_OK);
+                            } else {
 				responseMessage = createResponseMessage(message, Type.OK);
+                            }
 				if (wait) {
 					Thread.sleep(WAIT_TIME);
 				}

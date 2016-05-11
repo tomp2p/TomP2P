@@ -30,6 +30,6 @@ public interface ConnectionConfiguration {
     /**
      * @return The time that a requester waits for a slow peer to answer.
      */
-    int slowResponseTimeoutSeconds();
+    int heartBeatSeconds();
 
 }

@@ -180,11 +180,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         
-        if(message.sender().slow() && message.isKeepAlive()) {
-        	//reset timer
-        	TimeoutFactory.resetTimeout(ctx, csc.idleTCPSlowMillis());
-        }
-            
         //handle late responses from pending requests
     	final FutureResponse lateRequest = findAndRemovePendingRequests(message.messageId());
     	if(lateRequest != null) {
@@ -206,8 +201,18 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
 			LOG.debug("About to respond to request message {}.", message);
-            PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), 0, 0);
-            myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
+            
+            final PeerConnection peerConnection;
+            
+            if(isUdp) {
+                peerConnection = PeerConnection.existingPeerConnectionUDP(message.sender(), csc.idleUDPMillis(), 
+                        new DefaultChannelPromise(ctx.channel()).setSuccess());
+            } else {
+                peerConnection = PeerConnection.existingPeerConnectionTCP(message.sender(), csc.idleTCPMillis(), 
+                        new DefaultChannelPromise(ctx.channel()).setSuccess());
+            }
+            
+            myHandler.forwardMessage(message, peerConnection, responder);
         } else {
         	message.release();
         	if (LOG.isWarnEnabled()) {
@@ -277,10 +282,17 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         	   LOG.warn(msg + requestMessage);
                throw new RuntimeException(msg);
            } else {
-               TimeoutFactory.removeTimeout(ctx);
+               removeTimeout(ctx);
            }
         }
     }
+    
+    public static void removeTimeout(ChannelHandlerContext ctx) {
+		if (ctx.channel().pipeline().names().contains("timeout")) {
+			ctx.channel().pipeline().remove("timeout");
+		}
+		
+	}
 
     /**
      * Responds within a session. Keeps the connection open if told to do so. Connection is only kept alive for

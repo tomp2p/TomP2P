@@ -45,7 +45,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
-import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -121,6 +120,60 @@ public class ChannelCreator {
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.sendFromAddress = sendFromAddress;
 	}
+        
+        static class ChannelCloseListener implements GenericFutureListener<ChannelFuture> {
+            
+            final private Semaphore semaphore;
+            private FutureResponse futureResponse;
+            private Message responseMessage;
+            private Throwable cause;
+            private boolean done = false;
+            private boolean notified = false;
+            
+            public ChannelCloseListener(final Semaphore semaphore) {
+                this.semaphore = semaphore;
+            }
+            
+            @Override
+            public void operationComplete(ChannelFuture f) throws Exception {
+                synchronized(this) {
+                    semaphore.release();
+                    if(!done) {
+                        if(cause == null) {
+                            after(futureResponse, responseMessage);
+                        } else {
+                            failAfter(futureResponse, cause);
+                        }
+                    }
+                    notified = true;
+                }
+                
+            }
+            
+            public void after(FutureResponse futureResponse, Message responseMessage) {
+                synchronized(this) {
+                    if(!notified) {
+                        this.futureResponse = futureResponse;
+                        this.responseMessage = responseMessage;
+                    } else {
+                        futureResponse.response(responseMessage);
+                        done = true;
+                    }
+                }
+            }
+            
+            public void failAfter(FutureResponse futureResponse, Throwable cause) {
+                synchronized(this) {
+                    if(!notified) {
+                        this.futureResponse = futureResponse;
+                        this.cause = cause;
+                    } else {
+                        futureResponse.failed(cause);
+                        done = true;
+                    }
+                }
+            }
+        }
 
 	/**
 	 * Creates a "channel" to the given address. This won't send any message
@@ -132,7 +185,7 @@ public class ChannelCreator {
 	 *            The handlers to filter and set
 	 * @return The channel future object or null if we are shut down
 	 */
-	public ChannelFuture createUDP(final SocketAddress socketAddress,  
+	public Pair<ChannelCloseListener, ChannelFuture> createUDP(final SocketAddress socketAddress,  
                 final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers,
 			boolean fireandforget) {
 		readUDP.lock();
@@ -153,7 +206,7 @@ public class ChannelCreator {
 			//we don't need to increase the buffers as we limit the connections in tomp2p
 			b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
 			b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
-			b.option(ChannelOption.SO_BROADCAST, true);
+			//b.option(ChannelOption.SO_BROADCAST, true);
 			
 			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(
 					channelHandlers, false, true);
@@ -169,8 +222,10 @@ public class ChannelCreator {
 			} else {
 				channelFuture = b.bind(new InetSocketAddress(sendFromAddress, 0));
 			}
+                        ChannelCloseListener cl = new ChannelCloseListener(semaphoreUPD);
+                        channelFuture.channel().closeFuture().addListener(cl);
 			recipients.add(channelFuture.channel());
-			return channelFuture;
+			return new Pair<ChannelCloseListener, ChannelFuture>(cl, channelFuture);
 		} finally {
 			readUDP.unlock();
 		}
@@ -190,7 +245,7 @@ public class ChannelCreator {
 	 *            the futureResponse
 	 * @return The channel future object or null if we are shut down.
 	 */
-	public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
+	public Pair<ChannelCloseListener, ChannelFuture> createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
 			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
 		readTCP.lock();
 		try {
@@ -218,9 +273,10 @@ public class ChannelCreator {
 			LOG.debug("Create TCP, use from address: {}", sendFromAddress);
 
 			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(sendFromAddress, 0));
-
+                        ChannelCloseListener cl = new ChannelCloseListener(semaphoreTCP);
+                        channelFuture.channel().closeFuture().addListener(cl);
 			recipients.add(channelFuture.channel());
-			return channelFuture;
+			return new Pair<ChannelCloseListener, ChannelFuture>(cl, channelFuture);
 		} finally {
 			readTCP.unlock();
 		}
@@ -265,17 +321,18 @@ public class ChannelCreator {
 	 *            The semaphore to release
 	 * @return The same future that was passed as an argument
 	 */
-	/*private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore,
-			final FutureResponse futureResponse) {
+	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore) {
 		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
-				// it is important that the release of the semaphore and the set
+                                semaphore.release();				
+                                
+                                // it is important that the release of the semaphore and the set
 				// of the future happen sequentially. If this is run in this
 				// thread it will be a netty thread, and this is not what the
 				// user may have wanted. The future responses should be executed
 				// in the thread of the handler.
-				Runnable runner = new Runnable() {
+				/*Runnable runner = new Runnable() {
 					@Override
 					public void run() {
 						semaphore.release();
@@ -295,11 +352,11 @@ public class ChannelCreator {
 					runner.run();
 				} else {
 					handlerExecutor.submit(runner);
-				}
+				}*/
 			}
 		});
 		return channelFuture;
-	}*/
+	}
 
 	public boolean isShutdown() {
 		return shutdownTCP || shutdownUDP;

@@ -15,12 +15,12 @@
     </encoder>
   </appender>
   
-  <logger name="net.tomp2p" level="TRACE"/>
+  <!-- <logger name="net.tomp2p" level="TRACE"/>  -->
   
 <!--   <logger name="net.tomp2p.p2p.builder.DiscoverBuilder" level="TRACE"/> -->
 <!--   <logger name="net.tomp2p.rpc.PingRPC" level="TRACE"/> -->
 <!--   <logger name="net.tomp2p.connection.Sender" level="TRACE"/> -->
-<logger name="net.tomp2p.connection.DefaultSendBehavior" level="TRACE"/>
+<!-- <logger name="net.tomp2p.connection.DefaultSendBehavior" level="TRACE"/> -->
 <!--   <logger name="net.tomp2p.message.Decoder" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.connection.ChannelCreator" level="TRACE"/> -->
@@ -41,7 +41,7 @@
   <!--  <logger name="net.tomp2p.p2p.DefaultBroadcastHandler" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DefaultTrackerReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedHashTable" level="TRACE"/> -->
-  <!--  <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/> -->
+  <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/>
   <!--  <logger name="net.tomp2p.p2p.DistributedTask" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedTracker" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.Peer" level="TRACE"/> -->

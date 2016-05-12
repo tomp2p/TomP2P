@@ -242,8 +242,10 @@ public class TestRouting {
             routingBuilder.parallel(2);
 
             FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
-
+            
+            LOG.error("await!");
             fr.awaitUninterruptibly();
+            LOG.error("await done");
             // do verification
             Assert.assertEquals(true, fr.isSuccess());
             SortedSet<PeerAddress> ns = fr.potentialHits();
@@ -252,6 +254,7 @@ public class TestRouting {
             Assert.assertEquals(true, peers[4].peerAddress().equals(ns.first()));
             LOG.error("done!");
         } finally {
+            LOG.error("finally!");
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
             }

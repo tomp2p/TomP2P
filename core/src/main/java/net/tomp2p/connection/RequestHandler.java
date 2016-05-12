@@ -19,9 +19,12 @@ package net.tomp2p.connection;
 import org.slf4j.LoggerFactory;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
@@ -67,6 +70,8 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     private final PeerAddress sender;
     private final boolean isReflected;
     private final boolean isKeepAlive;
+    
+    private volatile ChannelCreator.ChannelCloseListener close;
     /**
 	 * Creates a request handler that can send TCP and UDP messages.
      * 
@@ -166,10 +171,10 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      */
     public K sendUDP(final ChannelCreator channelCreator) {
         final PeerConnection peerConnection = PeerConnection.newPeerConnectionUDP(channelCreator, recipient, idleTCPMillis);
-        final SendBehavior.SendMethod send = connectionBean.connect().connectUDP(this, channelCreator, sender,
+        final Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener> pair = connectionBean.connect().connectUDP(this, channelCreator, sender,
                 peerConnection, isReflected, isReflected);
-        
-        switch(send) {
+        this.close = pair.element1();
+        switch(pair.element0()) {
             case DIRECT:
                 connectionBean.sender().sendMessage(futureResponse, message, peerConnection.channelFuture(), false);
                 break;
@@ -189,10 +194,10 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      */
     public K fireAndForgetUDP(final ChannelCreator channelCreator) {
         final PeerConnection peerConnection = PeerConnection.newPeerConnectionUDP(channelCreator, recipient, idleTCPMillis);
-        final SendBehavior.SendMethod send = connectionBean.connect().connectUDP(this, channelCreator, sender,
+        final Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener> pair = connectionBean.connect().connectUDP(this, channelCreator, sender,
                 peerConnection, isReflected, isReflected);
-        
-        switch(send) {
+        this.close = pair.element1();
+        switch(pair.element0()) {
             case DIRECT:
                 connectionBean.sender().sendMessage(futureResponse, message, peerConnection.channelFuture(), true);
                 break;
@@ -234,9 +239,10 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 
     public K sendTCP(final PeerConnection peerConnection) {
         
-        final SendBehavior.SendMethod send = connectionBean.connect().connectTCP(
+        final Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener> pair = connectionBean.connect().connectTCP(
                 this, connectionTimeoutTCPMillis, sender, peerConnection, isReflected);
-        switch(send) {
+        this.close = pair.element1();
+        switch(pair.element0()) {
             case DIRECT:
                 connectionBean.sender().sendMessage(futureResponse, message, peerConnection.channelFuture(), false);
                 break;
@@ -283,20 +289,21 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             }
         }
         
-        futureResponse.failedLater(cause);
+        //futureResponse.failedLater(cause);
         ctx.close();
+        close.failAfter(futureResponse, cause);
     }
     
     @Override
-     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent e = (IdleStateEvent) evt;
-            if (e.state() == IdleState.ALL_IDLE) {
+            if (e.state() == IdleState.READER_IDLE) {
                 if(isKeepAlive) {
                     final Message ping = createMessage(recipient, RPC.Commands.PING.getNr(), Message.Type.REQUEST_5);
                     ctx.writeAndFlush(ping);
                 } else {
-                    ctx.fireExceptionCaught(new PeerException(PeerException.AbortCause.TIMEOUT, "timetout in request"));
+                    exceptionCaught(ctx, new PeerException(PeerException.AbortCause.TIMEOUT, "timetout in request"));
                 }
             }
          }
@@ -382,10 +389,21 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         if (!message.isKeepAlive()) {
 			LOG.debug("Good message {}. Close channel {}.", responseMessage, ctx.channel());
             //set the success now, but trigger the notify when we closed the channel.
-            futureResponse.responseLater(responseMessage); 
+            //futureResponse.responseLater(responseMessage); 
 			// the channel creator adds a listener that sets futureResponse.setResponseNow, when the channel
 			// is closed
+            //final EventLoop loop = ctx.channel().eventLoop();
+            //loop.
+            /*ctx.close().addListener(new GenericFutureListener<Future<? super Void>>() {
+                            @Override
+                            public void operationComplete(
+                                    Future<? super Void> future) throws Exception {
+                                futureResponse.responseNow();
+                            }
+                        });*/
             ctx.close();
+            close.after(futureResponse, responseMessage);
+            //futureResponse.response(responseMessage);
         } else {
 			LOG.debug("Good message {}. Leave channel {} open.", responseMessage, ctx.channel());
             futureResponse.response(responseMessage);

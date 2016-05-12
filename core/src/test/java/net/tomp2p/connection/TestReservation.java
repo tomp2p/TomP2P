@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.utils.Pair;
 
@@ -136,7 +135,7 @@ public class TestReservation {
 						final int timeout = 2000;
 						final CountDownLatch countDownLatch = new CountDownLatch(conn);
 						for (int k = 0; k < conn; k++) {
-                                                    ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>());
+                                                    ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>()).element1();
 							
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 								@Override
@@ -194,7 +193,7 @@ public class TestReservation {
 						final CountDownLatch countDownLatch = new CountDownLatch(conn);
 						for (int k = 0; k < conn; k++) {
                                                     ChannelFuture channelFuture = cc.createUDP(SOCKET_ADDRESS,
-                                                            new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(), true);
+                                                            new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(), true).element1();
 							
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 								@Override
@@ -253,7 +252,7 @@ public class TestReservation {
 						final ChannelCreator cc = future.channelCreator();
 						final int timeout = 2000;
 						for (int k = 0; k < conn; k++) {
-							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>());
+							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>()).element1();
 							if (channelFuture == null) {
 								return;
 							}
@@ -309,7 +308,7 @@ public class TestReservation {
 						final ChannelCreator cc = future.channelCreator();
 						final int timeout = 2000;
 						for (int k = 0; k < conn; k++) {
-							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>());
+							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>()).element1();
 							if (channelFuture == null) {
 								return;
 							}

@@ -112,25 +112,26 @@ public class Connect {
 	}
 	
         //final FutureDone<Pair<PeerConnection,Message>> future = new FutureDone<Pair<PeerConnection,Message>>();
-	public SendBehavior.SendMethod connectTCP(final SimpleChannelInboundHandler<Message> replHandler, 
+	public Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener> connectTCP(final SimpleChannelInboundHandler<Message> replHandler, 
                 final int connectTimeoutMillis, final PeerAddress sender,
                 final PeerConnection peerConnection, final boolean isReflected) {
 		
 		if (peerConnection.isExisting()) {
                     LOG.debug("go for peer connection / TCP");
-                    return SendBehavior.SendMethod.EXISTING_CONNECTION;
+                    return new Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener>(
+                            SendBehavior.SendMethod.EXISTING_CONNECTION, null);
                 } else {
-			IdleStateHandler timeoutHandler = new IdleStateHandler(peerConnection.idleMillis(), 0, 0);
+			IdleStateHandler timeoutHandler = new IdleStateHandler(peerConnection.idleMillis() / 1000, 0, 0);
                         
                         switch (sendBehavior.tcpSendBehavior(dispatcher, sender, peerConnection.remotePeer(), isReflected)) {
 			case DIRECT:
-                            ChannelFuture channelFuture = createChannelTCP(
+                            Pair<ChannelCreator.ChannelCloseListener, ChannelFuture> pair = createChannelTCP(
                                     peerConnection.remotePeer().createTCPSocket(sender), 
                                     peerConnection.channelCreator(), replHandler, timeoutHandler, 
                                     connectTimeoutMillis, peerConnection.isKeepAlive());
-                            peerConnection.channelFuture(channelFuture);
-                            
-                            return SendBehavior.SendMethod.DIRECT;
+                            peerConnection.channelFuture(pair.element1());
+                            return new Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener>(
+                                SendBehavior.SendMethod.DIRECT, pair.element0());
 			/*case RCON:
                             final PeerSocketAddress peerSocketAddress = prepareRelaySend(
                                     message, peerBean.serverPeerAddress().ipInternalSocket());                            
@@ -149,7 +150,8 @@ public class Connect {
                                 return doRelayFallbackTCP(replHandler, futureResponse, message, channelCreator, 
                                         connectTimeoutMillis, peerConnection, timeoutHandler);*/
 			case SELF:
-                            return SendBehavior.SendMethod.SELF;
+                            return new Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener>(
+                                    SendBehavior.SendMethod.SELF, null);
 			default:
                             throw new IllegalArgumentException("Illegal sending behavior (1)");
 			}
@@ -276,7 +278,7 @@ public class Connect {
 
 	
         
-        private ChannelFuture createChannelTCP(InetSocketAddress recipient, ChannelCreator channelCreator, 
+        private Pair<ChannelCreator.ChannelCloseListener, ChannelFuture> createChannelTCP(InetSocketAddress recipient, ChannelCreator channelCreator, 
                 ChannelHandler handler, IdleStateHandler timeoutHandler, int connectTimeoutMillis, boolean isKeepAlive) {
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
@@ -302,8 +304,7 @@ public class Connect {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
 		
-		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers);
-                return channelFuture;
+		return channelCreator.createTCP(recipient, connectTimeoutMillis, handlers);
 	}
 
 	
@@ -330,7 +331,7 @@ public class Connect {
 	 */
 	// TODO: if message.getRecipient() is me, than call dispatcher directly
 	// without sending over Internet.
-	public SendBehavior.SendMethod connectUDP(final SimpleChannelInboundHandler<Message> handler, 
+	public Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener> connectUDP(final SimpleChannelInboundHandler<Message> handler, 
                 final ChannelCreator channelCreator, final PeerAddress sender, 
                 final PeerConnection peerConnection, final boolean isReflected, final boolean broadcast) {
 
@@ -345,12 +346,13 @@ public class Connect {
 		switch (sendBehavior.udpSendBehavior(dispatcher, sender, peerConnection.remotePeer(), isReflected)) {
 		case DIRECT:
                             
-                        final IdleStateHandler timeoutHandler = new IdleStateHandler(peerConnection.idleMillis(), 0, 0); 
+                        final IdleStateHandler timeoutHandler = new IdleStateHandler(peerConnection.idleMillis() /1000, 0, 0); 
                         
-                        ChannelFuture channelFuture = createChannelUDP(peerConnection.remotePeer().createUDPSocket(
+                        Pair<ChannelCreator.ChannelCloseListener, ChannelFuture> pair = createChannelUDP(peerConnection.remotePeer().createUDPSocket(
                                     sender), channelCreator, handler, timeoutHandler, isFireAndForget);
-                        peerConnection.channelFuture(channelFuture);
-                        return SendBehavior.SendMethod.DIRECT;
+                        peerConnection.channelFuture(pair.element1());
+                        return new Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener>(
+                                SendBehavior.SendMethod.DIRECT, pair.element0());
                             
                         /*case HOLEP_RELAY:
 				if (peerBean.holePunchInitiator() != null) {
@@ -365,7 +367,8 @@ public class Connect {
                                 return;*/
 		case SELF:
 			LOG.debug("Send to self");
-			return SendBehavior.SendMethod.SELF;
+			return new Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener>(
+                                    SendBehavior.SendMethod.SELF, null);
                                          
 		default:
 			throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");
@@ -501,7 +504,7 @@ public class Connect {
 	 * @return handlers
 	 */
         
-        private ChannelFuture createChannelUDP(InetSocketAddress recipient, ChannelCreator channelCreator, 
+        private Pair<ChannelCreator.ChannelCloseListener, ChannelFuture> createChannelUDP(InetSocketAddress recipient, ChannelCreator channelCreator, 
                 ChannelHandler handler, IdleStateHandler timeoutHandler, boolean isFireAndForget) {
             
             final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers = 

@@ -21,6 +21,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.Collection;
@@ -163,6 +165,21 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     		writeLock.unlock();
     	}
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        ctx.close();
+    }
+    
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent e = (IdleStateEvent) evt;
+            if (e.state() == IdleState.READER_IDLE) {
+                ctx.fireExceptionCaught(new PeerException(PeerException.AbortCause.TIMEOUT, "timetout in dispatcher"));
+            }
+         }
+     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {

@@ -30,13 +30,9 @@ import net.tomp2p.storage.AlternativeCompositeByteBuf;
  */
 public class ChannelClientConfiguration {
 	
-	
-
-    private int maxPermitsPermanentTCP;
     private int maxPermitsUDP;
     private int maxPermitsTCP;
 
-    private PipelineFilter pipelineFilter;
     private SignatureFactory signatureFactory;
     private Bindings bindings;
     
@@ -45,22 +41,6 @@ public class ChannelClientConfiguration {
     private boolean enablePool = false;
     private boolean enableHeap = false;
 
-    /**
-     * @return The maximum number of permanent (long-lived) connections
-     */
-    public int maxPermitsPermanentTCP() {
-        return maxPermitsPermanentTCP;
-    }
-
-    /**
-     * @param maxPermitsPermanentTCP
-     *            The maximum number of permanent (long-lived) connections
-     * @return This class
-     */
-    public ChannelClientConfiguration maxPermitsPermanentTCP(final int maxPermitsPermanentTCP) {
-        this.maxPermitsPermanentTCP = maxPermitsPermanentTCP;
-        return this;
-    }
 
     /**
      * @return The maximum number of short-lived UDP connections
@@ -93,23 +73,6 @@ public class ChannelClientConfiguration {
      */
     public ChannelClientConfiguration maxPermitsTCP(final int maxPermitsTCP) {
         this.maxPermitsTCP = maxPermitsTCP;
-        return this;
-    }
-
-    /**
-     * @return Gets the filter for the pipeline, where the user can add / remove or change handlers
-     */
-    public PipelineFilter pipelineFilter() {
-        return pipelineFilter;
-    }
-
-    /**
-     * @param pipelineFilter
-     *            Sets the filter for the pipeline, where the user can add / remove or change handlers
-     * @return This class
-     */
-    public ChannelClientConfiguration pipelineFilter(final PipelineFilter pipelineFilter) {
-        this.pipelineFilter = pipelineFilter;
         return this;
     }
 

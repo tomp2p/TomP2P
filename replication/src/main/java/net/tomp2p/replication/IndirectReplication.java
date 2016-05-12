@@ -34,6 +34,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.Futures;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -386,7 +387,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         }
         LOG.debug("[storage refresh] I ({}) restore {} to {}", peer.peerAddress(),
                 locationKey, closePeers);
-        return FutureDone.whenAll(retVal);
+        return Futures.whenAll(retVal);
     }
     
     public void shutdown() {

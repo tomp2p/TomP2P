@@ -21,13 +21,10 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import io.netty.channel.ChannelHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConfiguration;
@@ -36,11 +33,9 @@ import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.DefaultSendBehavior;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerCreator;
-import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.SendBehavior;
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
@@ -51,7 +46,6 @@ import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
-import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -91,7 +85,6 @@ public class PeerBuilder {
 	// if the permits are chosen too high, then we might run into timeouts as we
 	// cant handle that many connections
 	// withing the time limit
-	private static final int MAX_PERMITS_PERMANENT_TCP = 250;
 	private static final int MAX_PERMITS_UDP = 250;
 	private static final int MAX_PERMITS_TCP = 250;
 
@@ -323,7 +316,6 @@ public class PeerBuilder {
 		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT, Ports.DEFAULT_PORT + 1));
 		channelServerConfiguration.portsForwarding(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT, Ports.DEFAULT_PORT + 1));
 		channelServerConfiguration.behindFirewall(false);
-		channelServerConfiguration.pipelineFilter(new DefaultPipelineFilter());
 		channelServerConfiguration.signatureFactory(new DSASignatureFactory());
 		channelServerConfiguration.byteBufPool(false);
 		return channelServerConfiguration;
@@ -332,10 +324,8 @@ public class PeerBuilder {
 	public static ChannelClientConfiguration createDefaultChannelClientConfiguration() {
 		ChannelClientConfiguration channelClientConfiguration = new ChannelClientConfiguration();
 		channelClientConfiguration.bindings(new Bindings());
-		channelClientConfiguration.maxPermitsPermanentTCP(MAX_PERMITS_PERMANENT_TCP);
 		channelClientConfiguration.maxPermitsTCP(MAX_PERMITS_TCP);
 		channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
-		channelClientConfiguration.pipelineFilter(new DefaultPipelineFilter());
 		channelClientConfiguration.signatureFactory(new DSASignatureFactory());
 		channelClientConfiguration.byteBufPool(false);
 		return channelClientConfiguration;
@@ -650,51 +640,5 @@ public class PeerBuilder {
 	 */
 	public SendBehavior sendBehavior() {
 		return sendBehavior;
-	}
-
-	/**
-	 * The default filter is no filter, just return the same array.
-	 * 
-	 * @author Thomas Bocek
-	 * 
-	 */
-	public static class DefaultPipelineFilter implements PipelineFilter {
-		@Override
-		public Map<String,Pair<EventExecutorGroup,ChannelHandler>> filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
-		        boolean client) {
-			return channelHandlers;
-		}
-	}
-
-	/**
-	 * A pipeline filter that executes handlers in a thread. If you plan to
-	 * block within listeners, then use this pipeline.
-	 * 
-	 * @author Thomas Bocek
-	 * 
-	 */
-	public static class EventExecutorGroupFilter implements PipelineFilter {
-
-		private final EventExecutorGroup eventExecutorGroup;
-
-		public EventExecutorGroupFilter(EventExecutorGroup eventExecutorGroup) {
-			this.eventExecutorGroup = eventExecutorGroup;
-		}
-
-		@Override
-		public Map<String,Pair<EventExecutorGroup,ChannelHandler>> filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
-		        boolean client) {
-			setExecutor("handler", channelHandlers);
-			setExecutor("dispatcher", channelHandlers);
-			return channelHandlers;
-		}
-
-		private void setExecutor(String handlerName,
-		        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
-			Pair<EventExecutorGroup, ChannelHandler> pair = channelHandlers.get(handlerName);
-			if (pair != null) {
-				channelHandlers.put(handlerName, pair.element0(eventExecutorGroup));
-			}
-		}
 	}
 }

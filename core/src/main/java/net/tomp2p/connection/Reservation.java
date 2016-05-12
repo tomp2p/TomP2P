@@ -55,11 +55,9 @@ public class Reservation {
 
 	private final int maxPermitsUDP;
 	private final int maxPermitsTCP;
-	private final int maxPermitsPermanentTCP;
 
 	private final Semaphore semaphoreUPD;
 	private final Semaphore semaphoreTCP;
-	private final Semaphore semaphorePermanentTCP;
 
 	private final ChannelClientConfiguration channelClientConfiguration;
 
@@ -96,10 +94,8 @@ public class Reservation {
 		this.workerGroup = workerGroup;
 		this.maxPermitsUDP = channelClientConfiguration.maxPermitsUDP();
 		this.maxPermitsTCP = channelClientConfiguration.maxPermitsTCP();
-		this.maxPermitsPermanentTCP = channelClientConfiguration.maxPermitsPermanentTCP();
 		this.semaphoreUPD = new Semaphore(maxPermitsUDP);
 		this.semaphoreTCP = new Semaphore(maxPermitsTCP);
-		this.semaphorePermanentTCP = new Semaphore(maxPermitsPermanentTCP);
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.peerBean = peerBean;
 	}
@@ -110,10 +106,6 @@ public class Reservation {
         
         public int availablePermitsTCP() {
             return semaphoreTCP.availablePermits();
-        }
-        
-        public int availablePermitsPermanentTCP() {
-            return semaphorePermanentTCP.availablePermits();
         }
 
 	/**
@@ -161,6 +153,14 @@ public class Reservation {
 		LOG.debug("Reservation UDP={}, TCP={}", nrConnectionsUDP, nrConnectionsTCP);
 		return create(nrConnectionsUDP, nrConnectionsTCP);
 	}
+        
+        public FutureChannelCreator createTCP(final int permitsTCP) {
+            return create(0, permitsTCP);
+        }
+        
+        public FutureChannelCreator createUDP(final int permitsUDP) {
+            return create(permitsUDP, 0);
+        }
 
 	/**
 	 * Creates a channel creator for short-lived connections. Always call
@@ -174,7 +174,11 @@ public class Reservation {
 	 *            The number of short-lived TCP connections
 	 * @return The future channel creator
 	 */
-	public FutureChannelCreator create(final int permitsUDP, final int permitsTCP) {
+	public FutureChannelCreator create(final int permitsUDPUnadjusted, final int permitsTCP) {
+            //adjust values
+            //for each TCP connection we need 1 udp for possible RCON, and 3 for HOLEPUNCHING
+            final int permitsUDP = permitsUDPUnadjusted + (permitsTCP * 3);
+            
 		if (permitsUDP > maxPermitsUDP) {
 			throw new IllegalArgumentException(String.format("Cannot acquire more UDP connections (%s) than maximally allowed (%s).", permitsUDP, maxPermitsUDP));
 		}
@@ -208,40 +212,6 @@ public class Reservation {
 	}
 
 	/**
-	 * Creates a channel creator for permanent TCP connections.
-	 * 
-	 * @param permitsPermanentTCP
-	 *            The number of long-lived TCP connections
-	 * @return The future channel creator
-	 */
-	public FutureChannelCreator createPermanent(final int permitsPermanentTCP) {
-		if (permitsPermanentTCP > maxPermitsPermanentTCP) {
-			throw new IllegalArgumentException(String.format("Cannot acquire more permanent TCP connections (%s) than maximally allowed (%s).", permitsPermanentTCP, maxPermitsPermanentTCP));
-		}
-		final FutureChannelCreator futureChannelCreator = new FutureChannelCreator();
-		read.lock();
-		try {
-			if (shutdown) {
-				return futureChannelCreator.failed("shutting down");
-			}
-			FutureDone<Void> futureChannelCreationDone = new FutureDone<Void>();
-			futureChannelCreationDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
-				@Override
-				public void operationComplete(final FutureDone<Void> future) throws Exception {
-					// release the permits in all cases
-                    // otherwise, we may see inconsistencies
-					semaphorePermanentTCP.release(permitsPermanentTCP);
-				}
-			});
-			executor.execute(new WaitReservationPermanent(futureChannelCreator, futureChannelCreationDone,
-			        permitsPermanentTCP));
-			return futureChannelCreator;
-		} finally {
-			read.unlock();
-		}
-	}
-
-	/**
 	 * Shuts down all the channel creators.
 	 * 
 	 * @return The future when the shutdown is complete
@@ -262,13 +232,8 @@ public class Reservation {
         // future will be set as well to "shutting down".
 
 		for (Runnable r : executor.shutdownNow()) {
-			if (r instanceof WaitReservation) {
-				WaitReservation wr = (WaitReservation) r;
-				wr.futureChannelCreator().failed("Shutting down.");
-			} else {
-				WaitReservationPermanent wr = (WaitReservationPermanent) r;
-				wr.futureChannelCreator().failed("Shutting down.");
-			}
+                    WaitReservation wr = (WaitReservation) r;
+                    wr.futureChannelCreator().failed("Shutting down.");	
 		}
 		
 		final Collection<ChannelCreator> copyChannelCreators;
@@ -297,7 +262,6 @@ public class Reservation {
 							// GlobalEventExecutor.INSTANCE
 							semaphoreUPD.acquireUninterruptibly(maxPermitsUDP);
 							semaphoreTCP.acquireUninterruptibly(maxPermitsTCP);
-							semaphorePermanentTCP.acquireUninterruptibly(maxPermitsPermanentTCP);
 							futureReservationDone.done();
 						}
 					}
@@ -417,86 +381,4 @@ public class Reservation {
 		}
 
 	}
-
-	/**
-	 * Tries to reserve a channel creator. If too many channel already created,
-	 * wait until channels are closed. This waiter is for the long-lived
-	 * connections.
-	 * 
-	 * @author Thomas Bocek
-	 * 
-	 */
-	private final class WaitReservationPermanent implements Runnable {
-		private final FutureChannelCreator futureChannelCreator;
-		private final FutureDone<Void> futureChannelCreationShutdown;
-		private final int permitsPermanentTCP;
-
-		/**
-		 * Creates a reservation that returns a {@link ChannelCreator} in a
-		 * future once we have the semaphore.
-		 * 
-		 * @param futureChannelCreator
-		 *            The status of the creating
-		 * @param futureChannelCreationShutdown
-		 *            The {@link ChannelCreator} shutdown feature needs to be
-		 *            passed since we need it for {@link Reservation#shutdown()}
-		 *            .
-		 * @param permitsPermanentTCP
-		 *            The number of permits
-		 */
-		private WaitReservationPermanent(final FutureChannelCreator futureChannelCreator,
-		        final FutureDone<Void> futureChannelCreationShutdown, final int permitsPermanentTCP) {
-			this.futureChannelCreator = futureChannelCreator;
-			this.futureChannelCreationShutdown = futureChannelCreationShutdown;
-			this.permitsPermanentTCP = permitsPermanentTCP;
-		}
-
-		@Override
-		public void run() {
-			ChannelCreator channelCreator;
-			read.lock();
-			try {
-				if (shutdown) {
-					futureChannelCreator.failed("shutting down");
-					return;
-				}
-
-				try {
-					semaphorePermanentTCP.acquire(permitsPermanentTCP);
-				} catch (InterruptedException e) {
-					futureChannelCreator.failed(e);
-					return;
-				}
-				
-				final InetAddress fromAddress;
-				if(channelClientConfiguration.fromAddress() != null) {
-					fromAddress = channelClientConfiguration.fromAddress();
-				} else if(peerBean.serverPeerAddress() == null) {
-					fromAddress = Inet4Address.getByAddress(new byte[4]);
-				} else if(peerBean.serverPeerAddress().net4Internal()) {
-					fromAddress = peerBean.serverPeerAddress().ipInternalSocket().ipv4().toInetAddress();
-				} else {
-					fromAddress = peerBean.serverPeerAddress().ipv4Socket().ipv4().toInetAddress();
-				}
-				
-				LOG.debug("channel from {}", fromAddress);
-
-				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, 0, permitsPermanentTCP,
-				        channelClientConfiguration, fromAddress);
-				addToSet(channelCreator);
-			} catch (UnknownHostException u) {
-				//never happens as we use wildcard address
-				u.printStackTrace();
-				throw new RuntimeException(u);
-			} finally {
-				read.unlock();
-			}
-			futureChannelCreator.reserved(channelCreator);
-		}
-
-		private FutureChannelCreator futureChannelCreator() {
-			return futureChannelCreator;
-		}
-	}
-
 }

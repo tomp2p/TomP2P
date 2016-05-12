@@ -10,13 +10,13 @@ import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.CountConnectionOutboundHandler;
+import net.tomp2p.connection.CountConnectionOutboundHandler;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
@@ -153,23 +153,12 @@ public class TestDirect {
         try {
 
         	
-        	final CountConnectionOutboundHandler ccohTCP = new CountConnectionOutboundHandler();
-        	final CountConnectionOutboundHandler ccohUDP = new CountConnectionOutboundHandler();
-        	PipelineFilter pf = new PipelineFilter() {
-				@Override
-				public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
-				        boolean client) {
-					
-					Map<String, Pair<EventExecutorGroup, ChannelHandler>> retVal = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
-					retVal.put("counter", new Pair<EventExecutorGroup, ChannelHandler>(null, tcp? ccohTCP:ccohUDP));
-					retVal.putAll(channelHandlers);
-					return retVal;
-				}
-			};
+        	//final CountConnectionOutboundHandler ccohTCP = new CountConnectionOutboundHandler();
+        	//final CountConnectionOutboundHandler ccohUDP = new CountConnectionOutboundHandler();
+        	
 			ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
 			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
-			csc.pipelineFilter(pf);
-			ccc.pipelineFilter(pf);
+
             sender = new PeerBuilder(new Number160("0x50")).p2pId(55).enableMaintenance(false).ports(2424).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
             recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).enableMaintenance(false).ports(8088).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
             recv1.objectDataReply(new ObjectDataReply() {
@@ -179,22 +168,23 @@ public class TestDirect {
                 }
             });
             FutureDoneAttachment<PeerConnection, PeerAddress> peerConnection = sender.createPeerConnection(recv1.peerAddress());
-            ccohTCP.reset();
-            ccohUDP.reset();
+            
+            sender.connectionBean().connect().counterTCP().reset();
+            sender.connectionBean().connect().counterUDP().reset();
 
             FutureDirect fd1 = sender.sendDirect(peerConnection).object("test")
                     .connectionTimeoutTCPMillis(2000).idleTCPMillis(10 * 1000).start();
             fd1.awaitUninterruptibly();
             fd1.awaitListenersUninterruptibly();
             Assert.assertEquals(true, fd1.isSuccess());
-            Assert.assertEquals(1, ccohTCP.total());
-            Assert.assertEquals(0, ccohUDP.total());
+            Assert.assertEquals(1, sender.connectionBean().connect().counterTCP().total());
+            Assert.assertEquals(0, sender.connectionBean().connect().counterUDP().total());
             Thread.sleep(2000);
             System.err.println("send second with the same connection");
             FutureDirect fd2 = sender.sendDirect(peerConnection).object("test").start();
             fd2.awaitUninterruptibly();
-            Assert.assertEquals(1, ccohTCP.total());
-            Assert.assertEquals(0, ccohUDP.total());
+            Assert.assertEquals(1, sender.connectionBean().connect().counterTCP().total());
+            Assert.assertEquals(0, sender.connectionBean().connect().counterUDP().total());
             Assert.assertEquals(true, fd2.isSuccess());
             peerConnection.object().close().await();
             System.err.println("done");
@@ -214,23 +204,12 @@ public class TestDirect {
         Peer recv1 = null;
         try {
 
-        	final CountConnectionOutboundHandler ccohTCP = new CountConnectionOutboundHandler();
-        	final CountConnectionOutboundHandler ccohUDP = new CountConnectionOutboundHandler();
-        	PipelineFilter pf = new PipelineFilter() {
-				@Override
-				public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
-				        boolean client) {
-					
-					Map<String, Pair<EventExecutorGroup, ChannelHandler>> retVal = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
-					retVal.put("counter", new Pair<EventExecutorGroup, ChannelHandler>(null, tcp? ccohTCP:ccohUDP));
-					retVal.putAll(channelHandlers);
-					return retVal;
-				}
-			};
+        	//final CountConnectionOutboundHandler ccohTCP = new CountConnectionOutboundHandler();
+        	//final CountConnectionOutboundHandler ccohUDP = new CountConnectionOutboundHandler();
+        	
 			ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
 			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
-			csc.pipelineFilter(pf);
-			ccc.pipelineFilter(pf);
+
             sender = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).enableMaintenance(false)
                     .channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
             recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).enableMaintenance(false)
@@ -241,23 +220,23 @@ public class TestDirect {
                     return "yes";
                 }
             });
-            FutureDoneAttachment<PeerConnection, PeerAddress> peerConnection = sender.createPeerConnection(recv1.peerAddress(), 8000, 2000);
-            ccohTCP.reset();
-            ccohUDP.reset();
+            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.peerAddress(), 8000, 2000);
+            sender.connectionBean().connect().counterTCP().reset();
+            sender.connectionBean().connect().counterUDP().reset();
 
             FutureDirect fd1 = sender.sendDirect(peerConnection).object("test")
                     .connectionTimeoutTCPMillis(2000).idleTCPMillis(5 * 1000).start();
             fd1.awaitUninterruptibly();
             Assert.assertTrue(fd1.isSuccess());
 
-            Assert.assertEquals(1, ccohTCP.total());
+            Assert.assertEquals(1, sender.connectionBean().connect().counterTCP().total());
 
             Thread.sleep(7000);
             System.out.println("request 2");
             FutureDirect fd2 = sender.sendDirect(peerConnection).object("test").start();
             fd2.awaitUninterruptibly();
             peerConnection.object().close().await();
-            Assert.assertEquals(2, ccohTCP.total());
+            Assert.assertEquals(2, sender.connectionBean().connect().counterTCP().total());
             System.out.println("done");
         } finally {
             if (sender != null) {

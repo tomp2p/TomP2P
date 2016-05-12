@@ -223,10 +223,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             
             if(isUdp) {
                 peerConnection = PeerConnection.existingPeerConnectionUDP(message.sender(), csc.idleUDPMillis(), 
-                        new DefaultChannelPromise(ctx.channel()).setSuccess());
+                        new DefaultChannelPromise(ctx.channel()).setSuccess(), new ChannelCreator.ChannelCloseListener());
             } else {
                 peerConnection = PeerConnection.existingPeerConnectionTCP(message.sender(), csc.idleTCPMillis(), 
-                        new DefaultChannelPromise(ctx.channel()).setSuccess());
+                        new DefaultChannelPromise(ctx.channel()).setSuccess(), new ChannelCreator.ChannelCloseListener());
             }
             
             myHandler.forwardMessage(message, peerConnection, responder);

@@ -43,13 +43,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,8 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  * 
  */
+
+@Accessors(chain = true, fluent = true)
 public final class ChannelServer implements DiscoverNetworkListener{
 
 	private static final Logger LOG = LoggerFactory.getLogger(ChannelServer.class);
@@ -79,8 +82,13 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	
 	private final DropConnectionInboundHandler tcpDropConnectionInboundHandler;
 	private final DropConnectionInboundHandler udpDropConnectionInboundHandler;
+        @Getter private final CountConnectionOutboundHandler counterUDP = new CountConnectionOutboundHandler();
+        @Getter private final CountConnectionOutboundHandler counterTCP = new CountConnectionOutboundHandler();
+        
 	private final ChannelHandler udpDecoderHandler;
 	private final DiscoverNetworks discoverNetworks;
+        
+        
 	
 	private boolean shutdown = false;
 	private boolean broadcastAddressSupported = false;
@@ -298,12 +306,8 @@ public final class ChannelServer implements DiscoverNetworkListener{
 			@Override
 			protected void initChannel(final Channel ch) throws Exception {
 				ch.config().setAllocator(channelServerConfiguration.byteBufAllocator());
-				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : handlers(false).entrySet()) {
-					if (!entry.getValue().isEmpty()) {
-						ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
-					} else if (entry.getValue().element1() != null) {
-						ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
-					}
+				for (Map.Entry<String, ChannelHandler> entry : handlers(false).entrySet()) {
+                                    ch.pipeline().addLast(entry.getKey(), entry.getValue());
 				}
 			}
 		});
@@ -335,12 +339,8 @@ public final class ChannelServer implements DiscoverNetworkListener{
 				//bestEffortOptions(ch, ChannelOption.SO_BACKLOG, BACKLOG);
 				bestEffortOptions(ch, ChannelOption.SO_LINGER, 0);
 				bestEffortOptions(ch, ChannelOption.TCP_NODELAY, true);
-				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : handlers(true).entrySet()) {
-					if (!entry.getValue().isEmpty()) {
-						ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
-					} else if (entry.getValue().element1() != null) {
-						ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
-					}
+				for (Map.Entry<String, ChannelHandler> entry : handlers(true).entrySet()) {
+                                    ch.pipeline().addLast(entry.getKey(), entry.getValue());
 				}
 			}
 		});
@@ -366,32 +366,29 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	 *            Set to true if connection is TCP, false if UDP
 	 * @return The channel handlers that may have been modified by the user
 	 */
-	private Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers(final boolean tcp) {
-		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
+	private Map<String, ChannelHandler> handlers(final boolean tcp) {
+		final Map<String, ChannelHandler> handlers = new LinkedHashMap<String, ChannelHandler>();
 		if (tcp) {
-			final int nrTCPHandlers = 8; // 6 / 0.75 = 7;
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
-			handlers.put("dropconnection", new Pair<EventExecutorGroup, ChannelHandler>(null, tcpDropConnectionInboundHandler));
+			handlers.put("dropconnection", tcpDropConnectionInboundHandler);
+                        handlers.put("timeout", new IdleStateHandler(channelServerConfiguration.idleTCPMillis(), 0, 0));
                         
-                        handlers.put("timeout", new Pair<EventExecutorGroup, ChannelHandler>(
-                                null, new IdleStateHandler(channelServerConfiguration.idleTCPMillis(), 0, 0)));
-                        
-                        handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(
-			        channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator())));
+                        handlers.put("decoder", new TomP2PCumulationTCP(
+			        channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator()));
 		} else {
-			// we don't need here a timeout since we receive a packet or
-			// nothing. It is different than with TCP where we
-			// may get a stream and in the middle of it, the other peer goes
-			// offline. This cannot happen with UDP
-			final int nrUDPHandlers = 6; // 4 = 0.75 = 4 
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrUDPHandlers);
-			handlers.put("dropconnection", new Pair<EventExecutorGroup, ChannelHandler>(null, udpDropConnectionInboundHandler));
-			handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, udpDecoderHandler));
+			handlers.put("dropconnection", udpDropConnectionInboundHandler);
+			handlers.put("decoder", udpDecoderHandler);
 		}
-		handlers.put("encoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(
-		        channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator())));
-		handlers.put("dispatcher", new Pair<EventExecutorGroup, ChannelHandler>(null, dispatcher));
-		return channelServerConfiguration.pipelineFilter().filter(handlers, tcp, false);
+		handlers.put("encoder", new TomP2POutbound(
+		        channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator()));
+                
+                if(tcp) {
+                    handlers.put("server-counter", counterTCP);
+                } else {
+                    handlers.put("server-counter", counterUDP);
+                }
+                
+                handlers.put("dispatcher", dispatcher);
+		return handlers;
 	}
 
 	/**

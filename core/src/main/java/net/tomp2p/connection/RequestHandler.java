@@ -71,7 +71,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     private final boolean isReflected;
     private final boolean isKeepAlive;
     
-    private volatile ChannelCreator.ChannelCloseListener close;
+    private volatile PeerConnection peerConnection;
     /**
 	 * Creates a request handler that can send TCP and UDP messages.
      * 
@@ -171,12 +171,12 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      */
     public K sendUDP(final ChannelCreator channelCreator) {
         final PeerConnection peerConnection = PeerConnection.newPeerConnectionUDP(channelCreator, recipient, idleTCPMillis);
-        final Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener> pair = connectionBean.connect().connectUDP(this, channelCreator, sender,
+        final SendBehavior.SendMethod sendMethod = connectionBean.connect().connectUDP(this, channelCreator, sender,
                 peerConnection, isReflected, isReflected);
-        this.close = pair.element1();
-        switch(pair.element0()) {
+        this.peerConnection = peerConnection;
+        switch(sendMethod) {
             case DIRECT:
-                connectionBean.sender().sendMessage(futureResponse, message, peerConnection.channelFuture(), false);
+                connectionBean.sender().sendMessage(futureResponse, message, peerConnection, false);
                 break;
             case SELF:
                 connectionBean.sender().sendSelf(futureResponse, message);
@@ -194,12 +194,12 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      */
     public K fireAndForgetUDP(final ChannelCreator channelCreator) {
         final PeerConnection peerConnection = PeerConnection.newPeerConnectionUDP(channelCreator, recipient, idleTCPMillis);
-        final Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener> pair = connectionBean.connect().connectUDP(this, channelCreator, sender,
+        final SendBehavior.SendMethod sendMethod = connectionBean.connect().connectUDP(this, channelCreator, sender,
                 peerConnection, isReflected, isReflected);
-        this.close = pair.element1();
-        switch(pair.element0()) {
+        this.peerConnection = peerConnection;
+        switch(sendMethod) {
             case DIRECT:
-                connectionBean.sender().sendMessage(futureResponse, message, peerConnection.channelFuture(), true);
+                connectionBean.sender().sendMessage(futureResponse, message, peerConnection, true);
                 break;
             case SELF:
                 connectionBean.sender().sendSelf(futureResponse, message);
@@ -239,12 +239,12 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 
     public K sendTCP(final PeerConnection peerConnection) {
         
-        final Pair<SendBehavior.SendMethod, ChannelCreator.ChannelCloseListener> pair = connectionBean.connect().connectTCP(
+        final SendBehavior.SendMethod sendMethod = connectionBean.connect().connectTCP(
                 this, connectionTimeoutTCPMillis, sender, peerConnection, isReflected);
-        this.close = pair.element1();
-        switch(pair.element0()) {
+        this.peerConnection = peerConnection;
+        switch(sendMethod) {
             case DIRECT:
-                connectionBean.sender().sendMessage(futureResponse, message, peerConnection.channelFuture(), false);
+                connectionBean.sender().sendMessage(futureResponse, message, peerConnection, false);
                 break;
             case SELF:
                 connectionBean.sender().sendSelf(futureResponse, message);
@@ -252,9 +252,42 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             case EXISTING_CONNECTION:
                 connectionBean.sender().sendTCPPeerConnection(peerConnection, this);
                 break;
+            case RCON:
+                int i = 0;
+                for(PeerSocketAddress psa:peerConnection.remotePeer().relays()) {
+                    Message rconMessage = createRconMessage(psa, message);
+                    
+                    i++;
+                    if(i>3) break;
+                }
+                
+                
+                break;
         }
         return futureResponse;
     }
+    
+    /**
+     * This method makes a copy of the original Message and prepares it for sending it to the relay.
+     *
+     * @param message
+     * @return rconMessage
+     */
+    private static Message createRconMessage(PeerSocketAddress ps, final Message originalMessage) {
+        Message rconMessage = new Message();
+        rconMessage.sender(originalMessage.sender());
+        rconMessage.version(originalMessage.version());
+        // store the message id in the payload to get the cached message later
+        rconMessage.intValue(originalMessage.messageId());
+        // making the message ready to send
+        PeerAddress recipient = originalMessage.recipient().withIPSocket(ps).withRelaySize(0);
+        rconMessage.recipient(recipient);
+        rconMessage.command(RPC.Commands.RCON.getNr());
+        rconMessage.type(Message.Type.REQUEST_1);
+        return rconMessage;
+    }
+
+
 
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
@@ -291,7 +324,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         
         //futureResponse.failedLater(cause);
         ctx.close();
-        close.failAfter(futureResponse, cause);
+        peerConnection.closeListener().failAfter(futureResponse, cause);
     }
     
     @Override
@@ -402,7 +435,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                             }
                         });*/
             ctx.close();
-            close.after(futureResponse, responseMessage);
+            peerConnection.closeListener().after(futureResponse, responseMessage);
             //futureResponse.response(responseMessage);
         } else {
 			LOG.debug("Good message {}. Leave channel {} open.", responseMessage, ctx.channel());

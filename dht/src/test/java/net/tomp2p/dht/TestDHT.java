@@ -21,6 +21,9 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,14 +31,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConfiguration;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.BaseFutureAdapterThread;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
@@ -1481,10 +1486,10 @@ public class TestDHT {
 			});
 			List<BaseFuture> list1 = new ArrayList<BaseFuture>();
 			List<BaseFuture> list2 = new ArrayList<BaseFuture>();
-			List<FuturePeerConnection> list3 = new ArrayList<FuturePeerConnection>();
+			List<FutureDoneAttachment<PeerConnection, PeerAddress>> list3 = new ArrayList<FutureDoneAttachment<PeerConnection, PeerAddress>>();
 			for (int i = 0; i < 125; i++) {
 				final byte[] b = new byte[10000];
-				FuturePeerConnection pc = master.createPeerConnection(slave.peerAddress());
+				FutureDoneAttachment<PeerConnection, PeerAddress> pc = master.createPeerConnection(slave.peerAddress());
 				list1.add(master.sendDirect(pc).dataBuffer(new DataBuffer(Unpooled.wrappedBuffer(b))).start());
 				list3.add(pc);
 				// pc.close();
@@ -1517,9 +1522,9 @@ public class TestDHT {
 				}
 				Assert.assertEquals(true, bf.isSuccess());
 			}
-			for (FuturePeerConnection pc : list3) {
-				pc.close().awaitUninterruptibly();
-				pc.close().awaitListenersUninterruptibly();
+			for (FutureDoneAttachment<PeerConnection, PeerAddress> pc : list3) {
+				pc.object().close().awaitUninterruptibly();
+				pc.object().close().awaitListenersUninterruptibly();
 			}
 			System.out.println("done!!");
 		} catch (Exception e) {
@@ -1596,12 +1601,11 @@ public class TestDHT {
 		PeerDHT slave = null;
 		try {
 
-			DefaultEventExecutorGroup eventExecutorGroup = new DefaultEventExecutorGroup(250);
 			ChannelClientConfiguration ccc1 = PeerBuilder.createDefaultChannelClientConfiguration();
-			ccc1.pipelineFilter(new PeerBuilder.EventExecutorGroupFilter(eventExecutorGroup));
+			
 
 			ChannelServerConfiguration ccs1 = PeerBuilder.createDefaultChannelServerConfiguration();
-			ccs1.pipelineFilter(new PeerBuilder.EventExecutorGroupFilter(eventExecutorGroup));
+			
 
 			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).channelClientConfiguration(ccc1)
 			        .channelServerConfiguration(ccs1).start()).start();
@@ -1616,17 +1620,24 @@ public class TestDHT {
 			final int count = 100;
 			final CountDownLatch latch = new CountDownLatch(count);
 			final AtomicBoolean correct = new AtomicBoolean(true);
-
+                        final ExecutorService service = Executors.newCachedThreadPool(new ThreadFactory() {
+                            @Override
+                            public Thread newThread(Runnable r) {
+                                Thread t = new Thread(r);
+                                t.setName("ExecutorService-"+t.getName());
+                                return t;
+                            }
+                        });
 			for (int i = 0; i < count; i++) {
 				FuturePut futurePut = master.put(Number160.ONE).data(new Data("test")).start();
-				futurePut.addListener(new BaseFutureAdapter<FuturePut>() {
+				futurePut.addListener(new BaseFutureAdapterThread<FuturePut>(service) {
 
 					@Override
-					public void operationComplete(FuturePut future) throws Exception {
+					public void operationCompleteThread(FuturePut future) throws Exception {
 						Thread.sleep(1000);
 						latch.countDown();
 						System.out.println("block in "+Thread.currentThread().getName());
-						if(!Thread.currentThread().getName().contains("EventExecutorGroup")) {
+						if(!Thread.currentThread().getName().contains("ExecutorService")) {
 							correct.set(false);
 						}
 					}

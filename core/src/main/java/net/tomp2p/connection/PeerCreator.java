@@ -99,8 +99,8 @@ public class PeerCreator {
 		        dispatcher, peerBean.peerStatusListeners(), timer);
 		
 		//connection bean
-		Sender sender = new Sender(peerId, peerBean.peerStatusListeners(), channelClientConfiguration, dispatcher, sendBehavior, peerBean);
-                Connect connect = new Connect(peerId, peerBean.peerStatusListeners(), channelClientConfiguration, dispatcher, sendBehavior, peerBean);
+		Sender sender = new Sender(peerBean.peerStatusListeners(), dispatcher);
+                Connect connect = new Connect(peerId, channelClientConfiguration, dispatcher, sendBehavior);
 		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration, peerBean);
 		connectionBean = new ConnectionBean(p2pId, dispatcher, connect, sender, channelServer, reservation,
 		        channelClientConfiguration, timer);

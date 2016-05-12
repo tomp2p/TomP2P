@@ -12,14 +12,13 @@ import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.connection.StandardProtocolFamily;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureDoneAttachment;
-import net.tomp2p.message.CountConnectionOutboundHandler;
+import net.tomp2p.connection.CountConnectionOutboundHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -48,24 +47,13 @@ public class TestConnection {
         Peer peer2 = null;
         try {
         	
-        	final CountConnectionOutboundHandler ccohTCP = new CountConnectionOutboundHandler();
-        	final CountConnectionOutboundHandler ccohUDP = new CountConnectionOutboundHandler();
+        	//final CountConnectionOutboundHandler ccohTCP = new CountConnectionOutboundHandler();
+        	//final CountConnectionOutboundHandler ccohUDP = new CountConnectionOutboundHandler();
         	
-        	PipelineFilter pf = new PipelineFilter() {
-				@Override
-				public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
-				        boolean client) {
-					
-					Map<String, Pair<EventExecutorGroup, ChannelHandler>> retVal = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
-					retVal.put("counter", new Pair<EventExecutorGroup, ChannelHandler>(null, tcp? ccohTCP:ccohUDP));
-					retVal.putAll(channelHandlers);
-					return retVal;
-				}
-			};
+        	
 			ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
 			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
-			csc.pipelineFilter(pf);
-			ccc.pipelineFilter(pf);
+
         	
             Bindings b1 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
             Bindings b2 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
@@ -94,7 +82,7 @@ public class TestConnection {
             fd.awaitUninterruptibly();
             Assert.assertEquals(true, fd.isSuccess());
             System.out.println("received " + fd.object() + " connections: "
-                    + ccohTCP.total());
+                    + peer1.connectionBean().connect().counterTCP().total());
             // we reuse the connection
             long start = System.currentTimeMillis();
             System.out.println("send " + sentObject);
@@ -104,7 +92,7 @@ public class TestConnection {
             Assert.assertEquals(true, fd.isSuccess());
             System.err.println(fd.failedReason());
             System.out.println("received " + fd.object() + " connections: "
-                    + ccohTCP.total());
+                    + peer1.connectionBean().connect().counterTCP().total());
             // now we don't want to keep the connection open anymore:
             double duration = (System.currentTimeMillis() - start) / 1000d;
             System.out.println("Send and get in s:" + duration);
@@ -148,7 +136,7 @@ public class TestConnection {
             masterAnother.awaitUninterruptibly();
             anotherMaster.awaitUninterruptibly();
             
-            int before = peer1.connectionBean().reservation().availablePermitsPermanentTCP();
+            int before = peer1.connectionBean().reservation().availablePermitsTCP();
             final FutureDoneAttachment<PeerConnection, PeerAddress> fpc = peer1.createPeerConnection(peer2.peerAddress());
             
             // fpc.awaitUninterruptibly();
@@ -157,7 +145,7 @@ public class TestConnection {
             FutureDirect fd = peer1.sendDirect(fpc).object(sentObject).start();
             fd.awaitUninterruptibly();
             
-            Assert.assertEquals(before - 1, peer1.connectionBean().reservation().availablePermitsPermanentTCP());
+            Assert.assertEquals(before - 1, peer1.connectionBean().reservation().availablePermitsTCP());
             
             peer2.shutdown().await();
             
@@ -169,7 +157,7 @@ public class TestConnection {
             });
             //TODO: make this not wait
             Thread.sleep(1000);
-            Assert.assertEquals(before, peer1.connectionBean().reservation().availablePermitsPermanentTCP());
+            Assert.assertEquals(before, peer1.connectionBean().reservation().availablePermitsTCP());
             
             // we reuse the connection
             /*long start = System.currentTimeMillis();

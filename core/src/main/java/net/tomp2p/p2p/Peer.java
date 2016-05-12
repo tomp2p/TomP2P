@@ -30,6 +30,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.futures.FutureLateJoin;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
@@ -230,7 +231,7 @@ public class Peer {
         directDataRPC().objectDataReply(objectDataReply);
     }
     
-    public FutureDoneAttachment<PeerConnection, PeerAddress> createPeerConnection(final PeerAddress destination) {
+    public FuturePeerConnection createPeerConnection(final PeerAddress destination) {
     	return createPeerConnection(destination, PeerConnection.HEART_BEAT_MILLIS, ConnectionBean.DEFAULT_TCP_IDLE_MILLIS);
     }
 
@@ -249,9 +250,9 @@ public class Peer {
      * @return A class that needs to be passed to those methods that should use the already open connection. If the
      *         connection could not be reserved, maybe due to a shutdown, null is returned.
      */
-    public FutureDoneAttachment<PeerConnection, PeerAddress> createPeerConnection(final PeerAddress destination, final int heartBeatMillis, final int idleTCP) {
-        final FutureDoneAttachment<PeerConnection, PeerAddress> futureDone = new FutureDoneAttachment<PeerConnection, PeerAddress>(destination);
-        final FutureChannelCreator fcc = connectionBean().reservation().createPermanent(1);
+    public FuturePeerConnection createPeerConnection(final PeerAddress destination, final int heartBeatMillis, final int idleTCP) {
+        final FuturePeerConnection futureDone = new FuturePeerConnection(destination);
+        final FutureChannelCreator fcc = connectionBean().reservation().create(0,1);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {

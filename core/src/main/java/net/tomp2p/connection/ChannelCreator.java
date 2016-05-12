@@ -86,8 +86,6 @@ public class ChannelCreator {
 	
 	private final InetAddress sendFromAddress;
 
-	private EventExecutorGroup handlerExecutor;
-
 	private boolean shutdownUDP = false;
 	private boolean shutdownTCP = false;
 
@@ -124,11 +122,20 @@ public class ChannelCreator {
         static class ChannelCloseListener implements GenericFutureListener<ChannelFuture> {
             
             final private Semaphore semaphore;
+            
             private FutureResponse futureResponse;
             private Message responseMessage;
             private Throwable cause;
-            private boolean done = false;
+            private boolean doneMessage = false;
+            
+            private FutureDone<Void> closeFuture;
+            private boolean doneClose = false;
+            
             private boolean notified = false;
+            
+            public ChannelCloseListener() {
+                this.semaphore = new Semaphore(1);
+            }
             
             public ChannelCloseListener(final Semaphore semaphore) {
                 this.semaphore = semaphore;
@@ -138,12 +145,15 @@ public class ChannelCreator {
             public void operationComplete(ChannelFuture f) throws Exception {
                 synchronized(this) {
                     semaphore.release();
-                    if(!done) {
+                    if(!doneMessage) {
                         if(cause == null) {
                             after(futureResponse, responseMessage);
                         } else {
                             failAfter(futureResponse, cause);
                         }
+                    }
+                    if(!doneClose) {
+                        after(closeFuture);
                     }
                     notified = true;
                 }
@@ -157,7 +167,7 @@ public class ChannelCreator {
                         this.responseMessage = responseMessage;
                     } else {
                         futureResponse.response(responseMessage);
-                        done = true;
+                        doneMessage = true;
                     }
                 }
             }
@@ -169,7 +179,18 @@ public class ChannelCreator {
                         this.cause = cause;
                     } else {
                         futureResponse.failed(cause);
-                        done = true;
+                        doneMessage = true;
+                    }
+                }
+            }
+
+            public void after(FutureDone<Void> closeFuture) {
+                synchronized(this) {
+                    if(!notified) {
+                        this.closeFuture = closeFuture;
+                    } else {
+                        closeFuture.done();
+                        doneClose = true;
                     }
                 }
             }
@@ -186,7 +207,7 @@ public class ChannelCreator {
 	 * @return The channel future object or null if we are shut down
 	 */
 	public Pair<ChannelCloseListener, ChannelFuture> createUDP(final SocketAddress socketAddress,  
-                final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers,
+                final Map<String, ChannelHandler> channelHandlers,
 			boolean fireandforget) {
 		readUDP.lock();
 		try {
@@ -207,10 +228,7 @@ public class ChannelCreator {
 			b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
 			b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
 			//b.option(ChannelOption.SO_BROADCAST, true);
-			
-			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(
-					channelHandlers, false, true);
-			addHandlers(b, channelHandlers2);
+			addHandlers(b, channelHandlers);
 			// Here we need to bind, as opposed to the TCP, were we connect if
 			// we do a connect, we cannot receive
 			// broadcast messages
@@ -246,7 +264,7 @@ public class ChannelCreator {
 	 * @return The channel future object or null if we are shut down.
 	 */
 	public Pair<ChannelCloseListener, ChannelFuture> createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
-			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
+			final Map<String, ChannelHandler> channelHandlers) {
 		readTCP.lock();
 		try {
 			if (shutdownTCP) {
@@ -266,9 +284,7 @@ public class ChannelCreator {
 			b.option(ChannelOption.SO_REUSEADDR, true);
 			//b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
 			//b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
-			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(
-					channelHandlers, true, true);
-			addHandlers(b, channelHandlers2);
+			addHandlers(b, channelHandlers);
 			
 			LOG.debug("Create TCP, use from address: {}", sendFromAddress);
 
@@ -291,20 +307,13 @@ public class ChannelCreator {
 	 * @param channelHandlers
 	 *            The handlers to be added.
 	 */
-	private void addHandlers(final Bootstrap bootstrap, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
+	private void addHandlers(final Bootstrap bootstrap, final Map<String, ChannelHandler> channelHandlers) {
 		bootstrap.handler(new ChannelInitializer<Channel>() {
 			@Override
 			protected void initChannel(final Channel ch) throws Exception {
 				ch.config().setAllocator(channelClientConfiguration.byteBufAllocator());
-				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : channelHandlers.entrySet()) {
-					if (entry.getKey().equals("handler")) {
-						handlerExecutor = entry.getValue().element0();
-					}
-					if (entry.getValue().element0() != null) {
-						ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
-					} else {
-						ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
-					}
+				for (Map.Entry<String, ChannelHandler> entry : channelHandlers.entrySet()) {
+                                    ch.pipeline().addLast(entry.getKey(), entry.getValue());
 				}
 			}
 		});

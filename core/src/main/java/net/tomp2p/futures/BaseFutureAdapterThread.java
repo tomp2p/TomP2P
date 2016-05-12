@@ -15,6 +15,7 @@
  */
 package net.tomp2p.futures;
 
+import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,14 +31,36 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  * @param <F>
  */
-public abstract class BaseFutureAdapter<F extends BaseFuture> implements BaseFutureListener<F> {
-    final private static Logger LOG = LoggerFactory.getLogger(BaseFutureAdapter.class);
+public abstract class BaseFutureAdapterThread<F extends BaseFuture> implements BaseFutureListener<F> {
+    final private static Logger LOG = LoggerFactory.getLogger(BaseFutureAdapterThread.class);
 
+    final private ExecutorService executorService;
+    public BaseFutureAdapterThread(ExecutorService executorService) {
+        this.executorService = executorService;
+    }
+
+    @Override
+    public final void operationComplete(final F future) throws Exception {
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    operationCompleteThread(future);
+                } catch (Throwable t) {
+                    exceptionCaught(t);
+                }
+            
+            }
+        });
+    }
+    
+    public abstract void operationCompleteThread(F future) throws Exception;
+    
     /**
      * Prints out the error using the logger and System.err.
      */
     @Override
-    public void exceptionCaught(final Throwable t) throws Exception {
+    public void exceptionCaught(final Throwable t) {
         LOG.error("BaseFutureAdapter exceptionCaught()", t);
         t.printStackTrace();
     }

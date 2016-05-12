@@ -32,7 +32,9 @@ public class PeerConnection {
     @Getter final private ConnectionBean.Protocol protocol;
 
     @Getter final private ChannelCreator channelCreator;
+    
     @Getter private ChannelFuture channelFuture = null;
+    @Getter private ChannelCreator.ChannelCloseListener closeListener = null;
     private boolean closeRequested = false;
 
     public PeerConnection() {
@@ -46,13 +48,14 @@ public class PeerConnection {
 
     private PeerConnection(final PeerAddress remotePeer, final int idleMillis,
             final ConnectionBean.Protocol protocol, final int heartBeatMillis,
-            final ChannelFuture channelFuture, final boolean initiator) {
+            final ChannelFuture channelFuture, ChannelCreator.ChannelCloseListener closeListener, 
+            final boolean initiator) {
         this.remotePeer = remotePeer;
         this.initiator = initiator;
         this.idleMillis = idleMillis;
         this.heartBeatMillis = heartBeatMillis;
         this.protocol = protocol;
-        channelFuture(channelFuture);
+        channelFuture(channelFuture, closeListener);
         this.channelCreator = null;
     }
 
@@ -74,8 +77,8 @@ public class PeerConnection {
     }
 
     public static PeerConnection existingPeerConnectionTCP(final PeerAddress remotePeer, final int idleMillis,
-            final ChannelFuture channelFuture) {
-        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.TCP, -1, channelFuture,
+            final ChannelFuture channelFuture, ChannelCreator.ChannelCloseListener closeListener) {
+        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.TCP, -1, channelFuture, closeListener,
                 false);
     }
 
@@ -86,8 +89,8 @@ public class PeerConnection {
     }
 
     public static PeerConnection existingPermanentPeerConnectionTCP(final PeerAddress remotePeer,
-            final int idleMillis, final ChannelFuture channelFuture) {
-        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.TCP, 0, channelFuture, false);
+            final int idleMillis, final ChannelFuture channelFuture, ChannelCreator.ChannelCloseListener closeListener) {
+        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.TCP, 0, channelFuture, closeListener, false);
     }
 
     public static PeerConnection newPeerConnectionUDT(final ChannelCreator channelCreator,
@@ -97,8 +100,8 @@ public class PeerConnection {
     }
 
     public static PeerConnection existingPeerConnectionUDT(final PeerAddress remotePeer, final int idleMillis,
-            final ChannelFuture channelFuture) {
-        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.UDT, -1, channelFuture,
+            final ChannelFuture channelFuture, ChannelCreator.ChannelCloseListener closeListener) {
+        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.UDT, -1, channelFuture, closeListener,
                 false);
     }
 
@@ -110,8 +113,8 @@ public class PeerConnection {
     }
 
     public static PeerConnection existingPermanentPeerConnectionUDT(final PeerAddress remotePeer,
-            final int idleMillis, final ChannelFuture channelFuture) {
-        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.UDT, 0, channelFuture, false);
+            final int idleMillis, final ChannelFuture channelFuture, ChannelCreator.ChannelCloseListener closeListener) {
+        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.UDT, 0, channelFuture, closeListener, false);
     }
 
     public static PeerConnection newPeerConnectionUDP(final ChannelCreator channelCreator,
@@ -121,30 +124,28 @@ public class PeerConnection {
     }
 
     public static PeerConnection existingPeerConnectionUDP(final PeerAddress remotePeer, final int idleMillis,
-            final ChannelFuture channelFuture) {
-        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.UDP, -1, channelFuture,
+            final ChannelFuture channelFuture, ChannelCreator.ChannelCloseListener closeListener) {
+        return new PeerConnection(remotePeer, idleMillis, ConnectionBean.Protocol.UDP, -1, channelFuture, closeListener,
                 false);
     }
 
-    public PeerConnection channelFuture(final ChannelFuture channelFuture) {
+    public PeerConnection channelFuture(final ChannelFuture channelFuture, 
+            ChannelCreator.ChannelCloseListener closeListener) {
         synchronized (this) {
             if (this.channelFuture != null) {
                 throw new IllegalArgumentException("cannot set twice the channel future");
             }
+            if (this.closeListener != null) {
+                throw new IllegalArgumentException("cannot set twice the channel future");
+            }
+            this.closeListener = closeListener;
             this.channelFuture = channelFuture;
             if (closeRequested) {
                 channelFuture.channel().close();
             }
         }
-
-        channelFuture.channel().closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
-            @Override
-            public void operationComplete(Future<? super Void> arg0) throws Exception {
-                LOG.debug("About to close the connection {}, {}.", channelFuture.channel(),
-                        initiator ? "initiator" : "from-dispatcher");
-                closeFuture.done();
-            }
-        });
+        
+        closeListener.after(closeFuture);
         return this;
     }
 

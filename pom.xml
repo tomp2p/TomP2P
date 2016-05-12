@@ -38,7 +38,7 @@
   	</scm>
   	
   	<properties>
-        <netty.version>4.0.32.Final</netty.version>
+        <netty.version>4.1.0.CR7</netty.version>
     </properties>
 
 	<modules>
@@ -85,6 +85,11 @@
 			<dependency>
 				<groupId>io.netty</groupId>
 				<artifactId>netty-buffer</artifactId>
+				<version>${netty.version}</version>
+			</dependency>
+                        <dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-handler</artifactId>
 				<version>${netty.version}</version>
 			</dependency>
 		</dependencies>

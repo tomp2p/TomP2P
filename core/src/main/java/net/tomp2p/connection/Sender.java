@@ -17,28 +17,17 @@
 package net.tomp2p.connection;
 
 import java.net.ConnectException;
-import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
-import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
@@ -46,21 +35,11 @@ import net.tomp2p.message.DataFilter;
 import net.tomp2p.message.DataFilterTTL;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.message.TomP2PCumulationTCP;
-import net.tomp2p.message.TomP2POutbound;
-import net.tomp2p.message.TomP2PSinglePacketUDP;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
-import net.tomp2p.rpc.RPC;
-import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Utils;
 
 /**
  * The class that sends out messages.
@@ -72,11 +51,7 @@ public class Sender {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Sender.class);
 	private final List<PeerStatusListener> peerStatusListeners;
-	private final ChannelClientConfiguration channelClientConfiguration;
 	private final Dispatcher dispatcher;
-	private final SendBehavior sendBehavior;
-	private final Random random;
-	private final PeerBean peerBean;
 	private final DataFilter dataFilterTTL = new DataFilterTTL();
 
 	// this map caches all messages which are meant to be sent by a reverse
@@ -94,14 +69,9 @@ public class Sender {
 	 * @param sendBehavior
 	 * @param peerBean
 	 */
-	public Sender(final Number160 peerId, final List<PeerStatusListener> peerStatusListeners,
-			final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior, PeerBean peerBean) {
+	public Sender(final List<PeerStatusListener> peerStatusListeners, Dispatcher dispatcher) {
 		this.peerStatusListeners = peerStatusListeners;
-		this.channelClientConfiguration = channelClientConfiguration;
 		this.dispatcher = dispatcher;
-		this.sendBehavior = sendBehavior;
-		this.random = new Random(peerId.hashCode());
-		this.peerBean = peerBean;
 	}
 
 	
@@ -170,21 +140,21 @@ public class Sender {
 	 * @param fireAndForget
 	 *            True, if we don't expect a message
 	 */
-	public FutureResponse sendMessage(final FutureResponse futureResponse, final Message message, final ChannelFuture channelFuture,
+	public FutureResponse sendMessage(final FutureResponse futureResponse, final Message message, final PeerConnection peerConnection,
 			final boolean fireAndForget) {
-		if (channelFuture == null) {
+		if (peerConnection.channelFuture() == null) {
 			return futureResponse.failed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
 		}
-		LOG.debug("about to connect to {} with channel {}, ff={}, msg={}", message.recipient(), channelFuture.channel(), fireAndForget, message);
-		final Cancel connectCancel = createCancel(channelFuture);
+		LOG.debug("about to connect to {} with channel {}, ff={}, msg={}", message.recipient(), peerConnection.channelFuture().channel(), fireAndForget, message);
+		final Cancel connectCancel = createCancel(peerConnection.channelFuture());
 		futureResponse.setCancel(connectCancel);
-		channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
+		peerConnection.channelFuture().addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				
 				if (future.isSuccess()) {
 					final ChannelFuture writeFuture = future.channel().writeAndFlush(message);
-					afterSend(writeFuture, futureResponse, fireAndForget);
+					afterSend(writeFuture, futureResponse, fireAndForget, peerConnection);
 				} else {
 					LOG.warn("Channel creation failed", future.cause());
 					LOG.warn("Faild message {}", message);
@@ -258,7 +228,8 @@ public class Sender {
 	 * @param fireAndForget
 	 *            True, if we don't expect a message
 	 */
-	private void afterSend(final ChannelFuture writeFuture, final FutureResponse futureResponse, final boolean fireAndForget) {
+	private void afterSend(final ChannelFuture writeFuture, final FutureResponse futureResponse, 
+                final boolean fireAndForget, final PeerConnection peerConnection) {
 		final Cancel writeCancel = createCancel(writeFuture);
 		futureResponse.setCancel(writeCancel);
 		writeFuture.addListener(new GenericFutureListener<ChannelFuture>() {
@@ -266,35 +237,17 @@ public class Sender {
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				if (!future.isSuccess()) {
-					futureResponse.failedLater(future.cause());
-					reportFailed(futureResponse, future.channel().close());
-					LOG.warn("Failed to write to channel - request {} {}.", futureResponse.request(), future.cause());
+                                    LOG.warn("Failed to write to channel - request {} {}.", futureResponse.request(), future.cause());
+                                    future.channel().close();
+                                    peerConnection.closeListener().failAfter(futureResponse, future.cause());
 				}
 				if (fireAndForget) {
-					futureResponse.responseLater(null);
 					LOG.debug("fire and forget, close channel {} now. {}", futureResponse.request(), future.channel());
-					futureResponse.responseNow();
+					futureResponse.response(null);
 				}
 			}
 		});
 
-	}
-
-	/**
-	 * Report a the response after the channel was closed.
-	 * 
-	 * @param futureResponse
-	 *            The future to set the response
-	 * @param close
-	 *            The close future
-	 */
-	private void reportFailed(final FutureResponse futureResponse, final ChannelFuture close) {
-		close.addListener(new GenericFutureListener<ChannelFuture>() {
-			@Override
-			public void operationComplete(final ChannelFuture arg0) throws Exception {
-				futureResponse.responseNow();
-			}
-		});
 	}
 
 	/**

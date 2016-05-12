@@ -45,30 +45,6 @@ public class FutureDirect extends FutureResponse {
         notifyListeners();
         return this;
     }
-    
-    @Override
-    public boolean responseLater(Message responseMessage) {
-    	
-    	synchronized (lock) {
-            if(completed) {
-                return false;
-            }
-            responseLater = true;
-            if (responseMessage != null) {
-                this.responseMessage = responseMessage;
-                // if its ok or nok, the communication was successful.
-                // Everything else is a failure in communication
-                type = futureSuccessEvaluator().evaluate(request(), responseMessage);
-                reason = responseMessage.type().toString();
-
-                convert(responseMessage);
-            } else {
-                type = FutureType.OK;
-                reason = "Nothing to deliver...";
-            }
-        }
-        return true;
-    }
 
 	private void convert(Message responseMessage) {
 		if(convertToHeapBuffer && responseMessage.buffer(0)!=null) {

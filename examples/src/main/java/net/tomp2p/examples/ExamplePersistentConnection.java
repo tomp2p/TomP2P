@@ -24,10 +24,9 @@ import java.util.Random;
 
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConfiguration;
-import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.connection.CountConnectionOutboundHandler;
 import net.tomp2p.futures.FuturePeerConnection;
-import net.tomp2p.message.CountConnectionOutboundHandler;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -80,8 +79,7 @@ public final class ExamplePersistentConnection {
             
             ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
     		ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
-    		csc.pipelineFilter(createFilter());
-    		ccc.pipelineFilter(createFilter());
+    		
             
             peer1 = new PeerBuilder(new Number160(RND)).ports(port1).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
             peer2 = new PeerBuilder(new Number160(RND)).ports(port2).start();
@@ -116,7 +114,7 @@ public final class ExamplePersistentConnection {
             System.out.println("received " + fd.object() + " connections: "
                     + ccohTCP.total()+ "/"+ccohUDP.total());
             // now we don't want to keep the connection open anymore:
-            futurePeerConnection.close();
+            futurePeerConnection.peerConnection().close();
         } finally {
             if (peer1 != null) {
                 peer1.shutdown();
@@ -126,20 +124,4 @@ public final class ExamplePersistentConnection {
             }
         }
     }
-    
-    private static PipelineFilter createFilter() {
-    	
-    	PipelineFilter pf = new PipelineFilter() {
-			@Override
-			public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
-			        boolean client) {
-				Map<String, Pair<EventExecutorGroup, ChannelHandler>> retVal = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
-				retVal.put("counter", new Pair<EventExecutorGroup, ChannelHandler>(null, tcp? ccohTCP:ccohUDP));
-				retVal.putAll(channelHandlers);
-				return retVal;
-			}
-		};
-		return pf;
-    }
-
 }

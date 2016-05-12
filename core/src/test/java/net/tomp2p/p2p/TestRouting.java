@@ -187,10 +187,10 @@ public class TestRouting {
     }
 
     @Test
-    public void testRouting2() throws Exception {
+    public void testRoutingDeadPeer() throws Exception {
         for (int i = 0; i < 2; i++) {
             LOG.error("round "+i);
-            testRouting2(false, Type.REQUEST_2);
+            testRoutingDeadPeer(false, Type.REQUEST_2);
         }
     }
 
@@ -202,7 +202,7 @@ public class TestRouting {
 	 * @param request
 	 * @throws Exception
 	 */
-    private void testRouting2(boolean tcp, Type request) throws Exception {
+    private void testRoutingDeadPeer(boolean tcp, Type request) throws Exception {
         Peer[] peers = null;
         ChannelCreator cc = null;
         try {
@@ -642,7 +642,6 @@ public class TestRouting {
     }
 
     //this is a stress test, takes a long time ~100s!
-    @Ignore
     @Test
     public void testRoutingConcurrently() throws Exception {
         for (int i = 0; i < 3; i++) {

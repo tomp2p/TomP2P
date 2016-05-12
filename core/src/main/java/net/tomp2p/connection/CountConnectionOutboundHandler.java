@@ -1,4 +1,4 @@
-package net.tomp2p.message;
+package net.tomp2p.connection;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;

@@ -37,8 +37,6 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
     private int heartBeatSeconds = ConnectionBean.DEFAULT_HEARTBEAT_SECONDS;
 
-    private PipelineFilter pipelineFilter = null;
-
     //interface bindings
     private Bindings bindings = null;
 
@@ -161,25 +159,6 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
      */
     public ChannelServerConfiguration idleUDPMillis(final int idleUDPMillis) {
         this.idleUDPMillis = idleUDPMillis;
-        return this;
-    }
-
-    /**
-     * Gets the filter for the pipeline, where the user can add, remove or change filters.
-     * @return
-     */
-    public PipelineFilter pipelineFilter() {
-        return pipelineFilter;
-    }
-
-    /**
-     * Sets the filter for the pipeline, where the user can add, remove or change filters.
-     * @param pipelineFilter
-     *
-     * @return This class
-     */
-    public ChannelServerConfiguration pipelineFilter(final PipelineFilter pipelineFilter) {
-        this.pipelineFilter = pipelineFilter;
         return this;
     }
 

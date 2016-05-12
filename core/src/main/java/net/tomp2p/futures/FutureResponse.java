@@ -112,7 +112,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         return this;
     }
 
-    public boolean responseLater(final Message responseMessage) {
+    /*public boolean responseLater(final Message responseMessage) {
         synchronized (lock) {
             if(completed) {
             	if(responseMessage != null) {
@@ -162,7 +162,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         }
         notifyListeners();
         return this; 
-    }
+    }*/
     
     protected boolean completedAndNotify() {
         if (responseLater) {

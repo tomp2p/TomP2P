@@ -86,7 +86,6 @@ public class TestReservation {
 		ChannelServerConfiguration c = new ChannelServerConfiguration();
 		c.bindings(bindings);
 		c.ports(new Ports(PORT, PORT, PORT + 1));
-		c.pipelineFilter(new MyPipeLine());
 		final EventLoopGroup bossGroup = new NioEventLoopGroup(0,
     	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
     	workerGroup = new NioEventLoopGroup(0,
@@ -123,7 +122,6 @@ public class TestReservation {
 		for (int i = 0; i < round; i++) {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.maxPermitsTCP(tcpMax);
-			c.pipelineFilter(new MyPipeLine());
 			Reservation r = new Reservation(workerGroup, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
@@ -135,7 +133,7 @@ public class TestReservation {
 						final int timeout = 2000;
 						final CountDownLatch countDownLatch = new CountDownLatch(conn);
 						for (int k = 0; k < conn; k++) {
-                                                    ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>()).element1();
+                                                    ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, ChannelHandler>()).element1();
 							
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 								@Override
@@ -180,7 +178,6 @@ public class TestReservation {
 		final int udpMax = 1000;
 		for (int i = 0; i < round; i++) {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
-			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsUDP(udpMax);
 			Reservation r = new Reservation(workerGroup, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
@@ -193,7 +190,7 @@ public class TestReservation {
 						final CountDownLatch countDownLatch = new CountDownLatch(conn);
 						for (int k = 0; k < conn; k++) {
                                                     ChannelFuture channelFuture = cc.createUDP(SOCKET_ADDRESS,
-                                                            new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(), true).element1();
+                                                            new HashMap<String, ChannelHandler>(), true).element1();
 							
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 								@Override
@@ -237,7 +234,6 @@ public class TestReservation {
 		final int tcpMax = 500;
 		for (int i = 0; i < round; i++) {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
-			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsTCP(tcpMax);
 			Reservation r = new Reservation(workerGroup, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
@@ -252,7 +248,7 @@ public class TestReservation {
 						final ChannelCreator cc = future.channelCreator();
 						final int timeout = 2000;
 						for (int k = 0; k < conn; k++) {
-							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>()).element1();
+							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, ChannelHandler>()).element1();
 							if (channelFuture == null) {
 								return;
 							}
@@ -293,7 +289,6 @@ public class TestReservation {
 		final int tcpMax = 500;
 		for (int i = 0; i < round; i++) {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
-			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsTCP(tcpMax);
 			Reservation r = new Reservation(ev, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
@@ -308,7 +303,7 @@ public class TestReservation {
 						final ChannelCreator cc = future.channelCreator();
 						final int timeout = 2000;
 						for (int k = 0; k < conn; k++) {
-							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>()).element1();
+							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, ChannelHandler>()).element1();
 							if (channelFuture == null) {
 								return;
 							}
@@ -328,21 +323,4 @@ public class TestReservation {
 		Future<?> f = ev.shutdownGracefully().awaitUninterruptibly();
 		f.awaitUninterruptibly();
 	}
-
-	private static class MyPipeLine implements PipelineFilter {
-
-		@Override
-		public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
-		        boolean client) {
-			for (Iterator<Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>>> iterator = channelHandlers
-			        .entrySet().iterator(); iterator.hasNext();) {
-				if (iterator.next().getValue() == null) {
-					iterator.remove();
-				}
-			}
-			return channelHandlers;
-		}
-
-	}
-
 }

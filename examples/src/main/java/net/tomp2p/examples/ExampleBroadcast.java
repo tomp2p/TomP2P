@@ -47,7 +47,10 @@ public class ExampleBroadcast {
     private static void exampleBroadcast(Peer[] peers) throws IOException {
         NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
         dataMap.put(Number640.ZERO, new Data("testme"));
+        //the message key *must* be unique for broadcast you do. In order to avoid duplicates, multiple
+        //messages with the same message key will be ignored, thus, subsequent broadcast may fail.
+        Number160 messageKey = Number160.createHash("blub");
         //take any peer and send broadcast
-        peers[42].broadcast(Number160.createHash("blub")).dataMap(dataMap).start();
+        peers[42].broadcast(messageKey).dataMap(dataMap).start();
     }
 }

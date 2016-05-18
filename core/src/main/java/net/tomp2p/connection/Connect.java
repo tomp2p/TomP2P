@@ -110,7 +110,7 @@ public class Connect {
                     return SendBehavior.SendMethod.EXISTING_CONNECTION;
                 } else {
 			IdleStateHandler timeoutHandler = new IdleStateHandler(peerConnection.idleMillis() / 1000, 0, 0);
-                        
+                        LOG.debug("Direct TCP connection to : {}, {}", peerConnection.remotePeer(), peerConnection.isKeepAlive());
                         switch (sendBehavior.tcpSendBehavior(dispatcher, sender, peerConnection.remotePeer(), isReflected)) {
 			case DIRECT:
                             Pair<ChannelCreator.ChannelCloseListener, ChannelFuture> pair1 = createChannelTCP(
@@ -306,7 +306,7 @@ public class Connect {
 		//futureResponse.startRTTMeasurement(true);
 
 		
-			
+			LOG.debug("Direct UDP connection to : {}, {}", peerConnection.remotePeer(), isFireAndForget);
                         
 		switch (sendBehavior.udpSendBehavior(dispatcher, sender, peerConnection.remotePeer(), isReflected)) {
 		case DIRECT:

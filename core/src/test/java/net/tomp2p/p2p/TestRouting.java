@@ -737,12 +737,13 @@ public class TestRouting {
             peerAddresses.add(master.peerAddress());
             for (int i = 1; i < peers.length; i++) {
 
+                FutureChannelCreator fcc;
                 if (tcp) {
-                    FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, 1);
+                    fcc = peers[0].connectionBean().reservation().create(0, 1);
                     fcc.awaitUninterruptibly();
                     cc = fcc.channelCreator();
                 } else {
-                    FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(1, 0);
+                    fcc = peers[0].connectionBean().reservation().create(1, 0);
                     fcc.awaitUninterruptibly();
                     cc = fcc.channelCreator();
                 }
@@ -759,6 +760,7 @@ public class TestRouting {
 
                 FutureDone<Pair<FutureRouting,FutureRouting>> fm = peers[i].distributedRouting().bootstrap(
                         peerAddresses, routingBuilder, cc);
+                Utils.addReleaseListener(fcc, fm);
                 fm.awaitUninterruptibly();
                 // do verification
                 Assert.assertEquals(true, fm.isSuccess());

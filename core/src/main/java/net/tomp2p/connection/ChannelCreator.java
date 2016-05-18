@@ -319,54 +319,6 @@ public class ChannelCreator {
 		});
 	}
 
-	/**
-	 * When a channel is closed, the semaphore is released and another channel can
-	 * be created. Also, the lock for the channel creating is being released.
-	 * This means that the ChannelCreator can be shut down.
-	 * 
-	 * @param channelFuture
-	 *            The channel future
-	 * @param semaphore
-	 *            The semaphore to release
-	 * @return The same future that was passed as an argument
-	 */
-	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore) {
-		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
-			@Override
-			public void operationComplete(final ChannelFuture future) throws Exception {
-                                semaphore.release();				
-                                
-                                // it is important that the release of the semaphore and the set
-				// of the future happen sequentially. If this is run in this
-				// thread it will be a netty thread, and this is not what the
-				// user may have wanted. The future responses should be executed
-				// in the thread of the handler.
-				/*Runnable runner = new Runnable() {
-					@Override
-					public void run() {
-						semaphore.release();
-
-						Message request = futureResponse.request();
-						if (request != null && futureResponse.responseMessage() == null && request.recipient().slow()
-								&& request.command() != Commands.PING.getNr() && request.command() != Commands.NEIGHBOR.getNr()) {
-							// If the request goes to a slow peer, the channel
-							// can be closed until the response arrives
-							LOG.debug("Ignoring channel close event because recipient is slow peer");
-						} else {
-							futureResponse.responseNow();
-						}
-					}
-				};
-				if (handlerExecutor == null) {
-					runner.run();
-				} else {
-					handlerExecutor.submit(runner);
-				}*/
-			}
-		});
-		return channelFuture;
-	}
-
 	public boolean isShutdown() {
 		return shutdownTCP || shutdownUDP;
 	}
@@ -380,7 +332,7 @@ public class ChannelCreator {
 	public FutureDone<Void> shutdown() {
 		// set shutdown flag for UDP and TCP
         // if we acquire a write lock, all read locks are blocked as well
-		writeUDP.lock();
+                writeUDP.lock();
 		writeTCP.lock();
 		try {
 			if (shutdownTCP || shutdownUDP) {

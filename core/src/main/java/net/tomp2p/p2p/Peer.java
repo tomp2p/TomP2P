@@ -304,6 +304,15 @@ public class Peer {
         return new DiscoverBuilder(this);
     }
 
+    /**
+     * Returns a new builder for a broadcast, which can be used to send a message to all peers.
+     * 
+     * @param messageKey The message key *must* be unique for broadcast. In order to avoid 
+     * duplicates, multiple messages with the same message key will be ignored, thus, subsequent 
+     * broadcast may fail.
+     * 
+     * @return a new builder for a broadcast
+     */
     public BroadcastBuilder broadcast(Number160 messageKey) {
         return new BroadcastBuilder(this, messageKey);
     }

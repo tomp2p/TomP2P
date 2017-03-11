@@ -1,13 +1,8 @@
 language: java
 
-env:
- - JDK=openjdk8
-#- JDK=oraclejdk8
-dist: trusty
-
-before_script:
- - jdk_switcher $JDK
-
+jdk:
+ - oraclejdk8
+ 
 sudo: required
 
 before_install:

@@ -128,13 +128,13 @@ public class ChannelCreator {
             private Throwable cause;
             private boolean doneMessage = false;
             
-            private FutureDone<Void> closeFuture;
+            private FutureDone<Void> futureDone;
             private boolean doneClose = false;
             
             private boolean notified = false;
             
             public ChannelCloseListener() {
-                this.semaphore = new Semaphore(1);
+                this.semaphore = null;
             }
             
             public ChannelCloseListener(final Semaphore semaphore) {
@@ -144,23 +144,25 @@ public class ChannelCreator {
             @Override
             public void operationComplete(ChannelFuture f) throws Exception {
                 synchronized(this) {
-                    semaphore.release();
+                    if(semaphore!=null) {
+                        semaphore.release();
+                    }
                     if(!doneMessage) {
                         if(cause == null) {
-                            after(futureResponse, responseMessage);
+                            successAfterSemaphoreRelease(futureResponse, responseMessage);
                         } else {
-                            failAfter(futureResponse, cause);
+                            failAfterSemaphoreRelease(futureResponse, cause);
                         }
                     }
                     if(!doneClose) {
-                        after(closeFuture);
+                        doneAfterSemaphoreRelease(futureDone);
                     }
                     notified = true;
                 }
                 
             }
             
-            public void after(FutureResponse futureResponse, Message responseMessage) {
+            public void successAfterSemaphoreRelease(FutureResponse futureResponse, Message responseMessage) {
                 synchronized(this) {
                     if(!notified) {
                         this.futureResponse = futureResponse;
@@ -172,7 +174,7 @@ public class ChannelCreator {
                 }
             }
             
-            public void failAfter(FutureResponse futureResponse, Throwable cause) {
+            public void failAfterSemaphoreRelease(FutureResponse futureResponse, Throwable cause) {
                 synchronized(this) {
                     if(!notified) {
                         this.futureResponse = futureResponse;
@@ -184,12 +186,12 @@ public class ChannelCreator {
                 }
             }
 
-            public void after(FutureDone<Void> closeFuture) {
+            public void doneAfterSemaphoreRelease(FutureDone<Void> futureDone) {
                 synchronized(this) {
                     if(!notified) {
-                        this.closeFuture = closeFuture;
+                        this.futureDone = futureDone;
                     } else {
-                        closeFuture.done();
+                        futureDone.done();
                         doneClose = true;
                     }
                 }

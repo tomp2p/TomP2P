@@ -104,7 +104,7 @@ public class PingRPC extends DispatchHandler {
 	 *            The destination peer
 	 * @return the request handler, where we can call sendUDP(), or sendTCP()
 	 */
-	public RequestHandler<FutureResponse> ping(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
+	public RequestHandler ping(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
 		return createHandler(remotePeer, Type.REQUEST_1, configuration);
 	}
 
@@ -181,7 +181,7 @@ public class PingRPC extends DispatchHandler {
 	public FutureResponse pingUDPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		final FutureResponse futureResponse = createDiscoverHandler(remotePeer);
-		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
+		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration)
 				.sendUDP(channelCreator);
 	}
 
@@ -197,7 +197,7 @@ public class PingRPC extends DispatchHandler {
 	public FutureResponse pingTCPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		final FutureResponse futureResponse = createDiscoverHandler(remotePeer);
-		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
+		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration)
 				.sendTCP(channelCreator);
 	}
 
@@ -215,7 +215,7 @@ public class PingRPC extends DispatchHandler {
 			final ConnectionConfiguration configuration) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
+		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration)
 				.sendUDP(channelCreator);
 	}
 
@@ -233,7 +233,7 @@ public class PingRPC extends DispatchHandler {
 			final ConnectionConfiguration configuration) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
+		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration)
 				.sendTCP(channelCreator);
 	}
 
@@ -247,11 +247,11 @@ public class PingRPC extends DispatchHandler {
 	 * @param configuration
 	 * @return The request handler
 	 */
-	private RequestHandler<FutureResponse> createHandler(final PeerAddress remotePeer, final Type type,
+	private RequestHandler createHandler(final PeerAddress remotePeer, final Type type,
 			final ConnectionConfiguration configuration) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), type);
 		final FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration);
+		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration);
 	}
 
 	/**

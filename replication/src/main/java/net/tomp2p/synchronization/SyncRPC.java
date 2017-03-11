@@ -117,7 +117,7 @@ public class SyncRPC extends DispatchHandler {
 		message.keyMap640Keys(keyMap);
 
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse,
+		final RequestHandler requestHandler = new RequestHandler(futureResponse,
 		        peerBean(), connectionBean(), synchronizationBuilder);
 		LOG.debug("Info sent {}", message);
 		return requestHandler.sendTCP(channelCreator);
@@ -148,7 +148,7 @@ public class SyncRPC extends DispatchHandler {
         message.setDataMap(dataMap);
 
         FutureResponse futureResponse = new FutureResponse(message);
-        final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(
+        final RequestHandler requestHandler = new RequestHandler(
                 futureResponse, peerBean(), connectionBean(), synchronizationBuilder);
         LOG.debug("Sync sent {}", message);
         return requestHandler.sendTCP(channelCreator);

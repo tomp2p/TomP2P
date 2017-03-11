@@ -41,6 +41,7 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureDoneAttachment;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
@@ -1489,7 +1490,7 @@ public class TestDHT {
 			List<FutureDoneAttachment<PeerConnection, PeerAddress>> list3 = new ArrayList<FutureDoneAttachment<PeerConnection, PeerAddress>>();
 			for (int i = 0; i < 125; i++) {
 				final byte[] b = new byte[10000];
-				FutureDoneAttachment<PeerConnection, PeerAddress> pc = master.createPeerConnection(slave.peerAddress());
+				FuturePeerConnection pc = master.createPeerConnection(slave.peerAddress());
 				list1.add(master.sendDirect(pc).dataBuffer(new DataBuffer(Unpooled.wrappedBuffer(b))).start());
 				list3.add(pc);
 				// pc.close();

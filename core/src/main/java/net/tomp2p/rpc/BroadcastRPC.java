@@ -56,7 +56,7 @@ public class BroadcastRPC extends DispatchHandler {
             message.setDataMap(new DataMap(broadcastBuilder.dataMap()));
         }
         final FutureResponse futureResponse = new FutureResponse(message);
-        final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(
+        final RequestHandler requestHandler = new RequestHandler(
                 futureResponse, peerBean(), connectionBean(), configuration);
         if (!broadcastBuilder.isUDP()) {
             return requestHandler.sendTCP(channelCreator);

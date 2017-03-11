@@ -19,6 +19,7 @@ import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.connection.CountConnectionOutboundHandler;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -73,7 +74,7 @@ public class TestConnection {
             FutureBootstrap anotherMaster = peer2.bootstrap().peerAddress(peer1.peerAddress()).start();
             masterAnother.awaitUninterruptibly();
             anotherMaster.awaitUninterruptibly();
-            FutureDoneAttachment<PeerConnection, PeerAddress> fpc = peer1.createPeerConnection(peer2.peerAddress());
+            FuturePeerConnection fpc = peer1.createPeerConnection(peer2.peerAddress());
             // fpc.awaitUninterruptibly();
             // PeerConnection peerConnection = fpc.peerConnection();
             String sentObject = "Hello";
@@ -137,7 +138,7 @@ public class TestConnection {
             anotherMaster.awaitUninterruptibly();
             
             int before = peer1.connectionBean().reservation().availablePermitsTCP();
-            final FutureDoneAttachment<PeerConnection, PeerAddress> fpc = peer1.createPeerConnection(peer2.peerAddress());
+            final FuturePeerConnection fpc = peer1.createPeerConnection(peer2.peerAddress());
             
             // fpc.awaitUninterruptibly();
             // PeerConnection peerConnection = fpc.peerConnection();

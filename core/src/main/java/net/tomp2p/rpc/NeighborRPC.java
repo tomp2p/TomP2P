@@ -157,7 +157,7 @@ public class NeighborRPC extends DispatchHandler {
                 }
             }
         });
-        RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+        RequestHandler request = new RequestHandler(futureResponse,
                 peerBean(), connectionBean(), configuration);
 
         if (!configuration.isForceTCP()) {

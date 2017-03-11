@@ -1,6 +1,5 @@
 package net.tomp2p.connection;
 
-import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -24,7 +23,9 @@ public interface SendBehavior {
 		 * established. If it fails, use a relay
                  * Send the message to the relay which forwards it to the receiver
 		 */
-		HOLEP_RELAY,
+		HOLEPUNCHING,
+                
+                RELAY,
 
 		/**
 		 * Open a reverse connection to the receiver and send the message. The

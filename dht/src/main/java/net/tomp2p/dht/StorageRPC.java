@@ -238,7 +238,7 @@ public class StorageRPC extends DispatchHandler {
         message.setDataMap(dataMap);
 
         final FutureResponse futureResponse = new FutureResponse(message);
-        final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+        final RequestHandler request = new RequestHandler(futureResponse,
                 peerBean(), connectionBean(), putBuilder);
 
         if (!putBuilder.isForceUDP()) {
@@ -288,7 +288,7 @@ public class StorageRPC extends DispatchHandler {
         }
 
         final FutureResponse futureResponse = new FutureResponse(message);
-        final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+        final RequestHandler request = new RequestHandler(futureResponse,
                 peerBean(), connectionBean(), putBuilder);
 
         if (!putBuilder.isForceUDP()) {
@@ -321,7 +321,7 @@ public class StorageRPC extends DispatchHandler {
 		message.setDataMap(dataMap);
 
 		final FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+		final RequestHandler request = new RequestHandler(futureResponse,
 				peerBean(), connectionBean(), putBuilder);
 
 		if (!putBuilder.isForceUDP()) {
@@ -402,7 +402,7 @@ public class StorageRPC extends DispatchHandler {
                 .versionKey(), dataMap));
 
         final FutureResponse futureResponse = new FutureResponse(message);
-        final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+        final RequestHandler request = new RequestHandler(futureResponse,
                 peerBean(), connectionBean(), addBuilder);
         if (!addBuilder.isForceUDP()) {
             return request.sendTCP(channelCreator);
@@ -476,7 +476,7 @@ public class StorageRPC extends DispatchHandler {
         }
 
         final FutureResponse futureResponse = new FutureResponse(message);
-        final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+        final RequestHandler request = new RequestHandler(futureResponse,
                 peerBean(), connectionBean(), getBuilder);
         if (!getBuilder.isForceUDP()) {
             return request.sendTCP(channelCreator);
@@ -558,7 +558,7 @@ public class StorageRPC extends DispatchHandler {
         }
 
         final FutureResponse futureResponse = new FutureResponse(message);
-        final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+        final RequestHandler request = new RequestHandler(futureResponse,
                 peerBean(), connectionBean(), getBuilder);
         if (!getBuilder.isForceUDP()) {
             return request.sendTCP(channelCreator);
@@ -581,7 +581,7 @@ public class StorageRPC extends DispatchHandler {
 		message.key(getBuilder.contentKey());
 
 		final FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+		final RequestHandler request = new RequestHandler(futureResponse,
 				peerBean(), connectionBean(), getBuilder);
 		if (!getBuilder.isForceUDP()) {
 			return request.sendTCP(channelCreator);
@@ -645,7 +645,7 @@ public class StorageRPC extends DispatchHandler {
 
         final FutureResponse futureResponse = new FutureResponse(message);
 
-        final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+        final RequestHandler request = new RequestHandler(futureResponse,
                 peerBean(), connectionBean(), removeBuilder);
         if (!removeBuilder.isForceUDP()) {
             return request.sendTCP(channelCreator);
@@ -686,7 +686,7 @@ public class StorageRPC extends DispatchHandler {
             throw new IllegalArgumentException("Message content is wrong " + message.command());
         }
         if (sign) {
-            responseMessage.publicKeyAndSign(peerBean().getKeyPair());
+            responseMessage.publicKeyAndSign(peerBean().keyPair());
         }
         LOG.debug("response for storage request: {}", responseMessage);
         responder.response(responseMessage);

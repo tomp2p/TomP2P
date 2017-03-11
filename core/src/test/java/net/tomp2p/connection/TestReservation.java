@@ -122,7 +122,7 @@ public class TestReservation {
 		for (int i = 0; i < round; i++) {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.maxPermitsTCP(tcpMax);
-			Reservation r = new Reservation(workerGroup, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
+			BulkReservation r = new BulkReservation(workerGroup, c, new PeerBean().keyPair(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
 				FutureChannelCreator fc = r.create(0, conn);
@@ -179,7 +179,7 @@ public class TestReservation {
 		for (int i = 0; i < round; i++) {
 			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.maxPermitsUDP(udpMax);
-			Reservation r = new Reservation(workerGroup, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
+			BulkReservation r = new BulkReservation(workerGroup, c, new PeerBean().keyPair(PeerBuilder.EMPTY_KEY_PAIR));
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
 				FutureChannelCreator fc = r.create(conn, 0);
@@ -217,110 +217,5 @@ public class TestReservation {
 		System.err.println("BENCHMARK: opened and closed " + round + " x " + inner + " x " + conn
 		        + " UDP connections to localhost in " + time + " ms. STAT: UDP res open/close per sec:"
 		        + ((round * inner * conn * mil) / time));
-	}
-
-	/**
-	 * Test an unclean shutdown, that means the reservation is shutdown, but the
-	 * connectioncreation is not.
-	 * 
-	 * @throws InterruptedException .
-	 */
-	@Test
-	public void testReservationTCPNonCleanShutdown() throws InterruptedException {
-		long start = System.currentTimeMillis();
-		final int round = 100;
-		final int inner = 100;
-		final int conn = 5;
-		final int tcpMax = 500;
-		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
-			c.maxPermitsTCP(tcpMax);
-			Reservation r = new Reservation(workerGroup, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
-			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
-			for (int j = 0; j < inner; j++) {
-				FutureChannelCreator fc = r.create(0, conn);
-				fc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-					@Override
-					public void operationComplete(final FutureChannelCreator future) throws Exception {
-						if (future.isFailed()) {
-							return;
-						}
-						final ChannelCreator cc = future.channelCreator();
-						final int timeout = 2000;
-						for (int k = 0; k < conn; k++) {
-							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, ChannelHandler>()).element1();
-							if (channelFuture == null) {
-								return;
-							}
-							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
-								@Override
-								public void operationComplete(final ChannelFuture future) throws Exception {
-									future.channel().close();
-								}
-							});
-						}
-					}
-				});
-				fcc.add(fc);
-			}
-			for (FutureChannelCreator fcc1 : fcc) {
-				fcc1.awaitListeners();
-			}
-			r.shutdown().awaitListenersUninterruptibly();
-		}
-		long time = System.currentTimeMillis() - start;
-		long mil = TimeUnit.SECONDS.toMillis(1);
-		System.err.println("BENCHMARK: opened and closed " + round + " x " + inner + " x " + conn
-		        + " TCP connections to localhost in " + time + " ms. STAT: TCP unclean open/close per sec:"
-		        + ((round * inner * conn * mil) / time));
-	}
-
-	/**
-	 * Unclean shutdown of pending connections.
-	 * 
-	 * @throws InterruptedException .
-	 */
-	@Test
-	public void testReservationTCPNonCleanShutdown2() throws InterruptedException {
-		EventLoopGroup ev = new NioEventLoopGroup();
-		final int round = 100;
-		final int inner = 100;
-		final int conn = 5;
-		final int tcpMax = 500;
-		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
-			c.maxPermitsTCP(tcpMax);
-			Reservation r = new Reservation(ev, c, new PeerBean(PeerBuilder.EMPTY_KEY_PAIR));
-			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
-			for (int j = 0; j < inner; j++) {
-				FutureChannelCreator fc = r.create(0, conn);
-				fc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-					@Override
-					public void operationComplete(final FutureChannelCreator future) throws Exception {
-						if (future.isFailed()) {
-							return;
-						}
-						final ChannelCreator cc = future.channelCreator();
-						final int timeout = 2000;
-						for (int k = 0; k < conn; k++) {
-							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout, new HashMap<String, ChannelHandler>()).element1();
-							if (channelFuture == null) {
-								return;
-							}
-							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
-								@Override
-								public void operationComplete(final ChannelFuture future) throws Exception {
-									future.channel().close();
-								}
-							});
-						}
-					}
-				});
-				fcc.add(fc);
-			}
-			r.shutdown().awaitListenersUninterruptibly();
-		}
-		Future<?> f = ev.shutdownGracefully().awaitUninterruptibly();
-		f.awaitUninterruptibly();
 	}
 }

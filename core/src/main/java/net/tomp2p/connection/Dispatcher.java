@@ -490,20 +490,20 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	 * @param scheduler 
 	 * @param timeout the timeout in seconds
 	 */
-	public void addPendingRequest(final int messageId, final FutureResponse futureResponse, final int timeout, final ScheduledExecutorService scheduler) {
+	public void addPendingRequest(final int messageId, final FutureResponse futureResponse, final int timeoutMillis, final ScheduledExecutorService scheduler) {
 		pendingRequests.put(messageId, futureResponse);
 		
 		// schedule the timeout of pending request
-    	scheduler.schedule(new Runnable() {
+                scheduler.schedule(new Runnable() {
 			@Override
 			public void run() {
 				FutureResponse response = pendingRequests.remove(messageId);
 				if(response != null) {
-					LOG.warn("A slow response did not arrive within {}s. Answer as failed: {}", timeout, response.request());
-					response.failed("Slow peer did not answer within " + timeout + "s.");
+					LOG.warn("A slow response did not arrive within {}ms. Answer as failed: {}", timeoutMillis, response.request());
+					response.failed("Slow peer did not answer within " + timeoutMillis + "ms.");
 				}
 			}
-		}, timeout, TimeUnit.SECONDS);
+		}, timeoutMillis, TimeUnit.MILLISECONDS);
 	}
 
 	/**

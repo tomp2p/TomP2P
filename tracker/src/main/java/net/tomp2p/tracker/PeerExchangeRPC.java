@@ -67,17 +67,6 @@ public class PeerExchangeRPC extends DispatchHandler {
      * 
      * @param remotePeer
      *            The remote peer to send this request
-     * @param locationKey
-     *            The location key
-     * @param domainKey
-     *            The domain key
-     * @param isReplication
-     *            Set to true if the PEX is started as replication. This means that this peer learned that an other peer
-     *            is closer and sends tracker information to that peer.
-     * @param channelCreator
-     *            The channel creator that creates connections
-     * @param forceTCP
-     *            Set to true if the communication should be TCP, default is UDP
      * @return The future response to keep track of future events
      */
     public FutureResponse peerExchange(final PeerAddress remotePeer, final Number320 key, 
@@ -102,7 +91,7 @@ public class PeerExchangeRPC extends DispatchHandler {
 		LOG.debug("sent ({}) to {} / {}", message.sender().peerId(), remotePeer.peerId(), peers.size());
 		message.trackerData(peers);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse,
+		final RequestHandler requestHandler = new RequestHandler(futureResponse,
 		        peerBean(), connectionBean(), connectionConfiguration);
 		if (!connectionConfiguration.isForceTCP()) {
 			return requestHandler.fireAndForgetUDP(channelCreator);

@@ -26,8 +26,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureDoneAttachment;
-import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
@@ -45,7 +44,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
 	private DataBuffer dataBuffer;
 
-	private FutureDoneAttachment<PeerConnection, PeerAddress> recipientConnection;
+	private FuturePeerConnection recipientConnection;
 	private PeerConnection peerConnection;
 
 	private Object object;
@@ -71,7 +70,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		this.recipientConnection = null;
 	}
 
-	public SendDirectBuilder(Peer peer, FutureDoneAttachment<PeerConnection, PeerAddress> recipientConnection) {
+	public SendDirectBuilder(Peer peer, FuturePeerConnection recipientConnection) {
 		this.peer = peer;
 		this.recipientAddress = null;
 		this.recipientConnection = recipientConnection;
@@ -96,11 +95,11 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return this;
 	}
 
-	public FutureDoneAttachment<PeerConnection, PeerAddress> connection() {
+	public FuturePeerConnection connection() {
 		return recipientConnection;
 	}
 
-	public SendDirectBuilder connection(FutureDoneAttachment<PeerConnection, PeerAddress> connection) {
+	public SendDirectBuilder connection(FuturePeerConnection connection) {
 		this.recipientConnection = connection;
 		return this;
 	}
@@ -178,14 +177,14 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		Message message = peer.directDataRPC().sendInternal0(remotePeer, this);
     	final FutureDirect futureResponse = new FutureDirect(message, isRaw());
 
-		final RequestHandler<FutureResponse> request = peer.directDataRPC().sendInternal(futureResponse, this);
+		final RequestHandler request = peer.directDataRPC().sendInternal(futureResponse, this);
 		if (keepAlive) {
 			if (peerConnection != null) {
 				sendDirectRequest(request, peerConnection);
 			} else {
-				recipientConnection.addListener(new BaseFutureAdapter<FutureDone<PeerConnection>>() {
+				recipientConnection.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
 					@Override
-					public void operationComplete(final FutureDone<PeerConnection> future) throws Exception {
+					public void operationComplete(final FuturePeerConnection future) throws Exception {
 						if (future.isSuccess()) {
 							sendDirectRequest(request, future.object());
 						} else {
@@ -216,7 +215,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return futureResponse;
 	}
 
-	private static void sendDirectRequest(final RequestHandler<FutureResponse> request, final PeerConnection peerConnection) {
+	private static void sendDirectRequest(final RequestHandler request, final PeerConnection peerConnection) {
             //TODO: if same connection reused, send in order
             request.futureResponse().request().keepAlive(true);
             request.sendTCP(peerConnection);

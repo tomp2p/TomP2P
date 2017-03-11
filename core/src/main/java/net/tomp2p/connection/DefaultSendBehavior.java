@@ -46,7 +46,7 @@ public class DefaultSendBehavior implements SendBehavior {
             return SendMethod.SELF;
         }
 
-        if (isReflected /*message.recipientReflected() != null*/) {
+        if (isReflected) {
             LOG.debug("reflected TCP");
             return SendMethod.DIRECT;
         }
@@ -57,7 +57,12 @@ public class DefaultSendBehavior implements SendBehavior {
                 // relayed. Thus send the message to
                 // one of the receiver's relay peers
                 LOG.debug("relay or hole punching TCP");
-                return SendMethod.HOLEP_RELAY;
+                if(recipient.holePunching() && sender.holePunching()) {
+                    return SendMethod.HOLEPUNCHING;
+                } else {
+                    return SendMethod.RELAY;
+                }
+                
             } else {
                 // Messages with small size can be sent over relay, other messages should be sent directly (more efficient)
                 LOG.debug("reverse connection TCP");
@@ -84,14 +89,14 @@ public class DefaultSendBehavior implements SendBehavior {
             return SendMethod.SELF;
         }
 
-        if (isReflected /*message.recipientReflected() != null*/) {
+        if (isReflected) {
             LOG.debug("reflected UDP");
             return SendMethod.DIRECT;
         }
 
         if (recipient.relaySize() > 0) {
             LOG.debug("relay, hole punching does not make sense with UDP");
-            return SendMethod.HOLEP_RELAY;
+            return SendMethod.RELAY;
         }
 
         LOG.debug("go direct UDP");

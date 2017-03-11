@@ -196,7 +196,7 @@ public class PingBuilder {
      */
     private FuturePing ping(PeerAddress peerAddress, final boolean isUDP) {
     	final FuturePing futurePing = new FuturePing();
-        final RequestHandler<FutureResponse> request = peer.pingRPC().ping(peerAddress, connectionConfiguration);
+        final RequestHandler request = peer.pingRPC().ping(peerAddress, connectionConfiguration);
         if (isUDP) {
             FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
             Utils.addReleaseListener(fcc, futurePing);
@@ -268,7 +268,7 @@ public class PingBuilder {
     
     private FuturePing pingPeerConnection(final PeerConnection peerConnection) {
     	final FuturePing futurePing = new FuturePing();
-        final RequestHandler<FutureResponse> request = peer.pingRPC().ping(
+        final RequestHandler request = peer.pingRPC().ping(
                 peerConnection.remotePeer(), connectionConfiguration);
         request.futureResponse().request().keepAlive(true);
         //TODO: if same connection reused, send in order

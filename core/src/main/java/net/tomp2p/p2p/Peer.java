@@ -275,7 +275,7 @@ public class Peer {
         return new SendDirectBuilder(this, recipientAddress);
     }
 
-    public SendDirectBuilder sendDirect(FutureDoneAttachment<PeerConnection, PeerAddress> recipientConnection) {
+    public SendDirectBuilder sendDirect(FuturePeerConnection recipientConnection) {
         return new SendDirectBuilder(this, recipientConnection);
     }
     

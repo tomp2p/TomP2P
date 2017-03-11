@@ -49,9 +49,9 @@ import net.tomp2p.p2p.RoutingConfiguration;
  * @author Thomas Bocek
  * 
  */
-public class Reservation {
+public class BulkReservation {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(Reservation.class);
+	private static final Logger LOG = LoggerFactory.getLogger(BulkReservation.class);
 
 	private final int maxPermitsUDP;
 	private final int maxPermitsTCP;
@@ -90,7 +90,8 @@ public class Reservation {
 	 *            TCP connections, maxPermitsPermanentTCP: the number of maximum
 	 *            permanent TCP connections
 	 */
-	public Reservation(final EventLoopGroup workerGroup, final ChannelClientConfiguration channelClientConfiguration, final PeerBean peerBean) {
+	public BulkReservation(final EventLoopGroup workerGroup, 
+                final ChannelClientConfiguration channelClientConfiguration, final PeerBean peerBean) {
 		this.workerGroup = workerGroup;
 		this.maxPermitsUDP = channelClientConfiguration.maxPermitsUDP();
 		this.maxPermitsTCP = channelClientConfiguration.maxPermitsTCP();
@@ -192,8 +193,8 @@ public class Reservation {
 				return futureChannelCreator.failed("Shutting down.");
 			}
 
-			FutureDone<Void> futureChannelCreationDone = new FutureDone<Void>();
-			futureChannelCreationDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+			FutureDone<Void> futureChannelCreationShutdown = new FutureDone<Void>();
+			futureChannelCreationShutdown.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 				@Override
 				public void operationComplete(final FutureDone<Void> future) throws Exception {
 					// release the permits in all cases
@@ -202,7 +203,7 @@ public class Reservation {
 					semaphoreTCP.release(permitsTCP);
 				}
 			});
-			executor.execute(new WaitReservation(futureChannelCreator, futureChannelCreationDone, permitsUDP,
+			executor.execute(new WaitReservation(futureChannelCreator, futureChannelCreationShutdown, permitsUDP,
 			        permitsTCP));
 			return futureChannelCreator;
 

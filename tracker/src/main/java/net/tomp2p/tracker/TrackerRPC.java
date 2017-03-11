@@ -78,7 +78,7 @@ public class TrackerRPC extends DispatchHandler {
 		final FutureResponse futureResponse = new FutureResponse(message);
 
 		addTrackerDataListener(futureResponse, new Number320(builder.locationKey(), builder.domainKey()), message);
-		RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(),
+		RequestHandler requestHandler = new RequestHandler(futureResponse, peerBean(),
 		        connectionBean(), builder);
 
 		TrackerData trackerData = new TrackerData(new HashMap<PeerAddress, Data>());
@@ -117,7 +117,7 @@ public class TrackerRPC extends DispatchHandler {
 		FutureResponse futureResponse = new FutureResponse(message);
 		addTrackerDataListener(futureResponse, new Number320(builder.locationKey(), builder.domainKey()), message);
 
-		RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(),
+		RequestHandler requestHandler = new RequestHandler(futureResponse, peerBean(),
 		        connectionBean(), builder);
 
 		LOG.debug("tracker GET {}", message);
@@ -218,7 +218,7 @@ public class TrackerRPC extends DispatchHandler {
 			        : meshPeers.size()));
 		}
 		if (sign) {
-			responseMessage.publicKeyAndSign(peerBean().getKeyPair());
+			responseMessage.publicKeyAndSign(peerBean().keyPair());
 		}
 		responder.response(responseMessage);
 	}

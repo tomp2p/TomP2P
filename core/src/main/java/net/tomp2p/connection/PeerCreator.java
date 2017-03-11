@@ -85,7 +85,7 @@ public class PeerCreator {
 	        final ChannelClientConfiguration channelClientConfiguration,
 	        final ScheduledExecutorService timer, SendBehavior sendBehavior) throws IOException {
 		//peer bean
-		peerBean = new PeerBean(keyPair);
+		peerBean = new PeerBean().keyPair(keyPair);
 		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConfiguration);
 		peerBean.serverPeerAddress(self);
 		LOG.info("Visible address to other peers: {}", self);
@@ -101,7 +101,7 @@ public class PeerCreator {
 		//connection bean
 		Sender sender = new Sender(peerBean.peerStatusListeners(), dispatcher);
                 Connect connect = new Connect(peerId, channelClientConfiguration, dispatcher, sendBehavior);
-		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration, peerBean);
+		BulkReservation reservation = new BulkReservation(workerGroup, channelClientConfiguration, peerBean);
 		connectionBean = new ConnectionBean(p2pId, dispatcher, connect, sender, channelServer, reservation,
 		        channelClientConfiguration, timer);
 		this.master = true;
@@ -121,7 +121,7 @@ public class PeerCreator {
 		this.workerGroup = parent.workerGroup;
 		this.bossGroup = parent.bossGroup;
 		this.connectionBean = parent.connectionBean;
-		this.peerBean = new PeerBean(keyPair);
+		this.peerBean = new PeerBean().keyPair(keyPair);
 		PeerAddress self = parent.peerBean().serverPeerAddress().withPeerId(peerId);
 		this.peerBean.serverPeerAddress(self);
 		this.master = false;

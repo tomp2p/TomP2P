@@ -59,7 +59,7 @@ public class DirectDataRPC extends DispatchHandler {
      * @param remotePeer
      *            The remote peer to store the data
      */
-    public RequestHandler<FutureResponse> sendInternal(final FutureResponse futureResponse,
+    public RequestHandler sendInternal(final FutureResponse futureResponse,
             final SendDirectBuilderI sendDirectBuilder) {        
     	Message message = futureResponse.request();
         if (sendDirectBuilder.isSign()) {
@@ -80,7 +80,7 @@ public class DirectDataRPC extends DispatchHandler {
             }       
         }
 
-        return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(),
+        return new RequestHandler(futureResponse, peerBean(), connectionBean(),
                 sendDirectBuilder);
     }
 
@@ -88,7 +88,7 @@ public class DirectDataRPC extends DispatchHandler {
             final ChannelCreator channelCreator) {
     	Message message = sendInternal0(remotePeer, sendDirectBuilder);
     	final FutureResponse futureResponse = new FutureResponse(message);
-        final RequestHandler<FutureResponse> requestHandler = sendInternal(futureResponse, sendDirectBuilder);
+        final RequestHandler requestHandler = sendInternal(futureResponse, sendDirectBuilder);
         if (!sendDirectBuilder.isForceUDP()) {
             return requestHandler.sendTCP(channelCreator);
         } else {
@@ -121,7 +121,7 @@ public class DirectDataRPC extends DispatchHandler {
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
         if (sign) {
-            responseMessage.publicKeyAndSign(peerBean().getKeyPair());
+            responseMessage.publicKeyAndSign(peerBean().keyPair());
         }
         final RawDataReply rawDataReply2 = rawDataReply;
         final ObjectDataReply objectDataReply2 = objectDataReply;

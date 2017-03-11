@@ -293,7 +293,7 @@ public class Forwarder extends DispatchHandler {
 		
 		// always keep the connection open
 		envelope.keepAlive(true);
-		ByteBuf bb = RelayUtils.composeMessageBuffer(buffered(), connectionBean().sender().channelClientConfiguration().signatureFactory());
+		ByteBuf bb = RelayUtils.composeMessageBuffer(buffered(), connectionBean().resourceConfiguration().signatureFactory());
 		envelope.buffer(new Buffer(bb));
 		
 		// this will be read RelayRPC.handlePiggyBackMessage

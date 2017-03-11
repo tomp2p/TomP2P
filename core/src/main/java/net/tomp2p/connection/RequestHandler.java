@@ -15,17 +15,19 @@
  */
 package net.tomp2p.connection;
 
- import org.slf4j.Logger;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
+import java.util.ArrayList;
+import java.util.List;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.Futures;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerAddress;
@@ -43,14 +45,12 @@ import net.tomp2p.utils.Utils;
  * offline.
  * 
  * @author Thomas Bocek
- * @param <K>
- *            The type of future to handle
  */
-public class RequestHandler<K extends FutureResponse> extends SimpleChannelInboundHandler<Message> {
+public class RequestHandler extends SimpleChannelInboundHandler<Message> {
     private static final Logger LOG = LoggerFactory.getLogger(RequestHandler.class);
 
 	// The future response which is currently being waited for
-    private final K futureResponse;
+    private final FutureResponse futureResponse;
 
 	// The node with which this request handler is associated with
     private final PeerBean peerBean;
@@ -84,7 +84,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      * @param configuration
 	 *            the client-side connection configuration
      */
-    public RequestHandler(final K futureResponse, final PeerBean peerBean,
+    public RequestHandler(final FutureResponse futureResponse, final PeerBean peerBean,
             final ConnectionBean connectionBean, final ConnectionConfiguration configuration) {
         this.peerBean = peerBean;
         this.connectionBean = connectionBean;
@@ -116,7 +116,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     /**
      * @return The future response that will be called when we get an answer
      */
-    public K futureResponse() {
+    public FutureResponse futureResponse() {
         return futureResponse;
     }
 
@@ -162,6 +162,10 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     	return heartBeatSeconds;
     }
 
+    public FutureResponse sendUDP(final ChannelCreator channelCreator) {
+        return sendUDP(channelCreator, recipient, message, futureResponse);
+    }
+    
     /**
      * Sends a UDP message and expects a reply.
      * 
@@ -169,7 +173,8 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      *            The channel creator will create a UDP connection
      * @return The future that was added in the constructor
      */
-    public K sendUDP(final ChannelCreator channelCreator) {
+    private FutureResponse sendUDP(final ChannelCreator channelCreator, PeerAddress recipient, Message message, 
+            FutureResponse futureResponse) {
         final PeerConnection peerConnection = PeerConnection.newPeerConnectionUDP(channelCreator, recipient, idleTCPMillis);
         final SendBehavior.SendMethod sendMethod = connectionBean.connect().connectUDP(this, channelCreator, sender,
                 peerConnection, isReflected, isReflected);
@@ -192,7 +197,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      *            The channel creator will create a UDP connection
      * @return The future that was added in the constructor
      */
-    public K fireAndForgetUDP(final ChannelCreator channelCreator) {
+    public FutureResponse fireAndForgetUDP(final ChannelCreator channelCreator) {
         final PeerConnection peerConnection = PeerConnection.newPeerConnectionUDP(channelCreator, recipient, idleTCPMillis);
         final SendBehavior.SendMethod sendMethod = connectionBean.connect().connectUDP(this, channelCreator, sender,
                 peerConnection, isReflected, isReflected);
@@ -215,7 +220,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      *            The channel creator will create a UDP connection
      * @return The future that was added in the constructor
      */
-    public K fireAndForgetBroadcastUDP(final ChannelCreator channelCreator) {
+    public FutureResponse fireAndForgetBroadcastUDP(final ChannelCreator channelCreator) {
         //connectionBean.sender().sendUDP(null, futureResponse, message, channelCreator, 0, true);
         return futureResponse;
     }
@@ -227,7 +232,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      *            The channel creator will create a TCP connection
      * @return The future that was added in the constructor
      */
-    public K sendTCP(final ChannelCreator channelCreator) {
+    public FutureResponse sendTCP(final ChannelCreator channelCreator) {
         final PeerConnection peerConnection;
         if(isKeepAlive) {
             peerConnection = PeerConnection.newPeerConnectionTCP(channelCreator, recipient, idleTCPMillis);
@@ -237,7 +242,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         return sendTCP(peerConnection);
     }
 
-    public K sendTCP(final PeerConnection peerConnection) {
+    public FutureResponse sendTCP(final PeerConnection peerConnection) {
         
         final SendBehavior.SendMethod sendMethod = connectionBean.connect().connectTCP(
                 this, connectionTimeoutTCPMillis, sender, peerConnection, isReflected);
@@ -253,41 +258,36 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                 connectionBean.sender().sendTCPPeerConnection(peerConnection, this);
                 break;
             case RCON:
-                int i = 0;
-                for(PeerSocketAddress psa:peerConnection.remotePeer().relays()) {
-                    Message rconMessage = createRconMessage(psa, message);
-                    
-                    i++;
-                    if(i>3) break;
+                if(peerBean.natHandler() == null) {
+                    futureResponse.failed("cannot initiate RCON, no NAT handler");
+                    break;
                 }
-                
-                
+                //TODO: finish dispatcher
+                List<FutureResponse> futures = peerBean.natHandler().handleRcon(connectionBean.dispatcher(), message, 
+                        futureResponse, peerConnection, idleUDPMillis, connectionBean.timer());
+                for(FutureResponse future:futures) {
+                    //if all futures fail, natHandler will handle this
+                    sendUDP(peerConnection.channelCreator(), future.request().recipient(), 
+                            future.request(), future);
+                }
+                break;
+            case HOLEPUNCHING:
+                if(peerBean.natHandler() == null) {
+                    futureResponse.failed("cannot initiate HOLEP_RELAY, no NAT handler");
+                    break;
+                }
+                //TODO: finish HOLEPUNCHING
+                break;
+            case RELAY:
+                if(peerBean.natHandler() == null) {
+                    futureResponse.failed("cannot initiate HOLEP_RELAY, no NAT handler");
+                    break;
+                }
+                //TODO: finish RELAY
                 break;
         }
         return futureResponse;
     }
-    
-    /**
-     * This method makes a copy of the original Message and prepares it for sending it to the relay.
-     *
-     * @param message
-     * @return rconMessage
-     */
-    private static Message createRconMessage(PeerSocketAddress ps, final Message originalMessage) {
-        Message rconMessage = new Message();
-        rconMessage.sender(originalMessage.sender());
-        rconMessage.version(originalMessage.version());
-        // store the message id in the payload to get the cached message later
-        rconMessage.intValue(originalMessage.messageId());
-        // making the message ready to send
-        PeerAddress recipient = originalMessage.recipient().withIPSocket(ps).withRelaySize(0);
-        rconMessage.recipient(recipient);
-        rconMessage.command(RPC.Commands.RCON.getNr());
-        rconMessage.type(Message.Type.REQUEST_1);
-        return rconMessage;
-    }
-
-
 
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
@@ -324,7 +324,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         
         //futureResponse.failedLater(cause);
         ctx.close();
-        peerConnection.closeListener().failAfter(futureResponse, cause);
+        peerConnection.closeListener().failAfterSemaphoreRelease(futureResponse, cause);
     }
     
     @Override
@@ -435,7 +435,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                             }
                         });*/
             ctx.close();
-            peerConnection.closeListener().after(futureResponse, responseMessage);
+            peerConnection.closeListener().successAfterSemaphoreRelease(futureResponse, responseMessage);
             //futureResponse.response(responseMessage);
         } else {
 			LOG.debug("Good message {}. Leave channel {} open.", responseMessage, ctx.channel());

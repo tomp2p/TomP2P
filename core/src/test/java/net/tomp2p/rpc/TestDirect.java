@@ -167,7 +167,7 @@ public class TestDirect {
                     return "yes";
                 }
             });
-            FutureDoneAttachment<PeerConnection, PeerAddress> peerConnection = sender.createPeerConnection(recv1.peerAddress());
+            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.peerAddress());
             
             sender.connectionBean().connect().counterTCP().reset();
             sender.connectionBean().connect().counterUDP().reset();

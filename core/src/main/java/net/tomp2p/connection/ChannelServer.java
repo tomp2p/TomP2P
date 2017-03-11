@@ -386,8 +386,10 @@ public final class ChannelServer implements DiscoverNetworkListener{
                 } else {
                     handlers.put("server-counter", counterUDP);
                 }
-                
-                handlers.put("dispatcher", dispatcher);
+                if(dispatcher != null) {
+                    //this happens during testing
+                    handlers.put("dispatcher", dispatcher);
+                }
 		return handlers;
 	}
 

@@ -9,6 +9,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDoneAttachment;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -53,7 +54,7 @@ public class TestRelay {
 			System.err.println("master is " + master.peerAddress());
 			System.err.println("slave is " + slave.peerAddress());
 
-			FutureDoneAttachment<PeerConnection, PeerAddress> pcMaster = master.createPeerConnection(slave
+			                 FuturePeerConnection pcMaster = master.createPeerConnection(slave
 					.peerAddress());
 			MyDirectDataRPC myDirectDataRPC = new MyDirectDataRPC(
 					slave.peerBean(), slave.connectionBean());
@@ -80,7 +81,7 @@ public class TestRelay {
 			
 			Assert.assertEquals("yoo!", futureResponse.object());
 
-			FutureDoneAttachment<PeerConnection, PeerAddress> pcSlave = myDirectDataRPC.peerConnection();
+			FuturePeerConnection pcSlave = myDirectDataRPC.peerConnection();
 
 			futureResponse = slave.sendDirect(pcSlave).object("hello").start()
 					.awaitUninterruptibly();
@@ -105,7 +106,7 @@ public class TestRelay {
 
 	private static class MyDirectDataRPC extends DirectDataRPC {
 
-		private FutureDoneAttachment<PeerConnection, PeerAddress> futurePeerConnection;
+		private FuturePeerConnection futurePeerConnection;
 
 		MyDirectDataRPC(PeerBean peerBean, ConnectionBean connectionBean) {
 			super(peerBean, connectionBean);
@@ -121,13 +122,13 @@ public class TestRelay {
 		public void handleResponse(Message message,
 				PeerConnection peerConnection, boolean sign, Responder responder)
 				throws Exception {
-			futurePeerConnection = new FutureDoneAttachment<PeerConnection, PeerAddress>(message.sender());
+			futurePeerConnection = new FuturePeerConnection(message.sender());
 			futurePeerConnection.done(peerConnection);
 			LOG.warn("handling response, object reply is {}", hasObjectDataReply());
 			super.handleResponse(message, peerConnection, sign, responder);
 		}
 
-		public FutureDoneAttachment<PeerConnection, PeerAddress> peerConnection() {
+		public FuturePeerConnection peerConnection() {
 			return futurePeerConnection;
 		}
 	}

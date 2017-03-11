@@ -21,7 +21,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.holep.DuplicatesHandler;
-import net.tomp2p.holep.HolePInitiatorImpl;
+import net.tomp2p.holep.NATHandlerImpl;
 import net.tomp2p.holep.HolePScheduler;
 import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Buffer;
@@ -128,16 +128,18 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				// we need an own futureresponse for every hole we try to punch
 				futureResponses.add(new FutureResponse(originalMessage));
 				inboundHandler = createAfterHolePHandler(futureDone);
-				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, futureResponses.get(i), idleUDPSeconds, false);
-				handlerList.add(handlers);
+				//TODO: enable
+				//handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, futureResponses.get(i), idleUDPSeconds, false);
+				//handlerList.add(handlers);
 			}
 		} else {
 			inboundHandler = new DuplicatesHandler(peer.connectionBean().dispatcher());
 			for (int i = 0; i < numberOfHoles; i++) {
 				// we need an own futureresponse for every hole we try to punch
 				futureResponses.add(new FutureResponse(originalMessage));
-				handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, futureResponses.get(i), idleUDPSeconds, false);
-				handlerList.add(handlers);
+				//TODO: enable
+				//handlers = peer.connectionBean().sender().configureHandlers(inboundHandler, futureResponses.get(i), idleUDPSeconds, false);
+				//handlerList.add(handlers);
 			}
 		}
 
@@ -169,7 +171,8 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				@Override
 				public void operationComplete(final FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
-						final ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers, futureResponse, false);
+						//TODO: enable
+						/*final ChannelFuture cF = future.channelCreator().createUDP(BROADCAST_VALUE, handlers, futureResponse, false);
 						cF.addListener(new GenericFutureListener<ChannelFuture>() {
 							@Override
 							public void operationComplete(final ChannelFuture future) throws Exception {
@@ -183,7 +186,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 									fDoneChannelFutures.done(channelFutures);
 								}
 							}
-						});
+						});*/
 					} else {
 						countDown.decrementAndGet();
 						mainFutureDone.failed("Error while creating the ChannelFutures!");
@@ -206,10 +209,10 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	 */
 	public FutureDone<Message> initiateHolePunch(final FutureDone<Message> mainFutureDone, final FutureResponse originalFutureResponse) {
 		//check if testCase == true
-		if (((HolePInitiatorImpl) peer.peerBean().holePunchInitiator()).isTestCase()) {
+		/*if (((NATHandlerImpl) peer.peerBean().holePunchInitiator()).isTestCase()) {
 			mainFutureDone.failed("Gandalf says: You shall not pass!!!");
 			return mainFutureDone;
-		}
+		}*/
 		final FutureDone<List<ChannelFuture>> fDoneChannelFutures = createChannelFutures(prepareHandlers(true, mainFutureDone),
 				mainFutureDone, numberOfHoles);
 		fDoneChannelFutures.addListener(new BaseFutureAdapter<FutureDone<List<ChannelFuture>>>() {
@@ -259,8 +262,8 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 						public void operationComplete(final FutureDone<Message> future) throws Exception {
 							if (future.isSuccess()) {
 								final Message replyMessage = future.object();
-								final Thread holePunchScheduler = new Thread(new HolePScheduler(peer.peerBean().holePNumberOfPunches(), thisInstance));
-								holePunchScheduler.start();
+								//final Thread holePunchScheduler = new Thread(new HolePScheduler(peer.peerBean().holePNumberOfPunches(), thisInstance));
+								//holePunchScheduler.start();
 								replyMessageFuture.done(replyMessage);
 							} else {
 								replyMessageFuture2.failed("No ReplyMessage could be created!");
@@ -292,7 +295,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 			final Message dummyMessage = createDummyMessage(i);
 			final FutureResponse futureResponse = new FutureResponse(dummyMessage);
 			LOG.debug("FIRE! remote: {}, local: {}", dummyMessage.recipient(), dummyMessage.sender());
-			peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
+			//peer.connectionBean().sender().afterConnect(futureResponse, dummyMessage, channelFutures.get(i), FIRE_AND_FORGET_VALUE);
 		}
 	}
 
@@ -325,10 +328,10 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 					Utils.addReleaseListener(future, holePFutureResponse);
 					// send the holePInitMessage to one of the target peer
 					// relays
-					peer.connectionBean()
-							.sender()
-							.sendUDP(createHolePHandler(futures, mainFutureDone, originalFutureResponse), holePFutureResponse, initMessage,
-									future.channelCreator(), idleUDPSeconds, BROADCAST_VALUE);
+					//peer.connectionBean()
+					//		.sender()
+					//		.sendUDP(createHolePHandler(futures, mainFutureDone, originalFutureResponse), holePFutureResponse, initMessage,
+					//				future.channelCreator(), idleUDPSeconds, BROADCAST_VALUE);
 					LOG.debug("ChannelFutures successfully created. Initialization of hole punching started.");
 				} else {
 					mainFutureDone.failed("The creation of the channelCreator for to send the initMessage failed!");
@@ -369,7 +372,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 						}
 						i++;
 						final Message sendMessage = createSendOriginalMessage(portList.get(i - 1), portList.get(i));
-						peer.connectionBean().sender().afterConnect(holePFutureResponse, sendMessage, channelFuture, false);
+						//peer.connectionBean().sender().afterConnect(holePFutureResponse, sendMessage, channelFuture, false);
 						LOG.debug("originalMessage has been sent to the other peer! {}", sendMessage);
 					}
 				}

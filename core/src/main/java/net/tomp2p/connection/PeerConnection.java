@@ -1,8 +1,6 @@
 package net.tomp2p.connection;
 
 import io.netty.channel.ChannelFuture;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -145,7 +143,7 @@ public class PeerConnection {
             }
         }
         
-        closeListener.after(closeFuture);
+        closeListener.doneAfterSemaphoreRelease(closeFuture);
         return this;
     }
 

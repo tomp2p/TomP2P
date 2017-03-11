@@ -228,18 +228,20 @@ public class RelayUtils {
 	 * overhead of sendDirect.
 	 */
 	private static void send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, final FutureResponse futureResponse) {
-		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean, connectionBean, connectionBean.channelServer().channelServerConfiguration());
-		final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
-		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-			@Override
-			public void operationComplete(FutureChannelCreator future) throws Exception {
-				if (future.isSuccess()) {
-					requestHandler.sendTCP(peerConnection.channelCreator(), peerConnection);
-				} else {
-					futureResponse.failed(future);
-				}
-			}
-		});
+		final RequestHandler requestHandler = new RequestHandler(futureResponse, peerBean, connectionBean, connectionBean.channelServer().channelServerConfiguration());
+
+		//TOOD: enable:
+		//final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
+		//fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+		//	@Override
+		//	public void operationComplete(FutureChannelCreator future) throws Exception {
+		//		if (future.isSuccess()) {
+		//			requestHandler.sendTCP(peerConnection.channelCreator(), peerConnection);
+		//		} else {
+		//			futureResponse.failed(future);
+		//		}
+		//	}
+		//});
 	}
 
 	/**
@@ -262,13 +264,13 @@ public class RelayUtils {
 	 */
 	public static FutureResponse connectAndSend(final Peer peer, final Message message) {
 		final FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peer.peerBean(), peer.connectionBean(), peer.connectionBean().channelServer().channelServerConfiguration());
+		final RequestHandler requestHandler = new RequestHandler(futureResponse, peer.peerBean(), peer.connectionBean(), peer.connectionBean().channelServer().channelServerConfiguration());
 		final FutureChannelCreator fpc = peer.connectionBean().reservation().create(0, 1);
 		
 		fpc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception {
                 if (futureChannelCreator.isSuccess()) {
-                	requestHandler.sendTCP(fpc.channelCreator(), null);
+                	requestHandler.sendTCP(fpc.channelCreator());
                 } else {
                     futureResponse.failed(fpc);
                 }

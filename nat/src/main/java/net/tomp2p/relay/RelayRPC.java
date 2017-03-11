@@ -240,9 +240,11 @@ public class RelayRPC extends DispatchHandler {
 		//add myself as relay
 		Collection<PeerSocketAddress> psa = unreachablePeerConnectionOrig.remotePeer().relays();
 		psa.addAll(peer().peerAddress().relays());
-		
-		final PeerConnection unreachablePeerConnectionCopy = unreachablePeerConnectionOrig.changeRemotePeer(
-				unreachablePeerConnectionOrig.remotePeer().withRelays(psa));
+
+		//TODO: fix setup
+		//final PeerConnection unreachablePeerConnectionCopy = unreachablePeerConnectionOrig.remotePeer(
+		//		unreachablePeerConnectionOrig.remotePeer().withRelays(psa));
+		final PeerConnection unreachablePeerConnectionCopy = unreachablePeerConnectionOrig;
 		
 		//now we can add this peer to the map, as we have now set the flag
 		//its TCP, we have a connection to this peer, so mark it as first hand
@@ -353,7 +355,7 @@ public class RelayRPC extends DispatchHandler {
 			Message response = createResponseMessage(message, Type.OK);
 			List<Message> buffered = forwarder.buffered();
 			if(buffered != null) {
-				ByteBuf bb = RelayUtils.composeMessageBuffer(buffered, peer.connectionBean().sender().channelClientConfiguration().signatureFactory());
+				ByteBuf bb = RelayUtils.composeMessageBuffer(buffered, peer.connectionBean().resourceConfiguration().signatureFactory());
 				response.buffer(new Buffer(bb));
 			}
 			forwarder.setPeerMap(RelayUtils.unflatten(map, message.sender()), message, response);
@@ -371,7 +373,7 @@ public class RelayRPC extends DispatchHandler {
 		}
 		List<Message> buffered = RelayUtils.decomposeCompositeBuffer(
 				message.buffer(0).buffer(), message.recipientSocket(), 
-				message.senderSocket(), peer.connectionBean().sender().channelClientConfiguration().signatureFactory());
+				message.senderSocket(), peer.connectionBean().resourceConfiguration().signatureFactory());
 		LOG.debug("got {} messages", buffered.size());
 		for(Message msg:buffered) {
 			DispatchHandler dh = connectionBean().dispatcher().associatedHandler(msg);

@@ -46,7 +46,7 @@ public class ConnectionBean {
     private final Sender sender;
     private final Connect connect;
     private final ChannelServer channelServer;
-    private final Reservation reservation;
+    private final BulkReservation reservation;
     private final ChannelClientConfiguration resourceConfiguration;
     private final ScheduledExecutorService timer;
     
@@ -70,7 +70,7 @@ public class ConnectionBean {
      *            The timer for the discovery process
      */
     public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final Connect connect, final Sender sender,
-            final ChannelServer channelServer, final Reservation reservation,
+            final ChannelServer channelServer, final BulkReservation reservation,
             final ChannelClientConfiguration resourceConfiguration, final ScheduledExecutorService timer) {
         this.p2pId = p2pId;
         this.dispatcher = dispatcher;
@@ -117,7 +117,7 @@ public class ConnectionBean {
     /**
      * @return The connection reservation that is responsible for resource management
      */
-    public Reservation reservation() {
+    public BulkReservation reservation() {
         return reservation;
     }
 

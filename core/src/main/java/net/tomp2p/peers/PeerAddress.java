@@ -291,9 +291,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     /**
      * Creates a peer address, where the byte array has to be in the rigth format and in the right size. The new
      * offset can be accessed with offset().
-     * 
-     * @param me
-     *            The serialized array
+     *
      */
     public static Pair<PeerAddress, Integer> decode(final byte[] array) {
     	return decode(array, 0);
@@ -434,9 +432,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     /**
      * Serializes to an existing array.
-     * 
-     * @param me
-     *            The array where the result should be stored
+     *
      * @param offset
      *            The offset where to start to save the result in the byte array
      * @return The new offset.

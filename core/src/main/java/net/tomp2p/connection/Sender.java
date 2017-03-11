@@ -239,10 +239,11 @@ public class Sender {
 				if (!future.isSuccess()) {
                                     LOG.warn("Failed to write to channel - request {} {}.", futureResponse.request(), future.cause());
                                     future.channel().close();
-                                    peerConnection.closeListener().failAfter(futureResponse, future.cause());
+                                    peerConnection.closeListener().failAfterSemaphoreRelease(futureResponse, future.cause());
 				}
 				if (fireAndForget) {
 					LOG.debug("fire and forget, close channel {} now. {}", futureResponse.request(), future.channel());
+                                        future.channel().close();
 					futureResponse.response(null);
 				}
 			}

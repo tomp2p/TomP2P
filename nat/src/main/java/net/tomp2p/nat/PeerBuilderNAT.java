@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.holep.HolePInitiatorImpl;
+import net.tomp2p.holep.NATHandlerImpl;
 import net.tomp2p.holep.HolePRPC;
 import net.tomp2p.holep.HolePScheduler;
 import net.tomp2p.holep.strategy.HolePStrategy;
@@ -228,9 +228,10 @@ public class PeerBuilderNAT {
 		final RconRPC rconRPC = new RconRPC(peer);
 		final HolePRPC holePunchRPC = new HolePRPC(peer);
 		
-		peer.peerBean().holePunchInitiator(new HolePInitiatorImpl(peer));
-		peer.peerBean().holePNumberOfHoles(holePNumberOfHoles);
-		peer.peerBean().holePNumberOfPunches(holePNumberOfPunches);
+		//TODO: enable
+		//peer.peerBean().holePunchInitiator(new NATHandlerImpl(peer));
+		//peer.peerBean().holePNumberOfHoles(holePNumberOfHoles);
+		//peer.peerBean().holePNumberOfPunches(holePNumberOfPunches);
 
 		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC, bufferTimeoutSeconds, bufferSize, heartBeatMillis, idleTCP);
 		

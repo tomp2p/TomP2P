@@ -33,12 +33,12 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 public class TestConnection {
-	
-	@Rule
+
+    @Rule
     public TestRule watcher = new TestWatcher() {
-	   protected void starting(Description description) {
-          System.out.println("Starting test: " + description.getMethodName());
-       }
+        protected void starting(Description description) {
+            System.out.println("Starting test: " + description.getMethodName());
+        }
     };
 
     @Test
@@ -47,20 +47,21 @@ public class TestConnection {
         Peer peer1 = null;
         Peer peer2 = null;
         try {
-        	
-        	//final CountConnectionOutboundHandler ccohTCP = new CountConnectionOutboundHandler();
-        	//final CountConnectionOutboundHandler ccohUDP = new CountConnectionOutboundHandler();
-        	
-        	
-			ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
-			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 
-        	
-            Bindings b1 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
-            Bindings b2 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
-            
-            peer1 = new PeerBuilder(new Number160(rnd)).ports(4005).bindings(b1).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
-            peer2 = new PeerBuilder(new Number160(rnd)).ports(4006).bindings(b2).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
+            //final CountConnectionOutboundHandler ccohTCP = new CountConnectionOutboundHandler();
+            //final CountConnectionOutboundHandler ccohUDP = new CountConnectionOutboundHandler();
+            ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+            ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
+
+            Bindings b1 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress
+                    .getByName("127.0.0.1"));
+            Bindings b2 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress
+                    .getByName("127.0.0.1"));
+
+            peer1 = new PeerBuilder(new Number160(rnd)).ports(4005).bindings(b1).channelClientConfiguration(
+                    ccc).channelServerConfiguration(csc).start();
+            peer2 = new PeerBuilder(new Number160(rnd)).ports(4006).bindings(b2).channelClientConfiguration(
+                    ccc).channelServerConfiguration(csc).start();
 
             peer2.objectDataReply(new ObjectDataReply() {
                 @Override
@@ -110,17 +111,19 @@ public class TestConnection {
             }
         }
     }
-    
+
     @Test
     public void testPermanentConnection() throws Exception {
         Random rnd = new Random(42);
         Peer peer1 = null;
         Peer peer2 = null;
         try {
-            
-            Bindings b1 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
-            Bindings b2 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
-            
+
+            Bindings b1 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress
+                    .getByName("127.0.0.1"));
+            Bindings b2 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress
+                    .getByName("127.0.0.1"));
+
             peer1 = new PeerBuilder(new Number160(rnd)).ports(4005).bindings(b1).start();
             peer2 = new PeerBuilder(new Number160(rnd)).ports(4006).bindings(b2).start();
 
@@ -136,44 +139,24 @@ public class TestConnection {
             FutureBootstrap anotherMaster = peer2.bootstrap().peerAddress(peer1.peerAddress()).start();
             masterAnother.awaitUninterruptibly();
             anotherMaster.awaitUninterruptibly();
-            
+
             int before = peer1.connectionBean().reservation().availablePermitsTCP();
             final FuturePeerConnection fpc = peer1.createPeerConnection(peer2.peerAddress());
-            
+
             // fpc.awaitUninterruptibly();
             // PeerConnection peerConnection = fpc.peerConnection();
             String sentObject = "Hello";
             FutureDirect fd = peer1.sendDirect(fpc).object(sentObject).start();
             fd.awaitUninterruptibly();
-            
+
             Assert.assertEquals(before - 1, peer1.connectionBean().reservation().availablePermitsTCP());
+
+            //peer2.shutdown().await();
+
+            fpc.peerConnection().channelCreator().shutdown().awaitUninterruptibly();
             
-            peer2.shutdown().await();
             
-            fpc.object().closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
-                @Override
-                public void operationComplete(FutureDone<Void> future) throws Exception {
-                    fpc.object().close().await();
-                }
-            });
-            //TODO: make this not wait
-            Thread.sleep(1000);
             Assert.assertEquals(before, peer1.connectionBean().reservation().availablePermitsTCP());
-            
-            // we reuse the connection
-            /*long start = System.currentTimeMillis();
-            System.out.println("send " + sentObject);
-            fd = peer1.sendDirect(fpc).object(sentObject).start();
-            fd.awaitUninterruptibly();
-            System.err.println(fd.failedReason());
-            Assert.assertEquals(true, fd.isSuccess());
-            System.err.println(fd.failedReason());
-            System.out.println("received " + fd.object() + " connections: "
-                    + ccohTCP.total());
-            // now we don't want to keep the connection open anymore:
-            double duration = (System.currentTimeMillis() - start) / 1000d;
-            System.out.println("Send and get in s:" + duration);*/
-            fpc.object().close().await();
             System.out.println("done");
         } finally {
             if (peer1 != null) {

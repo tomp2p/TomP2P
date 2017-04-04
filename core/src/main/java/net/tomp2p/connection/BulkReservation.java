@@ -178,6 +178,7 @@ public class BulkReservation {
 	public FutureChannelCreator create(final int permitsUDPUnadjusted, final int permitsTCP) {
             //adjust values
             //for each TCP connection we need 1 udp for possible RCON, and 3 for HOLEPUNCHING
+            LOG.debug("create permits, udp: {}, tcp:{}", permitsUDPUnadjusted, permitsTCP);
             final int permitsUDP = permitsUDPUnadjusted + (permitsTCP * 3);
             
 		if (permitsUDP > maxPermitsUDP) {
@@ -362,7 +363,7 @@ public class BulkReservation {
 					fromAddress = peerBean.serverPeerAddress().ipv4Socket().ipv4().toInetAddress();
 				}
 				
-				LOG.debug("channel from {}", fromAddress);
+				LOG.debug("channel from {} upd:{}, tcp:{}", fromAddress, permitsUDP, permitsTCP);
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, permitsUDP, permitsTCP,
 				        channelClientConfiguration, fromAddress);

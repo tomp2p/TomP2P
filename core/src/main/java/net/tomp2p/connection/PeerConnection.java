@@ -134,7 +134,7 @@ public class PeerConnection {
                 throw new IllegalArgumentException("cannot set twice the channel future");
             }
             if (this.closeListener != null) {
-                throw new IllegalArgumentException("cannot set twice the channel future");
+                throw new IllegalArgumentException("cannot set twice the close listener");
             }
             this.closeListener = closeListener;
             this.channelFuture = channelFuture;
@@ -169,7 +169,7 @@ public class PeerConnection {
             if (channelFuture == null) {
                 closeRequested = true;
             } else {
-                LOG.debug("Close connection {}. Initiator {}.", initiator);
+                LOG.debug("Close connection {}. Initiator {}.", initiator, channelFuture);
                 channelFuture.channel().close();
             }
         }

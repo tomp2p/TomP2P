@@ -27,6 +27,7 @@ import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelGroupFuture;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -154,12 +155,12 @@ public class ChannelCreator {
                             failAfterSemaphoreRelease(futureResponse, cause);
                         }
                     }
+                    
+                    notified = true;
                     if(!doneClose) {
                         doneAfterSemaphoreRelease(futureDone);
                     }
-                    notified = true;
-                }
-                
+                }            
             }
             
             public void successAfterSemaphoreRelease(FutureResponse futureResponse, Message responseMessage) {
@@ -187,6 +188,7 @@ public class ChannelCreator {
             }
 
             public void doneAfterSemaphoreRelease(FutureDone<Void> futureDone) {
+                LOG.debug("about to close channel and notify");
                 synchronized(this) {
                     if(!notified) {
                         this.futureDone = futureDone;
@@ -288,11 +290,11 @@ public class ChannelCreator {
 			//b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
 			addHandlers(b, channelHandlers);
 			
-			LOG.debug("Create TCP, use from address: {}", sendFromAddress);
-
+			
 			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(sendFromAddress, 0));
                         ChannelCloseListener cl = new ChannelCloseListener(semaphoreTCP);
                         channelFuture.channel().closeFuture().addListener(cl);
+                        LOG.debug("Create TCP, use from address: {} futur is {}", sendFromAddress, channelFuture);
 			recipients.add(channelFuture.channel());
 			return new Pair<ChannelCloseListener, ChannelFuture>(cl, channelFuture);
 		} finally {

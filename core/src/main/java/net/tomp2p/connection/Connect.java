@@ -101,11 +101,11 @@ public class Connect {
 	}
 	
         //final FutureDone<Pair<PeerConnection,Message>> future = new FutureDone<Pair<PeerConnection,Message>>();
-	public SendBehavior.SendMethod connectTCP(final SimpleChannelInboundHandler<Message> replHandler, 
+public SendBehavior.SendMethod connectTCP(final SimpleChannelInboundHandler<Message> replHandler, 
                 final int connectTimeoutMillis, final PeerAddress sender,
                 final PeerConnection peerConnection, final boolean isReflected) {
 		
-		if (peerConnection.isExisting()) {
+		if (peerConnection.isExisting() ||  peerConnection.isOpen()) {
                     LOG.debug("go for peer connection / TCP");
                     return SendBehavior.SendMethod.EXISTING_CONNECTION;
                 } else {

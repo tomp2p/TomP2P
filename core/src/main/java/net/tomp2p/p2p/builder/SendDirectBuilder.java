@@ -49,8 +49,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
 	private Object object;
 
-	private FutureChannelCreator futureChannelCreator;
-
 	private boolean streaming = false;
 
 	private boolean forceUDP = false;
@@ -122,15 +120,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return this;
 	}
 
-	public FutureChannelCreator futureChannelCreator() {
-		return futureChannelCreator;
-	}
-
-	public SendDirectBuilder futureChannelCreator(FutureChannelCreator futureChannelCreator) {
-		this.futureChannelCreator = futureChannelCreator;
-		return this;
-	}
-
 	public SendDirectBuilder streaming(boolean streaming) {
 		this.streaming = streaming;
 		return this;
@@ -169,10 +158,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 			throw new IllegalArgumentException("Either the recipient address or peer connection has to be set.");
 		}
 
-		if (futureChannelCreator == null) {
-			futureChannelCreator = peer.connectionBean().reservation()
-			        .create(isForceUDP() ? 1 : 0, isForceUDP() ? 0 : 1);
-		}
 		
 		Message message = peer.directDataRPC().sendInternal0(remotePeer, this);
     	final FutureDirect futureResponse = new FutureDirect(message, isRaw());
@@ -195,6 +180,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 			}
 
 		} else {
+                    FutureChannelCreator futureChannelCreator = peer.connectionBean().reservation()
+			        .create(isForceUDP() ? 1 : 0, isForceUDP() ? 0 : 1);
 			Utils.addReleaseListener(futureChannelCreator, request.futureResponse());
 			futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override

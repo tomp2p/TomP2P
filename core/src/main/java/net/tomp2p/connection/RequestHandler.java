@@ -256,6 +256,7 @@ public class RequestHandler extends SimpleChannelInboundHandler<Message> {
                 break;
             case EXISTING_CONNECTION:
                 connectionBean.sender().sendTCPPeerConnection(peerConnection, this);
+                connectionBean.sender().sendMessage(futureResponse, message, peerConnection, false);
                 break;
             case RCON:
                 if(peerBean.natHandler() == null) {

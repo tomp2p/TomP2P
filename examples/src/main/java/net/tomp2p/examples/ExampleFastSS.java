@@ -72,7 +72,8 @@ public class ExampleFastSS {
         }
         System.out.println("we have indexed [" + title + "]");
         // done, now search for greet
-        for (String deletion : deletion("xong12")) {
+        String search = "greatt";
+        for (String deletion : deletion(search)) {
             FutureGet futureGet = peers1[20].get(Number160.createHash(deletion)).start().awaitUninterruptibly();
             if (futureGet.isSuccess() && futureGet.data()!=null) {
                 // if we found a match
@@ -85,7 +86,7 @@ public class ExampleFastSS {
                 // download
                 FutureDirect futureDirect = peers1[20].peer().sendDirect(peerAddress).object(key1).start();
                 futureDirect.awaitUninterruptibly();
-                System.out.println("we searched for \"xong\", and found [" + tmp[2] + "], ed(" + tmp[1] + ",greet)="
+                System.out.println("we searched for \""+search+"\", and found [" + tmp[2] + "], ed(" + tmp[1] + ",greet)="
                         + ld((String) tmp[1], "greet") + ". After downloading we get [" + futureDirect.object() + "]");
             }
         }

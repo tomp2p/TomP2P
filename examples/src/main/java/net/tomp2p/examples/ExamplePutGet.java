@@ -80,10 +80,10 @@ public final class ExamplePutGet {
      */
     private static void examplePutGet(final PeerDHT[] peers, final Number160 nr) 
             throws IOException, ClassNotFoundException {
-        FuturePut futurePut = peers[PEER_NR_1].put(nr).data(new Data("hallo")).start();
+        FuturePut futurePut = peers[10].put(nr).data(new Data("hallo")).start();
         futurePut.awaitUninterruptibly();
         System.out.println("peer " + PEER_NR_1 + " stored [key: " + nr + ", value: \"hallo\"]");
-        FutureGet futureGet = peers[PEER_NR_2].get(nr).start();
+        FutureGet futureGet = peers[20].get(nr).start();
         futureGet.awaitUninterruptibly();
         System.out.println("peer " + PEER_NR_2 + " got: \"" + futureGet.data().object() + "\" for the key " + nr);
         // the output should look like this:

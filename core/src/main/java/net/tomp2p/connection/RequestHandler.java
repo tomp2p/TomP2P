@@ -286,6 +286,9 @@ public class RequestHandler extends SimpleChannelInboundHandler<Message> {
                 }
                 //TODO: finish RELAY
                 break;
+            case CANNOT_CREATE_TCP:
+                futureResponse.failed("cannot create TCP channel");
+                break;
         }
         return futureResponse;
     }

@@ -117,6 +117,9 @@ public SendBehavior.SendMethod connectTCP(final SimpleChannelInboundHandler<Mess
                                     peerConnection.remotePeer().createTCPSocket(sender), 
                                     peerConnection.channelCreator(), replHandler, timeoutHandler, 
                                     connectTimeoutMillis, peerConnection.isKeepAlive());
+                            if(pair1 == null) {
+                                return SendBehavior.SendMethod.CANNOT_CREATE_TCP;
+                            }
                             peerConnection.channelFuture(pair1.element1(), pair1.element0());
                             return SendBehavior.SendMethod.DIRECT;
 			case RCON:

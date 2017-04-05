@@ -225,7 +225,7 @@ public class TestPing {
             fr.awaitUninterruptibly();
             Assert.assertEquals(false, fr.isSuccess());
             System.err.println("done:" + fr.failedReason());
-            Assert.assertEquals(true, fr.failedReason().contains("/ timeout"));
+            Assert.assertEquals(true, fr.failedReason().contains("TIMEOUT"));
             
         } finally {
             if (cc != null) {
@@ -290,7 +290,7 @@ public class TestPing {
             fr.awaitUninterruptibly();
             Assert.assertEquals(false, fr.isSuccess());
             System.err.println("done:" + fr.failedReason());
-            Assert.assertEquals(true, fr.failedReason().contains("/ timeout"));
+            Assert.assertEquals(true, fr.failedReason().contains("TIMEOUT"));
         } finally {
             if (cc != null) {
                 cc.shutdown().await();
@@ -457,6 +457,7 @@ public class TestPing {
             fr.awaitUninterruptibly();
             fr.awaitListeners();
             Assert.assertEquals(true, fr.isSuccess());
+            
             FutureResponse fr2 = sender.pingRPC().pingTCP(recv1.peerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr2.awaitUninterruptibly();

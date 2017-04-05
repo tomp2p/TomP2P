@@ -37,7 +37,12 @@ public interface SendBehavior {
 		 * Don't send the message over the network but directly pass it to the
 		 * own dispatcher
 		 */
-		SELF,
+		SELF, 
+                
+                /**
+                 * In case of an error.
+                 */
+                CANNOT_CREATE_TCP,
 	}
 
 	/**

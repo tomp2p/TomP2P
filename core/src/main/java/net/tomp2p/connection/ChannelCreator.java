@@ -300,7 +300,7 @@ public class ChannelCreator {
 			
 			
 			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(sendFromAddress, 0));
-                        ChannelCloseListener cl = new ChannelCloseListener(semaphoreTCP, futureChannelCreationDone);
+                        ChannelCloseListener cl = new ChannelCloseListener(semaphoreTCP);
                         channelFuture.channel().closeFuture().addListener(cl);
                         LOG.debug("Create TCP, use from address: {} futur is {}", sendFromAddress, channelFuture);
 			recipients.add(channelFuture.channel());

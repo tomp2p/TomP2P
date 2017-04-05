@@ -2,7 +2,6 @@ package net.tomp2p.dht;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -1488,7 +1487,7 @@ public class TestDHT {
 			List<BaseFuture> list1 = new ArrayList<BaseFuture>();
 			List<BaseFuture> list2 = new ArrayList<BaseFuture>();
 			List<FutureDoneAttachment<PeerConnection, PeerAddress>> list3 = new ArrayList<FutureDoneAttachment<PeerConnection, PeerAddress>>();
-			for (int i = 0; i < 125; i++) {
+			for (int i = 0; i < 60; i++) {
 				final byte[] b = new byte[10000];
 				FuturePeerConnection pc = master.createPeerConnection(slave.peerAddress());
 				list1.add(master.sendDirect(pc).dataBuffer(new DataBuffer(Unpooled.wrappedBuffer(b))).start());

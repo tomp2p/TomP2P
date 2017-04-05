@@ -424,7 +424,7 @@ public class RequestHandler extends SimpleChannelInboundHandler<Message> {
         }
         
         if (!message.isKeepAlive()) {
-			LOG.debug("Good message {}. Close channel {}.", responseMessage, ctx.channel());
+            LOG.debug("Good message {}. Close channel {}.", responseMessage, ctx.channel());
             //set the success now, but trigger the notify when we closed the channel.
             //futureResponse.responseLater(responseMessage); 
 			// the channel creator adds a listener that sets futureResponse.setResponseNow, when the channel

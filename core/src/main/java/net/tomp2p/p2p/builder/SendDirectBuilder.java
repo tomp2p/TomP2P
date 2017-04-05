@@ -161,6 +161,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		
 		Message message = peer.directDataRPC().sendInternal0(remotePeer, this);
     	final FutureDirect futureResponse = new FutureDirect(message, isRaw());
+        futureResponse.request().keepAlive(keepAlive);
 
 		final RequestHandler request = peer.directDataRPC().sendInternal(futureResponse, this);
 		if (keepAlive) {
@@ -203,9 +204,10 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	}
 
 	private static void sendDirectRequest(final RequestHandler request, final PeerConnection peerConnection) {
-            //TODO: if same connection reused, send in order
-            request.futureResponse().request().keepAlive(true);
-            request.sendTCP(peerConnection);
+            //if we reuse the same peerconnetion, send data sequentially
+            synchronized(peerConnection) {
+                request.sendTCP(peerConnection);
+            }
 	}
 
 	public boolean isForceUDP() {

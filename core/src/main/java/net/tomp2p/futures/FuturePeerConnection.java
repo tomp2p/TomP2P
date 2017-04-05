@@ -24,5 +24,5 @@ public class FuturePeerConnection extends FutureDoneAttachment<PeerConnection, P
     
     public PeerAddress remotePeer() {
         return attachment();
-    }    
+    }
 }

@@ -135,7 +135,7 @@ public class ChannelCreator {
             private boolean notified = false;
             
             public ChannelCloseListener() {
-                this.semaphore = null;
+                semaphore = null;
             }
             
             public ChannelCloseListener(final Semaphore semaphore) {
@@ -144,6 +144,7 @@ public class ChannelCreator {
             
             @Override
             public void operationComplete(ChannelFuture f) throws Exception {
+                LOG.debug("ChannelCloseListener called");
                 synchronized(this) {
                     if(semaphore!=null) {
                         semaphore.release();
@@ -169,11 +170,13 @@ public class ChannelCreator {
             }
             
             public void successAfterSemaphoreRelease(FutureResponse futureResponse, Message responseMessage) {
+                LOG.debug("successAfterSemaphoreRelease: init");
                 synchronized(this) {
                     if(!notified) {
                         this.futureResponse = futureResponse;
                         this.responseMessage = responseMessage;
                     } else {
+                        LOG.debug("successAfterSemaphoreRelease: response");
                         futureResponse.response(responseMessage);
                         doneMessage = true;
                     }
@@ -297,7 +300,7 @@ public class ChannelCreator {
 			
 			
 			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(sendFromAddress, 0));
-                        ChannelCloseListener cl = new ChannelCloseListener(semaphoreTCP);
+                        ChannelCloseListener cl = new ChannelCloseListener(semaphoreTCP, futureChannelCreationDone);
                         channelFuture.channel().closeFuture().addListener(cl);
                         LOG.debug("Create TCP, use from address: {} futur is {}", sendFromAddress, channelFuture);
 			recipients.add(channelFuture.channel());
@@ -364,7 +367,7 @@ public class ChannelCreator {
 				shutdownFuture().done();
 			}
 		});
-
+                
 		return shutdownFuture();
 	}
 

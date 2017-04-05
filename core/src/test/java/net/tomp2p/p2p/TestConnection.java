@@ -158,7 +158,7 @@ public class TestConnection {
             Assert.assertEquals(before - 1, peer1.connectionBean().reservation().availablePermitsTCP());
             //peer2.shutdown().await();
 
-            fpc.peerConnection().channelCreator().shutdown().awaitUninterruptibly();
+            fpc.peerConnection().shutdown().awaitUninterruptibly();
             
             
             Assert.assertEquals(before, peer1.connectionBean().reservation().availablePermitsTCP());

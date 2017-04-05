@@ -178,9 +178,9 @@ public class BulkReservation {
 	public FutureChannelCreator create(final int permitsUDPUnadjusted, final int permitsTCP) {
             //adjust values
             //for each TCP connection we need 1 udp for possible RCON, and 3 for HOLEPUNCHING
-            LOG.debug("create permits, udp: {}, tcp:{}", permitsUDPUnadjusted, permitsTCP);
-            final int permitsUDP = permitsUDPUnadjusted + (permitsTCP * 3);
             
+            final int permitsUDP = permitsUDPUnadjusted + (permitsTCP * 3);
+            LOG.debug("create permits, udp: {}, tcp:{}", permitsUDP, permitsTCP);
 		if (permitsUDP > maxPermitsUDP) {
 			throw new IllegalArgumentException(String.format("Cannot acquire more UDP connections (%s) than maximally allowed (%s).", permitsUDP, maxPermitsUDP));
 		}
@@ -199,7 +199,8 @@ public class BulkReservation {
 				@Override
 				public void operationComplete(final FutureDone<Void> future) throws Exception {
 					// release the permits in all cases
-                    // otherwise, we may see inconsistencies
+                                        // otherwise, we may see inconsistencies
+                                        LOG.debug("release permits, udp: {}, tcp:{}", permitsUDP, permitsTCP);
 					semaphoreUPD.release(permitsUDP);
 					semaphoreTCP.release(permitsTCP);
 				}
@@ -363,7 +364,9 @@ public class BulkReservation {
 					fromAddress = peerBean.serverPeerAddress().ipv4Socket().ipv4().toInetAddress();
 				}
 				
-				LOG.debug("channel from {} upd:{}, tcp:{}", fromAddress, permitsUDP, permitsTCP);
+				LOG.debug("channel from {} upd:{}, tcp:{}. Remaining UDP: {}, TCP: {}", 
+                                        fromAddress, permitsUDP, permitsTCP, semaphoreUPD.availablePermits(), 
+                                        semaphoreTCP.availablePermits());
 
 				channelCreator = new ChannelCreator(workerGroup, futureChannelCreationShutdown, permitsUDP, permitsTCP,
 				        channelClientConfiguration, fromAddress);

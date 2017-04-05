@@ -1,10 +1,13 @@
 package net.tomp2p.connection;
 
 import io.netty.channel.ChannelFuture;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.Futures;
 import net.tomp2p.peers.PeerAddress;
 
 import org.slf4j.Logger;
@@ -164,17 +167,30 @@ public class PeerConnection {
         return channelCreator == null;
     }
     
-    public FutureDone<Void> shutdown() {
+    public FutureDone shutdown() {
+        FutureDone<Void> done1 = new FutureDone<>();
         if(channelFuture != null) {
             //TODO: this runs in the background
-            channelFuture.channel().close();
+            channelFuture.channel().close().addListener(new GenericFutureListener<Future<? super Void>>() {
+                @Override
+                public void operationComplete(Future<? super Void> future) throws Exception {
+                    done1.done();
+                }
+            });
+        } else {
+            done1.done();
         }
+        
+        FutureDone<Void> done2;
         if(channelCreator != null) {
-            return channelCreator.shutdown();
-        } 
-        return FutureDone.SUCCESS;
+            done2 = channelCreator.shutdown();
+        } else {
+            done2 = FutureDone.SUCCESS;
+        }
+        
+        return Futures.whenAll(done1, done2);
     }
-
+    
     public FutureDone<Void> close() {
         synchronized (this) {
             if (channelFuture == null) {

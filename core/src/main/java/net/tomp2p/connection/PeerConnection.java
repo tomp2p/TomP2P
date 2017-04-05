@@ -130,10 +130,10 @@ public class PeerConnection {
     public PeerConnection channelFuture(final ChannelFuture channelFuture, 
             ChannelCreator.ChannelCloseListener closeListener) {
         synchronized (this) {
-            if (this.channelFuture != null) {
+            if (this.channelFuture != null && isOpen()) {
                 throw new IllegalArgumentException("cannot set twice the channel future");
             }
-            if (this.closeListener != null) {
+            if (this.closeListener != null && isOpen()) {
                 throw new IllegalArgumentException("cannot set twice the close listener");
             }
             this.closeListener = closeListener;
@@ -162,6 +162,17 @@ public class PeerConnection {
     
     public boolean isExisting() {
         return channelCreator == null;
+    }
+    
+    public FutureDone<Void> shutdown() {
+        if(channelFuture != null) {
+            //TODO: this runs in the background
+            channelFuture.channel().close();
+        }
+        if(channelCreator != null) {
+            return channelCreator.shutdown();
+        } 
+        return FutureDone.SUCCESS;
     }
 
     public FutureDone<Void> close() {

@@ -89,8 +89,8 @@ public class TestRelay {
 			Assert.assertEquals("world!", futureResponse.object());
 
 			//Thread.sleep(1000);
-			pcSlave.object().close().await();
-			pcMaster.object().close().await();
+			pcSlave.peerConnection().shutdown().await();
+			pcMaster.peerConnection().shutdown().await();
 			System.err.println("done");
 
 		} finally {

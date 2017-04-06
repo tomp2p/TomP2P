@@ -169,6 +169,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         ctx.close();
+        super.exceptionCaught(ctx, cause);
     }
     
     @Override

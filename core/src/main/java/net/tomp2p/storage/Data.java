@@ -16,6 +16,8 @@
 package net.tomp2p.storage;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,7 +61,7 @@ public class Data {
 	private final Type type;
 	private final int length;
 	// the buffer contains data without the header
-	private final DataBuffer buffer;
+	private final ByteBuf buffer;
 
 	// these flags can be modified
 	private boolean basedOnFlag;
@@ -85,8 +87,8 @@ public class Data {
 	private Number160 hash;
 	private boolean meta;
 	
-	public Data(final DataBuffer buffer) {
-		this(buffer, buffer.length());
+	public Data(final ByteBuf buffer) {
+		this(buffer, buffer.readableBytes());
 	}
 
 	/**
@@ -98,7 +100,7 @@ public class Data {
 	 *            The expected length of the buffer. This does not include the
 	 *            header + size (2, 5 or 9).
 	 */
-	public Data(final DataBuffer buffer, final int length) {
+	public Data(final ByteBuf buffer, final int length) {
 		this.length = length;
 		if (length < MAX_BYTE_SIZE) {
 			this.type = Type.SMALL;
@@ -136,7 +138,7 @@ public class Data {
 		}
 
 		this.length = length;
-		this.buffer = new DataBuffer();
+		this.buffer = Unpooled.buffer(length);
 		this.validFromMillis = System.currentTimeMillis();
 	}
 
@@ -160,9 +162,9 @@ public class Data {
 	 */
 	public Data(final byte[] buffer, final int offest, final int length) {
 		if(buffer.length == 0) {
-			this.buffer = new DataBuffer(0);
+			this.buffer = Unpooled.EMPTY_BUFFER;
 		} else {
-			this.buffer = new DataBuffer(buffer, offest, length);
+			this.buffer = Unpooled.wrappedBuffer(buffer, offest, length);
 		}
 		this.length = length;
 		if (length < MAX_BYTE_SIZE) {
@@ -313,16 +315,8 @@ public class Data {
 	 * @return True if we are done reading
 	 */
 	public boolean decodeBuffer(final ByteBuf buf) {
-		final int already = buffer.length();
-		final int remaining = length() - already;
-		// already finished
-		if (remaining == 0) {
-			return true;
-		}
-		// make sure it gets not garbage collected. But we need to keep track of
-		// it and when this object gets collected, we need to release the buffer
-		final int transfered = buffer.transferFrom(buf, remaining);
-		return transfered == remaining;
+            buffer.writeBytes(buf);
+            return true;
 	}
 	
 	public boolean decodeDone(final ByteBuf buf, SignatureFactory signatureFactory) {
@@ -431,9 +425,12 @@ public class Data {
 		}
 	}
 	
-	public boolean encodeBuffer(final AlternativeCompositeByteBuf buf) {
-		final int transferred = buffer.transferTo(buf);
-		return transferred == length();
+	public boolean encodeBuffer(final CompositeByteBuf buf) {
+            //buf.setBytes(buf.writerIndex(), buffer);
+            buf.writeBytes(buffer.duplicate());
+            return true;
+		//final int transferred = buffer.transferTo(buf);
+		//return transferred == length();
 	}
 	
 	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
@@ -464,7 +461,7 @@ public class Data {
 	 * @return 
 	 */
 	public ByteBuf buffer() {
-		return buffer.toByteBuf();
+		return buffer;
 	}
 
 	public Object object() throws ClassNotFoundException, IOException {
@@ -729,7 +726,7 @@ public class Data {
 	 *         index is not shared. This will increase the ref count on the buffer
 	 */
 	public Data duplicate() {
-		Data data = new Data(buffer.shallowCopy(), length).publicKey(publicKey)
+		Data data = new Data(buffer.duplicate(), length).publicKey(publicKey)
 				.signature(signature).ttlSeconds(ttlSeconds);
 		// duplicate based on keys
 		data.basedOnSet.addAll(basedOnSet);
@@ -810,15 +807,17 @@ public class Data {
 	 * @return The byte array that is the payload. Here we copy the buffer
 	 */
 	public byte[] toBytes() {
-		return buffer.convertToHeapBuffer();
+            int len = buffer.readableBytes();
+            byte[] me = new byte[len];
+            buffer.getBytes(0, me);
+            return me;
 	}
 
 	/**
 	 * @return The ByteBuffers that is the payload. We do not make a copy here
 	 */
 	public ByteBuffer[] toByteBuffers() {
-		List<ByteBuffer> byteBuffers = buffer.bufferList();
-		return byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]);
+            return buffer.nioBuffers();
 	}
 
 	public PublicKey publicKey() {
@@ -892,7 +891,7 @@ public class Data {
 
 	public Number160 hash() {
 		if (hash == null) {
-			hash = Utils.makeSHAHash(buffer);
+			hash = Utils.makeSHAHash(toByteBuffers());
 		}
 		return hash;
 	}
@@ -900,13 +899,5 @@ public class Data {
 	public Data release() {
 		buffer.release();    
         return this;
-	}
-
-	public void convertToHeapBuffer() {
-		buffer.convertToHeapBuffer();
-	}
-
-	public boolean isHeapBuffer() {
-		return buffer.isHeapBuffer();
 	}
 }

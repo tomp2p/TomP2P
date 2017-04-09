@@ -2,13 +2,13 @@ package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.net.InetSocketAddress;
 
 import net.tomp2p.connection.SignatureFactory;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +20,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 
 	private final Decoder decoder;
 	private final ByteBufAllocator byteBufAllocator;
-	private AlternativeCompositeByteBuf cumulation = null;
+	private CompositeByteBuf cumulation = null;
 
 	private int lastId = 0;
 
@@ -43,10 +43,12 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 
 		try {
 			if (cumulation == null) {
-				cumulation = AlternativeCompositeByteBuf.compBuffer(byteBufAllocator, buf);
+				cumulation = byteBufAllocator.compositeBuffer();
 			} else {
-				cumulation.addComponent(buf);
+				//cumulation.addComponent(buf);
+                                
 			}
+                        cumulation.writeBytes(buf);
 			decoding(ctx, sender);
 		} catch (Throwable t) {
 			LOG.error("Error in TCP decoding", t);

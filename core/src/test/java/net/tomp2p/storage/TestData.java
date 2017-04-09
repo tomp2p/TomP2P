@@ -1,6 +1,7 @@
 package net.tomp2p.storage;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
@@ -36,7 +37,7 @@ public class TestData {
     @Test
     public void testData1() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
         Data data = new Data("test");
-        AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+        CompositeByteBuf transfer = Unpooled.compositeBuffer();
         data.encodeHeader(transfer, factory);
         //no need to call encodeBuffer with Data(object) or Data(buffer)
         data.encodeBuffer(transfer);
@@ -59,7 +60,7 @@ public class TestData {
     
     @Test	
     public void clearTest()	{		
-    	ByteBuf acbb = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);		
+    	ByteBuf acbb =  Unpooled.compositeBuffer();	
     	acbb.clear();
     	Assert.assertEquals(0, acbb.readerIndex());
     	Assert.assertEquals(0, acbb.writerIndex());
@@ -69,7 +70,7 @@ public class TestData {
     @Test
     public void testData2Copy() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
         Data data = new Data(1, 100000);
-        AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+        CompositeByteBuf transfer = Unpooled.compositeBuffer();
         data.encodeHeader(transfer, factory);
         ByteBuf pa = Unpooled.wrappedBuffer(new byte[50000]);
         boolean done = data.decodeBuffer(pa);
@@ -99,7 +100,7 @@ public class TestData {
     @Test
     public void testData2NoCopy() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
         Data data = new Data(1, 100000);
-        AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+        CompositeByteBuf transfer = Unpooled.compositeBuffer();
         data.encodeHeader(transfer, factory);
         ByteBuf pa = Unpooled.wrappedBuffer(new byte[50000]);
         boolean done = data.decodeBuffer(pa);
@@ -128,7 +129,7 @@ public class TestData {
     @Test
     public void testData3() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
         Data data = new Data(1, 100000);
-        AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+        CompositeByteBuf transfer = Unpooled.compositeBuffer();
         data.encodeHeader(transfer, factory);
         ByteBuf pa = Unpooled.wrappedBuffer(new byte[50000]);
         boolean done = data.decodeBuffer(pa);
@@ -323,7 +324,7 @@ public class TestData {
 
 	private Data encodeDecode(Data data) throws InvalidKeyException, SignatureException, IOException {
 	    
-		AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+	CompositeByteBuf transfer = Unpooled.compositeBuffer();
         data.encodeHeader(transfer, factory);
         data.encodeBuffer(transfer);
         data.encodeDone(transfer, factory);

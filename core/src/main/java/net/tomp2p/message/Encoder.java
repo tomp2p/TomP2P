@@ -1,5 +1,6 @@
 package net.tomp2p.message;
 
+import io.netty.buffer.CompositeByteBuf;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
@@ -20,7 +21,6 @@ import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.rpc.SimpleBloomFilter;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 
 public class Encoder {
@@ -37,7 +37,7 @@ public class Encoder {
         this.signatureFactory = signatureFactory;
     }
 
-    public boolean write(final AlternativeCompositeByteBuf buf, final Message message, SignatureCodec signatureCodec) throws InvalidKeyException,
+    public boolean write(final CompositeByteBuf buf, final Message message, SignatureCodec signatureCodec) throws InvalidKeyException,
             SignatureException, IOException {
 
         this.message = message;
@@ -64,7 +64,7 @@ public class Encoder {
         return done;
     }
 
-    private boolean loop(AlternativeCompositeByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
+    private boolean loop(CompositeByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
         MessageContentIndex next;
         while ((next = message.contentReferences().peek()) != null) {
         	final int start = buf.writerIndex();
@@ -215,7 +215,7 @@ public class Encoder {
         return true;
     }
 
-	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply, boolean isReplicaSend) throws InvalidKeyException, SignatureException, IOException {
+	private void encodeData(CompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply, boolean isReplicaSend) throws InvalidKeyException, SignatureException, IOException {
 		Data filteredData = dataFilterTTL.filter(data, isConvertMeta, isReply);
 		filteredData.encodeHeader(buf, signatureFactory);
 		filteredData.encodeBuffer(buf);

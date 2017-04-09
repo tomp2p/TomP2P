@@ -128,7 +128,8 @@ public class TestDirect {
                         System.err.println(future.responseMessage().buffer(0).object());
                         futureData.release();
                     }
-                });         
+                });
+                Thread.sleep(200);
             }
             System.err.println("done");
             Thread.sleep(2000);

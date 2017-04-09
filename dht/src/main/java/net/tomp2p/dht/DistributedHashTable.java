@@ -48,7 +48,6 @@ import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;

@@ -68,7 +68,7 @@ public class DirectDataRPC extends DispatchHandler {
         message.streaming(sendDirectBuilder.isStreaming());
 
         if (sendDirectBuilder.isRaw()) {
-        	Buffer buffer = new Buffer(sendDirectBuilder.dataBuffer().toByteBuf());
+        	Buffer buffer = new Buffer(sendDirectBuilder.dataBuffer());
             message.buffer(buffer);
         } else {
             byte[] me;

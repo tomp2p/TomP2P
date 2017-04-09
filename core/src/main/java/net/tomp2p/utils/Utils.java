@@ -68,7 +68,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerAddress.PeerAddressBuilder;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
-import net.tomp2p.storage.DataBuffer;
 
 /**
  * 
@@ -150,7 +149,7 @@ public class Utils {
         }
     }
     
-    public static Number160 makeSHAHash(List<ByteBuffer> bufferList) {
+    public static Number160 makeSHAHash(ByteBuffer... bufferList) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             for (ByteBuffer byteBuffer : bufferList) {
@@ -164,14 +163,7 @@ public class Utils {
         }
     }
 
-    public static Number160 makeSHAHash(DataBuffer buffer) {
-        if(buffer.isHeapBuffer()) {
-        	return makeSHAHash(buffer.heapBuffer());
-        } else {
-        	DataBuffer copy = buffer.shallowCopyIntern();
-        	return makeSHAHash(copy.bufferList());
-        }
-    }
+
 
     public static Number160 makeSHAHash(byte[] buffer) {
         return makeSHAHash(ByteBuffer.wrap(buffer));
@@ -312,14 +304,7 @@ public class Utils {
         return obj;
     }
 
-    public static synchronized Object decodeJavaObject(DataBuffer dataBuffer) throws ClassNotFoundException, IOException {
-        
-    	if(dataBuffer.isHeapBuffer()) {
-    		return decodeJavaObject(dataBuffer.heapBuffer(), 0, dataBuffer.length());
-    	} else {
-    		return decodeJavaObject(dataBuffer.shallowCopyIntern().bufferList());
-    	}
-    }
+    
 
     public static InputStream createInputStream(final ByteBuffer buf) {
         return new InputStream() {

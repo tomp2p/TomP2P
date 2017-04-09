@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
@@ -40,7 +41,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatistic;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
+//import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 public class RelayUtils {
 
@@ -131,7 +132,7 @@ public class RelayUtils {
 	 */
 	public static Buffer encodeMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
 		Encoder e = new Encoder(signatureFactory);
-		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+		CompositeByteBuf buf = Unpooled.compositeBuffer();
 		e.write(buf, message, message.receivedSignature());
 		System.err.println("got: "+buf);
 		return new Buffer(buf);

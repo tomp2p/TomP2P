@@ -17,10 +17,9 @@
 package net.tomp2p.connection;
 
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 
 import java.net.InetAddress;
-
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 /**
  * The class that stores the limits for the resource reservation.
@@ -147,14 +146,6 @@ public class ChannelClientConfiguration {
 	}
 
 	public ByteBufAllocator byteBufAllocator() {
-		if(enableHeap && enablePool) {
-			return AlternativeCompositeByteBuf.POOLED_HEAP;
-		} else if (!enableHeap && enablePool) {
-			return AlternativeCompositeByteBuf.POOLED_DIRECT;
-		} else if (enableHeap && !enablePool) {
-			return AlternativeCompositeByteBuf.UNPOOLED_HEAP;
-		}  else {
-			return AlternativeCompositeByteBuf.UNPOOLED_DIRECT;
-		}
+		return UnpooledByteBufAllocator.DEFAULT;
 	}
 }

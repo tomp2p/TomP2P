@@ -26,7 +26,6 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.DataBuffer;
 
 public class CumulativeScheme implements EvaluatingSchemeDHT {
     @Override

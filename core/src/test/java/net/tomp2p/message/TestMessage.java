@@ -53,6 +53,7 @@ import com.cedarsoftware.util.DeepEquals;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -68,7 +69,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.TestPeerAddress;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
@@ -102,7 +102,7 @@ public class TestMessage {
 
 	@Test
 	public void compositeBufferTest1() {
-		AlternativeCompositeByteBuf cbuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+		CompositeByteBuf cbuf = Unpooled.compositeBuffer();
 		ByteBuf buf = Unpooled.buffer();
 		
 		cbuf.writeInt(1);
@@ -120,7 +120,7 @@ public class TestMessage {
 
 	@Test
 	public void compositeBufferTest2() {
-		AlternativeCompositeByteBuf cbuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+		CompositeByteBuf cbuf = Unpooled.compositeBuffer();
 		int len = 8 * 4;
 		for (int i = 0; i < len; i += 4) {
 			ByteBuf buf = Unpooled.buffer().writeInt(i);
@@ -469,7 +469,7 @@ public class TestMessage {
 		Message m1 = Utils2.createDummyMessage();
 		m1.buffer(new Buffer(Unpooled.buffer()));
 		Encoder e = new Encoder(null);
-		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+		CompositeByteBuf buf = Unpooled.compositeBuffer();
 		e.write(buf, m1, null);
 		Decoder d = new Decoder(null);
 		boolean header = d.decodeHeader(buf, m1.recipient().ipv4Socket().createTCPSocket(),
@@ -665,7 +665,7 @@ public class TestMessage {
 	 */
 	private Message encodeDecode(final Message m1) throws Exception {
 		AtomicReference<Message> m2 = new AtomicReference<Message>();
-		final AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+		final CompositeByteBuf buf = Unpooled.compositeBuffer();
 		Encoder encoder = new Encoder(new DSASignatureFactory());
 		encoder.write(buf, m1, null);
 		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
@@ -687,7 +687,7 @@ public class TestMessage {
 	 */
 	@SuppressWarnings("unchecked")
 	private ChannelHandlerContext mockChannelHandlerContext(
-			final AlternativeCompositeByteBuf buf, final AtomicReference<Message> m2) {
+			final CompositeByteBuf buf, final AtomicReference<Message> m2) {
 		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
 		ByteBufAllocator alloc = mock(ByteBufAllocator.class);
 		when(ctx.alloc()).thenReturn(alloc);

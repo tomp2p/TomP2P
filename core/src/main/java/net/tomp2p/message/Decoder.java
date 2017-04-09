@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
@@ -37,7 +38,6 @@ import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
 
 public class Decoder {
@@ -76,7 +76,7 @@ public class Decoder {
 
 	private int bufferSize = -1;
 	private int bufferTransferred = 0;
-	private DataBuffer buffer = null;
+	private ByteBuf buffer = null;
 
 	private int trackerDataSize = -1;
 	private TrackerData trackerData = null;
@@ -474,19 +474,17 @@ public class Decoder {
 				if (bufferSize == -1) {
 					bufferSize = buf.readInt();
 				}
-				if (buffer == null) {
-					buffer = new DataBuffer();
-				}
-				
-				final int remaining = bufferSize - bufferTransferred;
-				bufferTransferred += buffer.transferFrom(buf, remaining);
-				
-				if(bufferTransferred < bufferSize) {
+				if(buf.readableBytes() < bufferSize) {
 					LOG.debug("Still looking for data. Indicating that its not finished yet. Already Transferred = {}, Size = {}.", bufferTransferred, bufferSize);
 					return false;
 				}
+                                
+                                if (buffer == null) {
+					buffer = Unpooled.buffer();
+				}
+                                buffer.writeBytes(buf);
 				
-				message.buffer(new Buffer(buffer.toByteBuf(), bufferSize));
+				message.buffer(new Buffer(buffer, bufferSize));
 				lastContent = contentTypes.poll();
 				bufferSize = -1;
 				bufferTransferred = 0;

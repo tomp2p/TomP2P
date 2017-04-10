@@ -331,7 +331,7 @@ public class Decoder {
 					dataMap = new DataMap(new TreeMap<Number640, Data>());
 				}
 				if (data != null) {
-					if (!data.decodeBuffer(buf)) {
+                                   	if (!data.decodeBuffer(buf)) {
 						return false;
 					}
 					if (!data.decodeDone(buf, message.publicKey(0), signatureFactory)) {

@@ -315,7 +315,11 @@ public class Data {
 	 * @return True if we are done reading
 	 */
 	public boolean decodeBuffer(final ByteBuf buf) {
-            final int len = Math.min(length, buf.readableBytes());
+            int already = buffer.writerIndex();
+            
+            int remaining = length - already;
+            int len = Math.min(remaining, buf.readableBytes());
+                    
             buffer.writeBytes(buf, len);
             return buffer.writerIndex() == length;
 	}

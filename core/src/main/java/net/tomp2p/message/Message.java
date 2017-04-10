@@ -1334,7 +1334,7 @@ public class Message {
 	}
 
 	public void release() {
-		for(DataMap dataMap: dataMapList()) {
+		/*for(DataMap dataMap: dataMapList()) {
 			for(Data data: dataMap.dataMap().values()) {
 				data.release();
 			}
@@ -1346,7 +1346,7 @@ public class Message {
 			for(Data data:trackerData.peerAddresses().values()) {
 				data.release();
 			}
-		}
+		}*/
 		
 	}
 }

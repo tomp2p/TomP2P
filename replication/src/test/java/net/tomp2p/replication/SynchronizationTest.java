@@ -1,5 +1,6 @@
 package net.tomp2p.replication;
 
+import io.netty.buffer.ByteBuf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -26,7 +27,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.synchronization.Checksum;
 import net.tomp2p.synchronization.Instruction;
 import net.tomp2p.synchronization.PeerSync;
@@ -93,8 +93,12 @@ public class SynchronizationTest {
 		byte[] newValue = "AzurichGenevaLuganoAbbLuganoAAA".getBytes();
 		List<Checksum> checksums = RSync.checksums(oldValue, size);
 		List<Instruction> instructions = RSync.instructions(newValue, checksums, size);
-		DataBuffer reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
-		Assert.assertArrayEquals(newValue, reconstructedValue.convertToHeapBuffer());
+		ByteBuf reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
+                
+                byte[] bytes = new byte[reconstructedValue.readableBytes()];
+                reconstructedValue.readBytes(bytes);
+                
+		Assert.assertArrayEquals(newValue, bytes);
 	}
 	
 	@Test
@@ -105,8 +109,12 @@ public class SynchronizationTest {
 		byte[] newValue = "AzurichGenevaLuganoAbbLuganoAAA".getBytes();
 		List<Checksum> checksums = RSync.checksums(oldValue, size);
 		List<Instruction> instructions = RSync.instructions(newValue, checksums, size);
-		DataBuffer reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
-		Assert.assertArrayEquals(newValue, reconstructedValue.convertToHeapBuffer());
+		ByteBuf reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
+                
+                byte[] bytes = new byte[reconstructedValue.readableBytes()];
+                reconstructedValue.readBytes(bytes);
+                
+		Assert.assertArrayEquals(newValue, bytes);
 	}
 	
 	@Test
@@ -117,8 +125,12 @@ public class SynchronizationTest {
 		byte[] newValue = "AzurichGenevaLuganoAbbLuganoAA".getBytes();
 		List<Checksum> checksums = RSync.checksums(oldValue, size);
 		List<Instruction> instructions = RSync.instructions(newValue, checksums, size);
-		DataBuffer reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
-		Assert.assertArrayEquals(newValue, reconstructedValue.convertToHeapBuffer());
+		ByteBuf reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
+                
+                byte[] bytes = new byte[reconstructedValue.readableBytes()];
+                reconstructedValue.readBytes(bytes);
+                
+		Assert.assertArrayEquals(newValue, bytes);
 	}
 
 	@Test
@@ -131,8 +143,12 @@ public class SynchronizationTest {
 		List<Instruction> instructions = RSync.instructions(newValue, checksums, size);
 
 		Assert.assertEquals(4, instructions.size());
-		DataBuffer reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
-		Assert.assertArrayEquals(newValue, reconstructedValue.convertToHeapBuffer());
+		ByteBuf reconstructedValue = RSync.reconstruct(oldValue, instructions, size);
+                
+                byte[] bytes = new byte[reconstructedValue.readableBytes()];
+                reconstructedValue.readBytes(bytes);
+                
+		Assert.assertArrayEquals(newValue, bytes);
 	}
 
 	@Test
@@ -184,9 +200,12 @@ public class SynchronizationTest {
 		LOG.debug("checksums(" + checksums.size() + "): " + checksums);
 		LOG.debug("instructions(" + instructions.size() + "): " + instructions);
 
-		DataBuffer reconstructedValue = RSync.reconstruct(oldValue.getBytes(), instructions, size);
+		ByteBuf reconstructedValue = RSync.reconstruct(oldValue.getBytes(), instructions, size);
+                
+                byte[] bytes = new byte[reconstructedValue.readableBytes()];
+                reconstructedValue.readBytes(bytes);
 
-		Assert.assertArrayEquals(newValue.getBytes(), reconstructedValue.convertToHeapBuffer());
+		Assert.assertArrayEquals(newValue.getBytes(), bytes);
 	}
 
 	@Test

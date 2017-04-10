@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
-import net.tomp2p.storage.DataBuffer;
 
 public class SyncUtils {
 	
@@ -39,7 +37,7 @@ public class SyncUtils {
 	    		//otherwise the header is the length
 	    		final int length = header;
 	    		final int remaining = Math.min(length, buf.readableBytes());
-	    		DataBuffer literal = new DataBuffer(buf.slice(buf.readerIndex(), remaining));
+	    		ByteBuf literal = buf.slice(buf.readerIndex(), remaining);
 	    		buf.skipBytes(remaining);
 	    		result.add(new Instruction(new RArray(literal)));
 	    	}
@@ -54,7 +52,7 @@ public class SyncUtils {
     }
 	
 	public static int encodeInstructions(List<Instruction> instructions, Number160 versionKey, 
-			Number160 hash, AlternativeCompositeByteBuf buf) {
+			Number160 hash, ByteBuf buf) {
 		int size = 0;
 	    buf.writeBytes(versionKey.toByteArray());
 	    buf.writeBytes(hash.toByteArray());
@@ -76,14 +74,14 @@ public class SyncUtils {
 		return size;
     }
 	
-	public static DataBuffer encodeChecksum(List<Checksum> checksums, Number160 versionKey, Number160 hash, ByteBuf buf) {
+	public static ByteBuf encodeChecksum(List<Checksum> checksums, Number160 versionKey, Number160 hash, ByteBuf buf) {
 		buf.writeBytes(versionKey.toByteArray());
 		buf.writeBytes(hash.toByteArray());
         for(Checksum checksum:checksums) {
         	buf.writeInt(checksum.weakChecksum());
         	buf.writeBytes(checksum.strongChecksum());
         }
-        return new DataBuffer(buf);
+        return buf;
 	}
 	
 	public static List<Checksum> decodeChecksums(ByteBuf buf) {

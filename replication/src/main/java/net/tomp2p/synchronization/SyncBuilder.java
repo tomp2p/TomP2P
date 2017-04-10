@@ -17,6 +17,7 @@
 package net.tomp2p.synchronization;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,9 +38,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -260,13 +259,12 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		List<Instruction> instructions = RSync.instructions(
                                          data2.toBytes(), checksums, blockSize);
                         		
-                        		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
+                        		ByteBuf abuf = Unpooled.buffer();
                         		
                         		dataCopy += SyncUtils.encodeInstructions(instructions, versionKey, hash, abuf);
-                        		DataBuffer dataBuffer = new DataBuffer(abuf);
                         		abuf.release();
                         		//diff
-                        		Data data1 = new Data(dataBuffer).flag1();
+                        		Data data1 = new Data(abuf).flag1();
                                 retVal.put(entry.getKey(), data1);                    		
                         	}
                         }

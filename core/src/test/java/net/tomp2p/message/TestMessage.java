@@ -99,47 +99,7 @@ public class TestMessage {
           System.out.println("Starting test: " + description.getMethodName());
        }
     };
-
-	@Test
-	public void compositeBufferTest1() {
-		CompositeByteBuf cbuf = Unpooled.compositeBuffer();
-		ByteBuf buf = Unpooled.buffer();
-		
-		cbuf.writeInt(1);
-		buf.writeInt(2);
-		cbuf.capacity(4);
-		cbuf.addComponent(buf);
-		cbuf.writerIndex(8);
-
-		Assert.assertEquals(1, cbuf.readInt());
-		Assert.assertEquals(2, cbuf.readInt());
-		
-		cbuf.release();
-		buf.release();
-	}
-
-	@Test
-	public void compositeBufferTest2() {
-		CompositeByteBuf cbuf = Unpooled.compositeBuffer();
-		int len = 8 * 4;
-		for (int i = 0; i < len; i += 4) {
-			ByteBuf buf = Unpooled.buffer().writeInt(i);
-			cbuf.capacity(cbuf.writerIndex()).addComponent(buf)
-					.writerIndex(i + 4);
-		}
-		cbuf.writeByte(1);
-
-		byte[] me = new byte[len];
-		cbuf.readBytes(me);
-		cbuf.readByte();
-
-		System.err.println("reader: " + cbuf.readerIndex());
-		System.err.println("writer: " + cbuf.writerIndex());
-		System.err.println("capacity: " + cbuf.capacity());
-		// see https://github.com/netty/netty/issues/1976
-		cbuf.discardSomeReadBytes();
-		cbuf.release();
-	}
+	
 
 	/**
 	 * Test a simple message to endcode and then decode.
@@ -672,7 +632,7 @@ public class TestMessage {
 		Decoder decoder = new Decoder(new DSASignatureFactory());
 		decoder.decode(ctx, buf, m1.recipient().ipv4Socket().createTCPSocket(), m1
 				.sender().ipv4Socket().createTCPSocket());
-		buf.release();
+		//buf.release();
 		return decoder.message();
 	}
 	

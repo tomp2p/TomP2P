@@ -88,7 +88,7 @@
   
   <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF. 
        See http://logback.qos.ch/manual/architecture.html for more information-->
-  <root level="TRACE">
+  <root level="WARN">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>

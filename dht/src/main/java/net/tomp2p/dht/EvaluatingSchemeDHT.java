@@ -15,6 +15,7 @@
  */
 package net.tomp2p.dht;
 
+import io.netty.buffer.ByteBuf;
 import java.util.Collection;
 import java.util.Map;
 
@@ -23,7 +24,6 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.DataBuffer;
 
 public interface EvaluatingSchemeDHT {
     public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeys480);
@@ -32,7 +32,7 @@ public interface EvaluatingSchemeDHT {
 
     public Object evaluate3(Map<PeerAddress, Object> rawObjects);
 
-    public DataBuffer evaluate4(Map<PeerAddress, DataBuffer> rawChannels);
+    public ByteBuf evaluate4(Map<PeerAddress, ByteBuf> rawChannels);
 
     public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest);
     

@@ -15,6 +15,7 @@
  */
 package net.tomp2p.dht;
 
+import io.netty.buffer.ByteBuf;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,7 +62,7 @@ public class CumulativeScheme implements EvaluatingSchemeDHT {
     }
 
     @Override
-    public DataBuffer evaluate4(Map<PeerAddress, DataBuffer> rawKeys) {
+    public ByteBuf evaluate4(Map<PeerAddress, ByteBuf> rawKeys) {
         throw new UnsupportedOperationException("cannot cumulate");
     }
 

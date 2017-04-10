@@ -1,8 +1,7 @@
 package net.tomp2p.synchronization;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
-import net.tomp2p.storage.DataBuffer;
 
 public class RArray {
 
@@ -10,7 +9,7 @@ public class RArray {
 	private final int offset;
 	private final int length;
 	
-	private final DataBuffer dataBuffer;
+	private final ByteBuf dataBuffer;
 
 	public RArray(byte[] array, int offset, int length) {
 		this.array = array;
@@ -19,7 +18,7 @@ public class RArray {
 		this.dataBuffer = null;
 	}
 	
-	public RArray(DataBuffer dataBuffer) {
+	public RArray(ByteBuf dataBuffer) {
 		this.array = null;
 		this.offset = -1;
 		this.length = -1;
@@ -38,7 +37,7 @@ public class RArray {
 		return length;
 	}
 	
-	public DataBuffer dataBuffer() {
+	public ByteBuf dataBuffer() {
 		return dataBuffer;
 	}
 	
@@ -46,11 +45,11 @@ public class RArray {
 		return dataBuffer != null;
 	}
 
-	public void transferTo(AlternativeCompositeByteBuf buf) {
+	public void transferTo(ByteBuf buf) {
 		if(hasDataBuffer()) {
-			dataBuffer.transferTo(buf);
+                    buf.writeBytes(dataBuffer.duplicate());
 		} else {
-			buf.addComponent(Unpooled.wrappedBuffer(array, offset, length));
+			buf.writeBytes(Unpooled.wrappedBuffer(array, offset, length));
 		}
 		
 	}

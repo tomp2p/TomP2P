@@ -475,14 +475,14 @@ public class Decoder {
 					bufferSize = buf.readInt();
 				}
 				if(buf.readableBytes() < bufferSize) {
-					LOG.debug("Still looking for data. Indicating that its not finished yet. Already Transferred = {}, Size = {}.", bufferTransferred, bufferSize);
+					LOG.debug("Still looking for data. Indicating that its not finished yet. Readable = {}, Size = {}.", buf.readableBytes(), bufferSize);
 					return false;
 				}
                                 
                                 if (buffer == null) {
 					buffer = Unpooled.buffer();
 				}
-                                buffer.writeBytes(buf);
+                                buffer.writeBytes(buf, bufferSize);
 				
 				message.buffer(new Buffer(buffer, bufferSize));
 				lastContent = contentTypes.poll();

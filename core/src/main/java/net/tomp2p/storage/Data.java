@@ -315,8 +315,9 @@ public class Data {
 	 * @return True if we are done reading
 	 */
 	public boolean decodeBuffer(final ByteBuf buf) {
-            buffer.writeBytes(buf);
-            return true;
+            final int len = Math.min(length, buf.readableBytes());
+            buffer.writeBytes(buf, len);
+            return buffer.writerIndex() == length;
 	}
 	
 	public boolean decodeDone(final ByteBuf buf, SignatureFactory signatureFactory) {
@@ -461,11 +462,11 @@ public class Data {
 	 * @return 
 	 */
 	public ByteBuf buffer() {
-		return buffer;
+		return buffer.duplicate();
 	}
 
 	public Object object() throws ClassNotFoundException, IOException {
-		return Utils.decodeJavaObject(buffer);
+		return Utils.decodeJavaObject(buffer.duplicate());
 	}
 
 	public long validFromMillis() {
@@ -897,7 +898,7 @@ public class Data {
 	}
 	
 	public Data release() {
-		buffer.release();    
+		//buffer.release();    
         return this;
 	}
 }

@@ -16,12 +16,13 @@
 
 package net.tomp2p.synchronization;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -161,18 +162,18 @@ final public class RSync {
 	 *            The offset size
 	 * @return The value which is identical to the responsible peer's value
 	 */
-	public static DataBuffer reconstruct(byte[] value, List<Instruction> instructions, int blockSize) {
-		DataBuffer result = new DataBuffer();
+	public static ByteBuf reconstruct(byte[] value, List<Instruction> instructions, int blockSize) {
+		ByteBuf result = Unpooled.buffer();
 		for (Instruction instruction : instructions) {
 			int ref = instruction.reference();
 			if (ref != -1) {
 				int offset = blockSize * ref;
 				int remaining = Math.min(blockSize, value.length - offset);
-				result.append(value, offset, remaining);
+				result.writeBytes(value, offset, remaining);
 			} else if (instruction.literal().hasDataBuffer()) {
-				result.append(instruction.literal().dataBuffer().bufListIntern());
+				result.writeBytes(instruction.literal().dataBuffer());
 			} else {
-				result.append(instruction.literal().array(), instruction.literal().offset(), instruction.literal().length());
+				result.writeBytes(instruction.literal().array(), instruction.literal().offset(), instruction.literal().length());
 			}
 		}
 		return result;

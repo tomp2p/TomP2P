@@ -15,6 +15,7 @@
  */
 package net.tomp2p.dht;
 
+import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -149,7 +150,7 @@ public class DistributedHashTable {
                                 		EMPTY_NAVIGABLE_SET, futureRouting.potentialHits(), futureSend,
                                         builder.isCancelOnFinish(), future.channelCreator(),
                                         new OperationMapper<FutureSend>() {
-                                            Map<PeerAddress, DataBuffer> rawChannels = new HashMap<PeerAddress, DataBuffer>();
+                                            Map<PeerAddress, ByteBuf> rawChannels = new HashMap<PeerAddress, ByteBuf>();
 
                                             Map<PeerAddress, Object> rawObjects = new HashMap<PeerAddress, Object>();
 
@@ -174,7 +175,7 @@ public class DistributedHashTable {
                                                 if (future.isSuccess() && future.responseMessage().isOk()) {
                                                     if (builder.isRaw()) {
                                                         rawChannels.put(future.request().recipient(),
-                                                        		new DataBuffer(future.responseMessage().buffer(0).buffer()));
+                                                        		future.responseMessage().buffer(0).buffer().duplicate());
                                                         future.responseMessage().buffer(0).buffer().release();
                                                     } else {
                                                         try {

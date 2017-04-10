@@ -17,6 +17,7 @@
 package net.tomp2p.synchronization;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -49,9 +50,7 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -203,8 +202,8 @@ public class SyncRPC extends DispatchHandler {
                     // get the checksums
                 	// TODO: don't copy data, toBytes does a copy!
                     List<Checksum> checksums = RSync.checksums(data.toBytes(), blockSize);
-                    AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
-                    DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().versionKey(), data.hash(), abuf);
+                    ByteBuf abuf = Unpooled.buffer();
+                    ByteBuf dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().versionKey(), data.hash(), abuf);
                     //here we can release this buffer as encodeChecksum calls retain
                     abuf.release();
                     retVal.put(entry.getKey(), new Data(dataBuffer));
@@ -217,8 +216,8 @@ public class SyncRPC extends DispatchHandler {
             				get(entry.getKey().minVersionKey(), entry.getKey().maxVersionKey(), 1, false).lastEntry();
             		// TODO: don't copy data, toBytes does a copy!
             		List<Checksum> checksums = RSync.checksums(latest.getValue().toBytes(), blockSize);
-            		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer(AlternativeCompositeByteBuf.UNPOOLED_HEAP);
-                    DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().versionKey(), 
+            		ByteBuf abuf = Unpooled.buffer();
+                    ByteBuf dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().versionKey(), 
                     		latest.getValue().hash(), abuf);
                     //here we can release this buffer as encodeChecksum calls retain
                     abuf.release();
@@ -276,7 +275,7 @@ public class SyncRPC extends DispatchHandler {
                         continue;
                     }
                     // TODO: don't copy data, toBytes does a copy!
-                    DataBuffer reconstructedValue = RSync.reconstruct(dataOld.toBytes(), instructions, blockSize);
+                    ByteBuf reconstructedValue = RSync.reconstruct(dataOld.toBytes(), instructions, blockSize);
                     //TODO: domain protection?, make the flags configurable
                     Enum<?> status = storageLayer.put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false, false);
                     if (status == PutStatus.OK) {

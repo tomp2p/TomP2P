@@ -59,7 +59,6 @@ import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
@@ -422,8 +421,6 @@ public class TestDHT {
 			        .contentKey(new Number160(5)).routingConfiguration(rc).requestP2PConfiguration(pc).start();
 			fget.awaitUninterruptibly();
 			Assert.assertEquals(true, fget.isSuccess());
-			Assert.assertEquals(true, fget.rawData().values().iterator().next().values().iterator().next().isHeapBuffer());
-			Assert.assertEquals(true, fget.requests().get(0).responseMessage().dataMap(0).dataMap().values().iterator().next().isHeapBuffer());
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -970,7 +967,6 @@ public class TestDHT {
 			// do testing
 			ByteBuf c = Unpooled.buffer();
 			c.writeInt(77);
-			DataBuffer d = new DataBuffer(c);
 			peers[50].peer().rawDataReply(new RawDataReply() {
 				@Override
 				public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete) {
@@ -981,7 +977,7 @@ public class TestDHT {
 					return ret;
 				}
 			});
-			FutureDirect fd = master.peer().sendDirect(peers[50].peerAddress()).dataBuffer(d).start();
+			FutureDirect fd = master.peer().sendDirect(peers[50].peerAddress()).dataBuffer(c).start();
 			fd.await();
 			if (fd.buffer() == null) {
 				System.out.println("damm");
@@ -1010,7 +1006,6 @@ public class TestDHT {
 			// do testing
 			ByteBuf c = Unpooled.buffer();
 			c.writeInt(77);
-			DataBuffer d = new DataBuffer(c);
 			peers[50].peer().rawDataReply(new RawDataReply() {
 				@Override
 				public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete) {
@@ -1018,7 +1013,7 @@ public class TestDHT {
 					return requestBuffer;
 				}
 			});
-			FutureDirect fd = master.peer().sendDirect(peers[50].peerAddress()).dataBuffer(d).start();
+			FutureDirect fd = master.peer().sendDirect(peers[50].peerAddress()).dataBuffer(c).start();
 			fd.await();
 			System.out.println("done1 " + fd.failedReason());
 			Assert.assertEquals(true, fd.isSuccess());
@@ -1490,7 +1485,7 @@ public class TestDHT {
 			for (int i = 0; i < 60; i++) {
 				final byte[] b = new byte[10000];
 				FuturePeerConnection pc = master.createPeerConnection(slave.peerAddress());
-				list1.add(master.sendDirect(pc).dataBuffer(new DataBuffer(Unpooled.wrappedBuffer(b))).start());
+				list1.add(master.sendDirect(pc).dataBuffer( Unpooled.wrappedBuffer(b)).start());
 				list3.add(pc);
 				// pc.close();
 			}
@@ -1499,7 +1494,7 @@ public class TestDHT {
 				final byte[] b = new byte[1000];
 				byte[] me = Utils.intToByteArray(i);
 				System.arraycopy(me, 0, b, 0, 4);
-				list2.add(master.sendDirect(slave.peerAddress()).dataBuffer(new DataBuffer(Unpooled.wrappedBuffer(b)))
+				list2.add(master.sendDirect(slave.peerAddress()).dataBuffer(Unpooled.wrappedBuffer(b))
 				        .start());
 			}
 			for (BaseFuture bf : list1) {
@@ -2348,8 +2343,7 @@ public class TestDHT {
 		if (count == 0) {
 			return;
 		}
-		DataBuffer b = new DataBuffer(toStore1);
-		FutureDirect fd = p1.peer().sendDirect(p2.peerAddress()).dataBuffer(b).start();
+		FutureDirect fd = p1.peer().sendDirect(p2.peerAddress()).dataBuffer(toStore1).start();
 		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
 			@Override
 			public void operationComplete(FutureDirect future) throws Exception {

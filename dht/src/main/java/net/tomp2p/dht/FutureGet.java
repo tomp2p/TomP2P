@@ -47,8 +47,6 @@ public class FutureGet extends FutureDHT<FutureGet> {
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
-    
-    private boolean convertToHeapBuffer = true;
 
     /**
      * Default constructor.
@@ -88,21 +86,6 @@ public class FutureGet extends FutureDHT<FutureGet> {
                 return;
             }
             this.rawData = rawData;
-            
-            if(convertToHeapBuffer) {
-            	for(Map<Number640, Data> map:rawData.values()) {
-            		for(Data data:map.values()) {
-            			data.convertToHeapBuffer();
-            		}
-            	}
-            	for(DigestResult digest:rawDigest.values()) {
-            		if(digest.dataMap() != null) {
-            			for(Data data:digest.dataMap().values()) {
-            				data.convertToHeapBuffer();
-            			}
-            		}
-            	}
-            }
             
             this.rawDigest = rawDigest;
             this.rawStatus = rawStatus;

@@ -254,16 +254,20 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		Number160 hash = SyncUtils.decodeHeader(buffer);
              
                         		List<Checksum> checksums = SyncUtils.decodeChecksums(buffer);
-                        		buffer.release();
-                        		// TODO: don't copy data, toBytes does a copy!
+                        		
+                                        //buffer.release();
+                        		
+                                        // TODO: don't copy data, toBytes does a copy!
                         		List<Instruction> instructions = RSync.instructions(
                                          data2.toBytes(), checksums, blockSize);
                         		
                         		ByteBuf abuf = Unpooled.buffer();
                         		
                         		dataCopy += SyncUtils.encodeInstructions(instructions, versionKey, hash, abuf);
-                        		abuf.release();
-                        		//diff
+                        		
+                                        //abuf.release();
+                        		
+                                        //diff
                         		Data data1 = new Data(abuf).flag1();
                                 retVal.put(entry.getKey(), data1);                    		
                         	}

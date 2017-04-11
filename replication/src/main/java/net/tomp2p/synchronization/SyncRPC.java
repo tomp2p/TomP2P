@@ -205,7 +205,7 @@ public class SyncRPC extends DispatchHandler {
                     ByteBuf abuf = Unpooled.buffer();
                     ByteBuf dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().versionKey(), data.hash(), abuf);
                     //here we can release this buffer as encodeChecksum calls retain
-                    abuf.release();
+                    //abuf.release();
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required hash = {}", data.hash());
                 }
@@ -220,7 +220,7 @@ public class SyncRPC extends DispatchHandler {
                     ByteBuf dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().versionKey(), 
                     		latest.getValue().hash(), abuf);
                     //here we can release this buffer as encodeChecksum calls retain
-                    abuf.release();
+                    //abuf.release();
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required for version");
             	} else {

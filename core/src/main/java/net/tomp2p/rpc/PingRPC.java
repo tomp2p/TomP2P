@@ -175,8 +175,8 @@ public class PingRPC extends DispatchHandler {
 	 * @param remotePeer
 	 *            The destination peer
 	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
-	 * @return The future that will be triggered when we receive an answer or something fails.
+	 *            The channel creator where we create a UDP channel
+   	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
 	public FutureResponse pingUDPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {

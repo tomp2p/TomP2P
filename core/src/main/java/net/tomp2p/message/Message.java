@@ -16,6 +16,7 @@
 package net.tomp2p.message;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.DatagramChannel;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -30,7 +31,9 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.TreeMap;
 
-import net.tomp2p.connection.PeerConnection;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -48,6 +51,7 @@ import net.tomp2p.storage.Data;
  * 
  * @author Thomas Bocek
  */
+@Accessors(fluent = true, chain = true)
 public class Message {
 
     // used for creating random message id
@@ -88,7 +92,7 @@ public class Message {
 		 * <li>for {@link Commands#NEIGHBOR} means check for get (with digest) for storage</li>
 		 * <li>for TASK is status</li>
 		 * <li>for {@link Commands#RELAY} means send piggybacked message</li>
-		 * <li>for {@link Commands#RCON} open TCP channel and transmit {@link PeerConnection}</li>
+		 * <li>for {@link Commands#RCON} open TCP channel and transmit </li>
 		 * </ul>
 		 */
 		REQUEST_2,
@@ -101,7 +105,7 @@ public class Message {
 		 * others)</li>
 		 * <li>for TASK is send back result</li>
 		 * <li>for {@link Commands#RELAY} means update the routing table</li>
-		 * <li>for {@link Commands#RCON} use open {@link PeerConnection} to transmit original message</li>
+		 * <li>for {@link Commands#RCON} use open  to transmit original message</li>
 		 * </ul>
 		 */
 		REQUEST_3,
@@ -123,7 +127,7 @@ public class Message {
 		 * only)</li>
 		 * </ul>
 		 */
-		REQUEST_5,
+		ACK,
 
 		/**
 		 * <ul>
@@ -145,19 +149,19 @@ public class Message {
 		OK,
 		
 		/**
-		 * When the called node has {@link PeerAddress#isSlow()} activated, the relay peer returns a partial ok
+		 * The request was ok, but we don't know the peer, so request an ack
+		 */
+		UNUSED,
+		
+		/**
+		 * When the called node has {@link PeerAddress} activated, the relay peer returns a partial ok
 		 */
 		PARTIALLY_OK,
 		NOT_FOUND,
 		DENIED,
 		UNKNOWN_ID,
 		EXCEPTION,
-		CANCEL,
-		
-		/**
-		 * Still unused
-		 */
-		RESERVED1
+		CANCEL
 	};
 
     // Header:
@@ -198,14 +202,11 @@ public class Message {
     private transient PrivateKey privateKey;
     private transient InetSocketAddress senderSocket;
     private transient InetSocketAddress recipientSocket;
-    private transient boolean udp = false;
+    //@Getter @Setter private transient DatagramChannel datagramChannel;
     private transient boolean done = false;
     private transient boolean sign = false;
     private transient boolean content = false;
-    private transient boolean verified = false;
     private transient boolean sendSelf = false;
-    private transient PeerAddress recipientRelay;
-    private transient PeerAddress recipientReflected;
 
     /**
      * Creates message with a random ID.
@@ -340,24 +341,7 @@ public class Message {
         this.recipient = recipient;
         return this;
     }
-    
-    public PeerAddress recipientRelay() {
-        return recipientRelay;
-    }
-    
-    public Message recipientRelay(PeerAddress recipientRelay) {
-    	this.recipientRelay = recipientRelay;
-        return this; 
-    }
-    
-    public PeerAddress recipientReflected() {
-        return recipientReflected;
-    }
-    
-    public Message recipientReflected(PeerAddress recipientReflected) {
-    	this.recipientReflected = recipientReflected;
-        return this; 
-    }
+   
 
     /**
      * Return content types. Content type can be empty if not set
@@ -502,7 +486,11 @@ public class Message {
      */
     public boolean isRequest() {
 		return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3 || type == Type.REQUEST_4
-				|| type == Type.REQUEST_5 || type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
+				|| type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
+    }
+    
+    public boolean isAck() {
+		return type == Type.ACK;
     }
 
     /**
@@ -516,7 +504,7 @@ public class Message {
      * @return True if the message was ok, or at least send partial data
      */
     public boolean isOk() {
-        return type == Type.OK || type == Type.PARTIALLY_OK;
+        return type == Type.OK || type == Type.PARTIALLY_OK ;
     }
 
     /**
@@ -582,12 +570,12 @@ public class Message {
         return (options & 1) > 0;
     }
     
-    public Message streaming() {
-        return streaming(true);
+    public Message verified() {
+        return verified(true);
     }
 
-    public Message streaming(boolean streaming) {
-        if (streaming) {
+    public Message verified(boolean verified) {
+        if (verified) {
             options |= 2;
         } else {
             options &= ~2;
@@ -595,7 +583,7 @@ public class Message {
         return this;
     }
 
-    public boolean isStreaming() {
+    public boolean isVerified() {
         return (options & 2) > 0;
     }
     
@@ -1016,9 +1004,19 @@ public class Message {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("msgid=");
-        return sb.append(messageId()).append(",t=").append(type).
-        	append(",c=").append(RPC.Commands.find(command).toString()).append(",").append(isUdp()?"udp":"tcp").
-        	append(",s=").append(sender).append(",r=").append(recipient).toString();        
+        return sb
+        		.append(messageId())
+        		.append(',')
+        		.append(RPC.Commands.find(command).toString())
+        		.append('/')
+        		.append(type)
+        		.append(",s=")
+        		.append(sender)
+        		.append(",r=")
+        		.append(recipient)
+        		.append(",o=")
+        		.append(options)
+        		.toString();        
     }
 
     // *************************** No transferable objects here *********************************
@@ -1091,37 +1089,6 @@ public class Message {
          */
         return sign || privateKey != null; // || hasType;
     }
-
-    /**
-     * @param udp
-     *            True if connection is UDP
-     * @return This class
-     */
-    public Message udp(final boolean udp) {
-        this.udp = udp;
-        return this;
-    }
-
-    /**
-     * @return True if connection is UDP
-     */
-    public boolean isUdp() {
-        return udp;
-    }
-    
-    public Message verified(boolean verified) {
-    	this.verified = verified;
-    	return this;
-    }
-    
-    public boolean verified() {
-    	return verified;
-    }
-    
-    public Message setVerified() {
-    	this.verified = true;
-    	return this;
-	}
 
     /**
      * @param done
@@ -1211,14 +1178,10 @@ public class Message {
         message.privateKey = this.privateKey;
         message.senderSocket = this.senderSocket;
         message.recipientSocket = this.recipientSocket;
-        message.udp = this.udp;
         message.done = this.done;
         message.sign = this.sign;
         message.content = this.content;
-        message.verified = this.verified;
         message.sendSelf = this.sendSelf;
-        message.recipientRelay = this.recipientRelay;
-        message.recipientReflected = this.recipientReflected;
         
         return message;
     }
@@ -1331,22 +1294,5 @@ public class Message {
 		}
 		
 		return current;
-	}
-
-	public void release() {
-		/*for(DataMap dataMap: dataMapList()) {
-			for(Data data: dataMap.dataMap().values()) {
-				data.release();
-			}
-		}
-		for(Buffer buffer: bufferList()) {
-			buffer.buffer().release();
-		}
-		for(TrackerData trackerData:trackerDataList()) {
-			for(Data data:trackerData.peerAddresses().values()) {
-				data.release();
-			}
-		}*/
-		
 	}
 }

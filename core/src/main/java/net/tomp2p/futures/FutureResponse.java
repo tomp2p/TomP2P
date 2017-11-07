@@ -92,9 +92,6 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     public FutureResponse response(final Message responseMessage) {
         synchronized (lock) {
             if (!completedAndNotify()) {
-            	if(responseMessage != null) {
-            		responseMessage.release();
-            	}
                 return this;
             }
             if (responseMessage != null) {

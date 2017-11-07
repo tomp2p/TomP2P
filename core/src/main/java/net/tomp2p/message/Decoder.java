@@ -18,13 +18,10 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 
+import io.netty.buffer.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import net.tomp2p.connection.Dispatcher;
@@ -90,29 +87,18 @@ public class Decoder {
 		this.signatureFactory = signatureFactory;
 	}
 
-	public boolean decode(ChannelHandlerContext ctx, final ByteBuf buf, InetSocketAddress recipient,
+	public boolean decode(ByteBuf buf, InetSocketAddress recipient,
 			final InetSocketAddress sender) {
 
 		LOG.debug("Decoding of TomP2P starts now. Readable: {}.", buf.readableBytes());
 
 		try {
 			final int readerBefore = buf.readerIndex();
-			// set the sender of this message for handling timeout
-			final Attribute<InetSocketAddress> attributeInet = ctx.attr(INET_ADDRESS_KEY);
-			attributeInet.set(sender);
+
 
 			if (!headerDone) {
 				headerDone = decodeHeader(buf, recipient, sender);
-				if (headerDone) {
-					// store the sender as an attribute
-					final Attribute<PeerAddress> attributePeerAddress = ctx.attr(PEER_ADDRESS_KEY);
-					attributePeerAddress.set(message.sender());
-					message.udp(ctx.channel() instanceof DatagramChannel);
-					if (message.isFireAndForget() && message.isUdp()) {
-                                            //TODO: find better place for this
-                                            Dispatcher.removeTimeout(ctx);
-					}
-				} else {
+				if (!headerDone) {
 					return false;
 				}
 			}
@@ -125,8 +111,7 @@ public class Decoder {
 			return donePayload;
 
 		} catch (Exception e) {
-			ctx.fireExceptionCaught(e);
-			e.printStackTrace();
+			LOG.error("error in decoder",e);
 			return true;
 		}
 	}
@@ -162,7 +147,7 @@ public class Decoder {
 			LOG.debug("Verifying received signature: {}", Arrays.toString(signatureReceived));
 			if (signature.verify(signatureReceived)) {
 				// set public key only if signature is correct
-				message.setVerified();
+				//message.setVerified();
 				LOG.debug("Signature check OK.");
 			} else {
 				LOG.warn("Signature check NOT OK. Message: {}.", message);
@@ -263,7 +248,7 @@ public class Decoder {
 					if (buf.readableBytes() < PeerAddress.HEADER_SIZE) {
 						return false;
 					}
-					size = PeerAddress.size(buf.getUnsignedMedium(buf.readerIndex()));
+					size = PeerAddress.size(buf.getUnsignedShort(buf.readerIndex()));
 					if (buf.readableBytes() < size) {
 						return false;
 					}
@@ -616,9 +601,6 @@ public class Decoder {
 
 	public void release() {
 		
-		if(message!=null) {
-			message.release();
-		}
 		//release partial data
 		if(data != null) {
 			data.release();

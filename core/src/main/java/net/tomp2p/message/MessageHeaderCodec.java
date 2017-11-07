@@ -49,7 +49,7 @@ public final class MessageHeaderCodec {
     }
 
     public static final int HEADER_SIZE_STATIC = 34;
-    public static final int HEADER_SIZE_MIN = HEADER_SIZE_STATIC + PeerAddress.MIN_SIZE_HEADER; //63
+    public static final int HEADER_SIZE_MIN = HEADER_SIZE_STATIC + PeerAddress.MIN_SIZE_HEADER; //59
 
     /**
      * Encodes a message object.
@@ -63,11 +63,11 @@ public final class MessageHeaderCodec {
      *  - 32bit content types   //33 bytes
      *  - 8bit message options. //34 bytes
      *  - sender peeraddress, without current IP (variable). The size is 
-     *    determined by the first 3 byte. Minimun size is 29 bytes
-     *    //total minimun 63 bytes
+     *    determined by the first 3 byte. Minimun size is 25 bytes
+     *    //total minimun 57 bytes
      *  
      *  It total,
-     * the header is of size 59 bytes.
+     * the header is of size 57 bytes.
      * 
      * @param buffer
      *            The buffer to encode to
@@ -126,9 +126,9 @@ public final class MessageHeaderCodec {
         final int messageOptions = buffer.readUnsignedByte();
         message.options(messageOptions);
         
-        final int header = buffer.readUnsignedMedium();
+        final int header = buffer.readUnsignedShort();
         final int peerAddressSize = PeerAddress.size(header);
-        if(3 + buffer.readableBytes() < peerAddressSize) {
+        if(PeerAddress.HEADER_SIZE + buffer.readableBytes() < peerAddressSize) {
         	return false;
         }
         

@@ -17,9 +17,7 @@ package net.tomp2p.rpc;
 
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
-import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
@@ -110,7 +108,8 @@ public abstract class DispatchHandler {
      * @return The created request message
      */
     public Message createMessage(final PeerAddress recipient, final byte name, final Type type) {
-        return new Message().recipient(recipient).sender(peerBean().serverPeerAddress())
+    	PeerAddress senderShort = peerBean().serverPeerAddress().withSkipIP(true);
+        return new Message().recipient(recipient).sender(senderShort)
                 .command(name).type(type).version(connectionBean().p2pId());
     }
 
@@ -133,12 +132,12 @@ public abstract class DispatchHandler {
         replyMessage.senderSocket(requestMessage.senderSocket());
         replyMessage.recipientSocket(requestMessage.recipientSocket());
         replyMessage.recipient(requestMessage.sender());
-        replyMessage.sender(peerAddress);
+        PeerAddress senderShort = peerAddress.withSkipIP(true);
+        replyMessage.sender(senderShort);
         replyMessage.command(requestMessage.command());
         replyMessage.type(replyType);
         replyMessage.version(requestMessage.version());
         replyMessage.messageId(requestMessage.messageId());
-        replyMessage.udp(requestMessage.isUdp());
         return replyMessage;
     }
 
@@ -147,15 +146,14 @@ public abstract class DispatchHandler {
      * 
      * @param requestMessage
      *            The request message
-     * @param peerConnection The peer connection that can be used for communication
      * @param responder The responder used to respond the response message
      */
-    public void forwardMessage(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
+    public Message forwardMessage(final Message requestMessage) {
         // Here, we need a referral since we got contacted and we don't know if
         // we can contact the peer with its address. The peer may be behind a NAT.
     	
     	//TODO: figure out how to include this. The only thing we currently missing are the ports
-    	if(requestMessage.sender().net4Internal() || 
+    	if(
     			(requestMessage.type() == Type.REQUEST_1 && requestMessage.command() == RPC.Commands.RELAY.getNr()) ||
     			(requestMessage.type() == Type.REQUEST_2 && requestMessage.command() == RPC.Commands.PING.getNr()) ) {
     		//request 2/ping is a ping discover, where we don't know our external address and port. Don't add this!
@@ -163,11 +161,11 @@ public abstract class DispatchHandler {
     	} else {
     		//if its send to self, then we have full trust, don't set reporter 
     		final PeerAddress reporter = requestMessage.isSendSelf() ? null : requestMessage.sender();
-    		peerBean.notifyPeerFound(requestMessage.sender(), reporter, null, null);
+    		peerBean.notifyPeerFound(requestMessage.sender(), reporter, null);
     	}
         
         try {
-            handleResponse(requestMessage, peerConnection, sign, responder);
+            return handleResponse(requestMessage, sign);
         } catch (Throwable e) {
         	synchronized (peerBean.peerStatusListeners()) {
         		for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
@@ -175,7 +173,7 @@ public abstract class DispatchHandler {
 				}
         	}
         	LOG.error("Exception in custom handler.", e);
-            responder.failed(Type.EXCEPTION , e.toString());
+            return null;
         }
     }
     
@@ -185,7 +183,6 @@ public abstract class DispatchHandler {
      * 
      * @param message
      *            Request message
-     * @param peerConnection 
      * @param sign
      *            Flag to indicate if message is signed
      * @param responder 
@@ -193,6 +190,6 @@ public abstract class DispatchHandler {
      * @throws Exception
      *             Any exception
      */
-    public abstract void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) throws Exception;
+    public abstract Message handleResponse(Message message, boolean sign) throws Exception;
 
 }

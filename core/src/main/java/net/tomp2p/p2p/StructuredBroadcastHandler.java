@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
@@ -15,6 +17,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.ConcurrentCacheMap;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -83,11 +86,11 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 		if (hopCount < peer.peerBean().peerMap().nrFilledBags()) {
 			if (hopCount == 0) {
 				LOG.debug("zero hop");
-				firstPeer(messageKey, dataMap, hopCount, message.isUdp());
+				firstPeer(messageKey, dataMap, hopCount);
 			} else {
 				LOG.debug("more hop");
 				otherPeer(message.sender().peerId(), messageKey, dataMap,
-						hopCount, message.isUdp(), bucketNr);
+						hopCount, bucketNr);
 			}
 		} else {
 			LOG.debug("max hop reached in {}", peer.peerID());
@@ -130,14 +133,13 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 	 *            Flag if message can be sent with UDP
 	 */
 	private void firstPeer(final Number160 messageKey,
-			final NavigableMap<Number640, Data> dataMap, final int hopCounter,
-			final boolean isUDP) {
+			final NavigableMap<Number640, Data> dataMap, final int hopCounter) {
 		final List<PeerAddress> list = peer.peerBean().peerMap()
 				.fromEachBag(FROM_EACH_BAG, Number160.BITS);
 		for (final PeerAddress peerAddress : list) {
 			final int bucketNr = PeerMap.classMember(peerAddress.peerId(),
 					peer.peerID());
-			doSend(messageKey, dataMap, hopCounter, isUDP, peerAddress,
+			doSend(messageKey, dataMap, hopCounter, peerAddress,
 					bucketNr);
 		}
 	}
@@ -157,24 +159,24 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 	 */
 	private void otherPeer(Number160 sender, Number160 messageKey,
 			NavigableMap<Number640, Data> dataMap, int hopCounter,
-			boolean isUDP, final int bucketNr) {
+			final int bucketNr) {
 		final List<PeerAddress> list = peer.peerBean().peerMap()
 				.fromEachBag(FROM_EACH_BAG, bucketNr);
 		for (final PeerAddress peerAddress : list) {
 			final int bucketNr2 = PeerMap.classMember(peerAddress.peerId(),
 					peer.peerID());
-			doSend(messageKey, dataMap, hopCounter, isUDP, peerAddress,
+			doSend(messageKey, dataMap, hopCounter, peerAddress,
 					bucketNr2);
 		}
 	}
 
 	private void doSend(final Number160 messageKey,
 			final NavigableMap<Number640, Data> dataMap, final int hopCounter,
-			final boolean isUDP, final PeerAddress peerAddress,
+			final PeerAddress peerAddress,
 			final int bucketNr) {
 
 		FutureChannelCreator frr = peer.connectionBean().reservation()
-				.create(isUDP ? 1 : 0, isUDP ? 0 : 1);
+				.create(1);
 		frr.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(final FutureChannelCreator future)
@@ -184,15 +186,14 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 							peer, messageKey);
 					broadcastBuilder.dataMap(dataMap);
 					broadcastBuilder.hopCounter(hopCounter + 1);
-					broadcastBuilder.udp(isUDP);
-					FutureResponse futureResponse = peer.broadcastRPC()
+					Pair<FutureDone<Message>, FutureDone<ClientChannel>> p = peer.broadcastRPC()
 							.send(peerAddress, broadcastBuilder,
 									future.channelCreator(), broadcastBuilder,
 									bucketNr);
 					LOG.debug("send to {}", peerAddress);
 					messageCounter.incrementAndGet();
 					Utils.addReleaseListener(future.channelCreator(),
-							futureResponse);
+							p.element0());
 				} else {
 					Utils.addReleaseListener(future.channelCreator());
 				}

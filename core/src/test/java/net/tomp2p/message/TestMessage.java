@@ -16,13 +16,8 @@
 
 package net.tomp2p.message;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -38,7 +33,6 @@ import java.util.NavigableMap;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -46,20 +40,12 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import com.cedarsoftware.util.DeepEquals;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.socket.DatagramChannel;
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.message.Message.Content;
@@ -111,7 +97,7 @@ public class TestMessage {
 		// encode
 		Message m1 = Utils2.createDummyMessage();
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		compareMessage(m1, m2);
 	}
 
@@ -138,7 +124,7 @@ public class TestMessage {
 		m1.keyCollection(new KeyCollection(tmp2));
 
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 
 		Assert.assertEquals(false, m2.keyList() == null);
 		Assert.assertEquals(false, m2.keyCollectionList() == null);
@@ -159,7 +145,7 @@ public class TestMessage {
 		ByteBuf tmp = Unpooled.wrappedBuffer(me);
 		m1.buffer(new Buffer(tmp));
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(false, m2.buffer(0) == null);
 		compareMessage(m1, m2);
 	}
@@ -175,6 +161,7 @@ public class TestMessage {
 		Random rnd = new Random(42);
 		m1.type(Message.Type.REQUEST_4);
 		m1.setHintSign();
+		m1.verified();
 
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
@@ -201,11 +188,11 @@ public class TestMessage {
 		m1.keyMap640Keys(new KeyMap640Keys(keysMap));
 
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(true, m2.publicKey(0) != null);
 		Assert.assertEquals(false, m2.dataMap(0) == null);
 		Assert.assertEquals(false, m2.keyMap640Keys(0) == null);
-		Assert.assertEquals(true, m2.verified());
+		Assert.assertEquals(true, m2.isVerified());
 		compareMessage(m1, m2);
 	}
 	
@@ -242,11 +229,11 @@ public class TestMessage {
 		m1.keyMap640Keys(new KeyMap640Keys(keysMap));
 
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(true, m2.publicKey(0) != null);
 		Assert.assertEquals(false, m2.dataMap(0) == null);
 		Assert.assertEquals(false, m2.keyMap640Keys(0) == null);
-		Assert.assertEquals(true, m2.verified());
+		Assert.assertEquals(false, m2.isVerified());
 		compareMessage(m1, m2);
 	}
 	
@@ -260,6 +247,7 @@ public class TestMessage {
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
 		m1.publicKeyAndSign(pair1);
+		m1.verified();
 
 		NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).signNow(pair1, factory));
@@ -282,26 +270,15 @@ public class TestMessage {
 		m1.keyMap640Keys(new KeyMap640Keys(keysMap));
 
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(true, m2.publicKey(0) != null);
 		Assert.assertEquals(false, m2.dataMap(0) == null);
 		Assert.assertEquals(false, m2.dataMap(0).dataMap().entrySet().iterator().next().getValue().signature() == null);
 		Assert.assertEquals(false, m2.dataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey() == null);
 		Assert.assertEquals(pair1.getPublic(), m2.dataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey());
 		Assert.assertEquals(false, m2.keyMap640Keys(0) == null);
-		Assert.assertEquals(true, m2.verified());
+		Assert.assertEquals(true, m2.isVerified());
 		compareMessage(m1, m2);
-	}
-
-	@Test
-	public void testEncodeDecode6() throws Exception {
-		for (int i = 0; i < 4; i++) { // encode and test for is firewallend and
-										// ipv4
-			Message m1 = Utils2.createDummyMessage((i & 1) > 0, (i & 2) > 0);
-			Message m2 = encodeDecode(m1);
-			m1.sender(m1.sender().withSkipIPv4(true));
-			compareMessage(m1, m2);
-		}
 	}
 
 	@Test
@@ -332,7 +309,7 @@ public class TestMessage {
 		dataMap.put(new Number640(rnd), data);
 		m1.setDataMap(new DataMap(dataMap));
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		compareMessage(m1, m2);
 	}
 	
@@ -351,7 +328,7 @@ public class TestMessage {
 		dataMap.put(new Number640(rnd), data);
 		m1.setDataMap(new DataMap(dataMap));
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		compareMessage(m1, m2);
 	}
 
@@ -374,8 +351,7 @@ public class TestMessage {
 		m1.setDataMap(new DataMap(dataMap));
 		Message m2 = encodeDecode(m1);
 		Assert.assertEquals(true, m2.publicKey(0) != null);
-		m2.release();
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		compareMessage(m1, m2);
 	}
 	
@@ -397,7 +373,7 @@ public class TestMessage {
 		}
 		m1.setDataMap(new DataMap(dataMap));
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(true, m2.publicKey(0) != null);
 		compareMessage(m1, m2);
 	}
@@ -417,7 +393,7 @@ public class TestMessage {
 		}
 		m1.keyCollection(new KeyCollection(list));
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(true, m2.publicKey(0) != null);
 		compareMessage(m1, m2);
 	}
@@ -432,12 +408,12 @@ public class TestMessage {
 		CompositeByteBuf buf = Unpooled.compositeBuffer();
 		e.write(buf, m1, null);
 		Decoder d = new Decoder(null);
-		boolean header = d.decodeHeader(buf, m1.recipient().ipv4Socket().createTCPSocket(),
-				m1.sender().ipv4Socket().createTCPSocket());
+		boolean header = d.decodeHeader(buf, m1.recipient().ipv4Socket().createUDPSocket(),
+				m1.sender().ipv4Socket().createUDPSocket());
 		boolean payload = d.decodePayload(buf);
 		Assert.assertEquals(true, header);
 		Assert.assertEquals(true, payload);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		compareMessage(m1, d.message());
 		
 		buf.release();
@@ -462,14 +438,14 @@ public class TestMessage {
 		m1.type(Message.Type.NOT_FOUND);
 		List<PeerSocketAddress> tmp = new ArrayList<PeerSocketAddress>();
 		
-		tmp.add(Utils2.creatPeerSocket(InetAddress.getLocalHost(), 15, 17));
-		tmp.add(Utils2.creatPeerSocket(InetAddress.getByName("0:0:0:0:0:0:0:1"), 16, 18));
+		tmp.add(Utils2.creatPeerSocket(InetAddress.getLocalHost(), 17));
+		tmp.add(Utils2.creatPeerSocket(InetAddress.getByName("0:0:0:0:0:0:0:1"), 18));
 		
-		m1.peerSocketAddress(Utils2.creatPeerSocket(InetAddress.getLocalHost(), 15, 17));
-		m1.peerSocketAddress(Utils2.creatPeerSocket(InetAddress.getByName("0:0:0:0:0:0:0:1"), 16, 18));
+		m1.peerSocketAddress(Utils2.creatPeerSocket(InetAddress.getLocalHost(), 17));
+		m1.peerSocketAddress(Utils2.creatPeerSocket(InetAddress.getByName("0:0:0:0:0:0:0:1"), 18));
 		m1.sender(m1.sender().withRelays(tmp));
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
+		m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(tmp, m2.peerSocketAddressList());
 		compareMessage(m1, m2);
 	}
@@ -477,20 +453,15 @@ public class TestMessage {
 	@Test
 	public void testRelay() throws Exception {
 		Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16)));
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16)));
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.233"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)));
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.234"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.233"), RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.234"), RND.nextInt(BIT_16)));
         
         PeerAddress pa3 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"), InetAddress.getByName("192.168.230.236"),RND.nextInt(BIT_16), RND.nextInt(BIT_16), psa);
         
@@ -502,7 +473,7 @@ public class TestMessage {
         m1.neighborsSet(new NeighborSet(-1, tmp));
         
         Message m2 = encodeDecode(m1);
-        m1.sender(m1.sender().withSkipIPv4(true));
+        m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertArrayEquals(psa.toArray(), m2.neighborsSet(0).neighbors().iterator().next().relays().toArray());
 		compareMessage(m1, m2);
 		
@@ -511,20 +482,17 @@ public class TestMessage {
 	@Test
 	public void testRelay2() throws Exception {	
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16)));
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16)));
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16)));
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("5123:4567:89ab:cdef:0123:4567:89ab:cde4"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
+                RND.nextInt(BIT_16)));
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("6123:4567:89ab:cdef:0123:4567:89ab:cde4"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
+                RND.nextInt(BIT_16)));
         
         
         PeerAddress pa3 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"), InetAddress.getByName("192.168.230.232"),RND.nextInt(BIT_16), RND.nextInt(BIT_16), psa);
@@ -535,7 +503,7 @@ public class TestMessage {
         m1.neighborsSet(new NeighborSet(152, tmp));
         
         Message m2 = encodeDecode(m1);
-        m1.sender(m1.sender().withSkipIPv4(true));
+        m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(tmp, m2.neighborsSetList().get(0).neighbors());
 		compareMessage(m1, m2);
 		
@@ -544,21 +512,18 @@ public class TestMessage {
 	@Test
 	public void testInternalPeerSocket() throws Exception {	
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16)));
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16)));
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
-        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
+        psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16)));
         
         //PeerSocketAddress psaa1 = Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16));
-        PeerSocketAddress psaa2 = Utils2.creatPeerSocket(InetAddress.getByName("0.0.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        PeerSocketAddress psaa2 = Utils2.creatPeerSocket(InetAddress.getByName("0.0.230.236"), RND.nextInt(BIT_16));
         
-        PeerAddress pa3 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"), InetAddress.getByName("192.168.230.232"),RND.nextInt(BIT_16), RND.nextInt(BIT_16), psa, (PeerSocket4Address)psaa2);
+        PeerAddress pa3 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"), InetAddress.getByName("192.168.230.232"),RND.nextInt(BIT_16), psa, (PeerSocket4Address)psaa2);
         
         
         
@@ -570,8 +535,7 @@ public class TestMessage {
         m1.neighborsSet(new NeighborSet(100, tmp));
         
         Message m2 = encodeDecode(m1);
-        m1.sender(m1.sender().withSkipIPv4(true));
-        m1.sender(m1.sender().withSkipIPv4(true));
+        m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(tmp, m2.neighborsSetList().get(0).neighbors());
 		compareMessage(m1, m2);
 		
@@ -583,8 +547,7 @@ public class TestMessage {
 		Message m1 = Utils2.createDummyMessage();
 		
 		Message m2 = encodeDecode(m1);
-		m1.sender(m1.sender().withSkipIPv4(true));
-		Assert.assertEquals(m1.sender().slow(), m2.sender().slow());
+		m1.sender(m1.sender().withSkipIP(true));
 		compareMessage(m1, m2);
 	}
 	
@@ -610,7 +573,7 @@ public class TestMessage {
 		
 		
 		Message m2 = encodeDecode(message);
-		message.sender(message.sender().withSkipIPv4(true));
+		message.sender(message.sender().withSkipIP(true));
 		int size = message.estimateSize();
 		Assert.assertEquals(size, m2.estimateSize());
 	}
@@ -624,71 +587,13 @@ public class TestMessage {
 	 * @throws Exception .
 	 */
 	private Message encodeDecode(final Message m1) throws Exception {
-		AtomicReference<Message> m2 = new AtomicReference<Message>();
 		final CompositeByteBuf buf = Unpooled.compositeBuffer();
 		Encoder encoder = new Encoder(new DSASignatureFactory());
 		encoder.write(buf, m1, null);
-		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
 		Decoder decoder = new Decoder(new DSASignatureFactory());
-		decoder.decode(ctx, buf, m1.recipient().ipv4Socket().createTCPSocket(), m1
-				.sender().ipv4Socket().createTCPSocket());
-		//buf.release();
+		decoder.decode(buf, m1.recipient().ipv4Socket().createUDPSocket(), m1
+				.sender().ipv4Socket().createUDPSocket());
 		return decoder.message();
-	}
-	
-	/**
-	 * Mock Nettys ChannelHandlerContext with the minimal functions.
-	 * 
-	 * @param buf
-	 *            The buffer to use for decoding
-	 * @param m2
-	 *            The message reference to store the result
-	 * @return The mocked ChannelHandlerContext
-	 */
-	@SuppressWarnings("unchecked")
-	private ChannelHandlerContext mockChannelHandlerContext(
-			final CompositeByteBuf buf, final AtomicReference<Message> m2) {
-		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
-		ByteBufAllocator alloc = mock(ByteBufAllocator.class);
-		when(ctx.alloc()).thenReturn(alloc);
-		when(alloc.ioBuffer()).thenReturn(buf);
-
-		DatagramChannel dc = mock(DatagramChannel.class);
-		when(ctx.channel()).thenReturn(dc);
-		when(ctx.writeAndFlush(any(), any(ChannelPromise.class))).thenReturn(
-				null);
-
-		Attribute<InetSocketAddress> attr = mock(Attribute.class);
-		when(ctx.attr(any(AttributeKey.class))).thenReturn(attr);
-
-		when(ctx.fireChannelRead(any())).then(new Answer<Void>() {
-			@Override
-			public Void answer(final InvocationOnMock invocation)
-					throws Throwable {
-				Object[] args = invocation.getArguments();
-				m2.set((Message) args[0]);
-				return null;
-			}
-		});
-		
-		when(ctx.fireExceptionCaught(any(Throwable.class))).then(new Answer<Void>() {
-
-			@Override
-			public Void answer(InvocationOnMock invocation) throws Throwable {
-				Object[] args = invocation.getArguments();
-				for(Object obj:args) {
-					if(obj instanceof Throwable) {
-						((Throwable)obj).printStackTrace();
-					} else {
-						System.err.println("Err: "+obj);
-					}
-				}
-				return null;
-			}
-		
-		});
-
-		return ctx;
 	}
 
 	/**

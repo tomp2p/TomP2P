@@ -39,7 +39,6 @@ public class PeerMapConfiguration {
     //we'll add 1-2 filters
     private Collection<PeerMapFilter> peerMapFilters = new ArrayList<PeerMapFilter>(2);
     private Maintenance maintenance;
-    private boolean peerVerification;
     private PeerStatisticComparator peerStatisticComparator;
 
     /**
@@ -57,7 +56,6 @@ public class PeerMapConfiguration {
         exceptionTimeout = 120;
         offlineCount = 3;
         maintenance = new DefaultMaintenance(4, new int[] { 2, 4, 8, 16, 32, 64 });
-        peerVerification = true;
         setPeerStatisticComparator(new DefaultPeerStatisticComparator());
     }
 
@@ -304,20 +302,6 @@ public class PeerMapConfiguration {
     public PeerMapConfiguration exceptionTimeout(final int exceptionTimeout) {
         this.exceptionTimeout = exceptionTimeout;
         return this;
-    }
-    
-    public boolean isPeerVerification() {
-    	return peerVerification;
-    }
-
-    public PeerMapConfiguration peerNoVerification() {
-    	peerVerification = false;
-    	return this;
-    }
-
-    public PeerMapConfiguration peerVerification(boolean reerVerification) {
-    	this.peerVerification = reerVerification;
-    	return this;
     }
 
     public PeerStatisticComparator getPeerStatisticComparator() {

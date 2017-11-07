@@ -12,12 +12,12 @@ public class SlowPeerFilter implements PostRoutingFilter {
 
 	@Override
 	public boolean rejectPotentialHit(PeerAddress peerAddress) {
-		return peerAddress.slow();
+		return false; //peerAddress.slow();
 	}
 
 	@Override
 	public boolean rejectDirectHit(PeerAddress peerAddress) {
-		return peerAddress.slow();
+		return false; //peerAddress.slow();
 	}
 
 }

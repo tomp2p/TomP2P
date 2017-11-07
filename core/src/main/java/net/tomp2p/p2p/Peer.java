@@ -22,7 +22,7 @@ import java.util.List;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerConnection;
+//import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -30,7 +30,6 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.futures.FutureLateJoin;
-import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
@@ -223,17 +222,17 @@ public class Peer {
 
     // *********************************** Basic P2P operation starts here
 
-    public void rawDataReply(final RawDataReply rawDataReply) {
+    /*public void rawDataReply(final RawDataReply rawDataReply) {
         directDataRPC().rawDataReply(rawDataReply);
     }
 
     public void objectDataReply(final ObjectDataReply objectDataReply) {
         directDataRPC().objectDataReply(objectDataReply);
-    }
+    }*/
     
-    public FuturePeerConnection createPeerConnection(final PeerAddress destination) {
+    /*public FuturePeerConnection createPeerConnection(final PeerAddress destination) {
     	return createPeerConnection(destination, PeerConnection.HEART_BEAT_MILLIS, ConnectionBean.DEFAULT_TCP_IDLE_MILLIS);
-    }
+    }*/
 
     /**
      * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the connection
@@ -250,7 +249,7 @@ public class Peer {
      * @return A class that needs to be passed to those methods that should use the already open connection. If the
      *         connection could not be reserved, maybe due to a shutdown, null is returned.
      */
-    public FuturePeerConnection createPeerConnection(final PeerAddress destination, final int heartBeatMillis, final int idleTCP) {
+    /*public FuturePeerConnection createPeerConnection(final PeerAddress destination, final int heartBeatMillis, final int idleTCP) {
         final FuturePeerConnection futureDone = new FuturePeerConnection(destination);
         final FutureChannelCreator fcc = connectionBean().reservation().create(0,1);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -267,21 +266,17 @@ public class Peer {
             }
         });
         return futureDone;
-    }
+    }*/
 
     // -------------------------------------------------- Direct, bootstrap, ping and broadcast   
 
     public SendDirectBuilder sendDirect(PeerAddress recipientAddress) {
         return new SendDirectBuilder(this, recipientAddress);
     }
-
-    public SendDirectBuilder sendDirect(FuturePeerConnection recipientConnection) {
-        return new SendDirectBuilder(this, recipientConnection);
-    }
     
-    public SendDirectBuilder sendDirect(PeerConnection peerConnection) {
+    /*public SendDirectBuilder sendDirect(PeerConnection peerConnection) {
         return new SendDirectBuilder(this, peerConnection);
-    }
+    }*/
     
     public BootstrapBuilder bootstrap() {
         return new BootstrapBuilder(this);

@@ -15,7 +15,7 @@
     </encoder>
   </appender>
   
-  <!-- <logger name="net.tomp2p" level="TRACE"/>  -->
+ <logger name="net.tomp2p" level="TRACE"/> 
   
 <!--   <logger name="net.tomp2p.p2p.builder.DiscoverBuilder" level="TRACE"/> -->
 <!--   <logger name="net.tomp2p.rpc.PingRPC" level="TRACE"/> -->

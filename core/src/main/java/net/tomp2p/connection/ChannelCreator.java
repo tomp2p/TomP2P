@@ -16,60 +16,55 @@
 
 package net.tomp2p.connection;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.FixedRecvByteBufAllocator;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.ChannelGroupFuture;
-import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.channel.socket.DatagramChannel;
-import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.GenericFutureListener;
-import io.netty.util.concurrent.GlobalEventExecutor;
-
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.Map;
+import java.net.SocketOption;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message;
-import net.tomp2p.utils.Pair;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.message.Decoder;
+import net.tomp2p.message.Encoder;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
+import net.tomp2p.message.MessageID;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.DispatchHandler;
+import net.tomp2p.utils.Pair;
+
 /**
- * Creates the channels. This class is created by {@link Reservation}
- * and should never be called directly. With this class one can create TCP or
- * UDP channels up to a certain extent. Thus it must be know beforehand how much
- * connections will be created.
+ * Creates the channels. With this class one can create TCP or UDP channels up
+ * to a certain extent. Thus it must be know beforehand how much connections
+ * will be created.
  * 
  * @author Thomas Bocek
  */
-public class ChannelCreator {
+public class ChannelCreator { // TODO: rename to ChannelClient
 	private static final Logger LOG = LoggerFactory.getLogger(ChannelCreator.class);
 
-	private final EventLoopGroup workerGroup;
-	private final ChannelGroup recipients = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-
 	private final int maxPermitsUDP;
-	private final int maxPermitsTCP;
-
 	private final Semaphore semaphoreUPD;
-	private final Semaphore semaphoreTCP;
 
 	// we should be fair, otherwise we see connection timeouts due to unfairness
 	// if busy
@@ -77,323 +72,262 @@ public class ChannelCreator {
 	private final Lock readUDP = readWriteLockUDP.readLock();
 	private final Lock writeUDP = readWriteLockUDP.writeLock();
 
-	private final ReadWriteLock readWriteLockTCP = new ReentrantReadWriteLock(true);
-	private final Lock readTCP = readWriteLockTCP.readLock();
-	private final Lock writeTCP = readWriteLockTCP.writeLock();
-
-	private final FutureDone<Void> futureChannelCreationDone;
-
 	private final ChannelClientConfiguration channelClientConfiguration;
-	
+
 	private final InetAddress sendFromAddress;
 
-	private boolean shutdownUDP = false;
-	private boolean shutdownTCP = false;
+	private volatile boolean shutdownUDP = false;
 
-	/**
-	 * Package private constructor, since this is created by
-	 * {@link Reservation} and should never be called directly.
-	 * 
-	 * @param workerGroup
-	 *            The worker group for netty that is shared between TCP and UDP.
-	 *            This workergroup is not shutdown if this class is shutdown
-	 * @param futureChannelCreationDone
-	 *            We need to set this from the outside as we want to attach
-	 *            listeners to it
-	 * @param maxPermitsUDP
-	 *            The number of max. parallel UDP connections.
-	 * @param maxPermitsTCP
-	 *            The number of max. parallel TCP connections.
-	 * @param channelClientConfiguration
-	 *            The configuration that contains the pipeline filter
-	 */
-	ChannelCreator(final EventLoopGroup workerGroup, final FutureDone<Void> futureChannelCreationDone,
-			int maxPermitsUDP, int maxPermitsTCP,
-			final ChannelClientConfiguration channelClientConfiguration, InetAddress sendFromAddress) {
-		this.workerGroup = workerGroup;
-		this.futureChannelCreationDone = futureChannelCreationDone;
+	private final FutureDone<Void> futureChannelClose;
+
+	private final Set<ClientChannel> channelsUDP = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+	ChannelCreator(int maxPermitsUDP, final ChannelClientConfiguration channelClientConfiguration,
+			InetAddress sendFromAddress, FutureDone<Void> futureChannelClose) {
 		this.maxPermitsUDP = maxPermitsUDP;
-		this.maxPermitsTCP = maxPermitsTCP;
 		this.semaphoreUPD = new Semaphore(maxPermitsUDP);
-		this.semaphoreTCP = new Semaphore(maxPermitsTCP);
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.sendFromAddress = sendFromAddress;
+		this.futureChannelClose = futureChannelClose;
 	}
-        
-        static class ChannelCloseListener implements GenericFutureListener<ChannelFuture> {
-            
-            final private Semaphore semaphore;
-            
-            private FutureResponse futureResponse;
-            private Message responseMessage;
-            private Throwable cause;
-            private boolean doneMessage = false;
-            
-            private FutureDone<Void> futureDone;
-            private boolean doneClose = false;
-            
-            private boolean notified = false;
-            
-            public ChannelCloseListener() {
-                semaphore = null;
-            }
-            
-            public ChannelCloseListener(final Semaphore semaphore) {
-                this.semaphore = semaphore;
-            }
-            
-            @Override
-            public void operationComplete(ChannelFuture f) throws Exception {
-                LOG.debug("ChannelCloseListener called");
-                synchronized(this) {
-                    if(semaphore!=null) {
-                        semaphore.release();
-                    }
-                    if(!doneMessage) {
-                        if(cause == null && futureResponse!=null) {
-                            futureResponse.response(responseMessage);
-                            doneMessage = true;
-                        } else if(cause != null && futureResponse!=null) {
-                            futureResponse.failed(cause);
-                            doneMessage = true;
-                        }
-                    }
-                    
-                    
-                    if(!doneClose && futureDone != null) {
-                        futureDone.done();
-                        doneClose = true;
-                    }
-                    
-                    notified = true;
-                }            
-            }
-            
-            public void successAfterSemaphoreRelease(FutureResponse futureResponse, Message responseMessage) {
-                LOG.debug("successAfterSemaphoreRelease: init");
-                synchronized(this) {
-                    if(!notified) {
-                        this.futureResponse = futureResponse;
-                        this.responseMessage = responseMessage;
-                    } else {
-                        LOG.debug("successAfterSemaphoreRelease: response");
-                        futureResponse.response(responseMessage);
-                        doneMessage = true;
-                    }
-                }
-            }
-            
-            public void failAfterSemaphoreRelease(FutureResponse futureResponse, Throwable cause) {
-                synchronized(this) {
-                    if(!notified) {
-                        this.futureResponse = futureResponse;
-                        this.cause = cause;
-                    } else {
-                        futureResponse.failed(cause);
-                        doneMessage = true;
-                    }
-                }
-            }
-
-            public void doneAfterSemaphoreRelease(FutureDone<Void> futureDone) {
-                LOG.debug("about to close channel and notify");
-                synchronized(this) {
-                    if(!notified) {
-                        this.futureDone = futureDone;
-                    } else {
-                        futureDone.done();
-                        doneClose = true;
-                    }
-                }
-            }
-        }
 
 	/**
-	 * Creates a "channel" to the given address. This won't send any message
-	 * unlike TCP.
-	 * 
-	 * @param broadcast
-	 *            Sets this channel to be able to broadcast
-	 * @param channelHandlers
-	 *            The handlers to filter and set
+	 * Creates a "channel" to the given address. This won't send any message unlike
+	 * TCP.
+	 *
 	 * @return The channel future object or null if we are shut down
 	 */
-	public Pair<ChannelCloseListener, ChannelFuture> createUDP(final SocketAddress socketAddress,  
-                final Map<String, ChannelHandler> channelHandlers,
-			boolean fireandforget) {
+	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> sendUDP(Message message) {
+		FutureDone<Message> futureMessage = new FutureDone<Message>();
+		FutureDone<ClientChannel> futureClose = new FutureDone<>();
+		DatagramChannel datagramChannel = null;
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
-				return null;
+				return Pair.create(futureMessage.failed("shutdown"), futureClose.done());
 			}
 			if (!semaphoreUPD.tryAcquire()) {
 				final String errorMsg = "Tried to acquire more resources (UDP) than announced.";
 				LOG.error(errorMsg);
-				throw new RuntimeException(errorMsg);
+				return Pair.create(futureMessage.failed(errorMsg), futureClose.done());
 			}
-			final Bootstrap b = new Bootstrap();
-			b.group(workerGroup);
-			b.channel(NioDatagramChannel.class);
-			b.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(ConnectionBean.UDP_LIMIT));
-			
-			//we don't need to increase the buffers as we limit the connections in tomp2p
-			b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
-			b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
-			//b.option(ChannelOption.SO_BROADCAST, true);
-			addHandlers(b, channelHandlers);
-			// Here we need to bind, as opposed to the TCP, were we connect if
-			// we do a connect, we cannot receive
-			// broadcast messages
-			final ChannelFuture channelFuture;
-			
-			LOG.debug("Create UDP, use from address: {}", sendFromAddress);
-			if(fireandforget) {
-				channelFuture = b.connect(socketAddress);
-			} else {
-				channelFuture = b.bind(new InetSocketAddress(sendFromAddress, 0));
+			try {
+				datagramChannel = DatagramChannel.open();
+				DatagramSocket datagramSocket = datagramChannel.socket();
+				// default is on my machine 200K, testBroadcastUDP fails with this value, as UDP
+				// packets are dropped. Increase to 2MB
+				datagramSocket.setReceiveBufferSize(2 * 1024 * 1024);
+				datagramSocket.setSendBufferSize(2 * 1024 * 1024);
+				datagramSocket.setSoTimeout(3 * 1000);
+				datagramSocket.bind(new InetSocketAddress(0));
+			} catch (IOException e) {
+				if (datagramChannel != null) {
+					try {
+						datagramChannel.close();
+					} catch (IOException e1) {
+						// best effort
+					}
+				}
+				futureMessage.failed(e);
+				futureClose.failed(e);
 			}
-                        ChannelCloseListener cl = new ChannelCloseListener(semaphoreUPD);
-                        channelFuture.channel().closeFuture().addListener(cl);
-			recipients.add(channelFuture.channel());
-			return new Pair<ChannelCloseListener, ChannelFuture>(cl, channelFuture);
+			LOG.debug("bound to {}", datagramChannel.socket().getLocalSocketAddress());
+			ClientChannelImpl thread = ClientChannelImpl.of(datagramChannel, futureMessage, futureClose, message);
+			channelsUDP.add(thread);
+			futureClose.addListener(new BaseFutureAdapter<FutureDone<ClientChannel>>() {
+				@Override
+				public void operationComplete(FutureDone<ClientChannel> future) throws Exception {
+					channelsUDP.remove(future.object());
+					semaphoreUPD.release();
+					if(shutdownUDP && semaphoreUPD.availablePermits() == maxPermitsUDP) {
+						futureChannelClose.done();
+					}
+				}
+			});
+			thread.start();
 		} finally {
 			readUDP.unlock();
 		}
-	}
-
-	/**
-	 * Creates a channel to the given address. This will setup the TCP
-	 * connection
-	 * 
-	 * @param socketAddress
-	 *            The address to send future messages
-	 * @param connectionTimeoutMillis
-	 *            The timeout for establishing a TCP connection
-	 * @param channelHandlers
-	 *            The handlers to filter and set
-	 * @param futureResponse
-	 *            the futureResponse
-	 * @return The channel future object or null if we are shut down.
-	 */
-	public Pair<ChannelCloseListener, ChannelFuture> createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
-			final Map<String, ChannelHandler> channelHandlers) {
-		readTCP.lock();
-		try {
-			if (shutdownTCP) {
-				return null;
-			}
-			if (!semaphoreTCP.tryAcquire()) {
-				final String errorMsg = "Tried to acquire more resources (TCP) than announced.";
-				LOG.error(errorMsg);
-				throw new RuntimeException(errorMsg);
-			}
-			Bootstrap b = new Bootstrap();
-			b.group(workerGroup);
-			b.channel(NioSocketChannel.class);
-			b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectionTimeoutMillis);
-			b.option(ChannelOption.TCP_NODELAY, true);
-			b.option(ChannelOption.SO_LINGER, 0);
-			b.option(ChannelOption.SO_REUSEADDR, true);
-			//b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
-			//b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
-			addHandlers(b, channelHandlers);
-			
-			
-			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(sendFromAddress, 0));
-                        ChannelCloseListener cl = new ChannelCloseListener(semaphoreTCP);
-                        channelFuture.channel().closeFuture().addListener(cl);
-                        LOG.debug("Create TCP, use from address: {} futur is {}", sendFromAddress, channelFuture);
-			recipients.add(channelFuture.channel());
-			return new Pair<ChannelCloseListener, ChannelFuture>(cl, channelFuture);
-		} finally {
-			readTCP.unlock();
-		}
-	}
-
-	/**
-	 * Since we want to add multiple handlers, we need to do this with the
-	 * pipeline.
-	 * 
-	 * @param bootstrap
-	 *            The bootstrap
-	 * @param channelHandlers
-	 *            The handlers to be added.
-	 */
-	private void addHandlers(final Bootstrap bootstrap, final Map<String, ChannelHandler> channelHandlers) {
-		bootstrap.handler(new ChannelInitializer<Channel>() {
-			@Override
-			protected void initChannel(final Channel ch) throws Exception {
-				ch.config().setAllocator(channelClientConfiguration.byteBufAllocator());
-				for (Map.Entry<String, ChannelHandler> entry : channelHandlers.entrySet()) {
-                                    ch.pipeline().addLast(entry.getKey(), entry.getValue());
-				}
-			}
-		});
+		return Pair.create(futureMessage, futureClose);
 	}
 
 	public boolean isShutdown() {
-		return shutdownTCP || shutdownUDP;
+		return shutdownUDP;
 	}
 
 	/**
-	 * Shuts down this channel creator. This means that no more TCP or UDP connections
-	 * can be established.
+	 * Shuts down this channel creator. This means that no more TCP or UDP
+	 * connections can be established.
 	 * 
 	 * @return The shutdown future.
 	 */
-	public FutureDone<Void> shutdown() {
+	public void shutdown() {
 		// set shutdown flag for UDP and TCP
-        // if we acquire a write lock, all read locks are blocked as well
-                writeUDP.lock();
-		writeTCP.lock();
+		// if we acquire a write lock, all read locks are blocked as well
+		writeUDP.lock();
 		try {
-			if (shutdownTCP || shutdownUDP) {
-				shutdownFuture().failed("already shutting down");
-				return shutdownFuture();
+			if (shutdownUDP) {
+				return;
 			}
 			shutdownUDP = true;
-			shutdownTCP = true;
-		} finally {
-			writeTCP.unlock();
-			writeUDP.unlock();
-		}
-
-		recipients.close().addListener(new GenericFutureListener<ChannelGroupFuture>() {
-			@Override
-			public void operationComplete(final ChannelGroupFuture future) throws Exception {
-				// we can block here as we block in GlobalEventExecutor.INSTANCE
-				semaphoreUPD.acquireUninterruptibly(maxPermitsUDP);
-				semaphoreTCP.acquireUninterruptibly(maxPermitsTCP);
-				shutdownFuture().done();
+			
+				//TODO: wait until thread is finished
+				for (ClientChannel channelUDP : channelsUDP) {
+					try {
+						channelUDP.close();
+					} catch (IOException e) {
+						LOG.debug("could not close {}", channelUDP);
+					}
+				}
+			
+			if(semaphoreUPD.tryAcquire(maxPermitsUDP)) {
+				futureChannelClose.done();
 			}
-		});
-                
-		return shutdownFuture();
+			
+		} finally {
+			writeUDP.unlock();
+		}	
 	}
 
 	/**
 	 * @return The shutdown future that is used when calling {@link #shutdown()}
 	 */
-	public FutureDone<Void> shutdownFuture() {
-		return futureChannelCreationDone;
+	public FutureDone<Void> futureChannelClose() {
+		return futureChannelClose;
 	}
 
 	public int availableUDPPermits() {
 		return semaphoreUPD.availablePermits();
 	}
 
-	public int availableTCPPermits() {
-		return semaphoreTCP.availablePermits();
-	}
-
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder("sem-udp:");
 		sb.append(semaphoreUPD.availablePermits());
-		sb.append(",sem-tcp:");
-		sb.append(semaphoreTCP.availablePermits());
 		sb.append(",addrUDP:");
 		sb.append(semaphoreUPD);
 		return sb.toString();
 	}
+
+	@RequiredArgsConstructor(staticName = "of")
+	private static class ClientChannelImpl extends Thread implements ClientChannel {
+		final private DatagramChannel datagramChannel;
+		final private FutureDone<Message> futureMessage;
+		@Getter
+		final private FutureDone<ClientChannel> futureClose;
+		final private Message requestMessage;
+		//final private ByteBuffer buffer = ByteBuffer.allocate(65536);
+		final private byte[] buffer = new byte[65536];
+
+		@Override
+		public void run() {
+			try {
+				if (datagramChannel.isOpen()) {
+					
+					CompositeByteBuf buf2 = Unpooled.compositeBuffer();
+	            	Encoder encoder = new Encoder(new DSASignatureFactory());
+	            	encoder.write(buf2, requestMessage, null);
+	            	PeerAddress recipientAddress = requestMessage.recipient();
+	            	datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(requestMessage.sender()));
+					
+					//TomP2POutbound out = new TomP2POutbound();
+					//out.write(datagramChannel, requestMessage, true);
+					// if not SCTP, wait for UDP packet
+	            	DatagramPacket p = new DatagramPacket(buffer, buffer.length);
+	            	datagramChannel.socket().receive(p);
+					InetSocketAddress sender = (InetSocketAddress) p.getSocketAddress();
+					
+					//buffer.flip();
+					ByteBuf buf = Unpooled.wrappedBuffer(buffer);
+					DatagramSocket s = datagramChannel.socket();
+					InetSocketAddress recipient = new InetSocketAddress(s.getLocalAddress(), s.getLocalPort());
+
+					Decoder decoder = new Decoder(new DSASignatureFactory());
+					boolean finished = decoder.decode(buf, recipient, sender);
+					if (!finished) {
+						return;
+					}
+					Message responseMessage = decoder.message().senderSocket(sender);
+
+					// Check if message is good, if not return, channel will be closed
+					if (!checkMessage(responseMessage, responseMessage)) {
+						// both futures are set!!
+						return;
+					}
+
+					// We got a good answer, let's mark the sender as alive
+					// if its an announce, the peer status will be handled in the RPC
+					if (responseMessage.isOk() || responseMessage.isNotOk()) {
+
+					}
+					LOG.debug("peer isVerified: {}", responseMessage.isVerified());
+					if (!responseMessage.isVerified()) {
+						Message ackMessage = DispatchHandler.createResponseMessage(responseMessage, Type.ACK, requestMessage.sender());
+						buf2 = Unpooled.compositeBuffer();
+		            	encoder = new Encoder(new DSASignatureFactory());
+		            	encoder.write(buf2, ackMessage, null);
+		            	datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(requestMessage.sender()));
+					}
+
+					if (!responseMessage.isKeepAlive()) {
+						datagramChannel.close();
+						futureClose.done(this);
+					}
+
+					futureMessage.done(responseMessage);
+				}
+			} catch (SocketTimeoutException s) {
+				LOG.debug("timout in client", s);
+				close("TIMEOUT");
+			} catch (Throwable t) {
+				LOG.debug("in client", t);
+				close();
+			}
+		}
+		
+		public ClientChannel close() {
+			return close("closed before we got the message");
+		}
+
+		public ClientChannel close(String message) {
+			try {
+				datagramChannel.close();
+			} catch (IOException e) {
+				//best effort
+			}
+			futureClose.done(this);
+			futureMessage.failed(message);
+			return this;
+		}
+
+		private boolean checkMessage(Message requestMessage, Message responseMessage) throws IOException {
+
+			// Error handling
+			if (responseMessage.type() == Message.Type.UNKNOWN_ID) {
+				String msg = "Message was not delivered successfully, unknown ID (peer may be offline or unknown RPC handler): "
+						+ requestMessage;
+				close();
+				futureMessage.failed(msg);
+				return false;
+			}
+			if (responseMessage.type() == Message.Type.EXCEPTION) {
+				String msg = "Message caused an exception on the other side, handle as peer_abort: " + requestMessage;
+				close();
+				futureMessage.failed(msg);
+				return false;
+			}
+
+			final MessageID recvMessageID = new MessageID(responseMessage);
+			final MessageID sendMessageID = new MessageID(requestMessage);
+			if (!sendMessageID.equals(recvMessageID)) {
+				String msg = "Response message [" + responseMessage
+						+ "] sent to the node is not the same as we expect. We sent [" + requestMessage + "]";
+				close();
+				futureMessage.failed(msg);
+				return false;
+			}
+			return true;
+		}
+	}
+
 }

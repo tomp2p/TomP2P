@@ -3,17 +3,17 @@ package net.tomp2p.message;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.DatagramChannel;
 
 import net.tomp2p.connection.SignatureFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
+public class TomP2PCumulationTCP  {
 
 	private static final Logger LOG = LoggerFactory
 			.getLogger(TomP2PCumulationTCP.class);
@@ -29,17 +29,12 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 		this.byteBufAllocator = byteBufAllocator;
 	}
 
-	@Override
-	public void channelRead(final ChannelHandlerContext ctx, final Object msg)
+	public void channelRead(final DatagramChannel ctx, final Object msg)
 			throws Exception {
 
-		if (!(msg instanceof ByteBuf)) {
-			ctx.fireChannelRead(msg);
-			return;
-		}
-		
+
 		final ByteBuf buf = (ByteBuf) msg;
-		final InetSocketAddress sender = (InetSocketAddress) ctx.channel().remoteAddress();
+		final InetSocketAddress sender = (InetSocketAddress) ctx.getRemoteAddress();
 
 		try {
 			if (cumulation == null) {
@@ -63,17 +58,18 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 		}
 	}
 
-	private void decoding(final ChannelHandlerContext ctx,
-			final InetSocketAddress sender) {
+	private void decoding(final DatagramChannel ctx,
+			final InetSocketAddress sender) throws IOException {
 		boolean finished = true;
 		boolean moreData = true;
 		while (finished && moreData) {
-			finished = decoder.decode(ctx, cumulation, (InetSocketAddress) ctx
-					.channel().localAddress(), sender);
+			finished = decoder.decode(cumulation, (InetSocketAddress) ctx
+					.getLocalAddress(), sender);
 			if (finished) {
 				lastId = decoder.message().messageId();
 				moreData = cumulation.readableBytes() > 0;
-				ctx.fireChannelRead(decoder.prepareFinish());
+				//TODO: now we have the data!
+				//ctx.fireChannelRead(decoder.prepareFinish());
 			} else {
 				if(decoder.message() == null) {
 					//wait for more data. This may happen if we don't get the first 58 bytes, 
@@ -86,38 +82,14 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 				if (lastId == decoder.message().messageId()) {
 					finished = true;
 					moreData = cumulation.readableBytes() > 0;
-					ctx.fireChannelRead(decoder.prepareFinish());
-				} else if (decoder.message().isStreaming()) {
-					ctx.fireChannelRead(decoder.message());
+					//ctx.fireChannelRead(decoder.prepareFinish());
 				}
 			}
 		}
 	}
 
-	@Override
-	public void channelInactive(final ChannelHandlerContext ctx)
-			throws Exception {
-		decoder.release();
-		final InetSocketAddress sender = (InetSocketAddress) ctx.channel()
-				.remoteAddress();
-		try {
-			if (cumulation != null) {
-				decoding(ctx, sender);
-			}
-		} catch (Throwable t) {
-			LOG.error("Error in TCP decoding. (Inactive)", t);
-            throw new Exception(t);
-		} finally {
-			if (cumulation != null) {
-				cumulation.release();
-				cumulation = null;
-			}
-			ctx.fireChannelInactive();
-		}
-	}
 
-	@Override
-	public void exceptionCaught(final ChannelHandlerContext ctx,
+	public void exceptionCaught(final DatagramChannel ctx,
 			final Throwable cause) throws Exception {
 		if (cumulation != null) {
 			cumulation.release();

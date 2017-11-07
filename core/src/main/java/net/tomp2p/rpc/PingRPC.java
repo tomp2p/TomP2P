@@ -19,15 +19,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
@@ -35,6 +34,7 @@ import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.p2p.PeerReceivedBroadcastPing;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -98,17 +98,6 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	/**
-	 * Ping with UDP or TCP, but do not send yet.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @return the request handler, where we can call sendUDP(), or sendTCP()
-	 */
-	public RequestHandler ping(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
-		return createHandler(remotePeer, Type.REQUEST_1, configuration);
-	}
-
-	/**
 	 * Ping a UDP peer.
 	 * 
 	 * @param remotePeer
@@ -119,25 +108,11 @@ public class PingRPC extends DispatchHandler {
 	 *
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public FutureResponse pingUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
+	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> pingUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		LOG.debug("Pinging UDP the remote peer {}.", remotePeer);
-		return ping(remotePeer, configuration).sendUDP(channelCreator);
-	}
-
-	/**
-	 * Ping a UDP peer, but don't expect an answer.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a UDP channel
-	 * @return The future that will be triggered when we receive an answer or something fails.
-	 */
-	public FutureResponse pingTCP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
-			final ConnectionConfiguration configuration) {
-		LOG.debug("ping the remote peer {}", remotePeer);
-		return ping(remotePeer, configuration).sendTCP(channelCreator);
+		Message message = createHandler(remotePeer, Type.REQUEST_1, configuration);
+		return channelCreator.sendUDP(message);
 	}
 
 	/**
@@ -150,23 +125,10 @@ public class PingRPC extends DispatchHandler {
 	 * @return The future that will be triggered when we receive an answer or
 	 *         something fails.
 	 */
-	public FutureResponse fireUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
+	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> fireUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
-		return createHandler(remotePeer, Type.REQUEST_FF_1, configuration).fireAndForgetUDP(channelCreator);
-	}
-
-	/**
-	 * Ping a TCP peer, but don't expect an answer.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a TCP channel
-	 * @return The future that will be triggered when we receive an answer or something fails.
-	 */
-	public FutureResponse fireTCP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
-			final ConnectionConfiguration configuration) {
-		return createHandler(remotePeer, Type.REQUEST_FF_1, configuration).sendTCP(channelCreator);
+		final Message message = createHandler(remotePeer, Type.REQUEST_FF_1, configuration);
+		return channelCreator.sendUDP(message);
 	}
 
 	/**
@@ -178,27 +140,10 @@ public class PingRPC extends DispatchHandler {
 	 *            The channel creator where we create a UPD channel
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public FutureResponse pingUDPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
+	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> pingUDPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
-		final FutureResponse futureResponse = createDiscoverHandler(remotePeer);
-		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration)
-				.sendUDP(channelCreator);
-	}
-
-	/**
-	 * Ping a TCP peer and find out how the other peer sees us.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a TCP channel
-	 * @return The future that will be triggered when we receive an answer or something fails.
-	 */
-	public FutureResponse pingTCPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
-			final ConnectionConfiguration configuration) {
-		final FutureResponse futureResponse = createDiscoverHandler(remotePeer);
-		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration)
-				.sendTCP(channelCreator);
+		final Message message = createDiscoverHandler(remotePeer);
+		return channelCreator.sendUDP(message);
 	}
 
 	/**
@@ -211,30 +156,10 @@ public class PingRPC extends DispatchHandler {
 	 *            The channel creator where we create a UPD channel
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public FutureResponse pingUDPProbe(final PeerAddress remotePeer, final ChannelCreator channelCreator,
+	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> pingUDPProbe(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_3);
-		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration)
-				.sendUDP(channelCreator);
-	}
-
-	/**
-	 * Ping a TCP peer and request the other peer to ping us on our public address with a fire and forget
-	 * message.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a TCP channel
-	 * @return The future that will be triggered when we receive an answer or something fails.
-	 */
-	public FutureResponse pingTCPProbe(final PeerAddress remotePeer, final ChannelCreator channelCreator,
-			final ConnectionConfiguration configuration) {
-		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_3);
-		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration)
-				.sendTCP(channelCreator);
+		return channelCreator.sendUDP(message);
 	}
 
 	/**
@@ -247,11 +172,10 @@ public class PingRPC extends DispatchHandler {
 	 * @param configuration
 	 * @return The request handler
 	 */
-	private RequestHandler createHandler(final PeerAddress remotePeer, final Type type,
+	private Message createHandler(final PeerAddress remotePeer, final Type type,
 			final ConnectionConfiguration configuration) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), type);
-		final FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandler(futureResponse, peerBean(), connectionBean(), configuration);
+		return message;
 	}
 
 	/**
@@ -261,10 +185,10 @@ public class PingRPC extends DispatchHandler {
 	 *            The destination peer
 	 * @return The future of this discover handler
 	 */
-	private FutureResponse createDiscoverHandler(final PeerAddress remotePeer) {
+	private Message createDiscoverHandler(final PeerAddress remotePeer) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_2);
 		message.neighborsSet(createNeighborSet(peerBean().serverPeerAddress()));
-		return new FutureResponse(message);
+		return message;
 	}
 
 	/**
@@ -284,11 +208,10 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	@Override
-	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
-			Responder responder) throws Exception {
+	public Message handleResponse(final Message message, final boolean sign) throws Exception {
 		if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
 				|| message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3
-				|| message.type() == Type.REQUEST_4 || message.type() == Type.REQUEST_5) && message.command() == RPC.Commands.PING
+				|| message.type() == Type.REQUEST_4) && message.command() == RPC.Commands.PING
 				.getNr())) {
 			throw new IllegalArgumentException("Request message type or command is wrong for this handler.");
 		}
@@ -302,37 +225,22 @@ public class PingRPC extends DispatchHandler {
 			} else {
 				responseMessage = createResponseMessage(message, Type.OK);
 
-				if (message.isUdp()) {
-					connectionBean().reservation().create(1, 0).addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+
+					connectionBean().reservation().create(1).addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 						@Override
 						public void operationComplete(final FutureChannelCreator future) throws Exception {
 							if (future.isSuccess()) {
 								LOG.debug("Fire UDP to {}.", message.sender());
-								FutureResponse futureResponse = fireUDP(message.sender(), future.channelCreator(),
+								Pair<FutureDone<Message>, FutureDone<ClientChannel>> p = fireUDP(message.sender(), future.channelCreator(),
 										connectionBean().channelServer().channelServerConfiguration());
-								Utils.addReleaseListener(future.channelCreator(), futureResponse);
+								Utils.addReleaseListener(future.channelCreator());
 							} else {
 								Utils.addReleaseListener(future.channelCreator());
 								LOG.warn("handleResponse for REQUEST_3 failed (UDP) {}", future.failedReason());
 							}
 						}
 					});
-				} else {
-					connectionBean().reservation().create(0, 1).addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-						@Override
-						public void operationComplete(final FutureChannelCreator future) throws Exception {
-							if (future.isSuccess()) {
-								LOG.debug("Fire TCP to {}.", message.sender());
-								FutureResponse futureResponse = fireTCP(message.sender(), future.channelCreator(),
-										connectionBean().channelServer().channelServerConfiguration());
-								Utils.addReleaseListener(future.channelCreator(), futureResponse);
-							} else {
-								Utils.addReleaseListener(future.channelCreator());
-								LOG.warn("handleResponse for REQUEST_3 failed (TCP) {}", future.failedReason());
-							}
-						}
-					});
-				}
+
 			}
 		} else if (message.type() == Type.REQUEST_2) { // discover
 			LOG.debug("Respond to discovering. Found {}.", message.sender());
@@ -345,24 +253,19 @@ public class PingRPC extends DispatchHandler {
 				responseMessage.neighborsSet(createNeighborSet(message.sender()));
 				responseMessage.intValue(port);
 			}
-		} else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4 
-                        || message.type() == Type.REQUEST_5) { // regular
+		} else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4) { // regular
 																							// ping
 			LOG.debug("Respond to regular ping {}.", message.sender());
 			// test if this is a broadcast message to ourselves. If it is, do
 			// not
 			// reply.
-			if (message.isUdp() && message.sender().peerId().equals(peerBean().serverPeerAddress().peerId())
+			if (message.sender().peerId().equals(peerBean().serverPeerAddress().peerId())
 					&& message.recipient().peerId().equals(Number160.ZERO)) {
 				LOG.warn("Don't respond. We are on the same peer, you should make this call.");
-				responder.responseFireAndForget();
+				return null;
 			}
 			if (enable) {
-                            if(message.type() == Type.REQUEST_5) {
-                                responseMessage = createResponseMessage(message, Type.PARTIALLY_OK);
-                            } else {
-				responseMessage = createResponseMessage(message, Type.OK);
-                            }
+                    responseMessage = createResponseMessage(message, Type.OK);
 				if (wait) {
 					Thread.sleep(WAIT_TIME);
 				}
@@ -372,7 +275,7 @@ public class PingRPC extends DispatchHandler {
 				if (wait) {
 					Thread.sleep(WAIT_TIME);
 				}
-				return;
+				return null;
 			}
 			if (message.type() == Type.REQUEST_4) {
 				synchronized (receivedBroadcastPingListeners) {
@@ -386,7 +289,7 @@ public class PingRPC extends DispatchHandler {
             // we received a fire-and forget ping
             // this means we are reachable from the outside
 			PeerAddress serverAddress = peerBean().serverPeerAddress();
-			if (message.isUdp()) {
+
 				// UDP
 				PeerAddress newServerAddress = serverAddress.withReachable4UDP(true);
 				peerBean().serverPeerAddress(newServerAddress);
@@ -396,19 +299,9 @@ public class PingRPC extends DispatchHandler {
 					}
 				}
 				responseMessage = message;
-			} else {
-				// TCP
-				PeerAddress newServerAddress = serverAddress.withReachable4TCP(true);
-				peerBean().serverPeerAddress(newServerAddress);
-				synchronized (reachableListeners) {
-					for (PeerReachable listener : reachableListeners) {
-						listener.peerWellConnected(newServerAddress, message.sender(), true);
-					}
-				}
-				responseMessage = createResponseMessage(message, Type.OK);
-			}
+
 		}
-		responder.response(responseMessage);
+		return responseMessage;
 	}
 
 	public void addPeerReachableListener(PeerReachable peerReachable) {

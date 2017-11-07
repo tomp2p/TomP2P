@@ -43,8 +43,6 @@ public class ConnectionBean {
 
     private final int p2pId;
     private final Dispatcher dispatcher;
-    private final Sender sender;
-    private final Connect connect;
     private final ChannelServer channelServer;
     private final BulkReservation reservation;
     private final ChannelClientConfiguration resourceConfiguration;
@@ -58,8 +56,6 @@ public class ConnectionBean {
 	 *            The P2P ID
      * @param dispatcher
      *            The dispatcher object that receives all messages
-     * @param sender
-     *            The sender object that sends out messages
      * @param channelServer
      *            The channel server that listens on incoming connections
      * @param reservation
@@ -69,13 +65,11 @@ public class ConnectionBean {
      * @param timer
      *            The timer for the discovery process
      */
-    public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final Connect connect, final Sender sender,
+    public ConnectionBean(final int p2pId, final Dispatcher dispatcher,
             final ChannelServer channelServer, final BulkReservation reservation,
             final ChannelClientConfiguration resourceConfiguration, final ScheduledExecutorService timer) {
         this.p2pId = p2pId;
         this.dispatcher = dispatcher;
-        this.connect = connect;
-        this.sender = sender;
         this.channelServer = channelServer;
         this.reservation = reservation;
         this.resourceConfiguration = resourceConfiguration;
@@ -99,13 +93,6 @@ public class ConnectionBean {
     /**
      * @return The sender object that sends out messages
      */
-    public Sender sender() {
-        return sender;
-    }
-    
-    public Connect connect() {
-        return connect;
-    }
     
     /**
      * @return The channel server that listens on incoming connections

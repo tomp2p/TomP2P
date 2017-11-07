@@ -21,6 +21,7 @@ import java.util.Collection;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
@@ -31,7 +32,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.Futures;
+import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerReachable;
@@ -39,6 +40,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.IP.IPv4;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -97,7 +99,6 @@ public class DiscoverBuilder {
     
     public DiscoverBuilder peerSocketAddress(PeerSocket4Address peerSocketAddress) {
     	 this.inetAddress = peerSocketAddress.ipv4().toInetAddress();
-         this.portTCP = peerSocketAddress.tcpPort();
          this.portUDP = peerSocketAddress.udpPort();
          return this;
 	}
@@ -172,7 +173,7 @@ public class DiscoverBuilder {
         }
 
         if (peerAddress == null && inetAddress != null) {
-        	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inetAddress)).tcpPort(portTCP).udpPort(portUDP).build();
+        	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inetAddress)).udpPort(portUDP).build();
         	peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
         }
         if (peerAddress == null) {
@@ -198,7 +199,7 @@ public class DiscoverBuilder {
      */
     private FutureDiscover discover(final PeerAddress peerAddress, final ConnectionConfiguration configuration, 
     		final FutureDiscover futureDiscover) {
-        FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 2);
+        FutureChannelCreator fcc = peer.connectionBean().reservation().create(1);
         Utils.addReleaseListener(fcc, futureDiscover);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -226,52 +227,39 @@ public class DiscoverBuilder {
     	final FutureDone<Void> pingDone = new FutureDone<Void>();
 
         peer.pingRPC().addPeerReachableListener(new PeerReachable() {
-            private volatile boolean changedUDP = false;
-            private volatile boolean changedTCP = false;
-
             @Override
             public void peerWellConnected(final PeerAddress peerAddress, final PeerAddress reporter, final boolean tcp) {
             	pingDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 					@Override
 					public void operationComplete(FutureDone<Void> future) throws Exception {
-						if (tcp) {
-		            		futureDiscover.discoveredTCP();
-		            		changedTCP = true;
-		            		LOG.debug("TCP discovered");
-		            	} else {
-		            		futureDiscover.discoveredUDP();
-		            		changedUDP = true;
-		            		LOG.debug("UDP discovered");
-		            	}
-						if (changedTCP && changedUDP) {
-		                    futureDiscover.done(peerAddress, reporter);
-		                }
+						futureDiscover.done(peerAddress, reporter);
 					}
 				});
-                
             }
         });
 
-        final FutureResponse futureResponseTCP = peer.pingRPC().pingTCPDiscover(peerAddress, cc,
-                configuration);
         
-        futureResponseTCP.addListener(new BaseFutureAdapter<FutureResponse>() {
+        Pair<FutureDone<Message>, FutureDone<ClientChannel>> p = peer.pingRPC().pingUDPDiscover(peerAddress, cc,
+                configuration); 
+        
+         
+        
+        p.element0().addListener(new BaseFutureAdapter<FutureDone<Message>>() {
             @Override
-            public void operationComplete(FutureResponse future) throws Exception {
+            public void operationComplete(FutureDone<Message> future) throws Exception {
                 PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
-                if (futureResponseTCP.isSuccess() && futureResponseTCP.responseMessage().type() == Type.NOT_FOUND) {
+                if (future.isSuccess() && future.object().type() == Type.NOT_FOUND) {
                 	//this was a ping to myself. This is pointless
-                	futureDiscover.failed("FutureDiscover to yourself",
-                            futureResponseTCP);
+                	futureDiscover.failed("FutureDiscover to yourself", future);
                     return;
                 }
-                else if (futureResponseTCP.isSuccess()) {
+                else if (future.isSuccess()) {
                 	//now we know our internal address, set it as it could be a wrong one, e.g. 127.0.0.1
-                	serverAddress = serverAddress.withIpv4Socket(futureResponseTCP.responseMessage().recipient().ipv4Socket());
+                	serverAddress = serverAddress.withIpv4Socket(future.object().recipient().ipv4Socket());
                 	
-                    Collection<PeerAddress> tmp = futureResponseTCP.responseMessage().neighborsSet(0)
+                    Collection<PeerAddress> tmp = future.object().neighborsSet(0)
                             .neighbors();
-                    futureDiscover.reporter(futureResponseTCP.responseMessage().sender());
+                    futureDiscover.reporter(future.object().sender());
                     if (tmp.size() == 1) {
                         PeerAddress seenAs = tmp.iterator().next();
                         LOG.info("This peer is seen as {} by peer {}. This peer sees itself as {}.",
@@ -296,16 +284,16 @@ public class DiscoverBuilder {
                                 if (ports.isManualPort()) {
                                 	final PeerAddress serverAddressOrig = serverAddress;
                                 	PeerSocket4Address serverSocket = serverAddress.ipv4Socket();
-                                	serverSocket = serverSocket.withTcpPort(ports.tcpPort()).withUdpPort(ports.udpPort());
+                                	serverSocket = serverSocket.withUdpPort(ports.udpPort());
                                 	serverSocket = serverSocket.withIpv4(seenAs.ipv4Socket().ipv4());
                                     //manual port forwarding detected, set flag
-                                    peer.peerBean().serverPeerAddress(serverAddress.withIpv4Socket(serverSocket).withIpInternalSocket(serverAddressOrig.ipv4Socket()));
+                                    //peer.peerBean().serverPeerAddress(serverAddress.withIpv4Socket(serverSocket).withIpInternalSocket(serverAddressOrig.ipv4Socket()));
                                     LOG.info("manual ports, change it to: {}", serverAddress);
                                 } else if(expectManualForwarding) {
                                 	final PeerAddress serverAddressOrig = serverAddress;
                                 	PeerSocket4Address serverSocket = serverAddress.ipv4Socket();
                                 	serverSocket = serverSocket.withIpv4(seenAs.ipv4Socket().ipv4());
-                                	peer.peerBean().serverPeerAddress(serverAddress.withIpv4Socket(serverSocket).withIpInternalSocket(serverAddressOrig.ipv4Socket()));
+                                	//peer.peerBean().serverPeerAddress(serverAddress.withIpv4Socket(serverSocket).withIpInternalSocket(serverAddressOrig.ipv4Socket()));
                                     LOG.info("we were manually forwarding, change it to: {}", serverAddress);
                                 }
                                 else {
@@ -319,32 +307,20 @@ public class DiscoverBuilder {
                         }
                         // else -> we announce exactly how the other peer sees
                         // us
-                        FutureResponse fr1 = peer.pingRPC().pingTCPProbe(peerAddress, cc,
+                        
+                        Pair<FutureDone<Message>, FutureDone<ClientChannel>> p = peer.pingRPC().pingUDPProbe(peerAddress, cc,
                                 configuration);
-                        fr1.addListener(new BaseFutureAdapter<FutureResponse>() {
+                        
+                        p.element0().addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
                             public void operationComplete(FutureResponse future) throws Exception {
 	                            if(future.isFailed() ) {
-	                            	LOG.warn("FutureDiscover (2): We need at least the TCP connection {} - {}", future, futureDiscover.failedReason());
+	                            	LOG.warn("FutureDiscover (2): We need at least the UDP connection {} - {}", future, futureDiscover.failedReason());
 	                            	futureDiscover.failed("FutureDiscover (2): We need at least the TCP connection", future);
+	                            } else {
+	                            	pingDone.done();	
 	                            }
                             }
-						});
-                        FutureResponse fr2 = peer.pingRPC().pingUDPProbe(peerAddress, cc,
-                                configuration);
-                        fr2.addListener(new BaseFutureAdapter<FutureResponse>() {
-							@Override
-                            public void operationComplete(FutureResponse future) throws Exception {
-	                            if(future.isFailed() ) {
-	                            	LOG.warn("FutureDiscover (2): UDP failed connection {} - {}", future, futureDiscover.failedReason());
-	                            }
-                            }
-						});
-                        Futures.whenAll(fr1, fr2).addListener(new BaseFutureAdapter<FutureDone<FutureResponse[]>>() {
-							@Override
-							public void operationComplete(FutureDone<FutureResponse[]> future) throws Exception {
-								pingDone.done();
-							}
 						});
                         // from here we probe, set the timeout here
                         futureDiscover.timeout(serverAddress, peer.connectionBean().timer(), discoverTimeoutSec);
@@ -355,7 +331,7 @@ public class DiscoverBuilder {
                     }
                 } else {
                     futureDiscover.failed("FutureDiscover (1): We need at least the TCP connection",
-                            futureResponseTCP);
+                            future);
                     return;
                 }
             }

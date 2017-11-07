@@ -65,7 +65,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerAddress.PeerAddressBuilder;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 
@@ -416,9 +415,9 @@ public class Utils {
         return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
     }
     
-    public static final byte[] mediumToByteArray(int value) {
+    /*public static final byte[] mediumToByteArray(int value) {
         return new byte[] { (byte) (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
-    }
+    }*/
     
     public static final int shortToByteArray(int value, byte[] array, int offset) {
         array[offset++] =  (byte) (value >>> 8);
@@ -426,12 +425,12 @@ public class Utils {
         return offset;
     }
     
-    public static final int mediumToByteArray(int value, byte[] array, int offset) {
+    /*public static final int mediumToByteArray(int value, byte[] array, int offset) {
         array[offset++] =  (byte) (value >>> 16);
         array[offset++] =  (byte) (value >>> 8);
         array[offset++] =  (byte) value;
         return offset;
-    }
+    }*/
     
     public static final int intToByteArray(int value, byte[] array, int offset) {
         array[offset++] =  (byte) (value >>> 24);
@@ -471,9 +470,9 @@ public class Utils {
         return ((b[offset] & 0xFF) << 8) + (b[offset + 1] & 0xFF);
     }
     
-    public static final int byteArrayToMedium(byte[] b, int offset) {
+    /*public static final int byteArrayToMedium(byte[] b, int offset) {
         return ((b[offset] & 0xFF) << 16) + ((b[offset + 1] & 0xFF) << 8) + (b[offset + 2] & 0xFF);
-    }
+    }*/
     
     public static final int byteArrayToInt(byte[] b, int offset) {
         return ((b[offset] & 0xFF) << 24) + ((b[offset + 1] & 0xFF) << 16) + ((b[offset + 2] & 0xFF) << 8) + (b[offset + 3] & 0xFF);
@@ -995,7 +994,7 @@ public class Utils {
 		return randomInt;
 	}
 	
-	public static boolean canReflect(final PeerAddress recipient, final PeerAddress self) {
+	/*public static boolean canReflect(final PeerAddress recipient, final PeerAddress self) {
 		return recipient.ipv4Socket().ipv4().equals(self.ipv4Socket().ipv4()) 
 				&& self.ipInternalSocket() != null 
 				&& recipient.ipInternalSocket()!=null;
@@ -1010,12 +1009,10 @@ public class Utils {
 	    	
 	    	return PeerSocket4Address.builder().ipv4(a)
 	    		.udpPort(recipient.ipInternalSocket().udpPort())
-	    		.tcpPort(recipient.ipInternalSocket().tcpPort())
-	    		.udtPort(recipient.ipInternalSocket().udtPort())
 	    		.build();
 	    }
 	    return null;
-    }
+    }*/
 
 	/**
 	 * This method ensures that if a peer sends a message via reverse connection

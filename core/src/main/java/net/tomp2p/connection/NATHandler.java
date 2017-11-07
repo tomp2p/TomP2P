@@ -16,8 +16,7 @@ import net.tomp2p.message.Message;
 public interface NATHandler {
 
 	/**
-	 * This method will trigger the implementing class to create a new object of
-	 * super type {@link AbstractHolePStrategy} and trigger the hole punch
+	 * This method will trigger the implementing class to create a new object and trigger the hole punch
 	 * procedure to start by executing the initHolePunch method.
 	 * 
 	 * @param idleUDPSeconds
@@ -27,6 +26,6 @@ public interface NATHandler {
 	 */
 	public FutureDone<Message> handleHolePunch(final int idleUDPSeconds, final FutureResponse futureResponse, final Message originalMessage);
         public List<FutureResponse> handleRcon(final Dispatcher dispatcher, final Message message, 
-            final FutureResponse futureResponse, PeerConnection peerConnection, int idleUDPMillis,
+            final FutureResponse futureResponse, int idleUDPMillis,
             ScheduledExecutorService executorService);
 }

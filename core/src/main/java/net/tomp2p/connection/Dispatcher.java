@@ -15,16 +15,8 @@
  */
 package net.tomp2p.connection;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.DefaultChannelPromise;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.socket.DatagramChannel;
-import io.netty.handler.timeout.IdleState;
-import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.concurrent.GenericFutureListener;
-
+import java.io.IOException;
+import java.nio.channels.DatagramChannel;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,8 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Used to deliver incoming REQUEST messages to their specific handlers. Handlers can be registered using the
- * {@link registerIoHandler} function.
+ * Used to deliver incoming REQUEST messages to their specific handlers.
  * <p>
  * You probably want to add an instance of this class to the end of a pipeline to be able to receive messages. This
  * class is able to cover several channels but only one P2P network!
@@ -63,8 +54,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Thomas Bocek
  */
-@Sharable
-public class Dispatcher extends SimpleChannelInboundHandler<Message> {
+public class Dispatcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(Dispatcher.class);
 
@@ -79,10 +69,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     
 	/**
 	 * Map that stores requests that are not answered yet. Normally, the {@link RequestHandler} handles
-	 * responses, however, in case the asked peer has {@link PeerAddress#isSlow()} set to true, the answer
-	 * might arrive later. The key of the map is the expected message id.
+	 * responses.
 	 */
-    final private Map<Integer, FutureResponse> pendingRequests = new ConcurrentHashMap<Integer, FutureResponse>();
+    //final private Map<Integer, FutureResponse> pendingRequests = new ConcurrentHashMap<Integer, FutureResponse>();
 
     final private ChannelServerConfiguration csc;
     /**
@@ -166,79 +155,44 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     	}
     }
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        ctx.close();
-        super.exceptionCaught(ctx, cause);
-    }
-    
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        if (evt instanceof IdleStateEvent) {
-            IdleStateEvent e = (IdleStateEvent) evt;
-            if (e.state() == IdleState.READER_IDLE) {
-                ctx.fireExceptionCaught(new PeerException(PeerException.AbortCause.TIMEOUT, "timetout in dispatcher"));
-            }
-         }
-     }
+    public void exceptionCaught(DatagramChannel ctx, Throwable cause) {
+		try {
+			ctx.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
-    @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
-        LOG.debug("Received request message {} from channel {}", message, ctx.channel());
+    public Message dispatch(final Message message) throws IOException {
+        LOG.debug("Received request message {}", message);
         if (message.version() != p2pID) {
             LOG.error("Wrong version. We are looking for {}, but we got {}. Received: {}.", p2pID,
                     message.version(), message);
-            ctx.close();
             synchronized (peerBeanMaster.peerStatusListeners()) {
             	for (PeerStatusListener peerStatusListener : peerBeanMaster.peerStatusListeners()) {
                    peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "Wrong P2P version."));
             	}
             }
-            message.release();
-            return;
+            return null;
         }
         
-        //handle late responses from pending requests
-    	final FutureResponse lateRequest = findAndRemovePendingRequests(message.messageId());
-    	if(lateRequest != null) {
-    		LOG.debug("Handing lates request. {}", message);
-    		lateRequest.response(message);
-    		Message responseMessage = DispatchHandler.createResponseMessage(message, Type.OK, peerBeanMaster.serverPeerAddress());
-    		response(ctx, responseMessage);
-    		return;
-    	}
-        
-        if (!message.isRequest()) {
-            LOG.debug("Handing request message to the next handler. {}", message);
-        	ctx.fireChannelRead(message);
-        	return;
+        if(message.isAck()) {
+        	peerBeanMaster.notifyPeerFound(message.sender(), null, null);
+        	return null;
+        } else if((message.isOk() || message.isNotOk()) && message.isVerified()) {
+        	//peer is online, mark as such
+        	peerBeanMaster.notifyPeerFound(message.sender(), null, null);
         }
- 
-        Responder responder = new DirectResponder(ctx, message);
+        
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
-            boolean isUdp = ctx.channel() instanceof DatagramChannel;
-			LOG.debug("About to respond to request message {}.", message);
-            
-            final PeerConnection peerConnection;
-            
-            if(isUdp) {
-                peerConnection = PeerConnection.existingPeerConnectionUDP(message.sender(), csc.idleUDPMillis(), 
-                        new DefaultChannelPromise(ctx.channel()).setSuccess(), new ChannelCreator.ChannelCloseListener());
-            } else {
-                peerConnection = PeerConnection.existingPeerConnectionTCP(message.sender(), csc.idleTCPMillis(), 
-                        new DefaultChannelPromise(ctx.channel()).setSuccess(), new ChannelCreator.ChannelCloseListener());
-            }
-            
-            myHandler.forwardMessage(message, peerConnection, responder);
+            LOG.debug("About to respond to request message {}.", message);
+            return myHandler.forwardMessage(message);
         } else {
-        	message.release();
         	if (LOG.isWarnEnabled()) {
         		printWarnMessage(message);
         	}
-        	
-            Message responseMessage = DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBeanMaster.serverPeerAddress());
-            response(ctx, responseMessage);
+        	return DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBeanMaster.serverPeerAddress());
         }
     }
     
@@ -270,85 +224,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     	else {
     		LOG.debug("No handler found for {}. Probably we have partially shutdown this peer.", message);
     	}
-    }
-    
-    private class DirectResponder implements Responder {
-        final ChannelHandlerContext ctx;
-        final Message requestMessage;
-
-        DirectResponder(final ChannelHandlerContext ctx, final Message requestMessage) {
-            this.ctx = ctx;
-            this.requestMessage = requestMessage;
-        }
-        
-        @Override
-        public FutureDone<Void> response(final Message responseMessage) {
-        	return Dispatcher.this.response(ctx, responseMessage);
-        }
-        
-        @Override
-        public void failed(Message.Type type, String reason) {
-        	final Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBeanMaster.serverPeerAddress());
-            Dispatcher.this.response(ctx, responseMessage);
-        }
-        
-        @Override
-		public void responseFireAndForget() {
-           LOG.debug("The reply handler was a fire-and-forget handler. No message is sent back for {}.", requestMessage);
-           if (!(ctx.channel() instanceof DatagramChannel)) {
-               final String msg = "There is no TCP fire-and-forget. Use UDP in that case. ";
-        	   LOG.warn(msg + requestMessage);
-               throw new RuntimeException(msg);
-           } else {
-               removeTimeout(ctx);
-           }
-        }
-    }
-    
-    public static void removeTimeout(ChannelHandlerContext ctx) {
-		if (ctx.channel().pipeline().names().contains("timeout")) {
-			ctx.channel().pipeline().remove("timeout");
-		}
-		
-	}
-
-    /**
-     * Responds within a session. Keeps the connection open if told to do so. Connection is only kept alive for
-     * TCP data.
-     * 
-     * @param ctx
-     *            The channel context
-     * @param response
-     *            The response message to send
-     */
-    private FutureDone<Void> response(final ChannelHandlerContext ctx, final Message response) {
-    	final FutureDone<Void> futureDone = new FutureDone<Void>();
-        if (ctx.channel() instanceof DatagramChannel) {
-        	// Check, if channel is still open. If not, then do not send anything
-            // because this will cause an exception that will be logged.
-            if (!ctx.channel().isOpen()) {
-				LOG.debug("Channel UDP is not open. Do not reply {}.", response);
-                return futureDone.failed("channel UDP is not open, do not reply");
-            }
-            LOG.debug("Response UDP message {}.", response);
-        } else {
-        	// Check, if channel is still open. If not, then do not send anything
-            // because this will cause an exception that will be logged.
-            if (!ctx.channel().isActive()) {
-				LOG.debug("Channel TCP is not open. Do not reply {}.", response);
-                return futureDone.failed("channel TCP is not open, do not reply");
-            }
-            LOG.debug("Response TCP message {} to {}", response, ctx.channel().remoteAddress());
-        }
-        
-        ctx.channel().writeAndFlush(response).addListener(new GenericFutureListener<ChannelFuture>() {
-			@Override
-			public void operationComplete(ChannelFuture future) throws Exception {
-				//TODO: we could check if we were successful at this stage
-				futureDone.done();
-			}
-		});
-        return futureDone;
     }
 
 	/**
@@ -480,38 +355,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      */
 	private Map<Integer, DispatchHandler> search(Number160 peerId, Number160 onBehalfOf) {
 		return ioHandlers.get(new Number320(peerId, onBehalfOf));
-	}
-	
-	/**
-	 * Add a new pending request. If slow peers answer, this map will be checked for an entry
-	 * 
-	 * @param messageId the message id
-	 * @param futureResponse the future to respond as soon as a (satisfying) response from the slow peer
-	 *            arrived.
-	 * @param scheduler 
-	 * @param timeout the timeout in seconds
-	 */
-	public void addPendingRequest(final int messageId, final FutureResponse futureResponse, final int timeoutMillis, final ScheduledExecutorService scheduler) {
-		pendingRequests.put(messageId, futureResponse);
-		
-		// schedule the timeout of pending request
-                scheduler.schedule(new Runnable() {
-			@Override
-			public void run() {
-				FutureResponse response = pendingRequests.remove(messageId);
-				if(response != null) {
-					LOG.warn("A slow response did not arrive within {}ms. Answer as failed: {}", timeoutMillis, response.request());
-					response.failed("Slow peer did not answer within " + timeoutMillis + "ms.");
-				}
-			}
-		}, timeoutMillis, TimeUnit.MILLISECONDS);
-	}
-
-	/**
-	 * @return all pending requests
-	 */
-	public FutureResponse findAndRemovePendingRequests(final int messageId) {
-		return pendingRequests.get(messageId);
 	}
 
 	public boolean responsibleFor(Number160 peerId) {

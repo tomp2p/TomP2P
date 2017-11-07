@@ -61,27 +61,21 @@ public class Utils2 {
      */
     public static final long THE_ANSWER2 = 43L;
 
-    public static Message createDummyMessage() throws UnknownHostException {
-        return createDummyMessage(false, false);
-    }
-
-    public static Message createDummyMessage(boolean firewallUDP, boolean firewallTCP)
+    public static Message createDummyMessage()
             throws UnknownHostException {
-        return createDummyMessage(new Number160("0x4321"), "127.0.0.1", 8001, 8002, new Number160("0x1234"),
-                "127.0.0.1", 8003, 8004, (byte) 0, Type.REQUEST_1, firewallUDP, firewallTCP);
+        return createDummyMessage(new Number160("0x4321"), "127.0.0.1", 8002, new Number160("0x1234"),
+                "127.0.0.1", 8004, (byte) 0, Type.REQUEST_1);
     }
 
-    public static Message createDummyMessage(Number160 idSender, String inetSender, int tcpPortSender,
-	        int udpPortSender, Number160 idRecipient, String inetRecipient, int tcpPortRecipient,
-	        int udpPortRecipient, byte command, Type type, boolean firewallUDP, boolean firewallTCP)
+    public static Message createDummyMessage(Number160 idSender, String inetSender, 
+	        int udpPortSender, Number160 idRecipient, String inetRecipient,
+	        int udpPortRecipient, byte command, Type type)
 	        throws UnknownHostException {
 	    Message message = new Message();
-	    PeerAddress n1 = createAddress(idSender, inetSender, tcpPortSender, udpPortSender, firewallUDP,
-	            firewallTCP);
-	    message.sender(n1.withSkipIPv4(true));
+	    PeerAddress n1 = createAddress(idSender, inetSender, udpPortSender);
+	    message.sender(n1.withSkipIP(true));
 	    //
-	    PeerAddress n2 = createAddress(idRecipient, inetRecipient, tcpPortRecipient, udpPortRecipient,
-	            firewallUDP, firewallTCP);
+	    PeerAddress n2 = createAddress(idRecipient, inetRecipient, udpPortRecipient);
 	    message.recipient(n2);
 	    message.type(type);
 	    message.command(command);
@@ -89,32 +83,32 @@ public class Utils2 {
 	}
 
 	public static PeerAddress createAddress(Number160 id) throws UnknownHostException {
-        return createAddress(id, "127.0.0.1", 8005, 8006, false, false);
+        return createAddress(id, "127.0.0.1", 8006);
     }
 
     public static PeerAddress createAddress() throws UnknownHostException {
-        return createAddress(new Number160("0x5678"), "127.0.0.1", 8005, 8006, false, false);
+        return createAddress(new Number160("0x5678"), "127.0.0.1", 8006);
     }
 
     public static PeerAddress createAddress(int id) throws UnknownHostException {
-        return createAddress(new Number160(id), "127.0.0.1", 8005, 8006, false, false);
+        return createAddress(new Number160(id), "127.0.0.1", 8006);
     }
 
     public static PeerAddress createAddress(String id) throws UnknownHostException {
-        return createAddress(new Number160(id), "127.0.0.1", 8005, 8006, false, false);
+        return createAddress(new Number160(id), "127.0.0.1", 8006);
     }
 
-    public static PeerAddress createAddress(Number160 idSender, String inetSender, int tcpPortSender,
-            int udpPortSender, boolean firewallUDP, boolean firewallTCP) throws UnknownHostException {
+    public static PeerAddress createAddress(Number160 idSender, String inetSender, 
+            int udpPortSender) throws UnknownHostException {
         InetAddress inetSend = InetAddress.getByName(inetSender);
-        return createPeerAddress(idSender, inetSend, tcpPortSender, udpPortSender);
+        return createPeerAddress(idSender, inetSend, udpPortSender);
         
     }
 
     
 
 	public static PeerStatistic createStatistic(int id) throws UnknownHostException {
-        return new PeerStatistic(createAddress(new Number160(id), "127.0.0.1", 8005, 8006, false, false));
+        return new PeerStatistic(createAddress(new Number160(id), "127.0.0.1", 8006));
     }
 
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
@@ -161,7 +155,7 @@ public class Utils2 {
         for (int i = 1; i < nrOfPeers; i++) {
            
         	peerId = new Number160(rnd);
-        	peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+        	peerMap = new PeerMap(new PeerMapConfiguration(peerId));
         	pb = new PeerBuilder(peerId).enableMaintenance(maintenance)
                         .bindings(bindings).peerMap(peerMap).masterPeer(peers[0]);
         	peers[i] = pb.start();
@@ -212,7 +206,7 @@ public class Utils2 {
     public static void perfectRouting(Peer... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null, null);
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
         }
         System.err.println("perfect routing done.");
     }
@@ -220,7 +214,7 @@ public class Utils2 {
     public static void perfectRoutingIndirect(Peer... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress(), null, null);
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress(), null);
         }
         System.err.println("perfect routing done.");
     }
@@ -343,42 +337,42 @@ public class Utils2 {
     }
 
 	public static PeerAddress createAddressIP(String inet) throws UnknownHostException {
-	    return createAddress(Number160.createHash(inet), inet, 8005, 8006, false, false);
+	    return createAddress(Number160.createHash(inet), inet, 8006);
     }
 	
-	public static PeerAddress[] createDummyAddress(int size, int portTCP, int portUDP) throws UnknownHostException {
+	public static PeerAddress[] createDummyAddress(int size, int portUDP) throws UnknownHostException {
         PeerAddress[] pa = new PeerAddress[size];
         for (int i = 0; i < size; i++) {
-            pa[i] = createAddress(i + 1, portTCP, portUDP);
+            pa[i] = createAddress(i + 1, portUDP);
         }
         return pa;
     }
 
-	public static PeerAddress createAddress(int iid, int portTCP, int portUDP) throws UnknownHostException {
+	public static PeerAddress createAddress(int iid, int portUDP) throws UnknownHostException {
         Number160 id = new Number160(iid);
         InetAddress address = InetAddress.getByName("127.0.0.1");
-        return createPeerAddress(id, address, portTCP, portUDP);
+        return createPeerAddress(id, address, portUDP);
     }
 
-	public static PeerAddress createPeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP) {
+	public static PeerAddress createPeerAddress(Number160 id, InetAddress address, int portUDP) {
 		if(address instanceof Inet4Address) {
-			return PeerAddress.builder().peerId(id).ipv4Socket((PeerSocket4Address)creatPeerSocket(address, portTCP, portUDP)).build();
+			return PeerAddress.builder().peerId(id).ipv4Socket((PeerSocket4Address)creatPeerSocket(address, portUDP)).build();
 		} else {
-			return PeerAddress.builder().peerId(id).ipv6Socket((PeerSocket6Address)creatPeerSocket(address, portTCP, portUDP)).build();
+			return PeerAddress.builder().peerId(id).ipv6Socket((PeerSocket6Address)creatPeerSocket(address, portUDP)).build();
 		}
 	}
 
-	public static PeerSocketAddress creatPeerSocket(InetAddress localHost, int tcp, int udp) {
+	public static PeerSocketAddress creatPeerSocket(InetAddress localHost, int udp) {
 		if(localHost instanceof Inet4Address) {
-			return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(localHost)).tcpPort(tcp).udpPort(udp).build();
+			return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(localHost)).udpPort(udp).build();
 		} else {
-			return PeerSocket6Address.builder().ipv6(IPv6.fromInet6Address(localHost)).tcpPort(tcp).udpPort(udp).build();
+			return PeerSocket6Address.builder().ipv6(IPv6.fromInet6Address(localHost)).udpPort(udp).build();
 		}
 		
 	}
 	
-	public static PeerSocket4Address creatPeerSocket4(Inet4Address localHost, int tcp, int udp) {
-		return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(localHost)).tcpPort(tcp).udpPort(udp).build();
+	public static PeerSocket4Address creatPeerSocket4(Inet4Address localHost, int udp) {
+		return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(localHost)).udpPort(udp).build();
 	}
 
 	public static PeerAddress createPeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP,
@@ -386,46 +380,44 @@ public class Utils2 {
 		if(address instanceof Inet4Address) {
 			return PeerAddress.builder()
 					.peerId(id)
-					.ipv4Socket((PeerSocket4Address)creatPeerSocket(address, portTCP, portUDP))
+					.ipv4Socket((PeerSocket4Address)creatPeerSocket(address, portUDP))
 					.relay(psa)
 					.build();
 		} else {
 			return PeerAddress.builder()
 					.peerId(id)
-					.ipv6Socket((PeerSocket6Address)creatPeerSocket(address, portTCP, portUDP))
+					.ipv6Socket((PeerSocket6Address)creatPeerSocket(address, portUDP))
 					.relay(psa)
 					.build();
 		}
 	}
 	
-	public static PeerAddress createPeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP,
+	public static PeerAddress createPeerAddress(Number160 id, InetAddress address, int portUDP,
 			Collection<PeerSocketAddress> psa, PeerSocket4Address ipv4Socket) {
 		if(address instanceof Inet4Address) {
 			return PeerAddress.builder()
 					.peerId(id)
-					.ipv4Socket((PeerSocket4Address)creatPeerSocket(address, portTCP, portUDP))
+					.ipv4Socket((PeerSocket4Address)creatPeerSocket(address, portUDP))
 					.relay(psa)
-					.ipInternalSocket(ipv4Socket)
 					.build();
 		} else {
 			return PeerAddress.builder()
 					.peerId(id)
-					.ipv6Socket((PeerSocket6Address)creatPeerSocket(address, portTCP, portUDP))
+					.ipv6Socket((PeerSocket6Address)creatPeerSocket(address, portUDP))
 					.ipv4Socket(ipv4Socket)
 					.relay(psa)
 					.build();
 		}
 	}
 
-	public static PeerAddress createPeerAddress(Number160 id, Inet6Address address, int portTCP, int portUDP,
-			Collection<PeerSocketAddress> psa, PeerSocket4Address creatPeerSocket, PeerSocket4Address creatPeerSocket2) {
+	public static PeerAddress createPeerAddress(Number160 id, Inet6Address address, int portUDP,
+			Collection<PeerSocketAddress> psa, PeerSocket4Address creatPeerSocket) {
 		
 			return PeerAddress.builder()
 					.peerId(id)
-					.ipv6Socket((PeerSocket6Address)creatPeerSocket(address, portTCP, portUDP))
+					.ipv6Socket((PeerSocket6Address)creatPeerSocket(address, portUDP))
 					.relay(psa)
 					.ipv4Socket(creatPeerSocket)
-					.ipInternalSocket(creatPeerSocket2)
 					.build();
 		
 	}

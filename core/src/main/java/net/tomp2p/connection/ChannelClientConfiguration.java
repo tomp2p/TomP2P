@@ -36,10 +36,7 @@ public class ChannelClientConfiguration {
     private Bindings bindings;
     
     private InetAddress fromAddress = null;
-    
-    private boolean enablePool = false;
-    private boolean enableHeap = false;
-
+  
 
     /**
      * @return The maximum number of short-lived UDP connections
@@ -117,33 +114,6 @@ public class ChannelClientConfiguration {
 		this.fromAddress = fromAddress;
 	    return this;
     }
-	
-	public ChannelClientConfiguration byteBufPool() {
-		byteBufPool(true);
-		return this;
-	}
-	
-	public ChannelClientConfiguration byteBufPool(boolean enablePool) {
-		this.enablePool = enablePool;
-		return this;
-	}
-	
-	public ChannelClientConfiguration byteBufHeap() {
-		byteBufHeap(true);
-		return this;
-	}
-	
-	public ChannelClientConfiguration byteBufHeap(boolean enableHeap) {
-		this.enableHeap = enableHeap;
-		return this;
-	}
-	
-	
-	public ChannelClientConfiguration byteBufAllocator(boolean enablePool, boolean enableHeap) {
-		this.enableHeap = enableHeap;
-		this.enablePool = enablePool;
-		return this;
-	}
 
 	public ByteBufAllocator byteBufAllocator() {
 		return UnpooledByteBufAllocator.DEFAULT;

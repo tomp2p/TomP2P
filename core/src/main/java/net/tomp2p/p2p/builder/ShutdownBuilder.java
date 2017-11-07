@@ -67,13 +67,13 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
         if (peer.isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
-        forceUDP();
+
         if (routingConfiguration == null) {
             routingConfiguration = new RoutingConfiguration(8, 10, 2);
         }
         
         int conn = routingConfiguration.parallel();
-        FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn, 0);
+        FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn);
         final FutureDone<Void> futureShutdown = new FutureDone<Void> ();
         Utils.addReleaseListener(fcc, futureShutdown);
         

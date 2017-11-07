@@ -39,22 +39,10 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
 
     //interface bindings
     private Bindings bindings = null;
-
     private SignatureFactory signatureFactory = null;
-
-    private boolean forceTCP;
-    private boolean forceUDP;
-    
     private Ports portsForwarding;
     private Ports ports;
-    
-    private int maxTCPIncomingConnections = 1000;
     private int maxUDPIncomingConnections = 1000;
-    
-    private int heartBeatMillis = PeerConnection.HEART_BEAT_MILLIS;
-    
-    private boolean enablePool = false;
-    private boolean enableHeap = false;
 
     /**
      * @return True if this peer is behind a firewall and cannot be accessed directly
@@ -179,46 +167,6 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
         return this;
     }
 
-    @Override
-    public int connectionTimeoutTCPMillis() {
-        return connectionTimeoutTCPMillis;
-    }
-
-    public ChannelServerConfiguration connectionTimeoutTCPMillis(final int connectionTimeoutTCPMillis) {
-        this.connectionTimeoutTCPMillis = connectionTimeoutTCPMillis;
-        return this;
-    }
-
-    @Override
-    public boolean isForceTCP() {
-        return forceTCP;
-    }
-
-    public ChannelServerConfiguration forceTCP(boolean forceTCP) {
-        this.forceTCP = forceTCP;
-        return this;
-    }
-
-    public ChannelServerConfiguration forceTCP() {
-        this.forceTCP = true;
-        return this;
-    }
-
-    @Override
-    public boolean isForceUDP() {
-        return forceUDP;
-    }
-    
-    public ChannelServerConfiguration forceUDP(boolean forceUDP) {
-        this.forceUDP = forceUDP;
-        return this;
-    }
-
-    public ChannelServerConfiguration forceUDP() {
-        this.forceUDP = true;
-        return this;
-    }
-
     public Ports portsForwarding() {
         return portsForwarding;
     }
@@ -246,16 +194,6 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
         return bindings;
     }
     
-    
-    public int maxTCPIncomingConnections() {
-        return maxTCPIncomingConnections;
-    }
-
-    public ChannelServerConfiguration maxTCPIncomingConnections(final int maxTCPIncomingConnections) {
-        this.maxTCPIncomingConnections = maxTCPIncomingConnections;
-        return this;
-    }
-    
     public int maxUDPIncomingConnections() {
         return maxUDPIncomingConnections;
     }
@@ -263,15 +201,6 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
     public ChannelServerConfiguration maxUDPIncomingConnections(final int maxUDPIncomingConnections) {
         this.maxUDPIncomingConnections = maxUDPIncomingConnections;
         return this;
-    }
-
-	public int heartBeatMillis() {
-	    return heartBeatMillis;
-    }
-	
-	public ChannelServerConfiguration heartBeatMillis(int heartBeatMillis) {
-	    this.heartBeatMillis = heartBeatMillis;
-	    return this;
     }
 
 	public ChannelServerConfiguration heartBeatSeconds(final int heartBeatSeconds) {
@@ -282,33 +211,6 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
 	@Override
 	public int heartBeatSeconds() {
 		return heartBeatSeconds;
-	}
-	
-	public ChannelServerConfiguration byteBufPool() {
-		byteBufPool(true);
-		return this;
-	}
-	
-	public ChannelServerConfiguration byteBufPool(boolean enablePool) {
-		this.enablePool = enablePool;
-		return this;
-	}
-	
-	public ChannelServerConfiguration byteBufHeap() {
-		byteBufHeap(true);
-		return this;
-	}
-	
-	public ChannelServerConfiguration byteBufHeap(boolean enableHeap) {
-		this.enableHeap = enableHeap;
-		return this;
-	}
-	
-	
-	public ChannelServerConfiguration byteBufAllocator(boolean enablePool, boolean enableHeap) {
-		this.enableHeap = enableHeap;
-		this.enablePool = enablePool;
-		return this;
 	}
 
 	public ByteBufAllocator byteBufAllocator() {

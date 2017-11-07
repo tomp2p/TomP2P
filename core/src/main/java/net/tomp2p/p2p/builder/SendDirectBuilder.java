@@ -21,13 +21,9 @@ import java.security.KeyPair;
 
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
-import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
@@ -43,9 +39,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	private final PeerAddress recipientAddress;
 
 	private ByteBuf dataBuffer;
-
-	private FuturePeerConnection recipientConnection;
-	private PeerConnection peerConnection;
 
 	private Object object;
 
@@ -65,20 +58,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	public SendDirectBuilder(Peer peer, PeerAddress recipientAddress) {
 		this.peer = peer;
 		this.recipientAddress = recipientAddress;
-		this.recipientConnection = null;
 	}
 
-	public SendDirectBuilder(Peer peer, FuturePeerConnection recipientConnection) {
-		this.peer = peer;
-		this.recipientAddress = null;
-		this.recipientConnection = recipientConnection;
-	}
-
-	public SendDirectBuilder(Peer peer, PeerConnection peerConnection) {
-		this.peer = peer;
-		this.recipientAddress = null;
-		this.peerConnection = peerConnection;
-    }
 
 	public PeerAddress recipient() {
 		return recipientAddress;
@@ -90,24 +71,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
 	public SendDirectBuilder dataBuffer(ByteBuf dataBuffer) {
 		this.dataBuffer = dataBuffer;
-		return this;
-	}
-
-	public FuturePeerConnection connection() {
-		return recipientConnection;
-	}
-
-	public SendDirectBuilder connection(FuturePeerConnection connection) {
-		this.recipientConnection = connection;
-		return this;
-	}
-
-	public PeerConnection peerConnection() {
-		return peerConnection;
-	}
-
-	public SendDirectBuilder peerConnection(PeerConnection peerConnection) {
-		this.peerConnection = peerConnection;
 		return this;
 	}
 
@@ -145,70 +108,41 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
 		final boolean keepAlive;
 		final PeerAddress remotePeer;
-		if (recipientAddress != null && recipientConnection == null) {
+		if (recipientAddress != null) {
 			keepAlive = false;
 			remotePeer = recipientAddress;
-		} else if (recipientAddress == null && recipientConnection != null) {
-			keepAlive = true;
-			remotePeer = recipientConnection.attachment();
-		} else if (peerConnection != null) {
-			keepAlive = true;
-			remotePeer = peerConnection.remotePeer();
 		} else {
 			throw new IllegalArgumentException("Either the recipient address or peer connection has to be set.");
 		}
 
+		//TODO: SCTP
 		
-		Message message = peer.directDataRPC().sendInternal0(remotePeer, this);
+		/*Message message = peer.directDataRPC().sendInternal0(remotePeer, this);
     	final FutureDirect futureResponse = new FutureDirect(message, isRaw());
         futureResponse.request().keepAlive(keepAlive);
 
 		final RequestHandler request = peer.directDataRPC().sendInternal(futureResponse, this);
-		if (keepAlive) {
-			if (peerConnection != null) {
-				sendDirectRequest(request, peerConnection);
-			} else {
-				recipientConnection.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
-					@Override
-					public void operationComplete(final FuturePeerConnection future) throws Exception {
-						if (future.isSuccess()) {
-							sendDirectRequest(request, future.object());
-						} else {
-							request.futureResponse().failed("Could not acquire channel (1).", future);
-						}
-					}
-				});
-			}
 
-		} else {
                     FutureChannelCreator futureChannelCreator = peer.connectionBean().reservation()
-			        .create(isForceUDP() ? 1 : 0, isForceUDP() ? 0 : 1);
+			        .create(1);
 			Utils.addReleaseListener(futureChannelCreator, request.futureResponse());
 			futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override
 				public void operationComplete(final FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
-						if (isForceUDP()) {
-							request.sendUDP(future.channelCreator());
-						} else {
-							request.sendTCP(future.channelCreator());
-						}
+						request.sendUDP(future.channelCreator());
+
 					} else {
 						request.futureResponse().failed("Could not create channel.", future);
 					}
 				}
-			});
-		}
+			});*/
 
-		return futureResponse;
+
+		return null;
 	}
 
-	private static void sendDirectRequest(final RequestHandler request, final PeerConnection peerConnection) {
-            //if we reuse the same peerconnetion, send data sequentially
-            synchronized(peerConnection) {
-                request.sendTCP(peerConnection);
-            }
-	}
+
 
 	public boolean isForceUDP() {
 		return forceUDP;
@@ -224,18 +158,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return this;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see net.tomp2p.p2p.builder.ConnectionConfiguration#idleTCPSeconds()
-	 */
-	@Override
-	public int idleTCPMillis() {
-		return idleTCPMillis;
-	}
-
 	/**
-	 * @param idleTCPSeconds
 	 *            The time that a connection can be idle before its considered
 	 *            not active for short-lived connections
 	 * @return This class
@@ -256,7 +179,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	}
 
 	/**
-	 * @param idleUDPSeconds
 	 *            The time that a connection can be idle before its considered
 	 *            not active for short-lived connections
 	 * @return This class
@@ -274,18 +196,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	public SendDirectBuilder connectionTimeoutTCPMillis(final int connectionTimeoutTCPMillis) {
 		this.connectionTimeoutTCPMillis = connectionTimeoutTCPMillis;
 		return this;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * net.tomp2p.p2p.builder.ConnectionConfiguration#connectionTimeoutTCPMillis
-	 * ()
-	 */
-	@Override
-	public int connectionTimeoutTCPMillis() {
-		return connectionTimeoutTCPMillis;
 	}
 
 	/**
@@ -323,8 +233,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	}
 	
 	/**
-	 * @param slowResponseTimeoutSeconds the amount of seconds a requester waits for the final answer of a
-	 *            slow peer. If the slow peer does not answer within this time, the request fails.
 	 * @return This class
 	 */
 	public SendDirectBuilder heartBeatSeconds(final int heartBeatSeconds) {

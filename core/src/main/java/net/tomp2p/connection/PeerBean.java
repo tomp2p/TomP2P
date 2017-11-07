@@ -61,14 +61,12 @@ public class PeerBean {
     @Getter @Setter private NATHandler natHandler;
 
     //This map is used for all open PeerConnections which are meant to stay open. {@link Number160} = peer ID.
-    private ConcurrentHashMap<Number160, PeerConnection> openPeerConnections = 
-            new ConcurrentHashMap<Number160, PeerConnection>();
 
-    public PeerBean notifyPeerFound(PeerAddress sender, PeerAddress reporter, PeerConnection peerConnection,
+    public PeerBean notifyPeerFound(PeerAddress sender, PeerAddress reporter,
             RTT roundTripTime) {
         synchronized (peerStatusListeners) {
             for (PeerStatusListener peerStatusListener : peerStatusListeners) {
-                peerStatusListener.peerFound(sender, reporter, peerConnection, roundTripTime);
+                peerStatusListener.peerFound(sender, reporter, roundTripTime);
             }
         }
         return this;
@@ -100,28 +98,4 @@ public class PeerBean {
         return this;
     }
 
-    /**
-     * Returns a {@link ConcurrentHashMap} with all currently open PeerConnections. Number160 = peer ID.
-     *
-     * @return openPeerConnections
-     */
-    public ConcurrentHashMap<Number160, PeerConnection> openPeerConnections() {
-        return openPeerConnections;
-    }
-
-    /**
-     * Returns the {@link PeerConnection} for the given {@link Number160} peerId.
-     *
-     * @param {@link Number160} peerId The ID of the peer
-     * @return {@link PeerConnection} peerConnection The connection associated to the peer ID
-     */
-    public PeerConnection peerConnection(final Number160 peerId) {
-        PeerConnection peerConnection = openPeerConnections.get(peerId);
-        if (peerConnection != null) {
-            return peerConnection;
-        } else {
-            LOG.error("There was no PeerConnection for peerId = " + peerId);
-            return null;
-        }
-    }
 }

@@ -26,13 +26,14 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.p2p.PeerStatisticComparator;
 import net.tomp2p.utils.CacheMap;
 import net.tomp2p.utils.ConcurrentCacheMap;
+import net.tomp2p.utils.ConcurrentCacheSet;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -74,10 +75,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     private final int offlineCount;
 
     private final Maintenance maintenance;
-    
-    private final boolean peerVerification;
 
     private PeerStatisticComparator peerStatisticComparator;
+    
+    private final ConcurrentCacheSet<PeerAddress> knownPeers = new ConcurrentCacheSet<>(24 * 60 * 60, 10000);
+    private final ConcurrentCacheSet<PeerAddress> unknownPeers = new ConcurrentCacheSet<>(60, 1000);
 
     /**
      * Creates the bag for the peers. This peer knows a lot about close peers and the further away the peers are, the
@@ -108,9 +110,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 peerMapConfiguration.exceptionTimeout(), totalNumberOfVerifiedBags());
         this.maintenance = peerMapConfiguration.maintenance().init(peerMapVerified, peerMapOverflow,
                 offlineMap, shutdownMap, exceptionMap);
-        this.peerVerification = peerMapConfiguration.isPeerVerification();
         this.peerStatisticComparator = peerMapConfiguration.getPeerStatisticComparator();
-
     }
 
     private int totalNumberOfVerifiedBags() {
@@ -278,22 +278,17 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True if the neighbor could be added or updated, otherwise false.
      */
     @Override
-    public boolean peerFound(PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection, RTT roundTripTime) {
+    public boolean peerFound(PeerAddress remotePeer, final PeerAddress referrer,  RTT roundTripTime) {
         LOG.debug("Peer {} is online. Reporter was {}.", remotePeer, referrer);
         boolean firstHand = referrer == null;
-        //if we got contacted by this peer, but we did not initiate the connection
-        boolean secondHand = remotePeer.equals(referrer);
-        //if a peer reported about other peers
-        boolean thirdHand = !firstHand && !secondHand;
+        boolean thirdHand = !firstHand;
         // always trust first hand information
         if (firstHand) {
             offlineMap.remove(remotePeer.peerId());
             shutdownMap.remove(remotePeer.peerId());
-        }
-        
-        if (secondHand && !peerVerification) {
-        	offlineMap.remove(remotePeer.peerId());
-            shutdownMap.remove(remotePeer.peerId());
+            verifiedPeer(remotePeer);
+        } else {
+        	checkPeer(remotePeer);
         }
         
         // don't add nodes with zero node id, do not add myself and do not add
@@ -305,14 +300,15 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         
         //if we have first hand information, that means we send a message to that peer and we received a reply. 
         //So its not firewalled. This happens in the discovery phase
-        if (remotePeer.unreachable()) {
+        
+        /*if (remotePeer.unreachable()) {
         	if(firstHand) {
         		remotePeer = remotePeer.withUnreachable(false);
         	} else {
         		LOG.debug("peer is unreachable, reject");
         		return false;
         	}
-        }
+        }*/
         
         final boolean probablyDead = offlineMap.containsKey(remotePeer.peerId()) || 
         		shutdownMap.containsKey(remotePeer.peerId()) || 
@@ -342,13 +338,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         	return false;
         }
         else {
-            if (firstHand || (secondHand && !peerVerification)) {
+            if (firstHand) {
                 final Map<Number160, PeerStatistic> map = peerMapVerified.get(classMember);
                 boolean inserted = false;
                 synchronized (map) {
                     // check again, now we are synchronized
                     if (map.containsKey(remotePeer.peerId())) {
-                        return peerFound(remotePeer, referrer, peerConnection, roundTripTime);
+                        return peerFound(remotePeer, referrer, roundTripTime);
                     }
                     if (map.size() < bagSizesVerified[classMember]) {
                         final PeerStatistic peerStatistic = new PeerStatistic(remotePeer);
@@ -938,7 +934,22 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 		return counter;
 	}
 
-	
+	public boolean checkPeer(PeerAddress sender) {
+		if(knownPeers.contains(sender)) {
+			knownPeers.add(sender);
+			return true;
+		} else {
+			unknownPeers.add(sender);
+			return false;
+		}
+	}
 
-	
+	public boolean verifiedPeer(PeerAddress sender) {
+		if(knownPeers.contains(sender)) {
+			return true;
+		} 
+		unknownPeers.remove(sender);
+		knownPeers.add(sender);
+		return true;
+	}
 }

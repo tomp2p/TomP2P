@@ -35,7 +35,6 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
 
     private NavigableMap<Number640, Data> dataMap;
 
-    private Boolean isUDP;
     
     private int hopCounter;
 
@@ -46,21 +45,13 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
 
     public void start() {
         Message message = new Message();
-        if (isUDP == null) {
-            // not set, decide based on the data
-            if (dataMap == null) {
-                udp(true);
-            } else {
-                udp(false);
-                message.setDataMap(new DataMap(dataMap));
-            }
-        }
+        //TODO: needs SCTP mayby
+        message.setDataMap(new DataMap(dataMap));
         
         message.key(messageKey);
         message.intValue(0);
         message.intValue(Number160.BITS);
-        message.udp(isUDP());
-        
+
         peer.broadcastRPC().broadcastHandler().receive(message);
     }
     
@@ -74,18 +65,6 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
 
     public BroadcastBuilder dataMap(NavigableMap<Number640, Data> dataMap) {
         this.dataMap = dataMap;
-        return this;
-    }
-
-    public boolean isUDP() {
-        if (isUDP == null) {
-            return false;
-        }
-        return isUDP;
-    }
-
-    public BroadcastBuilder udp(boolean isUDP) {
-        this.isUDP = isUDP;
         return this;
     }
     

@@ -24,15 +24,15 @@ import java.util.List;
 import java.util.NavigableSet;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.PeerException.AbortCause;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.Message;
@@ -44,6 +44,7 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,7 +107,7 @@ public class NeighborRPC extends DispatchHandler {
 	 *            The client-side connection configuration
      * @return The future response to keep track of future events
      */
-    public FutureResponse closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
+    public Pair<FutureDone<Message>, FutureDone<ClientChannel>> closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
             final Type type, final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
         Message message = createMessage(remotePeer, RPC.Commands.NEIGHBOR.getNr(), type);
         if (!message.isRequest()) {
@@ -138,7 +139,7 @@ public class NeighborRPC extends DispatchHandler {
         return send(message, configuration, channelCreator);
     }
 
-    private FutureResponse send(final Message message, final ConnectionConfiguration configuration, final ChannelCreator channelCreator) {
+    private Pair<FutureDone<Message>, FutureDone<ClientChannel>> send(final Message message, final ConnectionConfiguration configuration, final ChannelCreator channelCreator) {
         final FutureResponse futureResponse = new FutureResponse(message);
         futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override
@@ -150,26 +151,19 @@ public class NeighborRPC extends DispatchHandler {
                         if(ns!=null) {
                             for(PeerAddress neighbor:ns.neighbors()) {
                                 // Notify, that we found this peer. RTT is from the reporter and therefore only an estimate.
-                                peerBean().notifyPeerFound(neighbor, response.sender(), null, futureResponse.getRoundTripTime().setEstimated());
+                                peerBean().notifyPeerFound(neighbor, response.sender(), futureResponse.getRoundTripTime().setEstimated());
                             }
                         }
                     }
                 }
             }
         });
-        RequestHandler request = new RequestHandler(futureResponse,
-                peerBean(), connectionBean(), configuration);
-
-        if (!configuration.isForceTCP()) {
-            return request.sendUDP(channelCreator);
-        } else {
-            return request.sendTCP(channelCreator);
-        }
-
+        
+        return channelCreator.sendUDP(message);
     }
 
     @Override
-    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws IOException {
+    public Message handleResponse(final Message message, final boolean sign) throws IOException {
         if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("At least location and domain keys are needed.");
         }
@@ -186,8 +180,7 @@ public class NeighborRPC extends DispatchHandler {
             //return empty neighbor set
             Message response = createResponseMessage(message, Type.NOT_FOUND);
             response.neighborsSet(new NeighborSet(-1, Collections.<PeerAddress>emptyList()));
-            responder.response(response);
-            return;
+            return response;
         }
         
         // Create response message and set neighbors
@@ -262,7 +255,7 @@ public class NeighborRPC extends DispatchHandler {
             }
               
         }
-        responder.response(responseMessage);
+        return responseMessage;
     }
 
     /**

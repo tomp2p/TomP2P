@@ -1,18 +1,24 @@
 package net.tomp2p.rpc;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelServer;
+import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -35,25 +41,29 @@ public class TestPing {
     };
 
     @Test
-    public void testPingTCP() throws Exception {
+    public void testPingUDP() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
+        ChannelServer.resetCounters();
         ChannelCreator cc = null;
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
-
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(0, 1);
+            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).ports(2424).start();
+            PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
+            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).ports(8088).start();
+            new PingRPC(recv1.peerBean(), recv1.connectionBean());
+            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
-
-            FutureResponse fr = sender.pingRPC().pingTCP(recv1.peerAddress(), cc,
+            Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr = handshake.pingUDP(recv1.peerAddress(), cc,
                     new DefaultConnectionConfiguration());
-            fr.awaitUninterruptibly();
-            Assert.assertEquals(true, fr.isSuccess());
+            fr.element0().awaitUninterruptibly();
+            Assert.assertEquals(true, fr.element0().isSuccess());
+            Assert.assertEquals(1, ChannelServer.packetCounterSend());
+            //we shutdown between the 1 and 2 received packet, so it might be 1 or 2
+            Assert.assertEquals(true, ChannelServer.packetCounterReceive() == 1 || ChannelServer.packetCounterReceive() == 2);
         } finally {
             if (cc != null) {
-                cc.shutdown().await();
+                cc.shutdown();
             }
             if (sender != null) {
                 sender.shutdown().await();
@@ -63,31 +73,35 @@ public class TestPing {
             }
         }
     }
-
+    
     @Test
-    public void testPingTCP2() throws Exception {
+    public void testPingUDPKnowPeer() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
+        ChannelServer.resetCounters();
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
-
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(0, 1);
+            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).ports(2424).start();
+            PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
+            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).ports(8088).start();
+            new PingRPC(recv1.peerBean(), recv1.connectionBean());
+            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
-
-            FutureResponse fr = sender.pingRPC().pingTCP(recv1.peerAddress(), cc,
+            Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr = handshake.pingUDP(recv1.peerAddress(), cc,
                     new DefaultConnectionConfiguration());
-            fr.awaitUninterruptibly();
-            FutureResponse fr2 = recv1.pingRPC().pingTCP(sender.peerAddress(), cc,
+            fr.element0().awaitUninterruptibly();
+            
+            fr = handshake.pingUDP(recv1.peerAddress(), cc,
                     new DefaultConnectionConfiguration());
-            fr2.awaitUninterruptibly();
-            Assert.assertEquals(true, fr2.isSuccess());
-            Assert.assertEquals(true, fr.isSuccess());
+            fr.element0().awaitUninterruptibly();
+            
+            Assert.assertEquals(true, fr.element0().isSuccess());
+            Assert.assertEquals(2, ChannelServer.packetCounterSend());
+            Assert.assertEquals(3, ChannelServer.packetCounterReceive());
         } finally {
             if (cc != null) {
-                cc.shutdown().await();
+                cc.shutdown();
             }
             if (sender != null) {
                 sender.shutdown().await();
@@ -97,6 +111,7 @@ public class TestPing {
             }
         }
     }
+    
 
     @Test
     public void testPingTCPDeadLock2() throws Exception {
@@ -109,32 +124,32 @@ public class TestPing {
             final Peer recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
             recv11 = recv1;
 
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(0, 1);
+            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
             final ChannelCreator cc1 = cc;
 
-            FutureResponse fr = sender.pingRPC().pingTCP(recv1.peerAddress(), cc,
+            Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
                     new DefaultConnectionConfiguration());
-            fr.awaitUninterruptibly();
+            fr.element0().awaitUninterruptibly();
 
-            fr.addListener(new BaseFutureAdapter<FutureResponse>() {
+            fr.element0().addListener(new BaseFutureAdapter<FutureDone<Message>>() {
                 @Override
-                public void operationComplete(final FutureResponse future) throws Exception {
-                    FutureResponse fr2 = sender.pingRPC().pingTCP(recv1.peerAddress(), cc1,
+                public void operationComplete(final FutureDone<Message> future) throws Exception {
+                	Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(), cc1,
                             new DefaultConnectionConfiguration());
                     try {
-                        fr2.await();
+                        fr2.element0().await();
                     } catch (IllegalStateException ise) {
                         Assert.fail();
                     }
                 }
             });
             Thread.sleep(1000);
-            Assert.assertEquals(true, fr.isSuccess());
+            Assert.assertEquals(true, fr.element0().isSuccess());
         } finally {
             if (cc != null) {
-                cc.shutdown().await();
+                cc.shutdown();
             }
             if (sender1 != null) {
                 sender1.shutdown().await();
@@ -146,56 +161,26 @@ public class TestPing {
     }
 
     @Test
-    public void testPingUDP() throws Exception {
-        Peer sender = null;
-        Peer recv1 = null;
-        ChannelCreator cc = null;
-        try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
-            PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
-            new PingRPC(recv1.peerBean(), recv1.connectionBean());
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1, 0);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-            FutureResponse fr = handshake.pingUDP(recv1.peerAddress(), cc,
-                    new DefaultConnectionConfiguration());
-            fr.awaitUninterruptibly();
-            Assert.assertEquals(true, fr.isSuccess());
-        } finally {
-            if (cc != null) {
-                cc.shutdown().await();
-            }
-            if (sender != null) {
-                sender.shutdown().await();
-            }
-            if (recv1 != null) {
-                recv1.shutdown().await();
-            }
-        }
-    }
-
-    @Test
     public void testPingHandlerError() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
+            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).ports(2424).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean(), false, true,
                     false);
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
+            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).ports(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, false);
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(0, 1);
+            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
-            FutureResponse fr = handshake.pingTCP(recv1.peerAddress(), cc,
+            Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr = handshake.pingUDP(recv1.peerAddress(), cc,
                     new DefaultConnectionConfiguration());
-            fr.awaitUninterruptibly();
-            Assert.assertEquals(false, fr.isSuccess());
+            fr.element0().awaitUninterruptibly();
+            Assert.assertEquals(false, fr.element0().isSuccess());
         } finally {
             if (cc != null) {
-                cc.shutdown().await();
+                cc.shutdown();
             }
             if (sender != null) {
                 sender.shutdown().await();
@@ -207,7 +192,7 @@ public class TestPing {
     }
 
     @Test
-    public void testPingTimeoutTCP() throws Exception {
+    public void testPingTimeout() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
@@ -217,19 +202,19 @@ public class TestPing {
                     true);
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, true);
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(0, 1);
+            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
-            FutureResponse fr = handshake.pingTCP(recv1.peerBean().serverPeerAddress(), cc,
+            Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
-            fr.awaitUninterruptibly();
-            Assert.assertEquals(false, fr.isSuccess());
-            System.err.println("done:" + fr.failedReason());
-            Assert.assertEquals(true, fr.failedReason().contains("TIMEOUT"));
+            fr.element0().awaitUninterruptibly();
+            Assert.assertEquals(false, fr.element0().isSuccess());
+            System.err.println("done:" + fr.element0().failedReason());
+            Assert.assertEquals(true, fr.element0().failedReason().contains("TIMEOUT"));
             
         } finally {
             if (cc != null) {
-                cc.shutdown().await();
+                cc.shutdown();
             }
             if (sender != null) {
                 sender.shutdown().await();
@@ -241,93 +226,29 @@ public class TestPing {
     }
 
     @Test
-    public void testPingHandlerFailure() throws Exception {
-        Peer sender = null;
-        Peer recv1 = null;
-        ChannelCreator cc = null;
-        try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
-            PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean(), false, true,
-                    false);
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
-            new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, false);
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1, 0);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-            FutureResponse fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress(), cc,
-                    new DefaultConnectionConfiguration());
-            fr.awaitUninterruptibly();
-            Assert.assertEquals(false, fr.isSuccess());
-        } finally {
-            if (cc != null) {
-                cc.shutdown().await();
-            }
-            if (sender != null) {
-                sender.shutdown().await();
-            }
-            if (recv1 != null) {
-                recv1.shutdown().await();
-            }
-        }
-    }
-
-    @Test
-    public void testPingTimeoutUDP() throws Exception {
-        Peer sender = null;
-        Peer recv1 = null;
-        ChannelCreator cc = null;
-        try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
-            PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean(), false, true,
-                    true);
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
-            new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, true);
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1, 0);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-            FutureResponse fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress(), cc,
-                    new DefaultConnectionConfiguration());
-            fr.awaitUninterruptibly();
-            Assert.assertEquals(false, fr.isSuccess());
-            System.err.println("done:" + fr.failedReason());
-            Assert.assertEquals(true, fr.failedReason().contains("TIMEOUT"));
-        } finally {
-            if (cc != null) {
-                cc.shutdown().await();
-            }
-            if (sender != null) {
-                sender.shutdown().await();
-            }
-            if (recv1 != null) {
-                recv1.shutdown().await();
-            }
-        }
-    }
-
-    @Test
-    public void testPingTCPPool() throws Exception {
+    public void testPingPool() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
-            List<FutureResponse> list = new ArrayList<FutureResponse>(50);
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(0, 50);
+            List<Pair<FutureDone<Message>, FutureDone<ClientChannel>>> list = new ArrayList<>(50);
+            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(50);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
             for (int i = 0; i < 50; i++) {
-                FutureResponse fr = sender.pingRPC().pingTCP(recv1.peerAddress(), cc,
+            	Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
                         new DefaultConnectionConfiguration());
                 list.add(fr);
             }
-            for (FutureResponse fr2 : list) {
-                fr2.awaitUninterruptibly();
-                Assert.assertTrue(fr2.isSuccess());
+            for (Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr2 : list) {
+                fr2.element0().awaitUninterruptibly();
+                Assert.assertTrue(fr2.element0().isSuccess());
             }
         } finally {
             if (cc != null) {
-                cc.shutdown().await();
+                cc.shutdown();
             }
             if (sender != null) {
                 sender.shutdown().await();
@@ -345,19 +266,25 @@ public class TestPing {
             for (int i = 0; i < p.length; i++) {
                 p[i] = new PeerBuilder(Number160.createHash(i)).p2pId(55).ports(2424 + i).start();
             }
-            List<FutureResponse> list = new ArrayList<FutureResponse>();
+            List<Pair<FutureDone<Message>, FutureDone<ClientChannel>>> list = new ArrayList<>();
             for (int i = 0; i < p.length; i++) {
-                FutureChannelCreator fcc = p[0].connectionBean().reservation().create(0, 1);
+                FutureChannelCreator fcc = p[0].connectionBean().reservation().create(1);
                 fcc.awaitUninterruptibly();
-                ChannelCreator cc = fcc.channelCreator();
-                FutureResponse fr = p[0].pingRPC().pingTCP(p[i].peerAddress(), cc,
+                final ChannelCreator cc = fcc.channelCreator();
+                Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr = p[0].pingRPC().pingUDP(p[i].peerAddress(), cc,
                         new DefaultConnectionConfiguration());
-                Utils.addReleaseListener(cc, fr);
+                fr.element1().addListener(new BaseFutureAdapter<FutureDone<ClientChannel>>() {
+					@Override
+					public void operationComplete(FutureDone<ClientChannel> future) throws Exception {
+						cc.shutdown();
+					}
+				});
+                
                 list.add(fr);
             }
-            for (FutureResponse fr2 : list) {
-                fr2.awaitUninterruptibly();
-                boolean success = fr2.isSuccess();
+            for (Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr2 : list) {
+                fr2.element0().awaitUninterruptibly();
+                boolean success = fr2.element0().isSuccess();
                 if (!success) {
                     System.err.println("FAIL.");
                     Assert.fail();
@@ -379,51 +306,25 @@ public class TestPing {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
             long start = System.currentTimeMillis();
-            List<FutureResponse> list = new ArrayList<FutureResponse>(100);
+            List<Pair<FutureDone<Message>, FutureDone<ClientChannel>>> list = new ArrayList<>(100);
             for (int i = 0; i < 20; i++) {
-                FutureChannelCreator fcc = recv1.connectionBean().reservation().create(0, 50);
+                FutureChannelCreator fcc = recv1.connectionBean().reservation().create(50);
                 fcc.awaitUninterruptibly();
                 ChannelCreator cc = fcc.channelCreator();
                 for (int j = 0; j < 50; j++) {
-                    FutureResponse fr = sender.pingRPC().pingTCP(recv1.peerAddress(), cc,
+                	Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
                             new DefaultConnectionConfiguration());
                     list.add(fr);
                 }
-                for (FutureResponse fr2 : list) {
-                    fr2.awaitUninterruptibly();
-                    if (!fr2.isSuccess())
-                        System.err.println("fail " + fr2.failedReason());
-                    Assert.assertEquals(true, fr2.isSuccess());
-                }
                 list.clear();
-                cc.shutdown().await();
+                cc.shutdown();
             }
-            System.out.println("TCP time: " + (System.currentTimeMillis() - start));
-            for (FutureResponse fr2 : list) {
-                fr2.awaitUninterruptibly();
-                Assert.assertEquals(true, fr2.isSuccess());
-            }
-            //
-            start = System.currentTimeMillis();
-            list = new ArrayList<FutureResponse>(50);
-            for (int i = 0; i < 20; i++) {
-                FutureChannelCreator fcc = recv1.connectionBean().reservation().create(50, 0);
-                fcc.awaitUninterruptibly();
-                ChannelCreator cc = fcc.channelCreator();
-                for (int j = 0; j < 50; j++) {
-                    FutureResponse fr = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
-                            new DefaultConnectionConfiguration());
-                    list.add(fr);
-                }
-                for (FutureResponse fr2 : list) {
-                    fr2.awaitUninterruptibly();
-                    Assert.assertEquals(true, fr2.isSuccess());
-                }
-                list.clear();
-                cc.shutdown().await();
-            }
-
             System.out.println("UDP time: " + (System.currentTimeMillis() - start));
+            for (Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr2 : list) {
+                fr2.element0().awaitUninterruptibly();
+                Assert.assertEquals(true, fr2.element0().isSuccess());
+            }
+            
         } finally {
             if (sender != null) {
                 sender.shutdown().await();
@@ -448,23 +349,25 @@ public class TestPing {
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(0, 1);
+            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
             fcc.awaitUninterruptibly();
             ChannelCreator cc = fcc.channelCreator();
-            FutureResponse fr = sender.pingRPC().pingTCP(recv1.peerAddress(), cc,
+            Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
                     new DefaultConnectionConfiguration());
-            Utils.addReleaseListener(cc, fr);
-            fr.awaitUninterruptibly();
-            fr.awaitListeners();
-            Assert.assertEquals(true, fr.isSuccess());
             
-            FutureResponse fr2 = sender.pingRPC().pingTCP(recv1.peerAddress(), cc,
+            fr.element0().awaitUninterruptibly();
+            fr.element1().awaitUninterruptibly();
+            cc.shutdown();
+            
+            Assert.assertEquals(true, fr.element0().isSuccess());
+            
+            Pair<FutureDone<Message>, FutureDone<ClientChannel>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
                     new DefaultConnectionConfiguration());
-            fr2.awaitUninterruptibly();
-            fr2.awaitListeners();
+            fr2.element0().awaitUninterruptibly();
+            fr2.element1().awaitUninterruptibly();
             // we have released the reservation here
             // System.err.println(fr2.getFailedReason());
-            Assert.assertEquals(false, fr2.isSuccess());
+            Assert.assertEquals(false, fr2.element0().isSuccess());
 
         } finally {
             if (sender != null) {
@@ -475,4 +378,5 @@ public class TestPing {
             }
         }
     }
+
 }

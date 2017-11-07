@@ -36,8 +36,6 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
 
     private PeerAddress reporter;
 
-    private boolean discoveredTCP = false;
-
     private boolean discoveredUDP = false;
     
     private boolean isNat = false;
@@ -133,33 +131,12 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     }
 
     /**
-     * Intermediate result if TCP has been discovered. Set discoveredTCP True if other peer could reach us with a TCP
-     * ping.
-     */
-    public void discoveredTCP() {
-        synchronized (lock) {
-            this.discoveredTCP = true;
-        }
-    }
-
-    /**
      * Intermediate result if UDP has been discovered. Set discoveredUDP True if other peer could reach us with a UDP
      * ping.
      */
     public void discoveredUDP() {
         synchronized (lock) {
             this.discoveredUDP = true;
-        }
-    }
-
-    /**
-     * Checks if this peer can be reached via TCP.
-     * 
-     * @return True if this peer can be reached via TCP from outside.
-     */
-    public boolean isDiscoveredTCP() {
-        synchronized (lock) {
-            return discoveredTCP;
         }
     }
 

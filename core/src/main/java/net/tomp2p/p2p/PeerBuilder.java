@@ -95,9 +95,7 @@ public class PeerBuilder {
 
 	private KeyPair keyPair = null;
 	private int p2pID = -1;
-	private int tcpPort = -1;
 	private int udpPort = -1;
-	private int tcpPortForwarding = -1;
 	private int udpPortForwarding = -1;
 	private Bindings bindings = null;
 	private PeerMap peerMap = null;
@@ -159,13 +157,6 @@ public class PeerBuilder {
 		} else {
 			isBehindFirewallSet = true;
 		}
-
-		boolean isTcpPortSet = false;
-		if (tcpPort == -1) {
-			tcpPort = Ports.DEFAULT_PORT;
-		} else {
-			isTcpPortSet = true;
-		}
 		
 		boolean isUdpPortSet = false;
 		if (udpPort == -1) {
@@ -182,14 +173,14 @@ public class PeerBuilder {
 		if(isBehindFirewallSet) {
 			channelServerConfiguration.behindFirewall(behindFirewall);
 		}
-		if(isTcpPortSet || isUdpPortSet) {
-			channelServerConfiguration.ports(new Ports(tcpPort, udpPort, udpPort + 1));
+		if(isUdpPortSet) {
+			channelServerConfiguration.ports(new Ports(udpPort));
 		}
 		
-		if(tcpPortForwarding == -1 && udpPortForwarding == -1) {
+		if(udpPortForwarding == -1) {
 			channelServerConfiguration.portsForwarding(new Ports());
 		} else {
-			channelServerConfiguration.portsForwarding(new Ports(tcpPortForwarding, udpPortForwarding, udpPortForwarding + 1));
+			channelServerConfiguration.portsForwarding(new Ports(udpPortForwarding));
 		}
 		
 		if (channelClientConfiguration == null) {
@@ -277,8 +268,8 @@ public class PeerBuilder {
 		}
 
 		if (isEnableDirectDataRPC()) {
-			DirectDataRPC directDataRPC = new DirectDataRPC(peerBean, connectionBean);
-			peer.directDataRPC(directDataRPC);
+			//DirectDataRPC directDataRPC = new DirectDataRPC(peerBean, connectionBean);
+			//peer.directDataRPC(directDataRPC);
 		}
 
 		if (isEnableBroadcast()) {
@@ -313,11 +304,10 @@ public class PeerBuilder {
 		ChannelServerConfiguration channelServerConfiguration = new ChannelServerConfiguration();
 		channelServerConfiguration.bindings(new Bindings());
 		//these two values may be overwritten in the peer builder
-		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT, Ports.DEFAULT_PORT + 1));
-		channelServerConfiguration.portsForwarding(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT, Ports.DEFAULT_PORT + 1));
+		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT));
+		channelServerConfiguration.portsForwarding(new Ports(Ports.DEFAULT_PORT));
 		channelServerConfiguration.behindFirewall(false);
 		channelServerConfiguration.signatureFactory(new DSASignatureFactory());
-		channelServerConfiguration.byteBufPool(false);
 		return channelServerConfiguration;
 	}
 
@@ -327,7 +317,6 @@ public class PeerBuilder {
 		channelClientConfiguration.maxPermitsTCP(MAX_PERMITS_TCP);
 		channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
 		channelClientConfiguration.signatureFactory(new DSASignatureFactory());
-		channelClientConfiguration.byteBufPool(false);
 		return channelClientConfiguration;
 	}
 
@@ -350,24 +339,6 @@ public class PeerBuilder {
 
 	public PeerBuilder p2pId(int p2pID) {
 		this.p2pID = p2pID;
-		return this;
-	}
-
-	public int tcpPortForwarding() {
-		return tcpPortForwarding;
-	}
-
-	public PeerBuilder tcpPortForwarding(int tcpPortForwarding) {
-		this.tcpPortForwarding = tcpPortForwarding;
-		return this;
-	}
-	
-	public int tcpPort() {
-		return tcpPort;
-	}
-
-	public PeerBuilder tcpPort(int tcpPort) {
-		this.tcpPort = tcpPort;
 		return this;
 	}
 
@@ -397,7 +368,6 @@ public class PeerBuilder {
 	 */
 	public PeerBuilder ports(int port) {
 		this.udpPort = port;
-		this.tcpPort = port;
 		return this;
 	}
 	
@@ -409,7 +379,6 @@ public class PeerBuilder {
 	 */
 	public PeerBuilder portsExternal(int port) {
 		this.udpPortForwarding = port;
-		this.tcpPortForwarding = port;
 		return this;
 	}
 

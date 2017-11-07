@@ -16,19 +16,19 @@
 package net.tomp2p.rpc;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.BroadcastHandler;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class BroadcastRPC extends DispatchHandler {
         this.broadcastHandler = broadcastHandler;
     }
 
-    public FutureResponse send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
+    public Pair<FutureDone<Message>, FutureDone<ClientChannel>> send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
             final ChannelCreator channelCreator, final ConnectionConfiguration configuration, int bucketNr) {
         final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
         message.intValue(broadcastBuilder.hopCounter());
@@ -55,28 +55,18 @@ public class BroadcastRPC extends DispatchHandler {
         if (broadcastBuilder.dataMap() != null) {
             message.setDataMap(new DataMap(broadcastBuilder.dataMap()));
         }
-        final FutureResponse futureResponse = new FutureResponse(message);
-        final RequestHandler requestHandler = new RequestHandler(
-                futureResponse, peerBean(), connectionBean(), configuration);
-        if (!broadcastBuilder.isUDP()) {
-            return requestHandler.sendTCP(channelCreator);
-        } else {
-            return requestHandler.fireAndForgetUDP(channelCreator);
-        }
+        return channelCreator.sendUDP(message);
+
     }
 
     @Override
-    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
+    public Message handleResponse(final Message message, final boolean sign) throws Exception {
         if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.BROADCAST.getNr())) {
             throw new IllegalArgumentException("Message content is wrong for this handler.");
         }
         LOG.debug("received BRODACAST message: {}", message);
         broadcastHandler.receive(message);
-        if(message.isUdp()) {
-            responder.responseFireAndForget();
-        } else {
-            responder.response(createResponseMessage(message, Type.OK));
-        }
+        return null;
     }
 
     /**

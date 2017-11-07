@@ -16,40 +16,34 @@
 
 package net.tomp2p.connection;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelException;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.FixedRecvByteBufAllocator;
-import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.IOException;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Getter;
+import java.util.concurrent.atomic.AtomicLong;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.message.TomP2PCumulationTCP;
-import net.tomp2p.message.TomP2POutbound;
-import net.tomp2p.message.TomP2PSinglePacketUDP;
+import net.tomp2p.message.Decoder;
+import net.tomp2p.message.Encoder;
+import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerStatusListener;
 
 import org.slf4j.Logger;
@@ -66,40 +60,38 @@ import org.slf4j.LoggerFactory;
 public final class ChannelServer implements DiscoverNetworkListener{
 
 	private static final Logger LOG = LoggerFactory.getLogger(ChannelServer.class);
-	// private static final int BACKLOG = 128;
 
-	private final EventLoopGroup bossGroup;
-	private final EventLoopGroup workerGroup;
-	
-	private final Map<InetAddress, Channel> channelsTCP = Collections.synchronizedMap(new HashMap<InetAddress, Channel>());
-	private final Map<InetAddress, Channel> channelsUDP = Collections.synchronizedMap(new HashMap<InetAddress, Channel>());
+	private final Map<InetAddress, ServerThread> channelsUDP = Collections.synchronizedMap(new HashMap<InetAddress, ServerThread>());
 
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
 	private final ChannelServerConfiguration channelServerConfiguration;
 	private final Dispatcher dispatcher;
-	private final List<PeerStatusListener> peerStatusListeners;
 	
-	private final DropConnectionInboundHandler tcpDropConnectionInboundHandler;
-	private final DropConnectionInboundHandler udpDropConnectionInboundHandler;
-        @Getter private final CountConnectionOutboundHandler counterUDP = new CountConnectionOutboundHandler();
-        @Getter private final CountConnectionOutboundHandler counterTCP = new CountConnectionOutboundHandler();
-        
-	private final ChannelHandler udpDecoderHandler;
 	private final DiscoverNetworks discoverNetworks;
-        
-        
-	
+
 	private boolean shutdown = false;
 	private boolean broadcastAddressSupported = false;
 	private boolean broadcastAddressTried = false;
+	
+	private final static AtomicLong packetCounterSend = new AtomicLong();
+	private final static AtomicLong packetCounterReceive = new AtomicLong();
+	
+	public static long packetCounterSend() {
+		return packetCounterSend.get();
+	}
+	
+	public static long packetCounterReceive() {
+		return packetCounterReceive.get();
+	}
+	
+	public static void resetCounters() {
+		packetCounterSend.set(0);
+		packetCounterReceive.set(0);
+	}
 
     /**
      * Sets parameters and starts network device discovery.
-     * 
-     * @param bossGroup
-     * 
-     * @param workerGroup
      * 
      * @param channelServerConfiguration
 	 *            The server configuration that contains e.g. the handlers
@@ -110,20 +102,13 @@ public final class ChannelServer implements DiscoverNetworkListener{
      * @throws IOException
      *               If device discovery failed.
      */
-	public ChannelServer(final EventLoopGroup bossGroup, final EventLoopGroup workerGroup, final ChannelServerConfiguration channelServerConfiguration, final Dispatcher dispatcher,
-	        final List<PeerStatusListener> peerStatusListeners, final ScheduledExecutorService timer) throws IOException {
-		this.bossGroup = bossGroup;
-		this.workerGroup = workerGroup;
+	public ChannelServer(final ChannelServerConfiguration channelServerConfiguration, final Dispatcher dispatcher, 
+			final ScheduledExecutorService timer) throws IOException {
 		this.channelServerConfiguration = channelServerConfiguration;
 		this.dispatcher = dispatcher;
-		this.peerStatusListeners = peerStatusListeners;
 		
 		this.discoverNetworks = new DiscoverNetworks(5000, channelServerConfiguration.bindings(), timer);
-		
-		this.tcpDropConnectionInboundHandler = new DropConnectionInboundHandler(channelServerConfiguration.maxTCPIncomingConnections());
-		this.udpDropConnectionInboundHandler = new DropConnectionInboundHandler(channelServerConfiguration.maxUDPIncomingConnections());
-		this.udpDecoderHandler = new TomP2PSinglePacketUDP(channelServerConfiguration.signatureFactory());
-		
+				
 		discoverNetworks.addDiscoverNetworkListener(this);
 		if(timer!=null) {
 			discoverNetworks.start().awaitUninterruptibly();
@@ -160,18 +145,12 @@ public final class ChannelServer implements DiscoverNetworkListener{
     }
 
 	private void listenAny() {
-		final InetSocketAddress tcpSocket = new InetSocketAddress(channelServerConfiguration.ports().tcpPort());
-		final boolean tcpStart = startupTCP(tcpSocket, channelServerConfiguration);
-    	if(!tcpStart) {
-    		LOG.warn("cannot bind TCP on socket {}",tcpSocket);
-    	} else {
-    		LOG.info("Listening TCP on socket {}",tcpSocket);
-    	}
+
     	
     	final InetSocketAddress udpSocket = new InetSocketAddress(channelServerConfiguration.ports().udpPort());
-    	final boolean udpStart = startupUDP(udpSocket, channelServerConfiguration, true);
+    	final boolean udpStart = startupUDP(udpSocket, true);
     	if(!udpStart) {
-                final boolean udpStart2 = startupUDP(udpSocket, channelServerConfiguration, false);
+                final boolean udpStart2 = startupUDP(udpSocket, false);
                 if(!udpStart2) {
                     LOG.warn("cannot bind UDP on socket at all {}", udpSocket);
                 } else {
@@ -202,7 +181,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	    	InetSocketAddress udpBroadcastSocket = new InetSocketAddress(inetAddress, channelServerConfiguration.ports()
 	                .udpPort());
 	    	broadcastAddressTried = true;
-	    	boolean udpStartBroadcast = startupUDP(udpBroadcastSocket, channelServerConfiguration, false);
+	    	boolean udpStartBroadcast = startupUDP(udpBroadcastSocket, false);
 	    	
 	    	if (udpStartBroadcast) {
 	    		//if one broadcast address was found, then we don't need to bind to 0.0.0.0
@@ -216,10 +195,10 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	    }
 	    
 	    for (InetAddress inetAddress : discoverResults.removedFoundBroadcastAddresses()) {
-	    	Channel channelUDP = channelsUDP.remove(inetAddress);
-	    	if (channelUDP != null) {
-	    		channelUDP.close().awaitUninterruptibly();
-	    	}
+			ServerThread channelUDP = channelsUDP.remove(inetAddress);
+			if (channelUDP != null) {
+				channelUDP.datagramChannel.socket().close();
+			}
 	    }
 	    
 	    boolean udpStartBroadcast = false;
@@ -227,24 +206,14 @@ public final class ChannelServer implements DiscoverNetworkListener{
 		if(!broadcastAddressSupported && broadcastAddressTried) {
 			InetSocketAddress udpBroadcastSocket = new InetSocketAddress(channelServerConfiguration.ports().udpPort());
 			LOG.info("Listening on wildcard broadcast address {}", udpBroadcastSocket);
-			udpStartBroadcast = startupUDP(udpBroadcastSocket, channelServerConfiguration, true);
+			udpStartBroadcast = startupUDP(udpBroadcastSocket, true);
 			if(!udpStartBroadcast) {
 				LOG.warn("cannot bind wildcard broadcast UDP on socket {}", udpBroadcastSocket);
 			}
 		} 
 		
 		for (InetAddress inetAddress : discoverResults.newAddresses()) {
-		   	InetSocketAddress tcpSocket = new InetSocketAddress(inetAddress, 
-	    			channelServerConfiguration.ports().tcpPort());
-	    	boolean tcpStart = startupTCP(tcpSocket, channelServerConfiguration);
-	    	if(!tcpStart) {
-	    		LOG.warn("cannot bind TCP on socket {}",tcpSocket);
-	    	} else {
-	    		LOG.info("Listening on address: {} on port tcp: {}"
-		   		        , inetAddress, channelServerConfiguration.ports().tcpPort());
-	    	}
-	    	
-	    	//as we are listening to anything on UDP, we don't need to listen to any other interfaces
+		   	//as we are listening to anything on UDP, we don't need to listen to any other interfaces
 	    	if(!udpStartBroadcast) {
                         InetSocketAddress udpSocket = new InetSocketAddress(inetAddress, 
 	    				channelServerConfiguration.ports().udpPort());
@@ -252,7 +221,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
                         if(broadcastAddresses.contains(udpSocket)) {
                                 return;
                         }
-	    		boolean udpStart = startupUDP(udpSocket, channelServerConfiguration, false); 
+	    		boolean udpStart = startupUDP(udpSocket, false);
 	    		if(!udpStart) {
 	    			LOG.warn("cannot bind UDP on socket {}",udpSocket);
 	    		} else {
@@ -263,13 +232,9 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	    }
 		    
 	    for (InetAddress inetAddress : discoverResults.removedFoundAddresses()) {
-	    	Channel channelTCP = channelsTCP.remove(inetAddress);
-	    	if (channelTCP != null) {
-	    		channelTCP.close().awaitUninterruptibly();
-	    	}
-	    	Channel channelUDP = channelsUDP.remove(inetAddress);
+			ServerThread channelUDP = channelsUDP.remove(inetAddress);
 	    	if (channelUDP != null) {
-	    		channelUDP.close().awaitUninterruptibly();
+	    		channelUDP.datagramChannel.socket().close();
 	    	}
 	    }
 	}
@@ -284,139 +249,92 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	 * 
 	 * @param listenAddresses
 	 *            The address to listen to
-	 * @param config
-	 *            Can create handlers to be attached to this port
 	 * @param broadcastFlag 
 	 * @return True if startup was successful
 	 */
-	boolean startupUDP(final InetSocketAddress listenAddresses, final ChannelServerConfiguration config, boolean broadcastFlag) {
-		Bootstrap b = new Bootstrap();
-		b.group(workerGroup);
-		b.channel(NioDatagramChannel.class);
-		//option broadcast only required as we not listen to the broadcast address directly
-		if(broadcastFlag) {
-			b.option(ChannelOption.SO_BROADCAST, true);
-		}
-		b.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(ConnectionBean.UDP_LIMIT));
-		//default is on my machine 200K, testBroadcastUDP fails with this value, as UDP packets are dropped. Increase to 2MB
-		b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
-		b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
-		
-		b.handler(new ChannelInitializer<Channel>() {
-			@Override
-			protected void initChannel(final Channel ch) throws Exception {
-				ch.config().setAllocator(channelServerConfiguration.byteBufAllocator());
-				for (Map.Entry<String, ChannelHandler> entry : handlers(false).entrySet()) {
-                                    ch.pipeline().addLast(entry.getKey(), entry.getValue());
-				}
-			}
-		});
-
-		ChannelFuture future = b.bind(listenAddresses);
-		channelsUDP.put(listenAddresses.getAddress(), future.channel());
-		return handleFuture(future);
-	}
-
-	/**
-	 * Start to listen on a TCP port.
-	 * 
-	 * @param listenAddresses
-	 *            The address to listen to
-	 * @param config
-	 *            Can create handlers to be attached to this port
-	 * @return True if startup was successful
-	 */
-	boolean startupTCP(final InetSocketAddress listenAddresses, final ChannelServerConfiguration config) {
-		ServerBootstrap b = new ServerBootstrap();
-		b.group(bossGroup, workerGroup);
-		b.channel(NioServerSocketChannel.class);
-		//b.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
-		//b.option(ChannelOption.SO_SNDBUF, 2 * 1024 * 1024);
-		b.childHandler(new ChannelInitializer<Channel>() {
-			@Override
-			protected void initChannel(final Channel ch) throws Exception {
-				ch.config().setAllocator(channelServerConfiguration.byteBufAllocator());
-				//bestEffortOptions(ch, ChannelOption.SO_BACKLOG, BACKLOG);
-				bestEffortOptions(ch, ChannelOption.SO_LINGER, 0);
-				bestEffortOptions(ch, ChannelOption.TCP_NODELAY, true);
-				for (Map.Entry<String, ChannelHandler> entry : handlers(true).entrySet()) {
-                                    ch.pipeline().addLast(entry.getKey(), entry.getValue());
-				}
-			}
-		});
-		ChannelFuture future = b.bind(listenAddresses);
-		channelsTCP.put(listenAddresses.getAddress(), future.channel());
-		return handleFuture(future);
-	}
-
-	private static <T> void bestEffortOptions(final Channel ch, ChannelOption<T> option, T value) {
+	private boolean startupUDP(final InetSocketAddress listenAddresses, boolean broadcastFlag) {
+		DatagramChannel datagramChannel = null;
 		try {
-			ch.config().setOption(option, value);
-		} catch (ChannelException e) {
-			// Ignore
-		}
-	}
-
-	/**
-	 * Creates the Netty handlers. After it sends it to the user, where the
-	 * handlers can be modified. We add a couple or null handlers where the user
-	 * can add its own handler.
-	 * 
-	 * @param tcp
-	 *            Set to true if connection is TCP, false if UDP
-	 * @return The channel handlers that may have been modified by the user
-	 */
-	private Map<String, ChannelHandler> handlers(final boolean tcp) {
-		final Map<String, ChannelHandler> handlers = new LinkedHashMap<String, ChannelHandler>();
-		if (tcp) {
-			handlers.put("dropconnection", tcpDropConnectionInboundHandler);
-                        handlers.put("timeout", new IdleStateHandler(channelServerConfiguration.idleTCPMillis(), 0, 0));
-                        
-                        handlers.put("decoder", new TomP2PCumulationTCP(
-			        channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator()));
-		} else {
-			handlers.put("dropconnection", udpDropConnectionInboundHandler);
-			handlers.put("decoder", udpDecoderHandler);
-		}
-		handlers.put("encoder", new TomP2POutbound(
-		        channelServerConfiguration.signatureFactory(), channelServerConfiguration.byteBufAllocator()));
-                
-                if(tcp) {
-                    handlers.put("server-counter", counterTCP);
-                } else {
-                    handlers.put("server-counter", counterUDP);
-                }
-                if(dispatcher != null) {
-                    //this happens during testing
-                    handlers.put("dispatcher", dispatcher);
-                }
-		return handlers;
-	}
-
-	/**
-	 * Handles the waiting and returning the channel.
-	 * 
-	 * @param future
-	 *            The future to wait for
-	 * @return The channel or null if we failed to bind.
-	 */
-	private boolean handleFuture(final ChannelFuture future) {
-		try {
-			future.await();
-		} catch (InterruptedException e) {
-			if (LOG.isWarnEnabled()) {
-				LOG.warn("could not start UPD server", e);
+			datagramChannel = DatagramChannel.open();
+			DatagramSocket datagramSocket = datagramChannel.socket();
+			datagramSocket.setBroadcast(broadcastFlag);
+			//default is on my machine 200K, testBroadcastUDP fails with this value, as UDP packets are dropped. Increase to 2MB
+			datagramSocket.setReceiveBufferSize(2 * 1024 * 1024);
+			datagramSocket.setSendBufferSize(2 * 1024 * 1024);
+			datagramSocket.bind(listenAddresses);
+		} catch (IOException e) {
+			e.printStackTrace();
+			LOG.debug("could not connect {}", listenAddresses);
+			if(datagramChannel != null) {
+				datagramChannel.socket().close();
 			}
 			return false;
 		}
-		boolean success = future.isSuccess();
-		if (success) {
-			return true;
-		} else {
-			LOG.debug("binding not successful", future.cause());
-			return false;
-		}
+		ServerThread serverThread = ServerThread.of(datagramChannel, dispatcher, listenAddresses);
+		serverThread.start();
+		channelsUDP.put(listenAddresses.getAddress(), serverThread);
+		return true;
+	}
 
+	@RequiredArgsConstructor(staticName="of")
+	private static class ServerThread extends Thread {
+
+		final private DatagramChannel datagramChannel;
+		final private Dispatcher dispatcher;
+		final InetSocketAddress listenAddresses;
+		final private ByteBuffer buffer = ByteBuffer.allocate(65536);		
+
+		@Override
+		public void run() {
+			while(datagramChannel.isOpen()) {
+				try {
+					LOG.debug("listening for incoming packets on {}", datagramChannel.socket().getLocalSocketAddress());
+					buffer.clear();
+					//blocks until 
+					InetSocketAddress sender = (InetSocketAddress) datagramChannel.receive(buffer);
+					packetCounterReceive.incrementAndGet();
+					
+		            
+					buffer.flip();
+					ByteBuf buf = Unpooled.wrappedBuffer(buffer);
+					
+					DatagramSocket s = datagramChannel.socket();
+					InetSocketAddress recipient = new InetSocketAddress(s.getLocalAddress(), s.getLocalPort());
+					
+					Decoder decoder = new Decoder(new DSASignatureFactory());
+					boolean finished = decoder.decode(buf, recipient, sender);
+		            if (!finished) {
+		            	continue;
+		            }
+					Message m = decoder.message();
+					m.senderSocket(sender);
+		            Message m2 = dispatcher.dispatch(m);
+		            if(m2!=null) {
+		            	
+		            	if(dispatcher.peerBean().peerMap().checkPeer(m.sender())) {
+			            	m2.verified();
+			            }
+		            	LOG.debug("peer isVerified: {}", m2.isVerified());
+		            	
+		            	CompositeByteBuf buf2 = Unpooled.compositeBuffer();
+		            	Encoder encoder = new Encoder(new DSASignatureFactory());
+		            	encoder.write(buf2, m2, null);
+		            	packetCounterSend.incrementAndGet();
+		            	datagramChannel.send(ChannelUtils.convert(buf2), sender);
+		            } else {
+		            	LOG.debug("not replying to {}", m);
+		            }
+
+				} catch (IOException | InvalidKeyException | SignatureException e) {
+					if(!datagramChannel.isOpen()) {
+						LOG.debug("shutting down {}", listenAddresses);
+					} else {
+						dispatcher.exceptionCaught(datagramChannel, e);
+					}
+				}
+			}
+			LOG.debug("ending loop");
+		}
 	}
 
 	/**
@@ -430,39 +348,18 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	        shutdown = true;
         }
 		discoverNetworks.stop();
-		final int maxListeners = channelsTCP.size() + channelsUDP.size();
-		if(maxListeners == 0) {
-			shutdownFuture().done();
-		}
-		// we have two things to shut down: UDP and TCP
-		final AtomicInteger listenerCounter = new AtomicInteger(0);
 		LOG.debug("shutdown servers");
 		synchronized (channelsUDP) {
-			for (Channel channelUDP : channelsUDP.values()) {
-				channelUDP.close().addListener(new GenericFutureListener<ChannelFuture>() {
-					@Override
-					public void operationComplete(final ChannelFuture future) throws Exception {
-						LOG.debug("shutdown TCP server");
-						if (listenerCounter.incrementAndGet() == maxListeners) {
-							futureServerDone.done();
-						}
-					}
-				});
+			//TODO: wait until thread is finished
+			for (ServerThread channelUDP : channelsUDP.values()) {
+				try {
+					channelUDP.datagramChannel.close();
+				} catch (IOException e) {
+					LOG.debug("could not close {}", channelUDP);
+				}
 			}
 		}
-		synchronized (channelsTCP) {
-			for (Channel channelTCP : channelsTCP.values()) {
-				channelTCP.close().addListener(new GenericFutureListener<ChannelFuture>() {
-					@Override
-					public void operationComplete(final ChannelFuture future) throws Exception {
-						LOG.debug("shutdown TCP channels");
-						if (listenerCounter.incrementAndGet() == maxListeners) {
-							futureServerDone.done();
-						}
-					}
-				});
-			}
-		}
+		shutdownFuture().done();
 		return shutdownFuture();
 	}
 
@@ -472,4 +369,6 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	public FutureDone<Void> shutdownFuture() {
 		return futureServerDone;
 	}
+	
+	
 }

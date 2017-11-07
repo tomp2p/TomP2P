@@ -280,16 +280,9 @@ public class DistributedRouting {
                             : routingBuilder.locationKey();
                     routingBuilder.locationKey(locationKey2);
                      
-                    if(LOG.isWarnEnabled() ) {
-                    	//routing is per default UDP, don't show warning if the other TCP/UDP is used
-                    	if(channelCreator.availableUDPPermits()==0 && !routingBuilder.isForceTCP()) {
-                    		LOG.warn("Sanity check failed UDP: {}, {}.",i,Thread.currentThread().getName());
-                    	} else if(channelCreator.availableTCPPermits()==0 && routingBuilder.isForceTCP()) {
-                    		LOG.warn("Sanity check failed TCP: {}, {}.",i,Thread.currentThread().getName());
-                    	}
-                    }
-                    routingMechanism.futureResponse(i, neighbors.closeNeighbors(next,
-                            routingBuilder.searchValues(), type, channelCreator, routingBuilder));
+                    
+                    //routingMechanism.futureResponse(i, neighbors.closeNeighbors(next,
+                    //        routingBuilder.searchValues(), type, channelCreator, routingBuilder));
                     LOG.debug("get close neighbors: {} on {}", next, i);
                 }
             } else if (routingMechanism.futureResponse(i) != null) {

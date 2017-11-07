@@ -125,7 +125,6 @@ public class BootstrapBuilder {
     
     public BootstrapBuilder peerSocketAddress(PeerSocket4Address socket) {
     	this.inetAddress = socket.ipv4().toInetAddress();
-    	this.portTCP = socket.tcpPort();
     	this.portUDP = socket.udpPort();
 	    return this;
     }
@@ -186,7 +185,7 @@ public class BootstrapBuilder {
             routingConfiguration = new RoutingConfiguration(8, 10, 2);
         }
         if (peerAddress == null && inetAddress != null && bootstrapTo == null) {
-        	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inetAddress)).tcpPort(portTCP).udpPort(portUDP).build();
+        	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inetAddress)).udpPort(portUDP).build();
         	PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
             return bootstrapPing(peerAddress);
         } 
@@ -205,7 +204,7 @@ public class BootstrapBuilder {
         final FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>> result = new FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>>();
         result.bootstrapTo(bootstrapTo);
         int conn = routingConfiguration.parallel();
-        FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn, 0);
+        FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn);
         Utils.addReleaseListener(fcc, result);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -236,7 +235,7 @@ public class BootstrapBuilder {
 
     private FutureWrappedBootstrap<FutureBootstrap> bootstrapPing(PeerAddress address) {
         final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-        final FuturePing futurePing = peer.ping().peerAddress(address).tcpPing().start();
+        final FuturePing futurePing = peer.ping().peerAddress(address).start();
         futurePing.addListener(new BaseFutureAdapter<FuturePing>() {
             @Override
             public void operationComplete(final FuturePing future) throws Exception {

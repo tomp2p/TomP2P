@@ -20,16 +20,10 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.security.KeyPair;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.IP.IPv4;
@@ -51,9 +45,6 @@ public class PeerCreator {
 
 	private final ConnectionBean connectionBean;
 	private final PeerBean peerBean;
-
-	private final EventLoopGroup workerGroup;
-	private final EventLoopGroup bossGroup;
 
 	private final boolean master;
 
@@ -91,18 +82,13 @@ public class PeerCreator {
 		LOG.info("Visible address to other peers: {}", self);
 		
 		//start server
-		workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory(ConnectionBean.THREAD_NAME
-		        + "worker-client/server - "));
-		bossGroup = new NioEventLoopGroup(2, new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
 		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConfiguration);
-		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup, channelServerConfiguration,
-		        dispatcher, peerBean.peerStatusListeners(), timer);
+		final ChannelServer channelServer = new ChannelServer(channelServerConfiguration,
+		        dispatcher, timer);	
 		
 		//connection bean
-		Sender sender = new Sender(peerBean.peerStatusListeners(), dispatcher);
-                Connect connect = new Connect(peerId, channelClientConfiguration, dispatcher, sendBehavior);
-		BulkReservation reservation = new BulkReservation(workerGroup, channelClientConfiguration, peerBean);
-		connectionBean = new ConnectionBean(p2pId, dispatcher, connect, sender, channelServer, reservation,
+		BulkReservation reservation = new BulkReservation(channelClientConfiguration, peerBean);
+		connectionBean = new ConnectionBean(p2pId, dispatcher, channelServer, reservation,
 		        channelClientConfiguration, timer);
 		this.master = true;
 	}
@@ -118,8 +104,6 @@ public class PeerCreator {
 	 *            The key pair or null
 	 */
 	public PeerCreator(final PeerCreator parent, final Number160 peerId, final KeyPair keyPair) {
-		this.workerGroup = parent.workerGroup;
-		this.bossGroup = parent.bossGroup;
 		this.connectionBean = parent.connectionBean;
 		this.peerBean = new PeerBean().keyPair(keyPair);
 		PeerAddress self = parent.peerBean().serverPeerAddress().withPeerId(peerId);
@@ -160,7 +144,7 @@ public class PeerCreator {
 				connectionBean.channelServer().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {		
                     @Override
 					public void operationComplete(final FutureDone<Void> future) throws Exception {
-						shutdownNetty();
+                    	futureServerDone.done();
 					}
 				});
 			}
@@ -169,23 +153,7 @@ public class PeerCreator {
 		return futureServerDone;
 	}
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-    private void shutdownNetty() {
-		workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
-			@Override
-			public void operationComplete(final Future future) throws Exception {
-				LOG.debug("Client / WorkerGroup shut down.");
-				bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(
-				        new GenericFutureListener() {
-					        @Override
-					        public void operationComplete(final Future future) throws Exception {
-								LOG.debug("Client / BossGroup shut down.");
-						        futureServerDone.done();
-					        }
-				        });
-			}
-		});
-	}
+
 
 	/**
 	 * @return The bean that holds information that is unique for all peers
@@ -226,7 +194,6 @@ public class PeerCreator {
 		}
 		
 		final PeerSocket4Address peerSocketAddress = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(outsideAddress))
-				.tcpPort(channelServerConfiguration.ports().tcpPort())
 				.udpPort(channelServerConfiguration.ports().udpPort())
 				
 				.build(); 
@@ -235,12 +202,7 @@ public class PeerCreator {
 				.peerId(peerId)
 				.ipv4Socket(peerSocketAddress)
 				.reachable4UDP(!channelServerConfiguration.isBehindFirewall())
-				.reachable4TCP(!channelServerConfiguration.isBehindFirewall())
-				.reachable4UDT(!channelServerConfiguration.isBehindFirewall())
 				.reachable6UDP(!channelServerConfiguration.isBehindFirewall())
-				.reachable6TCP(!channelServerConfiguration.isBehindFirewall())
-				.reachable6UDT(!channelServerConfiguration.isBehindFirewall())
-				.unreachable(channelServerConfiguration.isBehindFirewall())
 				.build();
 		
 		return self;

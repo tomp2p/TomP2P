@@ -19,19 +19,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.PeerException.AbortCause;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,27 +88,18 @@ public class QuitRPC extends DispatchHandler {
 	 *            The channel creator that creates connections
 	 * @return The future response to keep track of future events
 	 */
-	public FutureResponse quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder,
+	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder,
 	        final ChannelCreator channelCreator) {
 		final Message message = createMessage(remotePeer, RPC.Commands.QUIT.getNr(), Type.REQUEST_FF_1);
 		if (shutdownBuilder.isSign()) {
 			message.publicKeyAndSign(shutdownBuilder.keyPair());
 		}
-
-		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandler requestHandler = new RequestHandler(futureResponse,
-		        peerBean(), connectionBean(), shutdownBuilder);
 		LOG.debug("send QUIT message {}.", message);
-		if (!shutdownBuilder.isForceTCP()) {
-			return requestHandler.fireAndForgetUDP(channelCreator);
-		} else {
-			return requestHandler.sendTCP(channelCreator);
-		}
+		return channelCreator.sendUDP(message);
 	}
 
 	@Override
-	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
-	        Responder responder) throws Exception {
+	public Message handleResponse(final Message message, final boolean sign) throws Exception {
 		if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.QUIT.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong for this handler.");
 		}
@@ -118,10 +109,6 @@ public class QuitRPC extends DispatchHandler {
 				peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 			}
 		}
-		if (message.isUdp()) {
-			responder.responseFireAndForget();
-		} else {
-			responder.response(createResponseMessage(message, Type.OK));
-		}
+		return null;
 	}
 }

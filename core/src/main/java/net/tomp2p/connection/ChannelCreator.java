@@ -27,8 +27,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -47,6 +49,8 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.MessageHeaderCodec;
+import net.tomp2p.message.Message.ProtocolType;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerAddress;
@@ -132,7 +136,9 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 				futureClose.failed(e);
 			}
 			LOG.debug("bound to {}", datagramChannel.socket().getLocalSocketAddress());
-			ClientChannelImpl thread = ClientChannelImpl.of(datagramChannel, futureMessage, futureClose, message);
+			Queue<Message> messageQueue = new LinkedBlockingQueue<>();
+			messageQueue.offer(message);
+			ClientChannelImpl thread = ClientChannelImpl.of(datagramChannel, futureMessage, futureClose, messageQueue);
 			channelsUDP.add(thread);
 			futureClose.addListener(new BaseFutureAdapter<FutureDone<ClientChannel>>() {
 				@Override
@@ -215,21 +221,26 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 		final private FutureDone<Message> futureMessage;
 		@Getter
 		final private FutureDone<ClientChannel> futureClose;
-		final private Message requestMessage;
+		final private Queue<Message> requestMessages;
 		//final private ByteBuffer buffer = ByteBuffer.allocate(65536);
 		final private byte[] buffer = new byte[65536];
 
 		@Override
 		public void run() {
 			try {
-				if (datagramChannel.isOpen()) {
+				boolean isKeepAlive = true;
+				Message currentRequestMessage = null;
+				while (datagramChannel.isOpen() && isKeepAlive) {
 					
-					CompositeByteBuf buf2 = Unpooled.compositeBuffer();
-	            	Encoder encoder = new Encoder(new DSASignatureFactory());
-	            	encoder.write(buf2, requestMessage, null);
-	            	PeerAddress recipientAddress = requestMessage.recipient();
-	            	datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(requestMessage.sender()));
 					
+					if(!requestMessages.isEmpty()) {
+						currentRequestMessage = requestMessages.poll();
+						CompositeByteBuf buf2 = Unpooled.compositeBuffer();
+						Encoder encoder = new Encoder(new DSASignatureFactory());
+						encoder.write(buf2, currentRequestMessage, null);
+						PeerAddress recipientAddress = currentRequestMessage.recipient();
+						datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(currentRequestMessage.sender()));
+					}
 					//TomP2POutbound out = new TomP2POutbound();
 					//out.write(datagramChannel, requestMessage, true);
 					// if not SCTP, wait for UDP packet
@@ -242,6 +253,14 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 					DatagramSocket s = datagramChannel.socket();
 					InetSocketAddress recipient = new InetSocketAddress(s.getLocalAddress(), s.getLocalPort());
 
+					if (buf.readableBytes() > 0
+							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.SCTP) {
+						buf.skipBytes(1);
+						//attention, start offset with 1
+
+					} else if (buf.readableBytes() > 0
+							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.UDP) {
+					
 					Decoder decoder = new Decoder(new DSASignatureFactory());
 					boolean finished = decoder.decode(buf, recipient, sender);
 					if (!finished) {
@@ -254,6 +273,12 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 						// both futures are set!!
 						return;
 					}
+					
+					//TODO make sure request was also keepalive
+					if(!responseMessage.isKeepAlive()) {
+						//start SCTP
+						isKeepAlive = false;
+					}
 
 					// We got a good answer, let's mark the sender as alive
 					// if its an announce, the peer status will be handled in the RPC
@@ -262,11 +287,12 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 					}
 					LOG.debug("peer isVerified: {}", responseMessage.isVerified());
 					if (!responseMessage.isVerified()) {
-						Message ackMessage = DispatchHandler.createResponseMessage(responseMessage, Type.ACK, requestMessage.sender());
-						buf2 = Unpooled.compositeBuffer();
-		            	encoder = new Encoder(new DSASignatureFactory());
+						Message ackMessage = DispatchHandler.createResponseMessage(responseMessage, Type.ACK, currentRequestMessage.sender());
+						CompositeByteBuf buf2 = Unpooled.compositeBuffer();
+						Encoder encoder = new Encoder(new DSASignatureFactory());
 		            	encoder.write(buf2, ackMessage, null);
-		            	datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(requestMessage.sender()));
+		            	PeerAddress recipientAddress = currentRequestMessage.recipient();
+		            	datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(currentRequestMessage.sender()));
 					}
 
 					if (!responseMessage.isKeepAlive()) {
@@ -275,6 +301,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 					}
 
 					futureMessage.done(responseMessage);
+					}
 				}
 			} catch (SocketTimeoutException s) {
 				LOG.debug("timout in client", s);

@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
 import net.tomp2p.message.Message.Content;
+import net.tomp2p.message.Message.ProtocolType;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.IP.IPv6;
@@ -55,7 +56,8 @@ public final class MessageHeaderCodec {
      * Encodes a message object.
      * 
      * The format looks as follows: 
-     *  - 28bit p2p version 
+     *  - 2bit protocol type
+     *  - 26bit p2p version 
      *  - 4bit message type 	//4 bytes
      *  - 32bit message id  	//8 bytes
      *  - 8bit message command  //9 bytes
@@ -76,7 +78,7 @@ public final class MessageHeaderCodec {
      * @return The buffer passed as an argument
      */
     public static void encodeHeader(final ByteBuf buf, final Message message) {
-    	final int versionAndType = message.version() << 4 | (message.type().ordinal() & Utils.MASK_0F);
+    	final int versionAndType = message.protocolType().ordinal() << 30 | message.version() << 4 | (message.type().ordinal() & Utils.MASK_0F);
     	buf.writeInt(versionAndType); // 4
     	buf.writeInt(message.messageId()); // 8
     	buf.writeByte(message.command()); // 9
@@ -85,6 +87,14 @@ public final class MessageHeaderCodec {
         // three bits for the message options, 5 bits for the sender options
     	buf.writeByte(message.options()); // 34
     	message.sender().encode(buf);
+    }
+    
+    public static ProtocolType peekProtocolType(int versionAndType) {
+    	return ProtocolType.values()[versionAndType >>> 30];
+    }
+    
+    public static ProtocolType peekProtocolType(byte version) {
+    	return ProtocolType.values()[version >>> 6];
     }
 
     /**
@@ -108,6 +118,7 @@ public final class MessageHeaderCodec {
         final int versionAndType = buffer.readInt();
         message.version(versionAndType >>> 4);
         message.type(Type.values()[(versionAndType & Utils.MASK_0F)]);
+        message.protocolType(ProtocolType.values()[versionAndType >>> 30]);
         message.messageId(buffer.readInt());
         final int command = buffer.readUnsignedByte();
         message.command((byte) command);

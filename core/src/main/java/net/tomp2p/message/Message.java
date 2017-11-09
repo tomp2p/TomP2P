@@ -67,6 +67,8 @@ public class Message {
         LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, MAP_KEY640_BYTE, 
         PUBLIC_KEY, PEER_SOCKET4, PEER_SOCKET6
     };
+    
+    public enum ProtocolType {UDP, SCTP};
 
     /**
      * 1 x 4 bit.
@@ -168,6 +170,7 @@ public class Message {
     private int messageId;
     private int version;
     private Type type;
+    private ProtocolType protocolType = ProtocolType.UDP;
     private byte command;
     private PeerAddress sender;
     private PeerAddress recipient;
@@ -276,6 +279,15 @@ public class Message {
      */
     public Message type(final Type type) {
         this.type = type;
+        return this;
+    }
+    
+    public ProtocolType protocolType() {
+        return protocolType;
+    }
+    
+    public Message protocolType(final ProtocolType protocolType) {
+        this.protocolType = protocolType;
         return this;
     }
 
@@ -1139,6 +1151,7 @@ public class Message {
         message.messageId = this.messageId;
         message.version = this.version;
         message.type = this.type;
+        message.protocolType = this.protocolType;
         message.command = this.command;
         message.sender = this.sender;
         message.recipient = this.recipient;

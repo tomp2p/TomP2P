@@ -1,0 +1,9 @@
+
+description = 'TomP2P Social'
+dependencies {
+    compile group: 'ch.qos.logback', name: 'logback-classic', version:'1.1.3'
+    compile group: 'io.netty', name: 'netty-transport', version:'4.1.9.Final'
+  compile project(':tomp2p-dht')
+    compile group: 'org.mapdb', name: 'mapdb', version:'1.0.6'
+    testCompile group: 'junit', name: 'junit', version:'4.11'
+}

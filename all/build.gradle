@@ -1,0 +1,10 @@
+
+description = 'TomP2P All-in-One'
+dependencies {
+  compile project(':tomp2p-core')
+  compile project(':tomp2p-nat')
+  compile project(':tomp2p-replication')
+  compile project(':tomp2p-storage')
+  compile project(':tomp2p-dht')
+  compile project(':tomp2p-tracker')
+}

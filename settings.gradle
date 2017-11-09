@@ -1,0 +1,20 @@
+rootProject.name = 'tomp2p-parent'
+include ':tomp2p-core'
+include ':tomp2p-replication'
+include ':tomp2p-examples'
+include ':tomp2p-nat'
+include ':tomp2p-all'
+include ':tomp2p-storage'
+include ':tomp2p-dht'
+include ':tomp2p-tracker'
+include ':tomp2p-social'
+
+project(':tomp2p-core').projectDir = "$rootDir/core" as File
+project(':tomp2p-replication').projectDir = "$rootDir/replication" as File
+project(':tomp2p-examples').projectDir = "$rootDir/examples" as File
+project(':tomp2p-nat').projectDir = "$rootDir/nat" as File
+project(':tomp2p-all').projectDir = "$rootDir/all" as File
+project(':tomp2p-storage').projectDir = "$rootDir/storage" as File
+project(':tomp2p-dht').projectDir = "$rootDir/dht" as File
+project(':tomp2p-tracker').projectDir = "$rootDir/tracker" as File
+project(':tomp2p-social').projectDir = "$rootDir/social" as File

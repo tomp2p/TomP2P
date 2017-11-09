@@ -1,0 +1,11 @@
+
+description = 'TomP2P Replication'
+dependencies {
+  compile project(':tomp2p-core')
+  compile project(':tomp2p-dht')
+    compile(group: 'ch.qos.logback', name: 'logback-classic', version:'1.0.1') {
+exclude(module: 'slf4j-api')
+    }
+    testCompile group: 'junit', name: 'junit', version:'4.11'
+    testCompile group: 'org.mockito', name: 'mockito-all', version:'1.9.5'
+}

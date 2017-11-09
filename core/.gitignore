@@ -10,3 +10,4 @@ p2p.log
 /target
 /bin
 nbactions.xml
+/build

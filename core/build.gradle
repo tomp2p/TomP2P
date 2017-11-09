@@ -1,0 +1,10 @@
+
+description = 'TomP2P Core'
+dependencies {
+    compile group: 'io.netty', name: 'netty-buffer', version:'4.1.9.Final'
+    compile group: 'ch.qos.logback', name: 'logback-classic', version:'1.1.3'
+    compile group: 'org.apache.felix', name: 'org.osgi.core', version:'1.4.0'
+    testCompile group: 'junit', name: 'junit', version:'4.11'
+    testCompile group: 'org.mockito', name: 'mockito-all', version:'1.9.5'
+    testCompile group: 'com.cedarsoftware', name: 'java-util', version:'1.9.0'
+}

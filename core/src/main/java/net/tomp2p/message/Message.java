@@ -34,6 +34,8 @@ import java.util.TreeMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.sctp4nat.connection.SctpChannel;
+import net.sctp4nat.core.SctpSocketAdapter;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -1307,5 +1309,25 @@ public class Message {
 		}
 		
 		return current;
+	}
+
+	SctpChannel c;
+	public void sctpChannel(SctpChannel c) {
+		this.c=c;
+		
+	}
+	
+	public SctpChannel sctpChannel() {
+		return c;
+		
+	}
+
+	SctpSocketAdapter socket;
+	public void sctpSocketAdapter(SctpSocketAdapter socket) {
+		this.socket = socket;
+	}
+	
+	public SctpSocketAdapter sctpSocketAdapter() {
+		return socket;
 	}
 }

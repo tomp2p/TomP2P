@@ -26,6 +26,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SendDirectBuilderI;
 import net.tomp2p.utils.Utils;
@@ -45,6 +46,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	private boolean streaming = false;
 
 	private boolean forceUDP = false;
+	
+	private boolean forceSctp = false;
 
 	private KeyPair keyPair = null;
 
@@ -109,7 +112,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		final boolean keepAlive;
 		final PeerAddress remotePeer;
 		if (recipientAddress != null) {
-			keepAlive = false;
+			keepAlive = true; //FIXME jwa set automatically to true
 			remotePeer = recipientAddress;
 		} else {
 			throw new IllegalArgumentException("Either the recipient address or peer connection has to be set.");
@@ -220,7 +223,26 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	/**
 	 * @return Set to true if the communication should be TCP, default is UDP
 	 *         for routing
-	 */
+	 *//*Message message = peer.directDataRPC().sendInternal0(remotePeer, this);
+	final FutureDirect futureResponse = new FutureDirect(message, isRaw());
+    futureResponse.request().keepAlive(keepAlive);
+
+	final RequestHandler request = peer.directDataRPC().sendInternal(futureResponse, this);
+
+                FutureChannelCreator futureChannelCreator = peer.connectionBean().reservation()
+		        .create(1);
+		Utils.addReleaseListener(futureChannelCreator, request.futureResponse());
+		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+			@Override
+			public void operationComplete(final FutureChannelCreator future) throws Exception {
+				if (future.isSuccess()) {
+					request.sendUDP(future.channelCreator());
+
+				} else {
+					request.futureResponse().failed("Could not create channel.", future);
+				}
+			}
+		});*/
 	public SendDirectBuilder forceTCP() {
 		this.forceTCP = true;
 		return this;

@@ -112,7 +112,7 @@ public class PingRPC extends DispatchHandler {
 			final ConnectionConfiguration configuration) {
 		LOG.debug("Pinging UDP the remote peer {}.", remotePeer);
 		Message message = createHandler(remotePeer, Type.REQUEST_1, configuration);
-		return channelCreator.sendUDP(message);
+		return channelCreator.sendUDP(message, 0);
 	}
 
 	/**
@@ -128,7 +128,7 @@ public class PingRPC extends DispatchHandler {
 	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> fireUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		final Message message = createHandler(remotePeer, Type.REQUEST_FF_1, configuration);
-		return channelCreator.sendUDP(message);
+		return channelCreator.sendUDP(message, 0);
 	}
 
 	/**
@@ -143,7 +143,7 @@ public class PingRPC extends DispatchHandler {
 	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> pingUDPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		final Message message = createDiscoverHandler(remotePeer);
-		return channelCreator.sendUDP(message);
+		return channelCreator.sendUDP(message, 0);
 	}
 
 	/**
@@ -159,7 +159,7 @@ public class PingRPC extends DispatchHandler {
 	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> pingUDPProbe(final PeerAddress remotePeer, final ChannelCreator channelCreator,
 			final ConnectionConfiguration configuration) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_3);
-		return channelCreator.sendUDP(message);
+		return channelCreator.sendUDP(message, 0);
 	}
 
 	/**

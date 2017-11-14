@@ -21,6 +21,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -40,10 +41,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import javassist.NotFoundException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.sctp4nat.core.NetworkLink;
+import net.sctp4nat.core.SctpChannelFacade;
+import net.sctp4nat.core.SctpSocketAdapter;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
@@ -101,7 +107,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 	 *
 	 * @return The channel future object or null if we are shut down
 	 */
-	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> sendUDP(Message message) {
+	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> sendUDP(Message message, int port) {
 		FutureDone<Message> futureMessage = new FutureDone<Message>();
 		FutureDone<ClientChannel> futureClose = new FutureDone<>();
 		DatagramChannel datagramChannel = null;
@@ -123,7 +129,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 				datagramSocket.setReceiveBufferSize(2 * 1024 * 1024);
 				datagramSocket.setSendBufferSize(2 * 1024 * 1024);
 				datagramSocket.setSoTimeout(3 * 1000);
-				datagramSocket.bind(new InetSocketAddress(0));
+				datagramSocket.bind(new InetSocketAddress(port));
 			} catch (IOException e) {
 				if (datagramChannel != null) {
 					try {
@@ -145,7 +151,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 				public void operationComplete(FutureDone<ClientChannel> future) throws Exception {
 					channelsUDP.remove(future.object());
 					semaphoreUPD.release();
-					if(shutdownUDP && semaphoreUPD.availablePermits() == maxPermitsUDP) {
+					if (shutdownUDP && semaphoreUPD.availablePermits() == maxPermitsUDP) {
 						futureChannelClose.done();
 					}
 				}
@@ -176,23 +182,23 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 				return;
 			}
 			shutdownUDP = true;
-			
-				//TODO: wait until thread is finished
-				for (ClientChannel channelUDP : channelsUDP) {
-					try {
-						channelUDP.close();
-					} catch (IOException e) {
-						LOG.debug("could not close {}", channelUDP);
-					}
+
+			// TODO: wait until thread is finished
+			for (ClientChannel channelUDP : channelsUDP) {
+				try {
+					channelUDP.close();
+				} catch (IOException e) {
+					LOG.debug("could not close {}", channelUDP);
 				}
-			
-			if(semaphoreUPD.tryAcquire(maxPermitsUDP)) {
+			}
+
+			if (semaphoreUPD.tryAcquire(maxPermitsUDP)) {
 				futureChannelClose.done();
 			}
-			
+
 		} finally {
 			writeUDP.unlock();
-		}	
+		}
 	}
 
 	/**
@@ -216,14 +222,15 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 	}
 
 	@RequiredArgsConstructor(staticName = "of")
-	private static class ClientChannelImpl extends Thread implements ClientChannel {
+	private static class ClientChannelImpl extends Thread implements ClientChannel, NetworkLink {
 		final private DatagramChannel datagramChannel;
 		final private FutureDone<Message> futureMessage;
 		@Getter
 		final private FutureDone<ClientChannel> futureClose;
 		final private Queue<Message> requestMessages;
-		//final private ByteBuffer buffer = ByteBuffer.allocate(65536);
+		// final private ByteBuffer buffer = ByteBuffer.allocate(65536);
 		final private byte[] buffer = new byte[65536];
+		private SctpSocketAdapter so;
 
 		@Override
 		public void run() {
@@ -231,24 +238,28 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 				boolean isKeepAlive = true;
 				Message currentRequestMessage = null;
 				while (datagramChannel.isOpen() && isKeepAlive) {
-					
-					
-					if(!requestMessages.isEmpty()) {
+
+					if (!requestMessages.isEmpty()) {
 						currentRequestMessage = requestMessages.poll();
+						if (so == null) {
+							so = currentRequestMessage.sctpSocketAdapter();
+							so.setLink(this);
+						}
 						CompositeByteBuf buf2 = Unpooled.compositeBuffer();
 						Encoder encoder = new Encoder(new DSASignatureFactory());
 						encoder.write(buf2, currentRequestMessage, null);
 						PeerAddress recipientAddress = currentRequestMessage.recipient();
-						datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(currentRequestMessage.sender()));
+						datagramChannel.send(ChannelUtils.convert(buf2),
+								recipientAddress.createUDPSocket(currentRequestMessage.sender()));
 					}
-					//TomP2POutbound out = new TomP2POutbound();
-					//out.write(datagramChannel, requestMessage, true);
+					// TomP2POutbound out = new TomP2POutbound();
+					// out.write(datagramChannel, requestMessage, true);
 					// if not SCTP, wait for UDP packet
-	            	DatagramPacket p = new DatagramPacket(buffer, buffer.length);
-	            	datagramChannel.socket().receive(p);
+					DatagramPacket p = new DatagramPacket(buffer, buffer.length);
+					datagramChannel.socket().receive(p);
 					InetSocketAddress sender = (InetSocketAddress) p.getSocketAddress();
-					
-					//buffer.flip();
+
+					// buffer.flip();
 					ByteBuf buf = Unpooled.wrappedBuffer(buffer);
 					DatagramSocket s = datagramChannel.socket();
 					InetSocketAddress recipient = new InetSocketAddress(s.getLocalAddress(), s.getLocalPort());
@@ -256,51 +267,59 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 					if (buf.readableBytes() > 0
 							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.SCTP) {
 						buf.skipBytes(1);
-						//attention, start offset with 1
+						if (so != null) {
+							System.err.println("client in:"+ByteBufUtil.prettyHexDump(Unpooled.wrappedBuffer(buf)));
+							so.onConnIn(buf.array(), buf.arrayOffset() + buf.readerIndex(), buf.readableBytes());
+						} else {
+							System.err.println("HMMM");
+						}
+						// attention, start offset with 1
 
 					} else if (buf.readableBytes() > 0
 							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.UDP) {
-					
-					Decoder decoder = new Decoder(new DSASignatureFactory());
-					boolean finished = decoder.decode(buf, recipient, sender);
-					if (!finished) {
-						return;
-					}
-					Message responseMessage = decoder.message().senderSocket(sender);
 
-					// Check if message is good, if not return, channel will be closed
-					if (!checkMessage(responseMessage, responseMessage)) {
-						// both futures are set!!
-						return;
-					}
-					
-					//TODO make sure request was also keepalive
-					if(!responseMessage.isKeepAlive()) {
-						//start SCTP
-						isKeepAlive = false;
-					}
+						Decoder decoder = new Decoder(new DSASignatureFactory());
+						boolean finished = decoder.decode(buf, recipient, sender);
+						if (!finished) {
+							return;
+						}
+						Message responseMessage = decoder.message().senderSocket(sender);
 
-					// We got a good answer, let's mark the sender as alive
-					// if its an announce, the peer status will be handled in the RPC
-					if (responseMessage.isOk() || responseMessage.isNotOk()) {
+						// Check if message is good, if not return, channel will be closed
+						if (!checkMessage(responseMessage, responseMessage)) {
+							// both futures are set!!
+							return;
+						}
 
-					}
-					LOG.debug("peer isVerified: {}", responseMessage.isVerified());
-					if (!responseMessage.isVerified()) {
-						Message ackMessage = DispatchHandler.createResponseMessage(responseMessage, Type.ACK, currentRequestMessage.sender());
-						CompositeByteBuf buf2 = Unpooled.compositeBuffer();
-						Encoder encoder = new Encoder(new DSASignatureFactory());
-		            	encoder.write(buf2, ackMessage, null);
-		            	PeerAddress recipientAddress = currentRequestMessage.recipient();
-		            	datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(currentRequestMessage.sender()));
-					}
+						// TODO make sure request was also keepalive
+						if (!responseMessage.isKeepAlive()) {
+							// start SCTP
+							isKeepAlive = false;
+						}
 
-					if (!responseMessage.isKeepAlive()) {
-						datagramChannel.close();
-						futureClose.done(this);
-					}
+						// We got a good answer, let's mark the sender as alive
+						// if its an announce, the peer status will be handled in the RPC
+						if (responseMessage.isOk() || responseMessage.isNotOk()) {
 
-					futureMessage.done(responseMessage);
+						}
+						LOG.debug("peer isVerified: {}", responseMessage.isVerified());
+						if (!responseMessage.isVerified()) {
+							Message ackMessage = DispatchHandler.createResponseMessage(responseMessage, Type.ACK,
+									currentRequestMessage.sender());
+							CompositeByteBuf buf2 = Unpooled.compositeBuffer();
+							Encoder encoder = new Encoder(new DSASignatureFactory());
+							encoder.write(buf2, ackMessage, null);
+							PeerAddress recipientAddress = currentRequestMessage.recipient();
+							datagramChannel.send(ChannelUtils.convert(buf2),
+									recipientAddress.createUDPSocket(currentRequestMessage.sender()));
+						}
+
+//						if (!responseMessage.isKeepAlive()) {
+//							datagramChannel.close();
+//							futureClose.done(this);
+//						}
+
+						futureMessage.done(responseMessage);
 					}
 				}
 			} catch (SocketTimeoutException s) {
@@ -311,20 +330,29 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 				close();
 			}
 		}
-		
-		public ClientChannel close() {
-			return close("closed before we got the message");
+
+		@Override
+		public void onConnOut(SctpChannelFacade so, byte[] packet) throws IOException, NotFoundException {
+			ByteBuffer buf = ByteBuffer.allocate(packet.length + 1);
+			buf.put((byte) (1 << 6));
+			buf.put(packet);
+			buf.flip();
+			System.err.println("client out:"+ByteBufUtil.prettyHexDump(Unpooled.wrappedBuffer(buf)));
+			datagramChannel.send(buf, so.getRemote());
 		}
 
-		public ClientChannel close(String message) {
+		public void close() {
+			close("closed before we got the message");
+		}
+
+		public void close(String message) {
 			try {
 				datagramChannel.close();
 			} catch (IOException e) {
-				//best effort
+				// best effort
 			}
 			futureClose.done(this);
 			futureMessage.failed(message);
-			return this;
 		}
 
 		private boolean checkMessage(Message requestMessage, Message responseMessage) throws IOException {

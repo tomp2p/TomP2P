@@ -7,4 +7,5 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version:'4.11'
     testCompile group: 'org.mockito', name: 'mockito-all', version:'1.9.5'
     testCompile group: 'com.cedarsoftware', name: 'java-util', version:'1.9.0'
+    compile project(':sctp4nat')
 }

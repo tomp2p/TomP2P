@@ -95,7 +95,7 @@ public class QuitRPC extends DispatchHandler {
 			message.publicKeyAndSign(shutdownBuilder.keyPair());
 		}
 		LOG.debug("send QUIT message {}.", message);
-		return channelCreator.sendUDP(message);
+		return channelCreator.sendUDP(message, 0);
 	}
 
 	@Override

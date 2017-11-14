@@ -18,3 +18,6 @@ project(':tomp2p-storage').projectDir = "$rootDir/storage" as File
 project(':tomp2p-dht').projectDir = "$rootDir/dht" as File
 project(':tomp2p-tracker').projectDir = "$rootDir/tracker" as File
 project(':tomp2p-social').projectDir = "$rootDir/social" as File
+
+include ":sctp4nat"
+project(":sctp4nat").projectDir = "$rootDir/../sctp4nat" as File

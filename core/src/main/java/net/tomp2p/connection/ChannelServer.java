@@ -36,17 +36,23 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import javassist.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-
+import net.sctp4nat.connection.SctpChannel;
+import net.sctp4nat.connection.SctpUtils;
+import net.sctp4nat.core.NetworkLink;
+import net.sctp4nat.core.SctpChannelFacade;
+import net.sctp4nat.core.SctpSocketAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.ProtocolType;
 import net.tomp2p.message.MessageHeaderCodec;
-import net.tomp2p.peers.PeerStatusListener;
 
+import org.jdeferred.DoneCallback;
+import org.jdeferred.FailCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -294,7 +300,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 					LOG.debug("listening for incoming packets on {}", datagramChannel.socket().getLocalSocketAddress());
 					buffer.clear();
 					// blocks until
-					InetSocketAddress sender = (InetSocketAddress) datagramChannel.receive(buffer);
+					InetSocketAddress remote = (InetSocketAddress) datagramChannel.receive(buffer);
 					packetCounterReceive.incrementAndGet();
 
 					buffer.flip();
@@ -304,24 +310,68 @@ public final class ChannelServer implements DiscoverNetworkListener {
 							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.SCTP) {
 						buf.skipBytes(1);
 						//attention, start offset with 1
+						
+						System.err.println("server in:"+ByteBufUtil.prettyHexDump(Unpooled.wrappedBuffer(buf)));
+						
+						SctpSocketAdapter socket = SctpUtils.getMapper().locate(remote.getAddress().getHostAddress(), remote.getPort());
+						socket.onConnIn(buf.array(), buf.arrayOffset() + buf.readerIndex(), buf.readableBytes());
+						
 
 					} else if (buf.readableBytes() > 0
 							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.UDP) {
 
 						DatagramSocket s = datagramChannel.socket();
-						InetSocketAddress recipient = new InetSocketAddress(s.getLocalAddress(), s.getLocalPort());
+						InetSocketAddress local = new InetSocketAddress(s.getLocalAddress(), s.getLocalPort());
 
 						Decoder decoder = new Decoder(new DSASignatureFactory());
-						boolean finished = decoder.decode(buf, recipient, sender);
+						boolean finished = decoder.decode(buf, local, remote);
 						if (!finished) {
 							continue;
 						}
 						Message m = decoder.message();
-						m.senderSocket(sender);
 
 						Message m2 = dispatcher.dispatch(m);
 						if (m2 != null) {
 
+							if(m.sctpChannel()!=null) {
+								SctpChannel c = m.sctpChannel();
+								System.err.println("about to connect");
+								c.connect(new NetworkLink() {
+									
+									@Override
+									public void onConnOut(SctpChannelFacade so, byte[] packet) throws IOException, NotFoundException {
+										
+										ByteBuffer buf = ByteBuffer.allocate(packet.length+1);
+										buf.put((byte)(1 << 6));
+										buf.put(packet);
+										buf.flip();
+										System.err.println("server out:"+ByteBufUtil.prettyHexDump(Unpooled.wrappedBuffer(buf)));
+										
+										datagramChannel.send(buf, so.getRemote());
+										SctpUtils.getMapper().register(m2.senderSocket(), (SctpSocketAdapter) so);
+										
+									}
+									
+									@Override
+									public void close() {}
+								}).done(new DoneCallback<SctpChannelFacade>() {
+									
+									@Override
+									public void onDone(SctpChannelFacade result) {
+										SctpUtils.getMapper().register(m2.senderSocket(), (SctpSocketAdapter) result);
+										
+									}
+								}).fail(new FailCallback<Exception>() {
+									
+									@Override
+									public void onFail(Exception result) {
+										result.printStackTrace();
+										
+									}
+								});
+								
+							}
+							
 							if (dispatcher.peerBean().peerMap().checkPeer(m.sender())) {
 								m2.verified();
 							}
@@ -331,7 +381,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 							Encoder encoder = new Encoder(new DSASignatureFactory());
 							encoder.write(buf2, m2, null);
 							packetCounterSend.incrementAndGet();
-							datagramChannel.send(ChannelUtils.convert(buf2), sender);
+							datagramChannel.send(ChannelUtils.convert(buf2), remote);
 						} else {
 							LOG.debug("not replying to {}", m);
 						}

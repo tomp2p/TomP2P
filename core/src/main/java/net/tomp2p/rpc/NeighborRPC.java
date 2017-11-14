@@ -159,7 +159,7 @@ public class NeighborRPC extends DispatchHandler {
             }
         });
         
-        return channelCreator.sendUDP(message);
+        return channelCreator.sendUDP(message, 0);
     }
 
     @Override

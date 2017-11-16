@@ -21,14 +21,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.SocketOption;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,14 +34,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import javax.management.Notification;
-import javax.management.NotificationListener;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import javassist.NotFoundException;
@@ -54,8 +46,6 @@ import lombok.RequiredArgsConstructor;
 import net.sctp4nat.core.NetworkLink;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.core.SctpSocketAdapter;
-import net.sctp4nat.origin.SctpNotification;
-import net.sctp4nat.origin.SctpSocket;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
@@ -288,14 +278,11 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.SCTP) {
 						buf.skipBytes(1);
 						if (so != null) {
-							
+							// attention, start offset with 1
 							byte[] tmp = new byte[p.getLength()-1];
 							System.arraycopy(buf.array(), buf.arrayOffset() + buf.readerIndex(), tmp, 0, p.getLength()- 1);
 							so.onConnIn(tmp,0, tmp.length);
-						} else {
-							System.err.println("HMMM");
-						}
-						// attention, start offset with 1
+						} 
 
 					} else if (buf.readableBytes() > 0
 							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.UDP) {
@@ -335,11 +322,6 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 							datagramChannel.send(ChannelUtils.convert(buf2),
 									recipientAddress.createUDPSocket(currentRequestMessage.sender()));
 						}
-
-//						if (!responseMessage.isKeepAlive()) {
-//							datagramChannel.close();
-//							futureClose.done(this);
-//						}
 
 						futureMessage.done(responseMessage);
 					}

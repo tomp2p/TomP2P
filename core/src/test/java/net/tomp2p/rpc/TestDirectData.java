@@ -7,21 +7,16 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-import net.sctp4nat.connection.SctpUtils;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.Sctp;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServer;
-import net.tomp2p.connection.ClientChannel;
-import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.utils.Pair;
 
 public class TestDirectData {
 	 @Rule
@@ -50,7 +45,10 @@ public class TestDirectData {
 	            FutureDone<SctpChannelFacade> fr = handshake.send(recv1.peerAddress(), s, cc);
 	            fr.awaitUninterruptibly();
 	            Assert.assertEquals(true, fr.isSuccess());
-	           
+	            Thread.sleep(1000);
+	            fr.object().send(new byte[250], true, 0, 0);
+	            Thread.sleep(10000);
+	            
 	        } finally {
 	            if (cc != null) {
 	                cc.shutdown();

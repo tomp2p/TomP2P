@@ -15,16 +15,12 @@
  */
 package net.tomp2p.rpc;
 
-import io.netty.buffer.Unpooled;
-
-import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import net.sctp4nat.connection.SctpChannel;
 import net.sctp4nat.connection.SctpUtils;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.core.SctpInitException;
-import net.sctp4nat.core.SctpPorts;
 import net.sctp4nat.core.SctpSocketAdapter;
 import net.sctp4nat.core.SctpSocketBuilder;
 import net.sctp4nat.origin.SctpNotification;
@@ -34,15 +30,11 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,24 +77,34 @@ public class DirectDataRPC extends DispatchHandler {
 
 		// int localSctpPort = SctpPorts.getInstance().generateDynPort();
 		int localSctpPort = 51000;
-
 		InetSocketAddress a = remotePeer.ipv4Socket().createUDPSocket();
-		final SctpSocketAdapter socket = new SctpSocketBuilder().localSctpPort(localSctpPort)
+		final SctpSocketAdapter socket = new SctpSocketBuilder().localSctpPort(51000)
 				.remoteAddress(a.getAddress()).remotePort(a.getPort()).mapper(SctpUtils.getMapper()).build();
 		socket.listen();
 
-		System.err.println("client listen: " + localSctpPort);
+		SctpUtils.getMapper().register(a, socket);
+		
 		final FutureDone<SctpChannelFacade> futureDone = new FutureDone<>();
 		socket.setNotificationListener(new NotificationListener() {
 
 			@Override
 			public void onSctpNotification(SctpSocket socket2, SctpNotification notification) {
-				LOG.debug(notification.toString());
+				LOG.error(notification.toString());
 				if (notification.toString().indexOf("COMM_UP") >= 0) {
 					futureDone.done((SctpChannelFacade) socket);
-				}
+				} else if (notification.toString().indexOf("SHUTDOWN_COMP") >= 0) {
+					socket.close();
+				} else if (notification.toString().indexOf("ADDR_UNREACHABLE") >= 0){
+					LOG.error("Heartbeat missing! Now shutting down the SCTP connection...");
+					socket.close();
+				}  else if (notification.toString().indexOf("COMM_LOST") >= 0){
+					LOG.error("Communication aborted! Now shutting down the udp connection...");
+					socket.close();
+				} 
 			}
 		});
+		
+		
 
 		message.sctpSocketAdapter(socket);
 		Pair<FutureDone<Message>, FutureDone<ClientChannel>> pair = channelCreator.sendUDP(message, localSctpPort);
@@ -115,11 +117,13 @@ public class DirectDataRPC extends DispatchHandler {
 		if (message.type() == Type.REQUEST_1) {
 			System.err.println("start SCTP build channel");
 			SctpChannel c = SctpChannel.builder().local(message.recipientSocket()).remote(message.senderSocket())
-					.localSctpPort(message.senderSocket().getPort()).build();
+					.localSctpPort(7777).build();
 			message.sctpChannel(c);
 
 		}
-		return createResponseMessage(message, Type.OK);
+		Message m2 = createResponseMessage(message, Type.OK);
+		m2.keepAlive(true);
+		return m2;
 	}
 
 }

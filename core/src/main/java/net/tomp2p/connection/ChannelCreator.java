@@ -26,6 +26,7 @@ import java.net.SocketOption;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Queue;
@@ -36,6 +37,9 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import javax.management.Notification;
+import javax.management.NotificationListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +54,8 @@ import lombok.RequiredArgsConstructor;
 import net.sctp4nat.core.NetworkLink;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.core.SctpSocketAdapter;
+import net.sctp4nat.origin.SctpNotification;
+import net.sctp4nat.origin.SctpSocket;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
@@ -220,6 +226,17 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 		sb.append(semaphoreUPD);
 		return sb.toString();
 	}
+	
+	private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
+	public static String bytesToHex(byte[] bytes) {
+	    char[] hexChars = new char[bytes.length * 2];
+	    for ( int j = 0; j < bytes.length; j++ ) {
+	        int v = bytes[j] & 0xFF;
+	        hexChars[j * 2] = hexArray[v >>> 4];
+	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+	    }
+	    return new String(hexChars);
+	}
 
 	@RequiredArgsConstructor(staticName = "of")
 	private static class ClientChannelImpl extends Thread implements ClientChannel, NetworkLink {
@@ -238,6 +255,8 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 				boolean isKeepAlive = true;
 				Message currentRequestMessage = null;
 				while (datagramChannel.isOpen() && isKeepAlive) {
+					
+					
 
 					if (!requestMessages.isEmpty()) {
 						currentRequestMessage = requestMessages.poll();
@@ -252,6 +271,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 						datagramChannel.send(ChannelUtils.convert(buf2),
 								recipientAddress.createUDPSocket(currentRequestMessage.sender()));
 					}
+					
 					// TomP2POutbound out = new TomP2POutbound();
 					// out.write(datagramChannel, requestMessage, true);
 					// if not SCTP, wait for UDP packet
@@ -268,8 +288,10 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.SCTP) {
 						buf.skipBytes(1);
 						if (so != null) {
-							System.err.println("client in:"+ByteBufUtil.prettyHexDump(Unpooled.wrappedBuffer(buf)));
-							so.onConnIn(buf.array(), buf.arrayOffset() + buf.readerIndex(), buf.readableBytes());
+							
+							byte[] tmp = new byte[p.getLength()-1];
+							System.arraycopy(buf.array(), buf.arrayOffset() + buf.readerIndex(), tmp, 0, p.getLength()- 1);
+							so.onConnIn(tmp,0, tmp.length);
 						} else {
 							System.err.println("HMMM");
 						}
@@ -295,7 +317,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 						if (!responseMessage.isKeepAlive()) {
 							// start SCTP
 							isKeepAlive = false;
-						}
+						} 
 
 						// We got a good answer, let's mark the sender as alive
 						// if its an announce, the peer status will be handled in the RPC
@@ -333,12 +355,15 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 
 		@Override
 		public void onConnOut(SctpChannelFacade so, byte[] packet) throws IOException, NotFoundException {
+			try {
 			ByteBuffer buf = ByteBuffer.allocate(packet.length + 1);
 			buf.put((byte) (1 << 6));
 			buf.put(packet);
 			buf.flip();
-			System.err.println("client out:"+ByteBufUtil.prettyHexDump(Unpooled.wrappedBuffer(buf)));
 			datagramChannel.send(buf, so.getRemote());
+			} catch (Throwable t) {
+				t.printStackTrace();
+			}
 		}
 
 		public void close() {

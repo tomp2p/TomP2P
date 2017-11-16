@@ -51,8 +51,6 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.ProtocolType;
 import net.tomp2p.message.MessageHeaderCodec;
 
-import org.jdeferred.DoneCallback;
-import org.jdeferred.FailCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -300,7 +298,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 					LOG.debug("listening for incoming packets on {}", datagramChannel.socket().getLocalSocketAddress());
 					buffer.clear();
 					// blocks until
-					InetSocketAddress remote = (InetSocketAddress) datagramChannel.receive(buffer);
+					final InetSocketAddress remote = (InetSocketAddress) datagramChannel.receive(buffer);
 					packetCounterReceive.incrementAndGet();
 
 					buffer.flip();
@@ -340,34 +338,27 @@ public final class ChannelServer implements DiscoverNetworkListener {
 									
 									@Override
 									public void onConnOut(SctpChannelFacade so, byte[] packet) throws IOException, NotFoundException {
-										
+										try {
 										ByteBuffer buf = ByteBuffer.allocate(packet.length+1);
 										buf.put((byte)(1 << 6));
 										buf.put(packet);
 										buf.flip();
-										System.err.println("server out:"+ByteBufUtil.prettyHexDump(Unpooled.wrappedBuffer(buf)));
-										
-										datagramChannel.send(buf, so.getRemote());
-										SctpUtils.getMapper().register(m2.senderSocket(), (SctpSocketAdapter) so);
+										ByteBuf bb =Unpooled.wrappedBuffer(buf);
+										byte[] bi = new byte[bb.readableBytes()];
+										bb.getBytes(0,bi);
+										//bb.resetReaderIndex();
+										System.err.println("server SCTP out:"+ByteBufUtil.prettyHexDump(bb)+" to "+remote);
+										//System.err.println("server out:"+ByteBufUtil.prettyHexDump(bb));
+										//Thread.sleep(1000);
+										datagramChannel.send(ByteBuffer.wrap(bi), remote);
+										//SctpUtils.getMapper().register(m2.senderSocket(), (SctpSocketAdapter) so);
+										} catch (Throwable t) {
+											t.printStackTrace();										}
 										
 									}
 									
 									@Override
 									public void close() {}
-								}).done(new DoneCallback<SctpChannelFacade>() {
-									
-									@Override
-									public void onDone(SctpChannelFacade result) {
-										SctpUtils.getMapper().register(m2.senderSocket(), (SctpSocketAdapter) result);
-										
-									}
-								}).fail(new FailCallback<Exception>() {
-									
-									@Override
-									public void onFail(Exception result) {
-										result.printStackTrace();
-										
-									}
 								});
 								
 							}
@@ -381,6 +372,9 @@ public final class ChannelServer implements DiscoverNetworkListener {
 							Encoder encoder = new Encoder(new DSASignatureFactory());
 							encoder.write(buf2, m2, null);
 							packetCounterSend.incrementAndGet();
+							
+							System.err.println("server out UDP:"+ByteBufUtil.prettyHexDump(buf2)+" to "+remote);
+							
 							datagramChannel.send(ChannelUtils.convert(buf2), remote);
 						} else {
 							LOG.debug("not replying to {}", m);

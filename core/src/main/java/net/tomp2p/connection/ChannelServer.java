@@ -33,6 +33,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import javassist.NotFoundException;
@@ -294,7 +295,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 		public void run() {
 			while (datagramChannel.isOpen()) {
 				try {
-					LOG.debug("listening for incoming packets on {}", datagramChannel.socket().getLocalSocketAddress());
+					//LOG.debug("listening for incoming packets on {}", datagramChannel.socket().getLocalSocketAddress());
 					buffer.clear();
 					// blocks until
 					final InetSocketAddress remote = (InetSocketAddress) datagramChannel.receive(buffer);
@@ -305,6 +306,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 
 					if (buf.readableBytes() > 0
 							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.SCTP) {
+						//System.err.println(".");
 						buf.skipBytes(1);
 						//attention, start offset with 1
 						SctpSocketAdapter socket = SctpUtils.getMapper().locate(remote.getAddress().getHostAddress(), remote.getPort());
@@ -329,27 +331,34 @@ public final class ChannelServer implements DiscoverNetworkListener {
 							if(m.sctpChannel()!=null) {
 								SctpChannel c = m.sctpChannel();
 								LOG.debug("About to connect via SCTP");
-								c.connect(new NetworkLink() {
-									
-									@Override
-									public void onConnOut(SctpChannelFacade so, byte[] packet) throws IOException, NotFoundException {
-										try {
-										ByteBuffer buf = ByteBuffer.allocate(packet.length+1);
-										buf.put((byte)(1 << 6));
-										buf.put(packet);
-										buf.flip();
-										ByteBuf bb =Unpooled.wrappedBuffer(buf);
-										byte[] bi = new byte[bb.readableBytes()];
-										bb.getBytes(0,bi);
-										datagramChannel.send(ByteBuffer.wrap(bi), remote);
-										} catch (Throwable t) {
-											t.printStackTrace();										}
+								try {
+									c.connect(new NetworkLink() {
 										
-									}
-									
-									@Override
-									public void close() {}
-								});
+										@Override
+										public void onConnOut(SctpChannelFacade so, byte[] packet) throws IOException, NotFoundException {
+											try {
+											ByteBuffer buf = ByteBuffer.allocate(packet.length+1);
+											buf.put((byte)(1 << 6));
+											buf.put(packet);
+											buf.flip();
+											ByteBuf bb =Unpooled.wrappedBuffer(buf);
+											byte[] bi = new byte[bb.readableBytes()];
+											bb.getBytes(0,bi);
+											//System.err.println("server SCTP out:"+ByteBufUtil.prettyHexDump(bb)+" to "+remote);
+											datagramChannel.send(ByteBuffer.wrap(bi), remote);
+											} catch (Throwable t) {
+												t.printStackTrace();										}
+											
+										}
+										
+										@Override
+										public void close() {
+											//TODO handle close
+										}
+									});
+								} catch (Exception e) {
+									LOG.error(e.getMessage());
+								}
 								
 							}
 							
@@ -362,6 +371,9 @@ public final class ChannelServer implements DiscoverNetworkListener {
 							Encoder encoder = new Encoder(new DSASignatureFactory());
 							encoder.write(buf2, m2, null);
 							packetCounterSend.incrementAndGet();
+							
+							System.err.println("server out UDP:"+ByteBufUtil.prettyHexDump(buf2)+" to "+remote);
+							
 							datagramChannel.send(ChannelUtils.convert(buf2), remote);
 						} else {
 							LOG.debug("not replying to {}", m);

@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import javassist.NotFoundException;
@@ -124,7 +125,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 				// packets are dropped. Increase to 2MB
 				datagramSocket.setReceiveBufferSize(2 * 1024 * 1024);
 				datagramSocket.setSendBufferSize(2 * 1024 * 1024);
-				datagramSocket.setSoTimeout(3 * 1000);
+				datagramSocket.setSoTimeout(13 * 1000);
 				datagramSocket.bind(new InetSocketAddress(port));
 			} catch (IOException e) {
 				if (datagramChannel != null) {
@@ -267,6 +268,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 					// if not SCTP, wait for UDP packet
 					DatagramPacket p = new DatagramPacket(buffer, buffer.length);
 					datagramChannel.socket().receive(p);
+					//System.err.println(",");
 					InetSocketAddress sender = (InetSocketAddress) p.getSocketAddress();
 
 					// buffer.flip();
@@ -342,6 +344,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 			buf.put((byte) (1 << 6));
 			buf.put(packet);
 			buf.flip();
+			//System.err.println("server SCTP in:"+ByteBufUtil.prettyHexDump(Unpooled.wrappedBuffer(buf))+" to ");
 			datagramChannel.send(buf, so.getRemote());
 			} catch (Throwable t) {
 				t.printStackTrace();

@@ -8,6 +8,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 import net.sctp4nat.core.SctpChannelFacade;
+import net.sctp4nat.core.SctpDataCallback;
 import net.sctp4nat.origin.Sctp;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServer;
@@ -36,6 +37,14 @@ public class TestDirectData {
 	        try {
 	            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).ports(8888).start();
 	            DirectDataRPC handshake = new DirectDataRPC(sender.peerBean(), sender.connectionBean());
+	            /*handshake.addStreamCallback(new SctpDataCallback() {
+					
+					@Override
+					public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
+							SctpChannelFacade so) {
+						
+					}
+				});*/
 	            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).ports(7777).start();
 	            new DirectDataRPC(recv1.peerBean(), recv1.connectionBean());
 	            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
@@ -46,8 +55,9 @@ public class TestDirectData {
 	            fr.awaitUninterruptibly();
 	            Assert.assertEquals(true, fr.isSuccess());
 	            Thread.sleep(1000);
-	            fr.object().send(new byte[250], true, 0, 0);
-	            Thread.sleep(10000);
+	            fr.object().send(new byte[(1024 * 900)-1], true, 0, 0);
+	            //fr.object().send(new byte[66000], true, 0, 0);
+	            Thread.sleep(15000);
 	            
 	        } finally {
 	            if (cc != null) {

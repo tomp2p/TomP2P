@@ -117,7 +117,15 @@ public class DirectDataRPC extends DispatchHandler {
 	public Message handleResponse(Message message, boolean sign) throws Exception {
 		if (message.type() == Type.REQUEST_1) {
 			SctpChannel c = SctpChannel.builder().local(message.recipientSocket()).remote(message.senderSocket())
-					.localSctpPort(message.recipientSocket().getPort()).build();
+					.localSctpPort(message.recipientSocket().getPort()).cb(new SctpDataCallback() {
+						
+						@Override
+						public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
+								SctpChannelFacade so) {
+							System.err.println("len: "+data.length+ "/ " + sid+" / "+ssn+" :tsn "+ tsn+ " F:"+flags+ " cxt:"+context);
+							
+						}
+					}).build();
 			message.sctpChannel(c);
 
 		}

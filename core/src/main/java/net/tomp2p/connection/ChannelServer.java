@@ -39,11 +39,11 @@ import io.netty.buffer.Unpooled;
 import javassist.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import net.sctp4nat.connection.SctpChannel;
+import net.sctp4nat.connection.SctpConnection;
 import net.sctp4nat.connection.SctpUtils;
 import net.sctp4nat.core.NetworkLink;
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.core.SctpSocketAdapter;
+import net.sctp4nat.core.SctpChannel;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
@@ -309,7 +309,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 						//System.err.println(".");
 						buf.skipBytes(1);
 						//attention, start offset with 1
-						SctpSocketAdapter socket = SctpUtils.getMapper().locate(remote.getAddress().getHostAddress(), remote.getPort());
+						SctpChannel socket = SctpUtils.getMapper().locate(remote.getAddress().getHostAddress(), remote.getPort());
 						socket.onConnIn(buf.array(), buf.arrayOffset() + buf.readerIndex(), buf.readableBytes());
 
 					} else if (buf.readableBytes() > 0
@@ -329,7 +329,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 						if (m2 != null) {
 
 							if(m.sctpChannel()!=null) {
-								SctpChannel c = m.sctpChannel();
+								SctpConnection c = m.sctpChannel();
 								LOG.debug("About to connect via SCTP");
 								try {
 									c.connect(new NetworkLink() {

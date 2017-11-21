@@ -46,7 +46,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.sctp4nat.core.NetworkLink;
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.core.SctpSocketAdapter;
+import net.sctp4nat.core.SctpChannel;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
@@ -238,7 +238,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 		final private Queue<Message> requestMessages;
 		// final private ByteBuffer buffer = ByteBuffer.allocate(65536);
 		final private byte[] buffer = new byte[65536];
-		private SctpSocketAdapter so;
+		private SctpChannel so;
 
 		@Override
 		public void run() {

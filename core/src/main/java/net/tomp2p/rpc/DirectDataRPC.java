@@ -17,14 +17,14 @@ package net.tomp2p.rpc;
 
 import java.net.InetSocketAddress;
 
-import net.sctp4nat.connection.SctpChannel;
+import net.sctp4nat.connection.SctpConnection;
 import net.sctp4nat.connection.SctpUtils;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.core.SctpDataCallback;
 import net.sctp4nat.core.SctpInitException;
 import net.sctp4nat.core.SctpPorts;
-import net.sctp4nat.core.SctpSocketAdapter;
-import net.sctp4nat.core.SctpSocketBuilder;
+import net.sctp4nat.core.SctpChannel;
+import net.sctp4nat.core.SctpChannelBuilder;
 import net.sctp4nat.origin.SctpAcceptable;
 import net.sctp4nat.origin.SctpNotification;
 import net.sctp4nat.origin.SctpSocket.NotificationListener;
@@ -79,7 +79,7 @@ public class DirectDataRPC extends DispatchHandler {
 
 		int localSctpPort = SctpPorts.getInstance().generateDynPort();
 		InetSocketAddress a = remotePeer.ipv4Socket().createUDPSocket();
-		final SctpSocketAdapter socket = new SctpSocketBuilder().localSctpPort(localSctpPort)
+		final SctpChannel socket = new SctpChannelBuilder().localSctpPort(localSctpPort)
 				.remoteAddress(a.getAddress()).remotePort(a.getPort()).mapper(SctpUtils.getMapper()).build();
 		socket.listen();
 
@@ -116,7 +116,7 @@ public class DirectDataRPC extends DispatchHandler {
 	@Override
 	public Message handleResponse(Message message, boolean sign) throws Exception {
 		if (message.type() == Type.REQUEST_1) {
-			SctpChannel c = SctpChannel.builder().local(message.recipientSocket()).remote(message.senderSocket())
+			SctpConnection c = SctpConnection.builder().local(message.recipientSocket()).remote(message.senderSocket())
 					.localSctpPort(message.recipientSocket().getPort()).cb(new SctpDataCallback() {
 						
 						@Override

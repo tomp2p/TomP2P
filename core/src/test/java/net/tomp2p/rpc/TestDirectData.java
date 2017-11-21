@@ -55,7 +55,7 @@ public class TestDirectData {
 	            fr.awaitUninterruptibly();
 	            Assert.assertEquals(true, fr.isSuccess());
 	            Thread.sleep(1000);
-	            fr.object().send(new byte[(1024 * 900)-1], true, 0, 0);
+	            fr.object().send(new byte[(981 * 1024)-1], true, 0, 0); //the fixed value, which works is 981 bytes
 	            //fr.object().send(new byte[66000], true, 0, 0);
 	            Thread.sleep(15000);
 	            

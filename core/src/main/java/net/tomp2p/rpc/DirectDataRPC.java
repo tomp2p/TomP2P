@@ -19,12 +19,12 @@ import java.net.InetSocketAddress;
 
 import net.sctp4nat.connection.SctpConnection;
 import net.sctp4nat.connection.SctpUtils;
-import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.core.SctpDataCallback;
 import net.sctp4nat.core.SctpInitException;
 import net.sctp4nat.core.SctpPorts;
 import net.sctp4nat.core.SctpChannel;
 import net.sctp4nat.core.SctpChannelBuilder;
+import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.SctpAcceptable;
 import net.sctp4nat.origin.SctpNotification;
 import net.sctp4nat.origin.SctpSocket.NotificationListener;

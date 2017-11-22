@@ -17,9 +17,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.sctp4nat.connection.SctpUtils;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.core.SctpDataCallback;
+import net.sctp4nat.core.SctpUtils;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;

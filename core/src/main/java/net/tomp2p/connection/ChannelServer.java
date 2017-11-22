@@ -43,7 +43,7 @@ import net.sctp4nat.connection.SctpConnection;
 import net.sctp4nat.core.NetworkLink;
 import net.sctp4nat.core.SctpChannel;
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.core.SctpUtils;
+import net.sctp4nat.util.SctpUtils;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;

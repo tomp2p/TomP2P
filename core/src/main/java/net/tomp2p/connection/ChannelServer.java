@@ -43,7 +43,7 @@ import net.sctp4nat.connection.SctpConnection;
 import net.sctp4nat.core.NetworkLink;
 import net.sctp4nat.core.SctpChannel;
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.util.SctpUtils;
+import net.sctp4nat.core.SctpMapper;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
@@ -309,7 +309,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 						//System.err.println(".");
 						buf.skipBytes(1);
 						//attention, start offset with 1
-						SctpChannel socket = SctpUtils.getMapper().locate(remote.getAddress().getHostAddress(), remote.getPort());
+						SctpChannel socket = SctpMapper.locate(remote.getAddress().getHostAddress(), remote.getPort());
 						socket.onConnIn(buf.array(), buf.arrayOffset() + buf.readerIndex(), buf.readableBytes());
 
 					} else if (buf.readableBytes() > 0
@@ -335,7 +335,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 									c.connect(new NetworkLink() {
 										
 										@Override
-										public void onConnOut(SctpChannelFacade so, byte[] packet) throws IOException, NotFoundException {
+										public void onConnOut(final SctpChannelFacade so, final byte[] packet, final int tos) throws IOException, NotFoundException {
 											try {
 											ByteBuffer buf = ByteBuffer.allocate(packet.length+1);
 											buf.put((byte)(1 << 6));

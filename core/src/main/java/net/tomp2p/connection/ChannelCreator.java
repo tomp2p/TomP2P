@@ -338,7 +338,7 @@ public class ChannelCreator { // TODO: rename to ChannelClient
 		}
 
 		@Override
-		public void onConnOut(SctpChannelFacade so, byte[] packet) throws IOException, NotFoundException {
+		public void onConnOut(final SctpChannelFacade so, final byte[] packet, final int tos) throws IOException, NotFoundException {
 			try {
 			ByteBuffer buf = ByteBuffer.allocate(packet.length + 1);
 			buf.put((byte) (1 << 6));

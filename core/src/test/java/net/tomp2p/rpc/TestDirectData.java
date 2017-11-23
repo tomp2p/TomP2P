@@ -29,7 +29,7 @@ public class TestDirectData {
 	    
 	    @Test
 	    public void testData() throws Exception {
-	    	Sctp.init();
+	    	Sctp.getInstance().init();
 	    	Peer sender = null;
 	        Peer recv1 = null;
 	        ChannelServer.resetCounters();

@@ -28,7 +28,7 @@ import net.sctp4nat.origin.SctpAcceptable;
 import net.sctp4nat.origin.SctpNotification;
 import net.sctp4nat.origin.SctpSocket.NotificationListener;
 import net.sctp4nat.util.SctpUtils;
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
@@ -37,7 +37,10 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Triple;
 
+import org.jdeferred.DoneCallback;
+import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,79 +59,41 @@ public class DirectDataRPC extends DispatchHandler {
 		return createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(), Type.REQUEST_1);
 	}
 
-	/**
-	 * Sends data directly to a peer. Make sure you have set up a reply handler.
-	 * This is an RPC.
-	 * 
-	 * @param remotePeer
-	 *            The remote peer to store the data
-	 */
-	private void sendInternal(Message message, final SendDirectBuilderI sendDirectBuilder) {
+	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final PeerAddress remotePeer, final SendDirectBuilderI sendDirectBuilder,
+			final ChannelClient channelCreator) throws SctpInitException {
+		Message message = sendInternal0(remotePeer, sendDirectBuilder);
 		if (sendDirectBuilder.isSign()) {
 			message.publicKeyAndSign(sendDirectBuilder.keyPair());
 		}
 		// TODO: this flag comes from the sendirectbuilder
 		message.keepAlive(true);
-
-	}
-
-	public FutureDone<SctpChannelFacade> send(final PeerAddress remotePeer, final SendDirectBuilderI sendDirectBuilder,
-			final ChannelCreator channelCreator) throws SctpInitException {
-		Message message = sendInternal0(remotePeer, sendDirectBuilder);
-		sendInternal(message, sendDirectBuilder);
-
-		int localSctpPort = SctpPorts.getInstance().generateDynPort();
-		InetSocketAddress a = remotePeer.ipv4Socket().createUDPSocket();
-		final SctpChannel socket = new SctpChannelBuilder().localSctpPort(localSctpPort)
-				.remoteAddress(a.getAddress()).remotePort(a.getPort()).mapper(SctpUtils.getMapper()).build();
-		socket.listen();
-
-		SctpUtils.getMapper().register(a, socket);
-		
-		final FutureDone<SctpChannelFacade> futureDone = new FutureDone<>();
-		socket.setNotificationListener(new NotificationListener() {
-
-			@Override
-			public void onSctpNotification(SctpAcceptable socket2, SctpNotification notification) {
-				LOG.error(notification.toString());
-				if (notification.toString().indexOf("COMM_UP") >= 0) {
-					futureDone.done((SctpChannelFacade) socket);
-				} else if (notification.toString().indexOf("SHUTDOWN_COMP") >= 0) {
-					socket.close();
-				} else if (notification.toString().indexOf("ADDR_UNREACHABLE") >= 0){
-					LOG.error("Heartbeat missing! Now shutting down the SCTP connection...");
-					socket.close();
-				}  else if (notification.toString().indexOf("COMM_LOST") >= 0){
-					LOG.error("Communication aborted! Now shutting down the udp connection...");
-					socket.close();
-				} 
-			}
-		});
-		
-		
-
-		message.sctpSocketAdapter(socket);
-		Pair<FutureDone<Message>, FutureDone<ClientChannel>> pair = channelCreator.sendUDP(message, localSctpPort);
-
-		return futureDone;
+		message.sctp(true);
+		return channelCreator.sendUDP(message);
 	}
 
 	@Override
-	public Message handleResponse(Message message, boolean sign) throws Exception {
+	public Message handleResponse(Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception {
 		if (message.type() == Type.REQUEST_1) {
-			SctpConnection c = SctpConnection.builder().local(message.recipientSocket()).remote(message.senderSocket())
-					.localSctpPort(message.recipientSocket().getPort()).cb(new SctpDataCallback() {
-						
-						@Override
-						public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
-								SctpChannelFacade so) {
-							System.err.println("len: "+data.length+ "/ " + sid+" / "+ssn+" :tsn "+ tsn+ " F:"+flags+ " cxt:"+context);
-							
-						}
-					}).build();
-			message.sctpChannel(c);
+			
+			//message.sctpChannel(c);
 
 		}
+		
+		p.done(new DoneCallback<SctpChannelFacade>() {
+			@Override
+			public void onDone(SctpChannelFacade result) {
+				result.setSctpDataCallback(new SctpDataCallback() {
+					
+					@Override
+					public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
+							SctpChannelFacade so) {
+						System.err.println("got packet: "+data.length);
+						so.send(new byte[200], true, 0, 0);
+					}
+				});
+			}
+		});
+		
 		Message m2 = createResponseMessage(message, Type.OK);
 		m2.keepAlive(true);
 		return m2;

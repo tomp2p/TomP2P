@@ -18,7 +18,8 @@ package net.tomp2p.rpc;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.sctp4nat.core.SctpChannelFacade;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
@@ -32,7 +33,9 @@ import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Triple;
 
+import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,18 +91,18 @@ public class QuitRPC extends DispatchHandler {
 	 *            The channel creator that creates connections
 	 * @return The future response to keep track of future events
 	 */
-	public Pair<FutureDone<Message>, FutureDone<ClientChannel>> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder,
-	        final ChannelCreator channelCreator) {
+	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder,
+	        final ChannelClient channelCreator) {
 		final Message message = createMessage(remotePeer, RPC.Commands.QUIT.getNr(), Type.REQUEST_FF_1);
 		if (shutdownBuilder.isSign()) {
 			message.publicKeyAndSign(shutdownBuilder.keyPair());
 		}
 		LOG.debug("send QUIT message {}.", message);
-		return channelCreator.sendUDP(message, 0);
+		return channelCreator.sendUDP(message);
 	}
 
 	@Override
-	public Message handleResponse(final Message message, final boolean sign) throws Exception {
+	public Message handleResponse(final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception {
 		if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.QUIT.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong for this handler.");
 		}

@@ -601,8 +601,8 @@ public class Message {
         return (options & 2) > 0;
     }
     
-    public Message expectDuplicate(boolean expectDuplicate) {
-        if (expectDuplicate) {
+    public Message sctp(boolean sctp) {
+        if (sctp) {
             options |= 4;
         } else {
             options &= ~4;
@@ -610,7 +610,7 @@ public class Message {
         return this;
     }
 
-    public boolean isExpectDuplicate() {
+    public boolean sctp() {
         return (options & 4) > 0;
     }
 
@@ -1309,25 +1309,5 @@ public class Message {
 		}
 		
 		return current;
-	}
-
-	SctpConnection c;
-	public void sctpChannel(SctpConnection c) {
-		this.c=c;
-		
-	}
-	
-	public SctpConnection sctpChannel() {
-		return c;
-		
-	}
-
-	SctpChannel socket;
-	public void sctpSocketAdapter(SctpChannel socket) {
-		this.socket = socket;
-	}
-	
-	public SctpChannel sctpSocketAdapter() {
-		return socket;
 	}
 }

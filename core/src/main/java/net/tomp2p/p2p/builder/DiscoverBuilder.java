@@ -19,8 +19,9 @@ package net.tomp2p.p2p.builder;
 import java.net.InetAddress;
 import java.util.Collection;
 
+import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -41,6 +42,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Triple;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -222,7 +224,7 @@ public class DiscoverBuilder {
      * @return
      */
     private void discover(final FutureDiscover futureDiscover, final PeerAddress peerAddress,
-            final ChannelCreator cc, final ConnectionConfiguration configuration) {
+            final ChannelClient cc, final ConnectionConfiguration configuration) {
     	LOG.debug("starting discover to {}",peerAddress);
     	final FutureDone<Void> pingDone = new FutureDone<Void>();
 
@@ -239,12 +241,12 @@ public class DiscoverBuilder {
         });
 
         
-        Pair<FutureDone<Message>, FutureDone<ClientChannel>> p = peer.pingRPC().pingUDPDiscover(peerAddress, cc,
+        Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDPDiscover(peerAddress, cc,
                 configuration); 
         
          
         
-        p.element0().addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+        p.first.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
             @Override
             public void operationComplete(FutureDone<Message> future) throws Exception {
                 PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
@@ -308,10 +310,10 @@ public class DiscoverBuilder {
                         // else -> we announce exactly how the other peer sees
                         // us
                         
-                        Pair<FutureDone<Message>, FutureDone<ClientChannel>> p = peer.pingRPC().pingUDPProbe(peerAddress, cc,
+                        Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDPProbe(peerAddress, cc,
                                 configuration);
                         
-                        p.element0().addListener(new BaseFutureAdapter<FutureResponse>() {
+                        p.first.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
                             public void operationComplete(FutureResponse future) throws Exception {
 	                            if(future.isFailed() ) {

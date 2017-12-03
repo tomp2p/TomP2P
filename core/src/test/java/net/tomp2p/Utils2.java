@@ -145,8 +145,9 @@ public class Utils2 {
         
 		Number160 peerId = new Number160(rnd);
 		PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-		PeerBuilder pb = new PeerBuilder(peerId).ports(port).enableMaintenance(maintenance).bindings(bindings)
+		PeerBuilder pb = new PeerBuilder(peerId).port(port).enableMaintenance(maintenance)
 		        .peerMap(peerMap);
+		pb.bindings(bindings);
 		peers[0] = pb.start();
 		if (automaticFuture != null) {
 			peers[0].addAutomaticFuture(automaticFuture);
@@ -157,7 +158,8 @@ public class Utils2 {
         	peerId = new Number160(rnd);
         	peerMap = new PeerMap(new PeerMapConfiguration(peerId));
         	pb = new PeerBuilder(peerId).enableMaintenance(maintenance)
-                        .bindings(bindings).peerMap(peerMap).masterPeer(peers[0]);
+                        .peerMap(peerMap).masterPeer(peers[0]);
+        	pb.bindings(bindings);
         	peers[i] = pb.start();
         	if (automaticFuture != null) {
         		peers[i].addAutomaticFuture(automaticFuture);	
@@ -176,7 +178,7 @@ public class Utils2 {
         Peer[] peers = new Peer[nrOfPeers];
         for (int i = 0; i < nrOfPeers; i++) {
             peers[i] = new PeerBuilder(new Number160(rnd))
-                    .ports(startPort + i).start().addAutomaticFuture(automaticFuture);
+                    .port(startPort + i).start().addAutomaticFuture(automaticFuture);
         }
         System.err.println("real peers created.");
         return peers;
@@ -187,7 +189,7 @@ public class Utils2 {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Peer[] peers = new Peer[nrOfPeers];
-        peers[0] = new PeerBuilder(new Number160(rnd)).enableMaintenance(false).ports(port).start();
+        peers[0] = new PeerBuilder(new Number160(rnd)).enableMaintenance(false).port(port).start();
         for (int i = 1; i < nrOfPeers; i++) {
             peers[i] = new PeerBuilder(new Number160(rnd)).enableMaintenance(false).masterPeer(peers[0])
                     .start();
@@ -243,7 +245,7 @@ public class Utils2 {
         Peer[] peers = new Peer[nr];
         for (int i = 0; i < nr; i++) {
             if (i == 0) {
-                peers[0] = new PeerBuilder(new Number160(rnd)).ports(port).start();
+                peers[0] = new PeerBuilder(new Number160(rnd)).port(port).start();
             } else {
                 peers[i] = new PeerBuilder(new Number160(rnd)).masterPeer(peers[0]).start();
             }

@@ -15,7 +15,8 @@
  */
 package net.tomp2p.rpc;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.sctp4nat.core.SctpChannelFacade;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -29,7 +30,9 @@ import net.tomp2p.p2p.BroadcastHandler;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Triple;
 
+import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +48,8 @@ public class BroadcastRPC extends DispatchHandler {
         this.broadcastHandler = broadcastHandler;
     }
 
-    public Pair<FutureDone<Message>, FutureDone<ClientChannel>> send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
-            final ChannelCreator channelCreator, final ConnectionConfiguration configuration, int bucketNr) {
+    public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
+            final ChannelClient channelCreator, final ConnectionConfiguration configuration, int bucketNr) {
         final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
         message.intValue(broadcastBuilder.hopCounter());
         message.intValue(bucketNr);
@@ -55,12 +58,12 @@ public class BroadcastRPC extends DispatchHandler {
         if (broadcastBuilder.dataMap() != null) {
             message.setDataMap(new DataMap(broadcastBuilder.dataMap()));
         }
-        return channelCreator.sendUDP(message, 0);
+        return channelCreator.sendUDP(message);
 
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception {
         if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.BROADCAST.getNr())) {
             throw new IllegalArgumentException("Message content is wrong for this handler.");
         }

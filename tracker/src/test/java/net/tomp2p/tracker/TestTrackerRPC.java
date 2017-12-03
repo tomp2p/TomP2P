@@ -2,7 +2,7 @@ package net.tomp2p.tracker;
 
 import java.util.Random;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.PeerBuilder;
@@ -21,7 +21,7 @@ public class TestTrackerRPC {
     public void testTrackerPut() throws Exception {
         PeerTracker sender = null;
         PeerTracker recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderTracker(new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start()).start();
             recv1 = new PeerBuilderTracker(new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start()).start();
@@ -80,7 +80,7 @@ public class TestTrackerRPC {
     public void testTrackerPutNoBloomFilter() throws Exception {
     	PeerTracker sender = null;
     	PeerTracker recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderTracker(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).start();
 
@@ -132,7 +132,7 @@ public class TestTrackerRPC {
     public void testTrackerPutAttachment() throws Exception {
     	PeerTracker sender = null;
     	PeerTracker recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderTracker(new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start()).start();
             recv1 = new PeerBuilderTracker(new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start()).start();
@@ -186,7 +186,7 @@ public class TestTrackerRPC {
     public void testTrackerBloomFilter() throws Exception {
     	PeerTracker sender = null;
     	PeerTracker recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderTracker(new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start()).start();
             recv1 = new PeerBuilderTracker(new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start()).start();

@@ -23,7 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.sctp4nat.core.SctpChannelFacade;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -45,7 +46,9 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Triple;
 
+import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,8 +110,8 @@ public class NeighborRPC extends DispatchHandler {
 	 *            The client-side connection configuration
      * @return The future response to keep track of future events
      */
-    public Pair<FutureDone<Message>, FutureDone<ClientChannel>> closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
-            final Type type, final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
+    public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
+            final Type type, final ChannelClient channelCreator, final ConnectionConfiguration configuration) {
         Message message = createMessage(remotePeer, RPC.Commands.NEIGHBOR.getNr(), type);
         if (!message.isRequest()) {
             throw new IllegalArgumentException("The type must be a request");
@@ -139,7 +142,7 @@ public class NeighborRPC extends DispatchHandler {
         return send(message, configuration, channelCreator);
     }
 
-    private Pair<FutureDone<Message>, FutureDone<ClientChannel>> send(final Message message, final ConnectionConfiguration configuration, final ChannelCreator channelCreator) {
+    private Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final Message message, final ConnectionConfiguration configuration, final ChannelClient channelCreator) {
         final FutureResponse futureResponse = new FutureResponse(message);
         futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override
@@ -159,11 +162,11 @@ public class NeighborRPC extends DispatchHandler {
             }
         });
         
-        return channelCreator.sendUDP(message, 0);
+        return channelCreator.sendUDP(message);
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign) throws IOException {
+    public Message handleResponse(final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws IOException {
         if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("At least location and domain keys are needed.");
         }

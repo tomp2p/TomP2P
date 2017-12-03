@@ -84,10 +84,10 @@ public class PeerCreator {
 		//start server
 		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConfiguration);
 		final ChannelServer channelServer = new ChannelServer(channelServerConfiguration,
-		        dispatcher, timer);	
+		        dispatcher, timer, peerBean);	
 		
 		//connection bean
-		BulkReservation reservation = new BulkReservation(channelClientConfiguration, peerBean);
+		BulkReservation reservation = new BulkReservation(channelClientConfiguration, peerBean, dispatcher);
 		connectionBean = new ConnectionBean(p2pId, dispatcher, channelServer, reservation,
 		        channelClientConfiguration, timer);
 		this.master = true;
@@ -201,8 +201,8 @@ public class PeerCreator {
 		final PeerAddress self = PeerAddress.builder()
 				.peerId(peerId)
 				.ipv4Socket(peerSocketAddress)
-				.reachable4UDP(!channelServerConfiguration.isBehindFirewall())
-				.reachable6UDP(!channelServerConfiguration.isBehindFirewall())
+				.reachable4UDP(!channelServerConfiguration.behindFirewall())
+				.reachable6UDP(!channelServerConfiguration.behindFirewall())
 				.build();
 		
 		return self;

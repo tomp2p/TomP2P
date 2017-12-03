@@ -16,7 +16,7 @@
 
 package net.tomp2p.dht;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;
@@ -39,10 +39,10 @@ public interface OperationMapper<K extends FutureDHT<?>> {
      *            The address of the remote peer
      * @return The future object of this response
      */
-    FutureResponse create(ChannelCreator channelCreator, PeerAddress remotePeerAddress);
+    FutureResponse create(ChannelClient channelCreator, PeerAddress remotePeerAddress);
 
     /**
-     * If the response over all futures arrived (all that were created with {@link #create(ChannelCreator, PeerAddress)}
+     * If the response over all futures arrived (all that were created with {@link #create(ChannelClient, PeerAddress)}
      * ).
      * 
      * @param future

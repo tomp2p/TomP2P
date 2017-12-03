@@ -16,8 +16,10 @@
 
 package net.tomp2p.connection;
 
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import net.tomp2p.p2p.PeerBuilder;
 
 import java.net.InetAddress;
 
@@ -27,95 +29,12 @@ import java.net.InetAddress;
  * @author Thomas Bocek
  * 
  */
-public class ChannelClientConfiguration {
-	
-    private int maxPermitsUDP;
-    private int maxPermitsTCP;
 
-    private SignatureFactory signatureFactory;
-    private Bindings bindings;
-    
+@Getter @Setter @Accessors(fluent = true)
+public class ChannelClientConfiguration {	
+    private int maxPermitsUDP = PeerBuilder.MAX_PERMITS_TCP;
+    private int maxPermitsTCP = PeerBuilder.MAX_PERMITS_UDP;
+    private SignatureFactory signatureFactory = new DSASignatureFactory();
+    private Bindings bindings = new Bindings();
     private InetAddress fromAddress = null;
-  
-
-    /**
-     * @return The maximum number of short-lived UDP connections
-     */
-    public int maxPermitsUDP() {
-        return maxPermitsUDP;
-    }
-
-    /**
-     * @param maxPermitsUDP
-     *            The maximum number of short-lived UDP connections
-     * @return This class
-     */
-    public ChannelClientConfiguration maxPermitsUDP(final int maxPermitsUDP) {
-        this.maxPermitsUDP = maxPermitsUDP;
-        return this;
-    }
-
-    /**
-     * @return The maximum number of short-lived TCP connections
-     */
-    public int maxPermitsTCP() {
-        return maxPermitsTCP;
-    }
-
-    /**
-     * @param maxPermitsTCP
-     *            The maximum number of short-lived TCP connections
-     * @return This class
-     */
-    public ChannelClientConfiguration maxPermitsTCP(final int maxPermitsTCP) {
-        this.maxPermitsTCP = maxPermitsTCP;
-        return this;
-    }
-
-    /**
-     * @return The factory for the signature
-     */
-    public SignatureFactory signatureFactory() {
-        return signatureFactory;
-    }
-
-    /**
-     * @param signatureFactory
-     *            The factory for the signature
-     * @return This class
-     */
-    public ChannelClientConfiguration signatureFactory(final SignatureFactory signatureFactory) {
-        this.signatureFactory = signatureFactory;
-        return this;
-    }
-
-    /**
-     * @return The bindings
-     */
-    public Bindings bindings() {
-        return bindings;
-    }
-
-    /**
-     * @param bindings
-     *            The bindings
-     * @return This class
-     */
-    public ChannelClientConfiguration bindings(Bindings bindings) {
-        this.bindings = bindings;
-        return this;
-    }
-
-	public InetAddress fromAddress() {
-	    return fromAddress;
-    }
-	
-	public ChannelClientConfiguration fromAddress(InetAddress fromAddress) {
-		this.fromAddress = fromAddress;
-	    return this;
-    }
-
-	public ByteBufAllocator byteBufAllocator() {
-		return UnpooledByteBufAllocator.DEFAULT;
-	}
 }

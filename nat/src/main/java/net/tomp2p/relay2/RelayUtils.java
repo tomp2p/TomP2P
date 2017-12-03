@@ -1,4 +1,4 @@
-package net.tomp2p.relay;
+package net.tomp2p.relay2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -25,8 +25,6 @@ import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -59,7 +57,7 @@ public class RelayUtils {
 		PeerMap peerMap = new PeerMap(peerMapConfiguration);
 		for (PeerAddress peerAddress : map) {
 			LOG.debug("found peer in unflatten for relaying, {}", peerAddress);
-			peerMap.peerFound(peerAddress, null, null, null);
+			peerMap.peerFound(peerAddress, null, null);
 		}
 		return peerMap.peerMapVerified();
 	}
@@ -228,7 +226,7 @@ public class RelayUtils {
 	 * Send a Message from one Peer to another Peer internally. This avoids the
 	 * overhead of sendDirect.
 	 */
-	private static void send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, final FutureResponse futureResponse) {
+	/*private static void send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, final FutureResponse futureResponse) {
 		final RequestHandler requestHandler = new RequestHandler(futureResponse, peerBean, connectionBean, connectionBean.channelServer().channelServerConfiguration());
 
 		//TOOD: enable:
@@ -243,7 +241,7 @@ public class RelayUtils {
 		//		}
 		//	}
 		//});
-	}
+	}*/
 
 	/**
 	 * Send a Message from one Peer to another Peer internally. This avoids the
@@ -251,11 +249,11 @@ public class RelayUtils {
 	 * Connection setup.
 	 * @return the response
 	 */
-	public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, Message message) {
+	/*public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, Message message) {
 		final FutureResponse futureResponse = new FutureResponse(message);
 		send(peerConnection, peerBean, connectionBean, futureResponse);
 		return futureResponse;
-	}
+	}*/
 	
 	/**
 	 * Opens a new peer connection to the receiver and sends the message through it.
@@ -263,7 +261,7 @@ public class RelayUtils {
 	 * @param message
 	 * @return
 	 */
-	public static FutureResponse connectAndSend(final Peer peer, final Message message) {
+	/*public static FutureResponse connectAndSend(final Peer peer, final Message message) {
 		final FutureResponse futureResponse = new FutureResponse(message);
 		final RequestHandler requestHandler = new RequestHandler(futureResponse, peer.peerBean(), peer.connectionBean(), peer.connectionBean().channelServer().channelServerConfiguration());
 		final FutureChannelCreator fpc = peer.connectionBean().reservation().create(0, 1);
@@ -279,5 +277,5 @@ public class RelayUtils {
         });
 		
 		return futureResponse;
-	}
+	}*/
 }

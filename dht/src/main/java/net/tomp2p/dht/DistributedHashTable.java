@@ -26,7 +26,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.dht.StorageLayer.PutStatus;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -95,7 +95,7 @@ public class DistributedHashTable {
                                             Map<PeerAddress, Map<Number640, Byte>> rawData = new HashMap<PeerAddress, Map<Number640, Byte>>();
 
                                             @Override
-                                            public FutureResponse create(ChannelCreator channelCreator,
+                                            public FutureResponse create(ChannelClient channelCreator,
                                                     PeerAddress address) {
                                                 return storeRCP.add(address, builder, channelCreator);
                                             }
@@ -155,7 +155,7 @@ public class DistributedHashTable {
                                             Map<PeerAddress, Object> rawObjects = new HashMap<PeerAddress, Object>();
 
                                             @Override
-                                            public FutureResponse create(ChannelCreator channelCreator,
+                                            public FutureResponse create(ChannelClient channelCreator,
                                                     PeerAddress address) {
                                                 return directDataRPC.send(address, builder, channelCreator);
                                             }
@@ -235,7 +235,7 @@ public class DistributedHashTable {
                                             Map<PeerAddress, Map<Number640, Byte>> rawData = new HashMap<PeerAddress, Map<Number640, Byte>>();
 
                                             @Override
-                                            public FutureResponse create(final ChannelCreator channelCreator,
+                                            public FutureResponse create(final ChannelClient channelCreator,
                                                     final PeerAddress address) {
                                                 if (putBuilder.isPutIfAbsent()) {
                                                     return storeRCP.putIfAbsent(address, putBuilder,
@@ -321,7 +321,7 @@ public class DistributedHashTable {
                                             Map<PeerAddress, Byte> rawStatus = new HashMap<PeerAddress, Byte>();
 
                                             @Override
-                                            public FutureResponse create(ChannelCreator channelCreator,
+                                            public FutureResponse create(ChannelClient channelCreator,
                                                     PeerAddress address) {
 												if (builder.isGetLatest()) {
 													if (builder.isWithDigest()) {
@@ -418,7 +418,7 @@ public class DistributedHashTable {
                                             Map<PeerAddress, DigestResult> rawDigest = new HashMap<PeerAddress, DigestResult>();
 
                                             @Override
-                                            public FutureResponse create(ChannelCreator channelCreator,
+                                            public FutureResponse create(ChannelClient channelCreator,
                                                     PeerAddress address) {
                                                 return storeRCP.digest(address, builder, channelCreator);
                                             }
@@ -503,7 +503,7 @@ public class DistributedHashTable {
                                             Map<PeerAddress, Map<Number640, Byte>> rawDataNoResult = new HashMap<PeerAddress, Map<Number640, Byte>>();
 
                                             @Override
-                                            public FutureResponse create(ChannelCreator channelCreator,
+                                            public FutureResponse create(ChannelClient channelCreator,
                                                     PeerAddress address) {
                                                 return storeRCP.remove(address, builder, channelCreator);
                                             }
@@ -585,7 +585,7 @@ public class DistributedHashTable {
 
     //TODO: have two queues, direct queue + potential queue.
     private static <K extends FutureDHT<?>> void parallelRequests(RequestP2PConfiguration p2pConfiguration,
-    		NavigableSet<PeerAddress> directHit, NavigableSet<PeerAddress> potentialHit, K future, boolean cancleOnFinish, ChannelCreator channelCreator,
+    		NavigableSet<PeerAddress> directHit, NavigableSet<PeerAddress> potentialHit, K future, boolean cancleOnFinish, ChannelClient channelCreator,
             OperationMapper<K> operation) {
     	//the potential hits may contain same values as in directHit, so remove it from potentialHit
     	for(PeerAddress peerAddress:directHit) {
@@ -607,7 +607,7 @@ public class DistributedHashTable {
     private static <K extends FutureDHT<?>> void loopRec(final NavigableSet<PeerAddress> directHit, final NavigableSet<PeerAddress> potentialHit,
             final int min, final AtomicInteger nrFailure, final int maxFailure, final int parallelDiff,
             final AtomicReferenceArray<FutureResponse> futures, final K futureDHT,
-            final boolean cancelOnFinish, final ChannelCreator channelCreator,
+            final boolean cancelOnFinish, final ChannelClient channelCreator,
             final OperationMapper<K> operation) {
         // final int parallel=min+parallelDiff;
         int active = 0;

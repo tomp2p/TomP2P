@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureImpl;
@@ -84,7 +84,7 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
      * @param channelCreator
      *            The channel creator that will be shutdown and all connections will be closed
      */
-    public void addFutureDHTReleaseListener(final ChannelCreator channelCreator) {
+    public void addFutureDHTReleaseListener(final ChannelClient channelCreator) {
         addListener(new BaseFutureAdapter<FutureDHT<K>>() {
             @Override
             public void operationComplete(final FutureDHT<K> future) throws Exception {

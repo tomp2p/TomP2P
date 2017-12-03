@@ -15,7 +15,7 @@
  */
 package net.tomp2p.tracker;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
@@ -70,7 +70,7 @@ public class PeerExchangeRPC extends DispatchHandler {
      * @return The future response to keep track of future events
      */
     public FutureResponse peerExchange(final PeerAddress remotePeer, final Number320 key, 
-    		final ChannelCreator channelCreator, TrackerData peers,
+    		final ChannelClient channelCreator, TrackerData peers,
             final ConnectionConfiguration connectionConfiguration) {
         final Message message = createMessage(remotePeer, RPC.Commands.PEX.getNr(), Type.REQUEST_FF_1);
 

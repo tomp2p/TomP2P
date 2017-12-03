@@ -30,7 +30,7 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
@@ -104,7 +104,7 @@ public class SyncRPC extends DispatchHandler {
      * @return The future response to keep track of future events
      */
 	public FutureResponse infoMessage(final PeerAddress remotePeer,
-	        final SyncBuilder synchronizationBuilder, final ChannelCreator channelCreator) {
+	        final SyncBuilder synchronizationBuilder, final ChannelClient channelCreator) {
 		final Message message = createMessage(remotePeer, INFO_COMMAND,
 		        synchronizationBuilder.isSyncFromOldVersion() ? Type.REQUEST_2 : Type.REQUEST_1);
 
@@ -135,7 +135,7 @@ public class SyncRPC extends DispatchHandler {
      * @throws IOException
      */
     public FutureResponse syncMessage(final PeerAddress remotePeer,
-            final SyncBuilder synchronizationBuilder, final ChannelCreator channelCreator)
+            final SyncBuilder synchronizationBuilder, final ChannelClient channelCreator)
             throws IOException {
         final Message message = createMessage(remotePeer, SYNC_COMMAND, Type.REQUEST_1);
 

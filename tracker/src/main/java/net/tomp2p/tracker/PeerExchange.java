@@ -1,6 +1,6 @@
 package net.tomp2p.tracker;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -38,7 +38,7 @@ public class PeerExchange {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					final ChannelCreator channelCreator = future.channelCreator();
+					final ChannelClient channelCreator = future.channelCreator();
 					FutureResponse futureResponse = peerExchangeRPC.peerExchange(remotePeer, key, channelCreator, data,
 					        connectionConfiguration);
 					futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {

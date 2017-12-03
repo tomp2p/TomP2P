@@ -72,7 +72,7 @@ public class SctpTest {
 			@Override
 			public void run() {
 				try {
-					serverPeer = new PeerBuilder(serverPeerId).udpPort(tomp2pPort).start();
+					serverPeer = new PeerBuilder(serverPeerId).port(tomp2pPort).start();
 				} catch (IOException e) {
 					fail(e.getMessage());
 				}
@@ -96,7 +96,7 @@ public class SctpTest {
 			public void run() {
 
 				try {
-					clientPeer = new PeerBuilder(clientPeerId).udpPort(tomp2pPort + 1).start();
+					clientPeer = new PeerBuilder(clientPeerId).port(tomp2pPort + 1).start();
 				} catch (IOException e) {
 					fail(e.getMessage());
 				}

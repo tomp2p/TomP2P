@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -18,6 +19,7 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Triple;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -186,14 +188,14 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 							peer, messageKey);
 					broadcastBuilder.dataMap(dataMap);
 					broadcastBuilder.hopCounter(hopCounter + 1);
-					Pair<FutureDone<Message>, FutureDone<ClientChannel>> p = peer.broadcastRPC()
+					Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.broadcastRPC()
 							.send(peerAddress, broadcastBuilder,
 									future.channelCreator(), broadcastBuilder,
 									bucketNr);
 					LOG.debug("send to {}", peerAddress);
 					messageCounter.incrementAndGet();
 					Utils.addReleaseListener(future.channelCreator(),
-							p.element0());
+							p.first);
 				} else {
 					Utils.addReleaseListener(future.channelCreator());
 				}

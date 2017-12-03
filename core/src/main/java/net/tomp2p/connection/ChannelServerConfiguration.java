@@ -16,8 +16,9 @@
 
 package net.tomp2p.connection;
 
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 
 /**
@@ -26,194 +27,22 @@ import io.netty.buffer.UnpooledByteBufAllocator;
  * @author Thomas Bocek
  * 
  */
+@Getter @Setter @Accessors(fluent = true)
 public class ChannelServerConfiguration implements ConnectionConfiguration {
 
-    private boolean behindFirewall = false;
-    private boolean disableBind = false;
+	private boolean behindFirewall = false;
+	private boolean disableBind = false;
 
-    private int idleTCPMillis = ConnectionBean.DEFAULT_TCP_IDLE_MILLIS;
-    private int idleTCPSlowMillis = ConnectionBean.DEFAULT_TCP_IDLE_SLOW_MILLIS;
-    private int idleUDPMillis = ConnectionBean.DEFAULT_UDP_IDLE_MILLIS;
-    private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
-    private int heartBeatSeconds = ConnectionBean.DEFAULT_HEARTBEAT_SECONDS;
+	private int idleSCTPMillis = ConnectionBean.DEFAULT_TCP_IDLE_MILLIS;
+	private int idleUDPMillis = ConnectionBean.DEFAULT_UDP_IDLE_MILLIS;
+	private int heartBeatSeconds = ConnectionBean.DEFAULT_HEARTBEAT_SECONDS;
 
     //interface bindings
-    private Bindings bindings = null;
-    private SignatureFactory signatureFactory = null;
-    private Ports portsForwarding;
-    private Ports ports;
-    private int maxUDPIncomingConnections = 1000;
-
-    /**
-     * @return True if this peer is behind a firewall and cannot be accessed directly
-     */
-    public boolean isBehindFirewall() {
-        return behindFirewall;
-    }
-
-    /**
-     * @param behindFirewall
-     *            Set to true if this peer is behind a firewall and not directly accessible
-     * @return This class
-     */
-    public ChannelServerConfiguration behindFirewall(final boolean behindFirewall) {
-        this.behindFirewall = behindFirewall;
-        return this;
-    }
-
-    /**
-     * Sets peer to be behind a firewall and cannot be accessed directly.
-     * 
-     * @return This class
-     */
-    public ChannelServerConfiguration behindFirewall() {
-        this.behindFirewall = true;
-        return this;
-    }
-
-    /**
-     * @return True if the bind to ports should be omitted
-     */
-    public boolean isDisableBind() {
-        return disableBind;
-    }
-
-    /**
-     * Set to true if the bind to ports should be omitted
-     * @param disableBind
-     *
-     * @return This class
-     */
-    public ChannelServerConfiguration disableBind(final boolean disableBind) {
-        this.disableBind = disableBind;
-        return this;
-    }
-
-    /**
-     * Sets that the bind to ports should be omitted.
-     * 
-     * @return This class
-     */
-    public ChannelServerConfiguration disableBind() {
-        this.disableBind = true;
-        return this;
-    }
-
-    /**
-     * @return The time that a connection can be idle before it is considered not active for short-lived connections
-     */
-    public int idleTCPMillis() {
-        return idleTCPMillis;
-    }
-
-    /**
-     * @param idleTCPSeconds
-     *            The time that a connection can be idle before its considered not active for short-lived connections
-     * @return This class
-     */
-    public ChannelServerConfiguration idleTCPMillis(final int idleTCPMillis) {
-        this.idleTCPMillis = idleTCPMillis;
-        return this;
-    }
-    
-    /**
-     * @return The time that a connection can be idle before it is considered not active for short-lived connections
-     */
-    public int idleTCPSlowMillis() {
-        return idleTCPSlowMillis;
-    }
-
-    /**
-     * @param idleTCPSeconds
-     *            The time that a connection can be idle before its considered not active for short-lived connections
-     * @return This class
-     */
-    public ChannelServerConfiguration idleTCPSlowMillis(final int idleTCPSlowMillis) {
-        this.idleTCPSlowMillis = idleTCPSlowMillis;
-        return this;
-    }
-
-    /**
-     * @return The time that a connection can be idle before its considered not active for short-lived connections
-     */
-    public int idleUDPMillis() {
-        return idleUDPMillis;
-    }
-
-    /**
-     * @param idleUDPSeconds
-     *            The time that a connection can be idle before its considered not active for short-lived connections
-     * @return This class
-     */
-    public ChannelServerConfiguration idleUDPMillis(final int idleUDPMillis) {
-        this.idleUDPMillis = idleUDPMillis;
-        return this;
-    }
-
-    /**
-     * @return The factory for the signature
-     */
-    public SignatureFactory signatureFactory() {
-        return signatureFactory;
-    }
-
-    /**
-     * @param signatureFactory
-     *            Set the factory for the signature
-     * @return This class
-     */
-    public ChannelServerConfiguration signatureFactory(final SignatureFactory signatureFactory) {
-        this.signatureFactory = signatureFactory;
-        return this;
-    }
-
-    public Ports portsForwarding() {
-        return portsForwarding;
-    }
-
-    public ChannelServerConfiguration portsForwarding(Ports portsForwarding) {
-        this.portsForwarding = portsForwarding;
-        return this;
-    }
-    
-    public Ports ports() {
-        return ports;
-    }
-
-    public ChannelServerConfiguration ports(Ports ports) {
-        this.ports = ports;
-        return this;
-    }
-
-    public ChannelServerConfiguration bindings(Bindings bindings) {
-        this.bindings = bindings;
-        return this;
-    }
-    
-    public Bindings bindings() {
-        return bindings;
-    }
-    
-    public int maxUDPIncomingConnections() {
-        return maxUDPIncomingConnections;
-    }
-
-    public ChannelServerConfiguration maxUDPIncomingConnections(final int maxUDPIncomingConnections) {
-        this.maxUDPIncomingConnections = maxUDPIncomingConnections;
-        return this;
-    }
-
-	public ChannelServerConfiguration heartBeatSeconds(final int heartBeatSeconds) {
-		this.heartBeatSeconds = heartBeatSeconds;
-		return this;
-	}
+	private Bindings bindings = new Bindings();
+	private SignatureFactory signatureFactory = new DSASignatureFactory();
+	private Ports portsForwarding = new Ports(Ports.DEFAULT_PORT);
+	private Ports ports = new Ports(Ports.DEFAULT_PORT);
+	private int maxUDPIncomingConnections = 1000;
 	
-	@Override
-	public int heartBeatSeconds() {
-		return heartBeatSeconds;
-	}
-
-	public ByteBufAllocator byteBufAllocator() {
-		return UnpooledByteBufAllocator.DEFAULT;
-	}
+	//private SctpDataCallback sctpCallback = null;
 }

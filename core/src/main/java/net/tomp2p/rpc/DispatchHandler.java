@@ -15,6 +15,7 @@
  */
 package net.tomp2p.rpc;
 
+import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerException;
@@ -24,6 +25,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 
+import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,6 +142,23 @@ public abstract class DispatchHandler {
         replyMessage.messageId(requestMessage.messageId());
         return replyMessage;
     }
+    
+    public static Message createAckMessage(final Message responseMessage, final Type replyType, final PeerAddress peerAddress) {
+        Message ackMessage = new Message();
+        // this will have the ports > 40'000 that we need to know for sending the reply
+        //ackMessage.senderSocket(responseMessage.senderSocket());
+        //ackMessage.recipientSocket(responseMessage.recipientSocket());
+        ackMessage.recipient(responseMessage.sender());
+        
+        PeerAddress senderShort = peerAddress.withSkipIP(true);
+        ackMessage.sender(senderShort);
+        
+        ackMessage.command(responseMessage.command());
+        ackMessage.type(replyType);
+        ackMessage.version(responseMessage.version());
+        ackMessage.messageId(responseMessage.messageId());
+        return ackMessage;
+    }
 
     /**
      * Forwards the request to a handler.
@@ -148,7 +167,7 @@ public abstract class DispatchHandler {
      *            The request message
      * @param responder The responder used to respond the response message
      */
-    public Message forwardMessage(final Message requestMessage) {
+    public Message forwardMessage(final Message requestMessage, Promise<SctpChannelFacade, Exception, Void> p) {
         // Here, we need a referral since we got contacted and we don't know if
         // we can contact the peer with its address. The peer may be behind a NAT.
     	
@@ -165,7 +184,7 @@ public abstract class DispatchHandler {
     	}
         
         try {
-            return handleResponse(requestMessage, sign);
+            return handleResponse(requestMessage, sign, p);
         } catch (Throwable e) {
         	synchronized (peerBean.peerStatusListeners()) {
         		for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
@@ -190,6 +209,6 @@ public abstract class DispatchHandler {
      * @throws Exception
      *             Any exception
      */
-    public abstract Message handleResponse(Message message, boolean sign) throws Exception;
+    public abstract Message handleResponse(Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception;
 
 }

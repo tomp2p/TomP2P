@@ -19,6 +19,7 @@ package net.tomp2p.p2p.builder;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
+import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -38,6 +39,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Triple;
 import net.tomp2p.utils.Utils;
 
 public class PingBuilder {
@@ -166,9 +168,9 @@ public class PingBuilder {
 			@Override
 			public void operationComplete(final FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					Pair<FutureDone<Message>, FutureDone<ClientChannel>> p = peer.pingRPC().pingUDP(peerAddress,
+					Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDP(peerAddress,
 							future.channelCreator(), connectionConfiguration);
-					addPingListener(futurePing, p.element0());
+					addPingListener(futurePing, p.first);
 				} else {
 					futurePing.failed(future);
 				}
@@ -196,9 +198,9 @@ public class PingBuilder {
                         	
                         	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(broadcastAddress)).udpPort(port).build();
                         	PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
-                        	Pair<FutureDone<Message>, FutureDone<ClientChannel>> p = peer.pingRPC().pingUDP(peerAddress,
+                        	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDP(peerAddress,
         							future.channelCreator(), connectionConfiguration);
-                            if (!futureLateJoin.add(p.element0())) {
+                            if (!futureLateJoin.add(p.first)) {
                                 // the latejoin future is finished if the add returns false
                                 break;
                             }

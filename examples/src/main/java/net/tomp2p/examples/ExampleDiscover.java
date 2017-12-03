@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.futures.FutureBootstrap;
@@ -40,7 +40,7 @@ public class ExampleDiscover {
 				FutureChannelCreator fcc = master.connectionBean().reservation().create(1, 1);
 				fcc.awaitUninterruptibly();
 
-				ChannelCreator cc = fcc.channelCreator();
+				ChannelClient cc = fcc.channelCreator();
 
 				FutureResponse fr1 = master.pingRPC().pingTCP(pa, cc, new DefaultConnectionConfiguration());
 				fr1.awaitUninterruptibly();

@@ -17,7 +17,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.connection.Ports;
@@ -56,7 +56,7 @@ public class TestStoreReplication {
         // Random rnd=new Random(42L);
     	PeerDHT master = null;
     	PeerDHT slave = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
         	StorageMemory s1 = new StorageMemory();
         	master = new PeerBuilderDHT(new PeerBuilder(new Number160("0xee")).start()).storage(s1).start();
@@ -140,7 +140,7 @@ public class TestStoreReplication {
         PeerDHT master = null;
         PeerDHT slave1 = null;
         PeerDHT slave2 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             Number160 loc = new Number160(rnd);
             NavigableMap<Number160, Data> contentMap = new TreeMap<Number160, Data>();
@@ -965,7 +965,7 @@ public class TestStoreReplication {
 			throws IOException, InterruptedException {
 		List<PeerDHT> peers = new ArrayList<PeerDHT>(joins.length);
 		IndirectReplication ind = null;
-		ChannelCreator cc = null;
+		ChannelClient cc = null;
 		try {
 			char[] letters = { 'a', 'b', 'c', 'd' };
 			for (int i = 0; i < joins.length; i++) {

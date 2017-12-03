@@ -54,7 +54,7 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import io.netty.buffer.ByteBuf;
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -848,7 +848,7 @@ public class Utils {
 	 *            The futures to listen to. If all the futures finished, then the channel creator is shut down.
 	 *            If null is provided, then the channel crator is shut down immediately.
      */
-    public static void addReleaseListener(final ChannelCreator channelCreator,
+    public static void addReleaseListener(final ChannelClient channelCreator,
             final BaseFuture... baseFutures) {
         if (baseFutures == null) {
             channelCreator.shutdown();

@@ -1,6 +1,6 @@
 package net.tomp2p.dht;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 
@@ -24,7 +24,7 @@ public class UtilsDHT {
      *            The futures to listen to. If all the futures finished, then the channel creator is shutdown. If null
      *            provided, the channel creator is shutdown immediately.
      */
-	public static void addReleaseListener(final ChannelCreator channelCreator,
+	public static void addReleaseListener(final ChannelClient channelCreator,
 			final FutureDHT<?> futureDHT) {
 		if (futureDHT == null) {
 			channelCreator.shutdown();

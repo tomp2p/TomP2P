@@ -15,7 +15,7 @@
  */
 package net.tomp2p.futures;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 
 /**
  * This future is used for the connection reservation. If notifies the user when
@@ -24,7 +24,7 @@ import net.tomp2p.connection.ChannelCreator;
  * @author Thomas Bocek
  */
 public class FutureChannelCreator extends BaseFutureImpl<FutureChannelCreator> {
-    private ChannelCreator channelCreator;
+    private ChannelClient channelCreator;
 
     /**
      * Creates a new future for the shutdown operation.
@@ -40,7 +40,7 @@ public class FutureChannelCreator extends BaseFutureImpl<FutureChannelCreator> {
      * @param channelCreator
      *            The newly created ChannelCreator
      */
-    public void reserved(final ChannelCreator channelCreator) {
+    public void reserved(final ChannelClient channelCreator) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -54,7 +54,7 @@ public class FutureChannelCreator extends BaseFutureImpl<FutureChannelCreator> {
     /**
      * @return The ChannelCreator
      */
-    public ChannelCreator channelCreator() {
+    public ChannelClient channelCreator() {
         synchronized (lock) {
             return channelCreator;
         }

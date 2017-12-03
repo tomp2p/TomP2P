@@ -27,7 +27,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -119,7 +119,7 @@ public class DistributedTracker {
 	}
 
 	private void startLoop(final GetTrackerBuilder builder, final FutureTracker futureTracker,
-	        final NavigableSet<PeerAddress> queueToAsk, final ChannelCreator cc) {
+	        final NavigableSet<PeerAddress> queueToAsk, final ChannelClient cc) {
 		loop(builder.locationKey(), builder.domainKey(), queueToAsk, builder.trackerConfiguration(),
 		        futureTracker, true, builder.knownPeers(), new Operation() {
 			        @Override
@@ -330,7 +330,7 @@ public class DistributedTracker {
 	 * routingConfiguration.isForceTCP()), type, channelCreator); }
 	 */
 
-	private FutureRouting createRouting(TrackerBuilder<?> builder, Type type, ChannelCreator channelCreator) {
+	private FutureRouting createRouting(TrackerBuilder<?> builder, Type type, ChannelClient channelCreator) {
 		RoutingBuilder routingBuilder = builder.createBuilder(builder.routingConfiguration());
 		routingBuilder.locationKey(builder.locationKey());
 		routingBuilder.domainKey(builder.domainKey());

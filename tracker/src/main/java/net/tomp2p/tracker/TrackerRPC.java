@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
@@ -63,7 +63,7 @@ public class TrackerRPC extends DispatchHandler {
 	}
 
 	public FutureResponse addToTracker(final PeerAddress remotePeer, AddTrackerBuilder builder,
-	        ChannelCreator channelCreator) {
+	        ChannelClient channelCreator) {
 
 		Utils.nullCheck(remotePeer, builder.locationKey(), builder.domainKey());
 		final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_ADD.getNr(), Type.REQUEST_3);
@@ -99,7 +99,7 @@ public class TrackerRPC extends DispatchHandler {
 	}
 
 	public FutureResponse getFromTracker(final PeerAddress remotePeer, GetTrackerBuilder builder,
-	        ChannelCreator channelCreator) {
+	        ChannelClient channelCreator) {
 
 		Utils.nullCheck(remotePeer, builder.locationKey(), builder.domainKey());
 		final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_GET.getNr(), Type.REQUEST_1);

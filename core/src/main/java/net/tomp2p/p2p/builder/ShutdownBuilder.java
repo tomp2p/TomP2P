@@ -18,7 +18,7 @@ package net.tomp2p.p2p.builder;
 
 import java.security.KeyPair;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -81,7 +81,7 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
             @Override
             public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception {
             	if (futureChannelCreator.isSuccess()) {
-            		ChannelCreator cc = futureChannelCreator.channelCreator();
+            		ChannelClient cc = futureChannelCreator.channelCreator();
             		RoutingBuilder routingBuilder = BootstrapBuilder.createBuilder(routingConfiguration, forceRoutingOnlyToSelf);
             		routingBuilder.locationKey(peer.peerID());
             		FutureRouting futureRouting = peer.distributedRouting().quit(routingBuilder, cc);

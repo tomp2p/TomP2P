@@ -29,7 +29,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
@@ -141,7 +141,7 @@ public class StorageRPC extends DispatchHandler {
      * @return FutureResponse that stores which content keys have been stored.
      */
     public FutureResponse put(final PeerAddress remotePeer, final PutBuilder putBuilder,
-            final ChannelCreator channelCreator) {
+            final ChannelClient channelCreator) {
         final Type request = putBuilder.isProtectDomain() ? Type.REQUEST_2 : Type.REQUEST_1;
         return put(remotePeer, putBuilder, request, RPC.Commands.PUT, channelCreator);
     }
@@ -174,7 +174,7 @@ public class StorageRPC extends DispatchHandler {
      * @return FutureResponse that stores which content keys have been stored.
      */
     public FutureResponse putIfAbsent(final PeerAddress remotePeer, final PutBuilder putBuilder,
-            final ChannelCreator channelCreator) {
+            final ChannelClient channelCreator) {
         final Type request;
         if (putBuilder.isProtectDomain()) {
             request = Type.REQUEST_4;
@@ -212,12 +212,12 @@ public class StorageRPC extends DispatchHandler {
      */
     
     public FutureResponse putReplica(PeerAddress remotePeer, PutBuilder putBuilder,
-			ChannelCreator channelCreator) {
+			ChannelClient channelCreator) {
 		return put(remotePeer, putBuilder, Type.REQUEST_1, RPC.Commands.REPLICA_PUT, channelCreator);
 	}
     
     private FutureResponse put(final PeerAddress remotePeer, final PutBuilder putBuilder, final Type type, final RPC.Commands rpcCommand,
-            final ChannelCreator channelCreator) {
+            final ChannelClient channelCreator) {
 
         Utils.nullCheck(remotePeer);
 
@@ -250,7 +250,7 @@ public class StorageRPC extends DispatchHandler {
     }
     
     public FutureResponse putMeta(final PeerAddress remotePeer, final PutBuilder putBuilder, 
-            final ChannelCreator channelCreator) {
+            final ChannelClient channelCreator) {
 
         Utils.nullCheck(remotePeer);
 
@@ -300,7 +300,7 @@ public class StorageRPC extends DispatchHandler {
     }
 
 	public FutureResponse putConfirm(final PeerAddress remotePeer, final PutBuilder putBuilder,
-			final ChannelCreator channelCreator) {
+			final ChannelClient channelCreator) {
 
 		Utils.nullCheck(remotePeer);
 
@@ -333,8 +333,8 @@ public class StorageRPC extends DispatchHandler {
 
     /**
      * Adds data on a remote peer. The main difference to
-     * {@link #put(PeerAddress, Number160, Number160, Map, Type, boolean, ChannelCreator, boolean)} and
-     * {@link #putIfAbsent(PeerAddress, Number160, Number160, Map, boolean, boolean, boolean, ChannelCreator, boolean)}
+     * {@link #put(PeerAddress, Number160, Number160, Map, Type, boolean, ChannelClient, boolean)} and
+     * {@link #putIfAbsent(PeerAddress, Number160, Number160, Map, boolean, boolean, boolean, ChannelClient, boolean)}
      * is that it will convert the data collection to map. The key for the map will be the SHA-1 hash of the data. This
      * is an RPC.
      * 
@@ -359,7 +359,7 @@ public class StorageRPC extends DispatchHandler {
      * @return FutureResponse that stores which content keys have been stored.
      */
     public FutureResponse add(final PeerAddress remotePeer, final AddBuilder addBuilder,
-            ChannelCreator channelCreator) {
+            ChannelClient channelCreator) {
         Utils.nullCheck(remotePeer, addBuilder.locationKey(), addBuilder.domainKey());
         final Type type;
         if (addBuilder.isProtectDomain()) {
@@ -413,7 +413,7 @@ public class StorageRPC extends DispatchHandler {
     }
 
     public FutureResponse digest(final PeerAddress remotePeer, final DigestBuilder getBuilder,
-            final ChannelCreator channelCreator) {
+            final ChannelClient channelCreator) {
     	
     	final Byte command;
         if(getBuilder.isReturnBloomFilter()) {
@@ -486,7 +486,7 @@ public class StorageRPC extends DispatchHandler {
     }
 
     public FutureResponse get(final PeerAddress remotePeer, final GetBuilder getBuilder,
-            final ChannelCreator channelCreator) {
+            final ChannelClient channelCreator) {
     	final Type type;
         if (getBuilder.isAscending() && getBuilder.isBloomFilterAnd()) {
             type = Type.REQUEST_1;
@@ -568,7 +568,7 @@ public class StorageRPC extends DispatchHandler {
     }
 
 	public FutureResponse getLatest(final PeerAddress remotePeer, final GetBuilder getBuilder,
-			final ChannelCreator channelCreator, final RPC.Commands command) {
+			final ChannelClient channelCreator, final RPC.Commands command) {
 		final Type type = Type.REQUEST_1;
 		final Message message = createMessage(remotePeer, command.getNr(), type);
 
@@ -612,7 +612,7 @@ public class StorageRPC extends DispatchHandler {
      * @return The future response to keep track of future events
      */
     public FutureResponse remove(final PeerAddress remotePeer, final RemoveBuilder removeBuilder,
-            final ChannelCreator channelCreator) {
+            final ChannelClient channelCreator) {
         final Message message = createMessage(remotePeer, RPC.Commands.REMOVE.getNr(),
                 removeBuilder.isReturnResults() ? Type.REQUEST_2 : Type.REQUEST_1);
 

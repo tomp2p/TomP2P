@@ -15,7 +15,7 @@ import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.dht.StorageLayer.PutStatus;
@@ -104,7 +104,7 @@ public class TestStorageDHT {
             FutureChannelCreator fcc = recv1.peer().connectionBean().reservation().create(1, 0);
 
             fcc.awaitUninterruptibly();
-            ChannelCreator cc = fcc.channelCreator();
+            ChannelClient cc = fcc.channelCreator();
 
             SimpleBloomFilter<Number160> bf = new SimpleBloomFilter<Number160>(20, 10);
             for (int i = 0; i < 10; i++) {
@@ -144,7 +144,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
@@ -224,7 +224,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
@@ -301,7 +301,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
@@ -372,7 +372,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
@@ -431,7 +431,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
@@ -503,7 +503,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
@@ -576,7 +576,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
@@ -634,7 +634,7 @@ public class TestStorageDHT {
 
                 FutureChannelCreator fcc = recv1.peer().connectionBean().reservation().create(0, 10);
                 fcc.awaitUninterruptibly();
-                ChannelCreator cc = fcc.channelCreator();
+                ChannelClient cc = fcc.channelCreator();
 
                 // final ChannelCreator
                 // cc1=sender.getConnectionBean().getReservation().reserve(50);
@@ -666,7 +666,7 @@ public class TestStorageDHT {
     }
 
     
-    private FutureResponse store(PeerDHT sender, final PeerDHT recv1, StorageRPC smmSender, ChannelCreator cc)
+    private FutureResponse store(PeerDHT sender, final PeerDHT recv1, StorageRPC smmSender, ChannelClient cc)
             throws Exception {
         NavigableMap<Number160, Data> tmp = new TreeMap<Number160, Data>();
         byte[] me1 = new byte[] { 1, 2, 3 };
@@ -689,7 +689,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
@@ -750,7 +750,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).enableMaintenance(false).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).enableMaintenance(false).start()).storage(storeRecv).start();
@@ -812,7 +812,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
             ChannelServerConfiguration css = PeerBuilder.createDefaultChannelServerConfiguration();
@@ -868,7 +868,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
             ChannelServerConfiguration css = PeerBuilder.createDefaultChannelServerConfiguration();
@@ -935,7 +935,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
             sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
             recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
@@ -979,7 +979,7 @@ public class TestStorageDHT {
         StorageMemory storeRecv = new StorageMemory();
         PeerDHT sender = null;
         PeerDHT recv1 = null;
-        ChannelCreator cc = null;
+        ChannelClient cc = null;
         try {
 
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
@@ -1039,7 +1039,7 @@ public class TestStorageDHT {
     	final Random rnd = new Random(42L);
     	PeerDHT master = null;
     	PeerDHT slave = null;
-		ChannelCreator cc = null;
+		ChannelClient cc = null;
 		try {
 
 			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start()).start();

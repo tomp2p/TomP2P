@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
@@ -42,6 +43,7 @@ import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 
+import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,7 +165,7 @@ public class Dispatcher {
 		}
 	}
 
-    public Message dispatch(final Message message) throws IOException {
+    public Message dispatch(final Message message, Promise<SctpChannelFacade, Exception, Void> p) throws IOException {
         LOG.debug("Received request message {}", message);
         if (message.version() != p2pID) {
             LOG.error("Wrong version. We are looking for {}, but we got {}. Received: {}.", p2pID,
@@ -187,7 +189,7 @@ public class Dispatcher {
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             LOG.debug("About to respond to request message {}.", message);
-            return myHandler.forwardMessage(message);
+            return myHandler.forwardMessage(message, p);
         } else {
         	if (LOG.isWarnEnabled()) {
         		printWarnMessage(message);

@@ -1,4 +1,4 @@
-package net.tomp2p.relay;
+package net.tomp2p.relay2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -10,17 +10,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
+import net.sctp4nat.core.SctpChannelFacade;
+import net.tomp2p.connection.ChannelClient;
+import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.Dispatcher;
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.holep.HolePRPC;
 import net.tomp2p.message.Buffer;
@@ -32,10 +34,11 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatistic;
-import net.tomp2p.relay2.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Triple;
 
 public class RelayRPC extends DispatchHandler {
 
@@ -43,23 +46,8 @@ public class RelayRPC extends DispatchHandler {
 
 	private final Peer peer;
 
-	// holds the server for each client
-	//private final Map<Number160, BaseRelayServer> servers;
 
-	// holds the client for each server
-	//private ConcurrentHashMap<Number160, BaseRelayClient> clients;
-	
 
-	/**
-	 * This variable is needed, because a relay overwrites every RPC of an
-	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. This
-	 * variable is forwarded to the {@link RelayForwarderRPC} in order to
-	 * guarantee the existence of a {@link RconRPC}. Without this variable, no
-	 * reverse connections would be possible.
-	 * 
-	 * @author jonaswagner
-	 */
-	private final RconRPC rconRPC;
 
 	/**
 	 * This variable is needed, because a relay overwrites every RPC of an
@@ -87,12 +75,11 @@ public class RelayRPC extends DispatchHandler {
 	final private int heartBeatMillis;
 	final private int idleTCP;
 	
-	public RelayRPC(Peer peer, RconRPC rconRPC, HolePRPC holePRPC, int bufferTimeoutSeconds, int bufferSize, int heartBeatMillis, int idleTCP) {
+	public RelayRPC(Peer peer, HolePRPC holePRPC, int bufferTimeoutSeconds, int bufferSize, int heartBeatMillis, int idleTCP) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peer = peer;
 		//this.servers = new ConcurrentHashMap<Number160, BaseRelayServer>();
 		//this.clients = new ConcurrentHashMap<Number160, BaseRelayClient>();
-		this.rconRPC = rconRPC;
 		this.holePunchRPC = holePRPC;
 		this.bufferTimeoutSeconds = bufferTimeoutSeconds;
 		this.bufferSize = bufferSize;
@@ -103,57 +90,33 @@ public class RelayRPC extends DispatchHandler {
 		register(RPC.Commands.RELAY.getNr());
 	}
 	
-	public FutureDone<PeerConnection> sendSetupMessage(final PeerAddress candidate) {
-		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
-
+	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> sendSetupMessage(final PeerAddress candidate, final ChannelClient channelCreator) {
+		
 		final Message message = createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
-
-		// depend on the relay type whether to keep the connection open or close it after the setup.
 		message.keepAlive(true);
-
-		LOG.debug("Setting up relay connection to peer {}, message {}", candidate, message);
-		final FuturePeerConnection fpc = peer.createPeerConnection(candidate, heartBeatMillis, idleTCP);
-		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
-			public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
-				if (futurePeerConnection.isSuccess()) {
-					// successfully created a connection to the relay peer
-					final PeerConnection peerConnection = futurePeerConnection.object();
-
-					// send the message
-					FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), message);
-					response.addListener(new BaseFutureAdapter<FutureResponse>() {
-						public void operationComplete(FutureResponse future) throws Exception {
-							if (future.isSuccess()) {
-								LOG.debug("Peer {} accepted relay request", candidate);
-								futureDone.done(peerConnection);
-							} else {
-								LOG.debug("Peer {} denied relay request", candidate);
-								futureDone.failed(future);
-							}
-						}
-					});
-				} else {
-					LOG.debug("Unable to setup a connection to relay peer {}", candidate);
-					futureDone.failed(futurePeerConnection);
-				}
-			}
-		});
-
-		return futureDone;
+		return channelCreator.sendUDP(message);
+		
 	}
 	
-	public FutureResponse sendPeerMap(final PeerAddress relayPeer, PeerConnection peerConnection, 
-			final List<Map<Number160, PeerStatistic>> map) {
+	public FutureDone<Message> sendPeerMap(final PeerAddress relayPeer, final List<Map<Number160, PeerStatistic>> map, 
+			final ClientChannel channel) {
 		final Message message = createMessage(relayPeer, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
 
-		NeighborSet ns = new NeighborSet(255, RelayUtils.flatten(map));
+		NeighborSet ns = new NeighborSet(5, RelayUtils.flatten(map));
 		message.neighborsSet(ns);
 		LOG.debug("send neighbors " + ns);
 		// append relay-type specific data (if necessary)
 		//relayConfig.prepareMapUpdateMessage(message);
 		message.keepAlive(true);
-		FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), message);
-		return response;
+		FutureDone<Message> f = new FutureDone<>();
+		channel.send(message, f);
+		return f;
+	}
+	
+	@Override
+	public Message handleResponse(Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception {
+		
+		return null;
 	}
 
 	/**
@@ -415,5 +378,7 @@ public class RelayRPC extends DispatchHandler {
 			}
 		};
 	}
+
+	
 	
 }

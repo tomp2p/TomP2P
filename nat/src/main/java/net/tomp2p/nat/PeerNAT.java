@@ -29,7 +29,7 @@ import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.PeerMapUpdateTask;
 import net.tomp2p.relay.RelayRPC;
-import net.tomp2p.relay.RelayUtils;
+import net.tomp2p.relay2.RelayUtils;
 import net.tomp2p.rpc.RPC;
 
 public class PeerNAT {

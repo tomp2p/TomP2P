@@ -1,5 +1,8 @@
 package net.tomp2p.rpc;
 
+import java.util.concurrent.CountDownLatch;
+
+import org.jdeferred.DoneCallback;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -10,14 +13,17 @@ import org.junit.runner.Description;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.core.SctpDataCallback;
 import net.sctp4nat.origin.Sctp;
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelServer;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.utils.Triple;
 
 public class TestDirectData {
 	 @Rule
@@ -33,31 +39,49 @@ public class TestDirectData {
 	    	Peer sender = null;
 	        Peer recv1 = null;
 	        ChannelServer.resetCounters();
-	        ChannelCreator cc = null;
+	        ChannelClient cc = null;
 	        try {
-	            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).ports(8888).start();
-	            DirectDataRPC handshake = new DirectDataRPC(sender.peerBean(), sender.connectionBean());
-	            /*handshake.addStreamCallback(new SctpDataCallback() {
-					
+	            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(9876).start();
+	            DirectDataRPC direct = new DirectDataRPC(sender.peerBean(), sender.connectionBean());
+	            PeerBuilder b = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(1234);
+	            /*b.sctpCallback(new SctpDataCallback() {
 					@Override
 					public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
 							SctpChannelFacade so) {
-						
+						so.send(new byte[100], true, 0, 0);
 					}
 				});*/
-	            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).ports(7777).start();
+	            recv1 = b.start();
+	            
 	            new DirectDataRPC(recv1.peerBean(), recv1.connectionBean());
 	            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
 	            fcc.awaitUninterruptibly();
 	            cc = fcc.channelCreator();
 	            SendDirectBuilder s = new SendDirectBuilder(sender, recv1.peerAddress());
-	            FutureDone<SctpChannelFacade> fr = handshake.send(recv1.peerAddress(), s, cc);
-	            fr.awaitUninterruptibly();
-	            Assert.assertEquals(true, fr.isSuccess());
-	            Thread.sleep(1000);
-	            fr.object().send(new byte[(981 * 1024)-1], true, 0, 0); //the fixed value, which works is 981 bytes
-	            //fr.object().send(new byte[66000], true, 0, 0);
-	            Thread.sleep(15000);
+	            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = direct.send(recv1.peerAddress(), s, cc);
+	            fr.first.awaitUninterruptibly();
+	            Assert.assertEquals(true, fr.first.isSuccess());
+	            //Thread.sleep(1000);
+	            final CountDownLatch l = new CountDownLatch(1);
+	            fr.second.addListener(new BaseFutureAdapter<FutureDone<SctpChannelFacade>>() {
+					@Override
+					public void operationComplete(FutureDone<SctpChannelFacade> future) throws Exception {
+						future.object().setSctpDataCallback(new SctpDataCallback() {
+							
+							@Override
+							public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
+									SctpChannelFacade so) {
+								System.err.println("got len: "+ data.length);
+								if(data.length == 200) {
+									l.countDown();
+								}
+							}
+						});
+						future.object().send(new byte[1000], true, 0, 0);						
+					}
+				});
+	            
+	            l.await();
 	            
 	        } finally {
 	            if (cc != null) {

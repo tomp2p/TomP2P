@@ -68,10 +68,12 @@ public class BulkReservation {
 	private final Lock read = readWriteLock.readLock();
 	private final Lock write = readWriteLock.writeLock();
 	private boolean shutdown = false;
-	private final Collection<ChannelCreator> channelCreators = Collections
-			.synchronizedList(new ArrayList<ChannelCreator>());
+	private final Collection<ChannelClient> channelCreators = Collections
+			.synchronizedList(new ArrayList<ChannelClient>());
 
 	private final FutureDone<Void> futureReservationDone = new FutureDone<Void>();
+	
+	private final Dispatcher dispatcher;
 
 	/**
 	 * Creates a new reservation class with the 3 permits contained in the provided
@@ -86,11 +88,12 @@ public class BulkReservation {
 	 *            connections, maxPermitsPermanentTCP: the number of maximum
 	 *            permanent TCP connections
 	 */
-	public BulkReservation(final ChannelClientConfiguration channelClientConfiguration, final PeerBean peerBean) {
+	public BulkReservation(final ChannelClientConfiguration channelClientConfiguration, final PeerBean peerBean, Dispatcher dispatcher) {
 		this.maxPermitsUDP = channelClientConfiguration.maxPermitsUDP();
 		this.semaphoreUPD = new Semaphore(maxPermitsUDP);
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.peerBean = peerBean;
+		this.dispatcher = dispatcher;
 	}
 
 	public int availablePermitsUDP() {
@@ -138,7 +141,7 @@ public class BulkReservation {
 
 	/**
 	 * Creates a channel creator for short-lived connections. Always call
-	 * {@link ChannelCreator#shutdown()} to release all resources. This needs to be
+	 * {@link ChannelClient#shutdown()} to release all resources. This needs to be
 	 * done in any case, whether FutureChannelCreator returns failed or success!
 	 * 
 	 * @param permitsUDPUnadjusted
@@ -161,7 +164,7 @@ public class BulkReservation {
 				return futureChannelCreator.failed("Shutting down.");
 			}
 
-			WaitReservation w = new WaitReservation(futureChannelCreator, permitsUDP);
+			WaitReservation w = new WaitReservation(futureChannelCreator, permitsUDP, dispatcher);
 			w.futureChannelClose().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 				@Override
 				public void operationComplete(final FutureDone<Void> future) throws Exception {
@@ -204,9 +207,9 @@ public class BulkReservation {
 			wr.futureChannelCreator().failed("Shutting down.");
 		}
 
-		final Collection<ChannelCreator> copyChannelCreators;
+		final Collection<ChannelClient> copyChannelCreators;
 		synchronized (channelCreators) {
-			copyChannelCreators = new ArrayList<ChannelCreator>(channelCreators);
+			copyChannelCreators = new ArrayList<ChannelClient>(channelCreators);
 		}
 
 		// the channelCreator does not change anymore from here on
@@ -215,7 +218,7 @@ public class BulkReservation {
 			futureReservationDone.done();
 		} else {
 			final AtomicInteger completeCounter = new AtomicInteger(0);
-			for (final ChannelCreator channelCreator : copyChannelCreators) {
+			for (final ChannelClient channelCreator : copyChannelCreators) {
 				// this is very important that we set first the listener and
 				// then call shutdown. Otherwise, the order of
 				// the listener calls is not guaranteed and we may call this
@@ -245,7 +248,7 @@ public class BulkReservation {
 	 * @param channelCreator
 	 *            The channel creator
 	 */
-	private void addToSet(final ChannelCreator channelCreator) {
+	private void addToSet(final ChannelClient channelCreator) {
 		channelCreator.futureChannelClose().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
@@ -267,30 +270,32 @@ public class BulkReservation {
 		private final FutureChannelCreator futureChannelCreator;
 		private final int permitsUDP;
 		private final FutureDone<Void> futureChannelClose;
+		private final Dispatcher dispatcher;
 
 		/**
-		 * Creates a reservation that returns a {@link ChannelCreator} in a future once
+		 * Creates a reservation that returns a {@link ChannelClient} in a future once
 		 * we have the semaphore.
 		 * 
 		 * @param futureChannelCreator
 		 *            The status of the creating
 		 * @param futureChannelCreationShutdown
-		 *            The {@link ChannelCreator} shutdown feature needs to be passed
-		 *            since we need it for {@link ChannelCreator#shutdown()}.
+		 *            The {@link ChannelClient} shutdown feature needs to be passed
+		 *            since we need it for {@link ChannelClient#shutdown()}.
 		 * @param permitsUDP
 		 *            The number of permits for UDP
 		 * @param permitsTCP
 		 *            The number of permits for TCP
 		 */
-		public WaitReservation(final FutureChannelCreator futureChannelCreator, final int permitsUDP) {
+		public WaitReservation(final FutureChannelCreator futureChannelCreator, final int permitsUDP, final Dispatcher dispatcher) {
 			this.futureChannelCreator = futureChannelCreator;
 			this.permitsUDP = permitsUDP;
 			this.futureChannelClose = new FutureDone<Void>();
+			this.dispatcher = dispatcher;
 		}
 
 		@Override
 		public void run() {
-			final ChannelCreator channelCreator;
+			final ChannelClient channelCreator;
 			read.lock();
 			try {
 				if (shutdown) {
@@ -318,8 +323,8 @@ public class BulkReservation {
 				LOG.debug("channel from {} upd:{}. Remaining UDP: {}", fromAddress, permitsUDP,
 						semaphoreUPD.availablePermits());
 
-				channelCreator = new ChannelCreator(permitsUDP,
-						channelClientConfiguration, fromAddress, futureChannelClose);
+				channelCreator = new ChannelClient(permitsUDP,
+						channelClientConfiguration, dispatcher, futureChannelClose);
 				addToSet(channelCreator);
 			} catch (UnknownHostException u) {
 				// never happens as we use wildcard address

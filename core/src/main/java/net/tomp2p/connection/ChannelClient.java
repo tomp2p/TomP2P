@@ -50,7 +50,6 @@ import net.sctp4nat.core.SctpChannelBuilder;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.core.SctpMapper;
 import net.sctp4nat.core.SctpPorts;
-import net.sctp4nat.exception.SctpInitException;
 import net.sctp4nat.origin.SctpAcceptable;
 import net.sctp4nat.origin.SctpNotification;
 import net.sctp4nat.origin.SctpSocket.NotificationListener;
@@ -157,7 +156,7 @@ public class ChannelClient { // TODO: rename to ChannelClient
 							message.recipient().ipv4Socket().udpPort(), 
 							port, futureSCTP);
 					sctpChannel.setLink(link);
-				} catch (SctpInitException e) {
+				} catch (net.sctp4nat.util.SctpInitException e) {
 					return Triple.create(futureMessage.failed(e),  futureSCTP.failed(e), futureClose.done());
 				}
 			} else {
@@ -190,7 +189,7 @@ public class ChannelClient { // TODO: rename to ChannelClient
 	}
 	
 	private SctpChannel creatSCTPSocket(InetAddress remoteAddress, int remoteSctpPort, int localSctpPort, 
-			FutureDone<SctpChannelFacade> futureSCTP) throws SctpInitException {
+			FutureDone<SctpChannelFacade> futureSCTP) throws net.sctp4nat.util.SctpInitException {
 		final SctpChannel socket = new SctpChannelBuilder().localSctpPort(localSctpPort)
 				.remoteAddress(remoteAddress).remotePort(remoteSctpPort).mapper(SctpUtils.getMapper()).build();
 		socket.listen();

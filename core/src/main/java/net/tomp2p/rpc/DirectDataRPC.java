@@ -15,32 +15,22 @@
  */
 package net.tomp2p.rpc;
 
-import java.net.InetSocketAddress;
+import org.jdeferred.DoneCallback;
+import org.jdeferred.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import net.sctp4nat.connection.SctpConnection;
-import net.sctp4nat.core.SctpPorts;
-import net.sctp4nat.exception.SctpInitException;
-import net.sctp4nat.core.SctpChannel;
-import net.sctp4nat.core.SctpChannelBuilder;
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.core.SctpDataCallback;
-
-import net.sctp4nat.util.SctpUtils;
+import net.sctp4nat.origin.SctpDataCallback;
+import net.sctp4nat.util.SctpInitException;
 import net.tomp2p.connection.ChannelClient;
-import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Triple;
-
-import org.jdeferred.DoneCallback;
-import org.jdeferred.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 //This will use SCTP!
 

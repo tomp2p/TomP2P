@@ -2,7 +2,6 @@ package net.tomp2p.rpc;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.jdeferred.DoneCallback;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -11,12 +10,9 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.core.SctpDataCallback;
 import net.sctp4nat.origin.Sctp;
-
+import net.sctp4nat.origin.SctpDataCallback;
 import net.tomp2p.connection.ChannelClient;
-
-
 import net.tomp2p.connection.ChannelServer;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;

@@ -18,15 +18,13 @@ package net.tomp2p.rpc;
 import java.net.InetSocketAddress;
 
 import net.sctp4nat.connection.SctpConnection;
-import net.sctp4nat.core.SctpDataCallback;
 import net.sctp4nat.core.SctpPorts;
 import net.sctp4nat.exception.SctpInitException;
 import net.sctp4nat.core.SctpChannel;
 import net.sctp4nat.core.SctpChannelBuilder;
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.origin.SctpAcceptable;
-import net.sctp4nat.origin.SctpNotification;
-import net.sctp4nat.origin.SctpSocket.NotificationListener;
+import net.sctp4nat.core.SctpDataCallback;
+
 import net.sctp4nat.util.SctpUtils;
 import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ClientChannel;

@@ -11,7 +11,18 @@ public abstract class AbstractPeer {
 
 	
 	protected static final Random RND = new Random(new Date().getTime());
+	protected static final String HELLO_WORLD = 
+			"  _    _ ______ _      _      ____   __          ______  _____  _      _____  \n" + 
+			" | |  | |  ____| |    | |    / __ \\  \\ \\        / / __ \\|  __ \\| |    |  __ \\ \n" + 
+			" | |__| | |__  | |    | |   | |  | |  \\ \\  /\\  / / |  | | |__) | |    | |  | |\n" + 
+			" |  __  |  __| | |    | |   | |  | |   \\ \\/  \\/ /| |  | |  _  /| |    | |  | |\n" + 
+			" | |  | | |____| |____| |___| |__| |    \\  /\\  / | |__| | | \\ \\| |____| |__| |\n" + 
+			" |_|  |_|______|______|______\\____/      \\/  \\/   \\____/|_|  \\_\\______|_____/ \n" + 
+			"                                                                              \n" + 
+			"                                                                              ";
 	protected static final String MASTER_SEED = "master";
+	
+	
 	protected final InetSocketAddress local;
 	protected final PeerAddress masterPeerAddress;
 	protected final Number160 peerId;

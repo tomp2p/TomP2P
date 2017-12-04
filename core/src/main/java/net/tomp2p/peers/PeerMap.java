@@ -93,7 +93,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 	public PeerMap(final PeerMapConfiguration peerMapConfiguration) {
         this.self = peerMapConfiguration.self();
         if (self == null || self.isZero()) {
-            throw new IllegalArgumentException("Zero or null are not a valid IDs");
+            throw new IllegalArgumentException("Zero or null are invalid IDs");
         }
         this.bagSizesVerified = peerMapConfiguration.getVerifiedBagSizes();
         this.bagSizesOverflow = peerMapConfiguration.getOverflowBagSizes();

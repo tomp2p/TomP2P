@@ -46,7 +46,7 @@ public class NATTypeDetection {
 	public static FutureDone<NATType> checkNATType(final Peer peer, final PeerAddress relayPeer,
 	        final int tolerance) {
 		final FutureDone<NATType> futureDone = new FutureDone<NATType>();
-		final FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(3, 0);
+		final FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(3);
 		fcc1.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {

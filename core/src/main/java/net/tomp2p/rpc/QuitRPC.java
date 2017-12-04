@@ -20,6 +20,7 @@ import java.util.List;
 
 import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelClient;
+import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
@@ -102,7 +103,7 @@ public class QuitRPC extends DispatchHandler {
 	}
 
 	@Override
-	public Message handleResponse(final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception {
+	public void handleResponse(Responder r, final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
 		if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.QUIT.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong for this handler.");
 		}
@@ -112,6 +113,6 @@ public class QuitRPC extends DispatchHandler {
 				peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 			}
 		}
-		return null;
+		r.response(null);
 	}
 }

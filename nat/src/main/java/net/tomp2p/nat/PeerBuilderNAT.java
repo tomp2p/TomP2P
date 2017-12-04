@@ -6,45 +6,17 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.holep.NATHandlerImpl;
-import net.tomp2p.holep.HolePRPC;
-import net.tomp2p.holep.HolePScheduler;
-import net.tomp2p.holep.strategy.HolePStrategy;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.DistributedRelay;
-import net.tomp2p.relay.RconRPC;
-import net.tomp2p.relay.RelayCallback;
 import net.tomp2p.relay.RelayRPC;
 
 public class PeerBuilderNAT {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PeerBuilderNAT.class);
-	private static final RelayCallback DEFAULT_RELAY_CALLBACK = new RelayCallback() {
-		
-		@Override
-		public void onRelayRemoved(PeerAddress candidate, PeerConnection object) {}
-		
-		@Override
-		public void onRelayAdded(PeerAddress candidate, PeerConnection object) {}
-
-		@Override
-		public void onFailure(Exception e) {}
-
-		@Override
-		public void onFullRelays(int activeRelays) {}
-
-		@Override
-		public void onNoMoreRelays(int activeRelays) {}
-
-		@Override
-		public void onShutdown() {}
-	};
+	
 	
 	final private Peer peer;
 
@@ -52,7 +24,6 @@ public class PeerBuilderNAT {
 	
 	private Boolean relayMaintenance;
 	
-	private RelayCallback relayCallback;
 	
 	private BootstrapBuilder bootstrapBuilder;
 	
@@ -126,15 +97,6 @@ public class PeerBuilderNAT {
 		return holePNumberOfPunches;
 	}
 	
-	public RelayCallback relayCallback() {
-		return relayCallback;
-	}
-	
-	public PeerBuilderNAT relayCallback(RelayCallback relayCallback) {
-		this.relayCallback = relayCallback;
-		return this;
-	}
-	
 	public ExecutorService executorService() {
 		return executorService;
 	}
@@ -191,10 +153,6 @@ public class PeerBuilderNAT {
 
 	public PeerNAT start() {
 		
-		if(relayCallback == null) {
-			relayCallback = DEFAULT_RELAY_CALLBACK;
-		}
-		
 		if(relayMaintenance == null) {
 			relayMaintenance = true;
 		}
@@ -225,21 +183,17 @@ public class PeerBuilderNAT {
 		
 		
 		final NATUtils natUtils = new NATUtils();
-		final RconRPC rconRPC = new RconRPC(peer);
-		final HolePRPC holePunchRPC = new HolePRPC(peer);
 		
 		//TODO: enable
 		//peer.peerBean().holePunchInitiator(new NATHandlerImpl(peer));
 		//peer.peerBean().holePNumberOfHoles(holePNumberOfHoles);
 		//peer.peerBean().holePNumberOfPunches(holePNumberOfPunches);
 
-		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, holePunchRPC, bufferTimeoutSeconds, bufferSize, heartBeatMillis, idleTCP);
+		final RelayRPC relayRPC = new RelayRPC(peer);
 		
 		if(executorService == null) {
 			executorService = Executors.newSingleThreadExecutor();
 		}
-		
-		DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, executorService, bootstrapBuilder, relayCallback);
 
 		peer.addShutdownListener(new Shutdown() {
 			@Override
@@ -249,6 +203,6 @@ public class PeerBuilderNAT {
 			}
 		});
 
-		return new PeerNAT(peer, natUtils, relayRPC, manualPorts, distributedRelay, relayMaintenance, bootstrapBuilder, peerMapUpdateIntervalSeconds);
+		return new PeerNAT(peer, natUtils, relayRPC, manualPorts, relayMaintenance, bootstrapBuilder, peerMapUpdateIntervalSeconds);
 	}
 }

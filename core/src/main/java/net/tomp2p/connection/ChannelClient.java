@@ -63,6 +63,7 @@ import net.tomp2p.message.MessageHeaderCodec;
 import net.tomp2p.message.Message.ProtocolType;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.MessageID;
+import net.tomp2p.peers.IP;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.utils.ConcurrentCacheMap;
@@ -98,6 +99,7 @@ public class ChannelClient { // TODO: rename to ChannelClient
 	private final Set<MyLink> channelsUDP = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	
 	final private Map<MessageID, FutureDone<Message>> pendingMessages = new ConcurrentCacheMap<>(60, 10000);
+	final private ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections = new ConcurrentCacheMap<>(60, 10000);
 	
 	private final Dispatcher dispatcher;
 
@@ -151,11 +153,16 @@ public class ChannelClient { // TODO: rename to ChannelClient
 			final SctpChannel sctpChannel;
 			if(message.sctp()) {
 				try {
+					PeerAddress recipientAddress = message.recipient();
+					InetSocketAddress recipient = recipientAddress.createUDPSocket(message.sender());
 					sctpChannel = creatSCTPSocket(
-							message.recipient().ipv4Socket().ipv4().toInetAddress(), 
-							message.recipient().ipv4Socket().udpPort(), 
-							port, futureSCTP);
+							recipient.getAddress(), 
+							recipient.getPort(), 
+							//ChannelUtils.localSctpPort(IP.fromInet4Address(recipient.getAddress()),recipient.getPort()),
+							port,
+							futureSCTP);
 					sctpChannel.setLink(link);
+					openConnections.put(recipient, sctpChannel);
 				} catch (net.sctp4nat.util.SctpInitException e) {
 					return Triple.create(futureMessage.failed(e),  futureSCTP.failed(e), futureClose.done());
 				}
@@ -164,7 +171,7 @@ public class ChannelClient { // TODO: rename to ChannelClient
 				futureSCTP.failed("no sctp requested");
 			}
 			
-			CommunictationThread reading = CommunictationThread.of(datagramChannel, pendingMessages, link, sctpChannel, message.sender(), dispatcher);
+			CommunictationThread reading = CommunictationThread.of(datagramChannel, pendingMessages, link, sctpChannel, message.sender(), dispatcher, openConnections);
 			reading.start();
 			reading.send(message, futureMessage);
 			channelsUDP.add(link);
@@ -329,13 +336,14 @@ public class ChannelClient { // TODO: rename to ChannelClient
 	}
 
 	@RequiredArgsConstructor(staticName = "of")
-	private static class CommunictationThread extends Thread  {
+	private static class CommunictationThread extends Thread implements ChannelSender {
 		final private DatagramChannel datagramChannel;
 		final private Map<MessageID, FutureDone<Message>> pendingMessages;
 		final private MyLink link;
 		final private SctpChannel so;
 		final private PeerAddress senderPeerAddress;
 		final private Dispatcher dispatcher;
+		final private ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections;
 		//final private ByteBuffer buffer = ByteBuffer.allocate(65536);
 		final private byte[] buffer= new byte[65536];
 
@@ -399,17 +407,33 @@ public class ChannelClient { // TODO: rename to ChannelClient
 						}
 						
 						if(responseMessage.isRequest() || responseMessage.isAck()) {
-							final Promise<SctpChannelFacade, Exception, Void> p = ChannelServer.ServerThread.connectSCTP(datagramChannel, remote, responseMessage);
-							Message m2 = dispatcher.dispatch(responseMessage, p);
-							if (m2 != null) {
-								if (dispatcher.peerBean().peerMap().checkPeer(responseMessage.sender())) {
-									m2.verified();
+							final Promise<SctpChannelFacade, Exception, Void> p = ChannelServer.ServerThread.connectSCTP(openConnections, datagramChannel, remote, responseMessage);
+							
+							Responder r = new Responder() {
+								
+								@Override
+								public void response(Message responseMessage) {
+									if (responseMessage != null) {
+										if (dispatcher.peerBean().peerMap().checkPeer(responseMessage.sender())) {
+											responseMessage.verified();
+										}
+										//send(remote, m2);
+										send(responseMessage, null);
+									} else {
+										LOG.debug("not replying to {}", responseMessage);
+									}
+					
 								}
-								//send(remote, m2);
-								send(m2, null);
-							} else {
-								LOG.debug("not replying to {}", responseMessage);
-							}
+								
+								@Override
+								public void failed(String reason) {
+									// TODO Auto-generated method stub
+									
+								}
+							};
+							
+							dispatcher.dispatch(r, responseMessage, p, this);
+							
 						} else {
 							LOG.debug("peer isVerified: {}", responseMessage.isVerified());
 							if (!responseMessage.isVerified()) {
@@ -460,6 +484,51 @@ public class ChannelClient { // TODO: rename to ChannelClient
 				}
 				link.close(t.getMessage());
 			}
+		}
+		
+		public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(Message message) {
+			
+			FutureDone<Message> futureMessage = new FutureDone<Message>();
+			FutureDone<Void> futureClose = new FutureDone<>();
+			FutureDone<SctpChannelFacade> futureSCTP = new FutureDone<>();
+			PeerAddress recipientAddress = message.recipient();
+			InetSocketAddress recipient = recipientAddress.createUDPSocket(message.sender());
+			
+			final SctpChannel sctpChannel;
+			if(message.sctp()) {
+				try {
+					sctpChannel = ChannelUtils.creatSCTPSocket(
+						recipient.getAddress(), 
+						recipient.getPort(), 
+						ChannelUtils.localSctpPort(IP.fromInet4Address(recipient.getAddress()), recipient.getPort()), 
+						futureSCTP);
+					openConnections.put(recipient, sctpChannel);
+				} catch (net.sctp4nat.util.SctpInitException e) {
+					return Triple.create(futureMessage.failed(e),  futureSCTP.failed(e), futureClose.done());
+				}
+			} else {
+				sctpChannel = null;
+				futureSCTP.failed("no sctp requested");
+			}
+			
+			CompositeByteBuf buf2 = Unpooled.compositeBuffer();
+			Encoder encoder = new Encoder(new DSASignatureFactory());
+			try {
+				encoder.write(buf2, message, null);
+				
+				datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(message.sender()));
+
+				// if we send an ack, don't expect any incoming packets
+				if (!message.isAck() && futureMessage != null) {
+					pendingMessages.put(new MessageID(message), futureMessage);
+				}
+			} catch (Throwable t) {
+				t.printStackTrace();
+				if (futureMessage != null) {
+					futureMessage.failed(t);
+				}
+			}
+			return Triple.create(futureMessage,  futureSCTP, futureClose);
 		}
 
 		private boolean checkMessage(Message responseMessage) throws IOException {

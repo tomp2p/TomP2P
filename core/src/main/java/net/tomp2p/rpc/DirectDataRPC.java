@@ -24,8 +24,10 @@ import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.SctpDataCallback;
 import net.sctp4nat.util.SctpInitException;
 import net.tomp2p.connection.ChannelClient;
+import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -60,7 +62,7 @@ public class DirectDataRPC extends DispatchHandler {
 	}
 
 	@Override
-	public Message handleResponse(Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception {
+	public void handleResponse(Responder r, Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
 		if (message.type() == Type.REQUEST_1) {
 			
 			//message.sctpChannel(c);
@@ -84,7 +86,7 @@ public class DirectDataRPC extends DispatchHandler {
 		
 		Message m2 = createResponseMessage(message, Type.OK);
 		m2.keepAlive(true);
-		return m2;
+		r.response(m2);
 	}
 
 }

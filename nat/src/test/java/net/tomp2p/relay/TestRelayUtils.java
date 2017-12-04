@@ -19,7 +19,7 @@ import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.relay2.RelayUtils;
+import net.tomp2p.relay.RelayUtils;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,11 +61,11 @@ public class TestRelayUtils {
 		PeerAddress receiver = UtilsNAT.createRandomAddress();
 		
 		message.sender(sender);
-		message.senderSocket(sender.createTCPSocket(receiver));
+		message.senderSocket(sender.createUDPSocket(receiver));
 		
 		
 		message.recipient(receiver);
-		message.recipientSocket(receiver.createTCPSocket(sender));
+		message.recipientSocket(receiver.createUDPSocket(sender));
 		
 		Buffer encoded = RelayUtils.encodeMessage(message, signature);
 		Message decoded = RelayUtils.decodeMessage(encoded.buffer(), message.recipientSocket(), message.senderSocket(), signature);

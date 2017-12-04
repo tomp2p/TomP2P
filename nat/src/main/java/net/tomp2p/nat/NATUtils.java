@@ -45,7 +45,6 @@ public class NATUtils {
 
 	// UPNP
 	private GatewayDevice gatewayDevice;
-	private int externalPortTCP = -1;
 	private int externalPortUDP = -1;
 	// NAT-PMP
 	private NatPmpDevice pmpDevice;
@@ -79,19 +78,15 @@ public class NATUtils {
 	 * @throws NatPmpException
 	 *             the router does not supports PMP
 	 */
-	public boolean mapPMP(final int internalPortUDP, final int internalPortTCP, final int externalPortUDP,
-	        final int externalPortTCP) throws NatPmpException {
+	public boolean mapPMP(final int internalPortUDP, final int externalPortUDP) throws NatPmpException {
 		InetAddress gateway = Gateway.getIP();
 		pmpDevice = new NatPmpDevice(gateway);
-		MapRequestMessage mapTCP = new MapRequestMessage(true, internalPortTCP, externalPortTCP, Integer.MAX_VALUE,
-		        null);
-		MapRequestMessage mapUDP = new MapRequestMessage(false, internalPortUDP, externalPortUDP, Integer.MAX_VALUE,
-		        null);
-		pmpDevice.enqueueMessage(mapTCP);
+		
+		MapRequestMessage mapUDP = new MapRequestMessage(false, internalPortUDP, externalPortUDP, Integer.MAX_VALUE, null);
 		pmpDevice.enqueueMessage(mapUDP);
 		pmpDevice.waitUntilQueueEmpty();
 		// UDP is nice to have, but we need TCP
-		return mapTCP.getResultCode() == ResultCode.Success;
+		return mapUDP.getResultCode() == ResultCode.Success;
 	}
 
 	/**
@@ -117,13 +112,11 @@ public class NATUtils {
 	 * @throws SAXException
 	 * @throws ParserConfigurationException
 	 */
-	public boolean mapUPNP(final String internalHost, final int internalPortUDP, final int internalPortTCP,
-	        final int externalPortUDP, final int externalPortTCP) throws IOException, SAXException,
-	        ParserConfigurationException {
+	public boolean mapUPNP(final String internalHost, final int internalPortUDP, final int externalPortUDP) 
+			throws IOException, SAXException, ParserConfigurationException {
 		// -1 sets the default timeout to 1500 ms
 
 		if (gatewayDevice != null) {
-			gatewayDevice.deletePortMapping(this.externalPortTCP, "TCP");
 			gatewayDevice.deletePortMapping(this.externalPortUDP, "UDP");
 		}
 		GatewayDiscover discover = new GatewayDiscover();
@@ -135,20 +128,14 @@ public class NATUtils {
 			return false;
 		}
 
-		this.externalPortTCP = externalPortTCP;
 		this.externalPortUDP = externalPortUDP;
 
-		boolean mapTCP = gatewayDevice.addPortMapping(externalPortTCP, internalPortTCP, internalHost, "TCP",
-		        "TomP2P mapping TCP");
 		boolean mapUDP = gatewayDevice.addPortMapping(externalPortUDP, internalPortUDP, internalHost, "UDP",
 		        "TomP2P mapping UDP");
 
-		if (mapTCP && mapUDP) {
+		if (mapUDP) {
 			return true;
 		} else {
-			if (!mapTCP) {
-				LOGGER.warn("UPNP TCP mapping did failed");
-			}
 			if (!mapUDP) {
 				LOGGER.warn("UPNP UDP mapping did failed");
 			}
@@ -165,11 +152,7 @@ public class NATUtils {
 	private void unmapUPNP() throws SAXException, IOException {
 		if (gatewayDevice != null) {
 			try {
-				boolean unmapTCP = gatewayDevice.deletePortMapping(this.externalPortTCP, "TCP");
 				boolean unmapUDP = gatewayDevice.deletePortMapping(this.externalPortUDP, "UDP");
-				if (!unmapTCP) {
-					LOGGER.warn("UPNP TCP unmapping did failed");
-				}
 				if (!unmapUDP) {
 					LOGGER.warn("UPNP UDP unmapping did failed");
 				}

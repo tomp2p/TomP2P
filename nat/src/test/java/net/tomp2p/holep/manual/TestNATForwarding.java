@@ -66,7 +66,7 @@ public class TestNATForwarding implements Serializable {
 					put("p1", peer1);
 					
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
-					Assert.assertTrue(fd1.isDiscoveredTCP());
+					Assert.assertTrue(fd1.isDiscoveredUDP());
 					Thread.sleep(2000);
 					System.out.println("relay peer at1: "+relay);
 					BaseFuture fb = peer1.bootstrap().peerAddress(relay).start().awaitUninterruptibly();
@@ -80,7 +80,7 @@ public class TestNATForwarding implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					final Peer peer1 = (Peer) get("p1");
-					PeerAddress peer2 = PeerAddress.create(Number160.createHash(1), "172.20.1.1", 4000, 4000, 4001);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(1), "172.20.1.1", 4000);
 					FutureDirect fdir = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer2", fdir.object());
 					return "done";
@@ -101,7 +101,7 @@ public class TestNATForwarding implements Serializable {
 					put("p1", peer1);
 					
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
-					Assert.assertTrue(fd1.isDiscoveredTCP());
+					Assert.assertTrue(fd1.isDiscoveredUDP());
 					Thread.sleep(2000);
 					System.out.println("relay peer at2: "+relay);
 					BaseFuture fb = peer1.bootstrap().peerAddress(relay).start().awaitUninterruptibly();
@@ -114,7 +114,7 @@ public class TestNATForwarding implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					final Peer peer1 = (Peer) get("p1");
-					PeerAddress peer2 = PeerAddress.create(Number160.createHash(0), "172.20.0.1", 4000, 4000, 4001);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(0), "172.20.0.1", 4000);
 					FutureDirect fdir = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer1", fdir.object());
 					return "done";
@@ -163,7 +163,7 @@ public class TestNATForwarding implements Serializable {
 				public void run() {
 					try {
 					Thread.sleep(5000);
-					PeerAddress peer2 = PeerAddress.create(Number160.createHash(1), "172.20.1.1", 4000, 4000, 4001);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(1), "172.20.1.1", 4000);
 					FutureDirect fdir = regularPeer.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer2", fdir.object());
 					} catch (Exception e) {
@@ -184,7 +184,7 @@ public class TestNATForwarding implements Serializable {
 					put("p1", peer1);
 					
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
-					Assert.assertTrue(fd1.isDiscoveredTCP());
+					Assert.assertTrue(fd1.isDiscoveredUDP());
 					Thread.sleep(2000);
 					System.out.println("relay peer at1: "+relay);
 					BaseFuture fb = peer1.bootstrap().peerAddress(relay).start().awaitUninterruptibly();
@@ -198,7 +198,7 @@ public class TestNATForwarding implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					final Peer peer1 = (Peer) get("p1");
-					PeerAddress peer2 = PeerAddress.create(Number160.createHash(1), "172.20.1.1", 4000, 4000, 4001);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(1), "172.20.1.1", 4000);
 					FutureDirect fdir = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer2", fdir.object());
 					return "done";
@@ -219,7 +219,7 @@ public class TestNATForwarding implements Serializable {
 					put("p1", peer1);
 					
 					FutureDiscover fd1 = peer1.discover().peerSocketAddress(relayAddress).start().awaitUninterruptibly();
-					Assert.assertTrue(fd1.isDiscoveredTCP());
+					Assert.assertTrue(fd1.isDiscoveredUDP());
 					Thread.sleep(2000);
 					System.out.println("relay peer at2: "+relay);
 					BaseFuture fb = peer1.bootstrap().peerAddress(relay).start().awaitUninterruptibly();
@@ -232,7 +232,7 @@ public class TestNATForwarding implements Serializable {
 				@Override
 				public Serializable execute() throws Exception {
 					final Peer peer1 = (Peer) get("p1");
-					PeerAddress peer2 = PeerAddress.create(Number160.createHash(0), "172.20.0.1", 4000, 4000, 4001);
+					PeerAddress peer2 = PeerAddress.create(Number160.createHash(0), "172.20.0.1", 4000);
 					FutureDirect fdir = peer1.sendDirect(peer2).object("test").start().awaitUninterruptibly();
 					Assert.assertEquals("peer1", fdir.object());
 					return "done";

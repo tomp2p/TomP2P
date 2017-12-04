@@ -20,6 +20,7 @@ import java.util.List;
 
 import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelClient;
+import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -211,7 +212,7 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	@Override
-	public Message handleResponse(final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception {
+	public void handleResponse(Responder r, final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
 		if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
 				|| message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3
 				|| message.type() == Type.REQUEST_4) && message.command() == RPC.Commands.PING
@@ -265,7 +266,7 @@ public class PingRPC extends DispatchHandler {
 			if (message.sender().peerId().equals(peerBean().serverPeerAddress().peerId())
 					&& message.recipient().peerId().equals(Number160.ZERO)) {
 				LOG.warn("Don't respond. We are on the same peer, you should make this call.");
-				return null;
+				return;
 			}
 			if (enable) {
                     responseMessage = createResponseMessage(message, Type.OK);
@@ -278,7 +279,7 @@ public class PingRPC extends DispatchHandler {
 				if (wait) {
 					Thread.sleep(WAIT_TIME);
 				}
-				return null;
+				return;
 			}
 			if (message.type() == Type.REQUEST_4) {
 				synchronized (receivedBroadcastPingListeners) {
@@ -304,7 +305,7 @@ public class PingRPC extends DispatchHandler {
 				responseMessage = message;
 
 		}
-		return responseMessage;
+		r.response(responseMessage);
 	}
 
 	public void addPeerReachableListener(PeerReachable peerReachable) {

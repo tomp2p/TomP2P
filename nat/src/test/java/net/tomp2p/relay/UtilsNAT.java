@@ -72,7 +72,7 @@ public class UtilsNAT {
 		if (automaticFuture != null) {
 			Number160 peerId = new Number160(rnd);
 			PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-			master = new PeerBuilder(peerId).ports(port).enableMaintenance(maintenance).bindings(bindings).peerMap(peerMap)
+			master = new PeerBuilder(peerId).port(port).enableMaintenance(maintenance).bindings(bindings).peerMap(peerMap)
 					.start().addAutomaticFuture(automaticFuture);
 			peers[0] = new PeerBuilderDHT(master).start();
 
@@ -115,7 +115,7 @@ public class UtilsNAT {
 	public static void perfectRouting(PeerDHT... peers) {
 		for (int i = 0; i < peers.length; i++) {
 			for (int j = 0; j < peers.length; j++)
-				peers[i].peer().peerBean().peerMap().peerFound(peers[j].peer().peerAddress(), null, null, null);
+				peers[i].peer().peerBean().peerMap().peerFound(peers[j].peer().peerAddress(), null, null);
 		}
 		System.err.println("perfect routing done.");
 	}
@@ -155,7 +155,7 @@ public class UtilsNAT {
 		if (automaticFuture != null) {
 			Number160 peerId = new Number160(rnd);
 			PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-			peers[0] = new PeerBuilder(peerId).ports(port).enableMaintenance(maintenance).bindings(bindings)
+			peers[0] = new PeerBuilder(peerId).port(port).enableMaintenance(maintenance).bindings(bindings)
 					.peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
 		} else {
 			Number160 peerId = new Number160(rnd);
@@ -193,7 +193,7 @@ public class UtilsNAT {
 	public static void perfectRouting(Peer... peers) {
 		for (int i = 0; i < peers.length; i++) {
 			for (int j = 0; j < peers.length; j++)
-				peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null, null);
+				peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
 		}
 		System.err.println("perfect routing done.");
 	}
@@ -210,7 +210,7 @@ public class UtilsNAT {
 
 	public static PeerAddress createAddress(Number160 idSender, String inetSender, int tcpPortSender, int udpPortSender,
 			boolean firewallUDP, boolean firewallTCP) throws UnknownHostException {
-		PeerAddress n1 = PeerAddress.create(idSender, inetSender, udpPortSender, tcpPortSender, udpPortSender + 1);
+		PeerAddress n1 = PeerAddress.create(idSender, inetSender, udpPortSender);
 		return n1;
 	}
 

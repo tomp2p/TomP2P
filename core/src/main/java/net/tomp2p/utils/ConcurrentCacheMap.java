@@ -67,6 +67,9 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
     private final boolean refreshTimeout;
 
     private final AtomicInteger removedCounter = new AtomicInteger();
+    
+    private ExpirationHandler<V> expirationHandler;
+    private final Object expirationHandlerLock = new Object();
 
     /**
      * Creates a new instance of ConcurrentCacheMap using the default values and a {@link CacheMap} for the internal
@@ -111,6 +114,17 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
         this.timeToLiveSeconds = timeToLiveSeconds;
         this.refreshTimeout = refreshTimeout;
     }
+    
+    public ConcurrentCacheMap<K, V> expirationHandler(ExpirationHandler<V> expirationHandler) {
+    	synchronized (expirationHandlerLock) {
+    		this.expirationHandler = expirationHandler;			
+		}
+    	return this;
+    }
+    
+    public ExpirationHandler expirationHandler() {
+    	return expirationHandler;
+    }
 
     /**
      * Returns the segment based on the key.
@@ -131,8 +145,18 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
         synchronized (segment) {
             oldValue = segment.put(key, newValue);
         }
-        if (oldValue == null || oldValue.isExpired()) {
+        if (oldValue == null) {
             return null;
+        }
+        if(oldValue.isExpired()) {
+        	LOGGER.debug("Removed in expire: {}.", oldValue.getValue());
+            removedCounter.incrementAndGet();
+        	synchronized (expirationHandlerLock) {
+        		if(expirationHandler != null) {
+        			expirationHandler.expired(oldValue.getValue());
+        		}
+			}
+        	return null;
         }
         return oldValue.getValue();
     }
@@ -158,9 +182,20 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                 }
             }
         }
-        if (oldValue == null || oldValue.isExpired()) {
+        if (oldValue == null) {
             return null;
         }
+        if (oldValue.isExpired()) {
+        	LOGGER.debug("Removed in expire: {}.", oldValue.getValue());
+            removedCounter.incrementAndGet();
+        	synchronized (expirationHandlerLock) {
+        		if(expirationHandler != null) {
+        			expirationHandler.expired(oldValue.getValue());
+        		}
+			}
+            return null;
+        }
+        
         return oldValue.getValue();
     }
 
@@ -191,7 +226,17 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
         synchronized (segment) {
             oldValue = segment.remove(key);
         }
-        if (oldValue == null || oldValue.isExpired()) {
+        if (oldValue == null) {
+            return null;
+        }
+        if (oldValue.isExpired()) {
+        	LOGGER.debug("Removed in expire: {}.", oldValue.getValue());
+            removedCounter.incrementAndGet();
+        	synchronized (expirationHandlerLock) {
+        		if(expirationHandler != null) {
+        			expirationHandler.expired(oldValue.getValue());
+        		}
+			}
             return null;
         }
         return oldValue.getValue();
@@ -273,6 +318,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
     public void clear() {
         for (final CacheMap<K, ExpiringObject> segment : segments) {
             synchronized (segment) {
+            	expireSegment(segment);
                 segment.clear();
             }
         }
@@ -345,6 +391,11 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                         iterator.remove();
                         LOGGER.debug("Remove in entry set: {}.", expiringObject.getValue());
                         removedCounter.incrementAndGet();
+                        synchronized (expirationHandlerLock) {
+                        	if(expirationHandler != null) {
+                        		expirationHandler.expired(expiringObject.getValue());
+                        	}
+            			}
                     } else {
                         retVal.add(expiringObject.getValue());
                     }
@@ -397,6 +448,11 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                         iterator.remove();
                         LOGGER.debug("Removed in entry set: {}.", entry.getValue().getValue());
                         removedCounter.incrementAndGet();
+                        synchronized (expirationHandlerLock) {
+                        	if(expirationHandler != null) {
+                        		expirationHandler.expired(entry.getValue().getValue());
+                        	}
+            			}
                     } else {
                         retVal.add(new Map.Entry<K, V>() {
                             @Override
@@ -480,6 +536,11 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                     segment.remove(key);
                     LOGGER.debug("Removed in expire: {}.", value.getValue());
                     removedCounter.incrementAndGet();
+                    synchronized (expirationHandlerLock) {
+                    	if(expirationHandler != null) {
+                    		expirationHandler.expired(tmp.getValue());
+                    	}
+        			}
                 }
             }
             return true;
@@ -501,6 +562,11 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
                 iterator.remove();
                 LOGGER.debug("Remove in expire segment: {}.", expiringObject.getValue());
                 removedCounter.incrementAndGet();
+                synchronized (expirationHandlerLock) {
+                	if(expirationHandler != null) {
+                		expirationHandler.expired(expiringObject.getValue());
+                	}
+                }
             } else {
                 break;
             }

@@ -1,14 +1,15 @@
 package net.tomp2p.holep;
 
+import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.Futures;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Triple;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -46,25 +47,25 @@ public class NATTypeDetection {
 	public static FutureDone<NATType> checkNATType(final Peer peer, final PeerAddress relayPeer,
 	        final int tolerance) {
 		final FutureDone<NATType> futureDone = new FutureDone<NATType>();
-		final FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(3, 0);
+		final FutureChannelCreator fcc1 = peer.connectionBean().reservation().create(3);
 		fcc1.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
 
-					FutureResponse futureResponse1 = peer.pingRPC().pingUDPDiscover(relayPeer, future.channelCreator(),
+					Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> futureResponse1 = peer.pingRPC().pingUDPDiscover(relayPeer, future.channelCreator(),
 					        new DefaultConnectionConfiguration());
-					FutureResponse futureResponse2 = peer.pingRPC().pingUDPDiscover(relayPeer, future.channelCreator(),
+					Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> futureResponse2 = peer.pingRPC().pingUDPDiscover(relayPeer, future.channelCreator(),
 					        new DefaultConnectionConfiguration());
-					FutureResponse futureResponse3 = peer.pingRPC().pingUDPDiscover(relayPeer, future.channelCreator(),
+					Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> futureResponse3 = peer.pingRPC().pingUDPDiscover(relayPeer, future.channelCreator(),
 					        new DefaultConnectionConfiguration());
 
-					FutureDone<FutureResponse[]> fdd = Futures.whenAllSuccess(futureResponse1, futureResponse2,
-					        futureResponse3);
+					FutureDone<FutureDone<Message>[]> fdd = Futures.whenAllSuccess(futureResponse1.first, futureResponse2.first,
+					        futureResponse3.first);
 					Utils.addReleaseListener(fcc1, fdd);
-					fdd.addListener(new BaseFutureAdapter<FutureDone<FutureResponse[]>>() {
+					fdd.addListener(new BaseFutureAdapter<FutureDone<FutureDone<Message>[]>>() {
 						@Override
-						public void operationComplete(FutureDone<FutureResponse[]> future) throws Exception {
+						public void operationComplete(FutureDone<FutureDone<Message>[]> future) throws Exception {
 							if (future.isSuccess()) {
 								if (future.object().length != 3) {
 									futureDone.failed("expected exactly three futures");
@@ -83,13 +84,13 @@ public class NATTypeDetection {
 									return;
 								}
 
-								final int seenAsPort1 = future.object()[0].responseMessage().intAt(0);
-								final int seenAsPort2 = future.object()[1].responseMessage().intAt(0);
-								final int seenAsPort3 = future.object()[2].responseMessage().intAt(0);
+								final int seenAsPort1 = future.object()[0].object().intAt(0);
+								final int seenAsPort2 = future.object()[1].object().intAt(0);
+								final int seenAsPort3 = future.object()[2].object().intAt(0);
 
-								final int actualPort1 = future.object()[0].responseMessage().recipientSocket().getPort();
-								final int actualPort2 = future.object()[1].responseMessage().recipientSocket().getPort();
-								final int actualPort3 = future.object()[2].responseMessage().recipientSocket().getPort();
+								final int actualPort1 = future.object()[0].object().recipientSocket().getPort();
+								final int actualPort2 = future.object()[1].object().recipientSocket().getPort();
+								final int actualPort3 = future.object()[2].object().recipientSocket().getPort();
 
 								NATType natType = checkNATType(seenAsPort1, seenAsPort2, seenAsPort3, actualPort1,
 								        actualPort2, actualPort3, tolerance);
@@ -99,8 +100,8 @@ public class NATTypeDetection {
 							}
 						}
 
-						private boolean checkCompleteMessage(FutureResponse futureResponse) {
-							Message message = futureResponse.responseMessage();
+						private boolean checkCompleteMessage(FutureDone<Message> futureResponse) {
+							Message message = futureResponse.object();
 							if (message == null) {
 								return false;
 							}

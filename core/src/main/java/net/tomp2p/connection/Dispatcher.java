@@ -165,7 +165,7 @@ public class Dispatcher {
 		}
 	}
 
-    public Message dispatch(final Message message, Promise<SctpChannelFacade, Exception, Void> p) throws IOException {
+    public void dispatch(Responder responder, final Message message, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws IOException {
         LOG.debug("Received request message {}", message);
         if (message.version() != p2pID) {
             LOG.error("Wrong version. We are looking for {}, but we got {}. Received: {}.", p2pID,
@@ -175,12 +175,12 @@ public class Dispatcher {
                    peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "Wrong P2P version."));
             	}
             }
-            return null;
+            return;
         }
         
         if(message.isAck()) {
         	peerBeanMaster.notifyPeerFound(message.sender(), null, null);
-        	return null;
+        	return;
         } else if((message.isOk() || message.isNotOk()) && message.isVerified()) {
         	//peer is online, mark as such
         	peerBeanMaster.notifyPeerFound(message.sender(), null, null);
@@ -189,12 +189,12 @@ public class Dispatcher {
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             LOG.debug("About to respond to request message {}.", message);
-            return myHandler.forwardMessage(message, p);
+            myHandler.forwardMessage(responder, message, p, sender);
         } else {
         	if (LOG.isWarnEnabled()) {
         		printWarnMessage(message);
         	}
-        	return DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBeanMaster.serverPeerAddress());
+        	responder.response(DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBeanMaster.serverPeerAddress()));
         }
     }
     

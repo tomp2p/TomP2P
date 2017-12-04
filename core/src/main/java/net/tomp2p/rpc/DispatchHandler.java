@@ -16,9 +16,11 @@
 package net.tomp2p.rpc;
 
 import net.sctp4nat.core.SctpChannelFacade;
+import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
@@ -167,7 +169,7 @@ public abstract class DispatchHandler {
      *            The request message
      * @param responder The responder used to respond the response message
      */
-    public Message forwardMessage(final Message requestMessage, Promise<SctpChannelFacade, Exception, Void> p) {
+    public void forwardMessage(Responder responder, final Message requestMessage, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) {
         // Here, we need a referral since we got contacted and we don't know if
         // we can contact the peer with its address. The peer may be behind a NAT.
     	
@@ -184,7 +186,7 @@ public abstract class DispatchHandler {
     	}
         
         try {
-            return handleResponse(requestMessage, sign, p);
+            handleResponse(responder, requestMessage, sign, p, sender);
         } catch (Throwable e) {
         	synchronized (peerBean.peerStatusListeners()) {
         		for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
@@ -192,7 +194,6 @@ public abstract class DispatchHandler {
 				}
         	}
         	LOG.error("Exception in custom handler.", e);
-            return null;
         }
     }
     
@@ -209,6 +210,6 @@ public abstract class DispatchHandler {
      * @throws Exception
      *             Any exception
      */
-    public abstract Message handleResponse(Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception;
+    public abstract void handleResponse(Responder reponder, Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception;
 
 }

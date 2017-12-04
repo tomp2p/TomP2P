@@ -25,6 +25,7 @@ import java.util.NavigableSet;
 
 import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelClient;
+import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -166,7 +167,7 @@ public class NeighborRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws IOException {
+    public void handleResponse(Responder r, final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws IOException {
         if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("At least location and domain keys are needed.");
         }
@@ -183,7 +184,8 @@ public class NeighborRPC extends DispatchHandler {
             //return empty neighbor set
             Message response = createResponseMessage(message, Type.NOT_FOUND);
             response.neighborsSet(new NeighborSet(-1, Collections.<PeerAddress>emptyList()));
-            return response;
+            r.response(response);
+            return;
         }
         
         // Create response message and set neighbors
@@ -258,7 +260,7 @@ public class NeighborRPC extends DispatchHandler {
             }
               
         }
-        return responseMessage;
+        r.response(responseMessage);
     }
 
     /**

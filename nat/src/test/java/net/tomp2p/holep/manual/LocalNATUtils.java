@@ -201,7 +201,7 @@ public class LocalNATUtils {
 		// relay
 		Bindings b2 = new Bindings();
 		b2.addInterface(iface);
-		return new PeerBuilder(relayPeerId).ports(port).bindings(b2).start();
+		return new PeerBuilder(relayPeerId).port(port).bindings(b2).start();
 	}
 
 	/**

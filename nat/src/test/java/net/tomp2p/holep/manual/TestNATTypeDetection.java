@@ -63,7 +63,7 @@ public class TestNATTypeDetection implements Serializable {
 
 	private static Serializable discover(final String address, Peer peer)
 			throws UnknownHostException {
-		PeerAddress relayP = PeerAddress.create(relayPeerId, address, 5002, 5002, 5003);
+		PeerAddress relayP = PeerAddress.create(relayPeerId, address, 5002);
 		FutureDone<NATType> type = NATTypeDetection.checkNATType(peer, relayP)
 				.awaitUninterruptibly();
 		return type.isSuccess() ? type.object().name() : type.failedReason();

@@ -68,9 +68,9 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 	private static final long serialVersionUID = 8483270473601620720L;
 	
 	public static final int HEADER_SIZE = 2;
-	public static final int MIN_SIZE = HEADER_SIZE + Number160.BYTE_ARRAY_SIZE; //23
-	public static final int MIN_SIZE_HEADER = MIN_SIZE + PeerSocketAddress.PORT_SIZE; //27
-    public static final int MAX_SIZE = MIN_SIZE + (PeerSocket4Address.SIZE + PeerSocket6Address.SIZE) + (7 * PeerSocket6Address.SIZE); //219
+	public static final int MIN_SIZE = HEADER_SIZE + Number160.BYTE_ARRAY_SIZE; //22
+	public static final int MIN_SIZE_HEADER = MIN_SIZE + PeerSocketAddress.PORT_SIZE; //24
+    public static final int MAX_SIZE = MIN_SIZE + (PeerSocket4Address.SIZE + PeerSocket6Address.SIZE) + (7 * PeerSocket6Address.SIZE); //172
     
     //1 Byte - 8 bits
     private static final int IPV4 = 0x1;					// xxxxxxxx xxxxxxx1 //peeraddress can have both, IPv4 and IPv6

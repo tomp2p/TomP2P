@@ -17,6 +17,7 @@ package net.tomp2p.rpc;
 
 import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelClient;
+import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -63,13 +64,13 @@ public class BroadcastRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p) throws Exception {
+    public void handleResponse(Responder r, final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
         if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.BROADCAST.getNr())) {
             throw new IllegalArgumentException("Message content is wrong for this handler.");
         }
         LOG.debug("received BRODACAST message: {}", message);
         broadcastHandler.receive(message);
-        return null;
+        r.response(null);
     }
 
     /**

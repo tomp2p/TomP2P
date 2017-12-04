@@ -34,6 +34,10 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.jdeferred.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
@@ -44,24 +48,27 @@ import lombok.experimental.Accessors;
 import net.sctp4nat.connection.SctpConnection;
 import net.sctp4nat.core.NetworkLink;
 import net.sctp4nat.core.SctpChannel;
+import net.sctp4nat.core.SctpChannelBuilder;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.core.SctpMapper;
+import net.sctp4nat.origin.SctpAcceptable;
+import net.sctp4nat.origin.SctpNotification;
+import net.sctp4nat.origin.SctpSocket.NotificationListener;
+import net.sctp4nat.util.SctpUtils;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.ProtocolType;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.message.MessageHeaderCodec;
+import net.tomp2p.message.MessageID;
+import net.tomp2p.peers.IP;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.utils.ConcurrentCacheMap;
+import net.tomp2p.utils.ExpirationHandler;
 import net.tomp2p.utils.Triple;
-import net.tomp2p.message.MessageHeaderCodec;
-import net.tomp2p.message.MessageID;
-
-import org.jdeferred.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The "server" part that accepts connections.
@@ -94,8 +101,13 @@ public final class ChannelServer implements DiscoverNetworkListener {
 	
 	private final PeerBean peerBean;
 	
-	final private Map<MessageID, FutureDone<Message>> pendingMessages = new ConcurrentCacheMap<>(60, 10000);
-
+	final private ConcurrentCacheMap<MessageID, FutureDone<Message>> pendingMessages = new ConcurrentCacheMap<>(3, 10000);
+	
+	final private ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections = new ConcurrentCacheMap<>(60, 10000);
+	
+	public static final int MAX_PORT = 65535;
+	public static final int MIN_DYN_PORT = 49152;
+	
 	public static long packetCounterSend() {
 		return packetCounterSend.get();
 	}
@@ -133,6 +145,12 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			discoverNetworks.start().awaitUninterruptibly();
 		}
 		this.peerBean = peerBean;
+		pendingMessages.expirationHandler(new ExpirationHandler<FutureDone<Message>>() {
+			@Override
+			public void expired(FutureDone<Message> oldValue) {
+				oldValue.failed("Timeout occurred");
+			}
+		});
 	}
 
 	public DiscoverNetworks discoverNetworks() {
@@ -292,14 +310,14 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			}
 			return false;
 		}
-		ServerThread serverThread = ServerThread.of(datagramChannel, dispatcher, listenAddresses, channelServerConfiguration, pendingMessages, peerBean);
+		ServerThread serverThread = ServerThread.of(datagramChannel, dispatcher, listenAddresses, channelServerConfiguration, pendingMessages, openConnections, peerBean);
 		serverThread.start();
 		channelsUDP.put(listenAddresses.getAddress(), serverThread);
 		return true;
 	}
 
 	@RequiredArgsConstructor(staticName = "of")
-	public static class ServerThread extends Thread {
+	public static class ServerThread extends Thread implements ChannelSender {
 
 		final private DatagramChannel datagramChannel;
 		final private Dispatcher dispatcher;
@@ -307,6 +325,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 		//final private ByteBuffer buffer = ByteBuffer.allocate(65536);
 		final private ChannelServerConfiguration channelServerConfiguration;
 		final private Map<MessageID, FutureDone<Message>> pendingMessages;
+		final private ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections;
 		final private PeerBean peerBean;
 		final private byte[] buffer= new byte[65536];
 
@@ -340,8 +359,9 @@ public final class ChannelServer implements DiscoverNetworkListener {
 						//System.err.println(".");
 						buf.skipBytes(1);
 						//attention, start offset with 1
-						SctpChannel socket = SctpMapper.locate(remote.getAddress().getHostAddress(), remote.getPort());
+						SctpChannel socket = openConnections.get(remote);
 						socket.onConnIn(buf.array(), buf.arrayOffset() + buf.readerIndex(), buf.readableBytes());
+						openConnections.putIfAbsent(remote, socket); //refresh timeout
 
 					} else if (buf.readableBytes() > 0
 							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.UDP) {
@@ -356,19 +376,37 @@ public final class ChannelServer implements DiscoverNetworkListener {
 						}
 						Message m = decoder.message();
 						
-						final Promise<SctpChannelFacade, Exception, Void> p = connectSCTP(datagramChannel, remote, m);
+						final Promise<SctpChannelFacade, Exception, Void> p = connectSCTP(openConnections, datagramChannel, remote, m);
 
 						if(m.isRequest() || m.isAck()) {
-							Message m2 = dispatcher.dispatch(m, p);
-						
-							if (m2 != null) {
-								if (dispatcher.peerBean().peerMap().checkPeer(m.sender())) {
-									m2.verified();
+							Responder r = new Responder() {
+								
+								@Override
+								public void response(Message responseMessage) {
+									if (responseMessage != null) {
+										if (dispatcher.peerBean().peerMap().checkPeer(m.sender())) {
+											responseMessage.verified();
+										}
+										try {
+											send(remote, responseMessage);
+										} catch (Exception e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+											failed(e.getMessage());
+										}
+									} else {
+										LOG.debug("not replying to {}", m);
+									}
 								}
-								send(remote, m2);
-							} else {
-								LOG.debug("not replying to {}", m);
-							}
+								
+								@Override
+								public void failed(String reason) {
+									LOG.error(reason);
+								}
+							};
+							dispatcher.dispatch(r, m, p, this);
+						
+							
 						} else {
 							LOG.debug("peer isVerified: {}", m.isVerified());
 							if (!m.isVerified()) {
@@ -379,7 +417,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 								//nothing to send anymore
 							}
 							
-							FutureDone<Message> currentFuture = pendingMessages.get(new MessageID(m));
+							FutureDone<Message> currentFuture = pendingMessages.remove(new MessageID(m));
 						
 							if(currentFuture != null) {
 								currentFuture.done(m);
@@ -408,14 +446,22 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			LOG.debug("ending loop");
 		}
 
-		public static Promise<SctpChannelFacade, Exception, Void> connectSCTP(DatagramChannel datagramChannel, final InetSocketAddress remote, Message m)
+		public static Promise<SctpChannelFacade, Exception, Void> connectSCTP(final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections, 
+				final DatagramChannel datagramChannel, final InetSocketAddress remote, Message m)
 				throws Exception {
 			final Promise<SctpChannelFacade, Exception, Void> p;
 			if(m.isKeepAlive() && m.isRequest()) {
 				LOG.debug("setup SCTP connection: {}", m);
-				SctpConnection c = SctpConnection.builder().local(m.recipientSocket()).remote(m.senderSocket())
-						.localSctpPort(m.recipientSocket().getPort()).build();
-				p = c.connect(new NetworkLink() {
+				
+				int localSctpPort = ChannelUtils.localSctpPort(IP.fromInet4Address(remote.getAddress()), remote.getPort());
+				SctpChannel sctpChannel = new SctpChannelBuilder()
+						.remoteAddress(remote.getAddress())
+						.remotePort(remote.getPort())
+						.mapper(SctpUtils.getMapper())
+						.localSctpPort(localSctpPort).build();
+				LOG.debug("local sctp port: {}", localSctpPort);
+				openConnections.put(remote, sctpChannel);
+				sctpChannel.setLink(new NetworkLink() {
 					
 					@Override
 					public void onConnOut(final SctpChannelFacade so, final byte[] packet, final int tos) throws IOException, NotFoundException {
@@ -438,6 +484,8 @@ public final class ChannelServer implements DiscoverNetworkListener {
 						//TODO
 					}
 				});
+
+				p = sctpChannel.connect(remote);
 			} else {
 				p = null;
 			}
@@ -464,12 +512,31 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			FutureDone<Message> futureMessage = new FutureDone<Message>();
 			FutureDone<Void> futureClose = new FutureDone<>();
 			FutureDone<SctpChannelFacade> futureSCTP = new FutureDone<>();
+			PeerAddress recipientAddress = message.recipient();
+			InetSocketAddress recipient = recipientAddress.createUDPSocket(message.sender());
+			
+			final SctpChannel sctpChannel;
+			if(message.sctp()) {
+				try {
+					sctpChannel = ChannelUtils.creatSCTPSocket(
+						recipient.getAddress(), 
+						recipient.getPort(), 
+						ChannelUtils.localSctpPort(IP.fromInet4Address(recipient.getAddress()), recipient.getPort()), 
+						futureSCTP);
+					openConnections.put(recipient, sctpChannel);
+				} catch (net.sctp4nat.util.SctpInitException e) {
+					return Triple.create(futureMessage.failed(e),  futureSCTP.failed(e), futureClose.done());
+				}
+			} else {
+				sctpChannel = null;
+				futureSCTP.failed("no sctp requested");
+			}
 			
 			CompositeByteBuf buf2 = Unpooled.compositeBuffer();
 			Encoder encoder = new Encoder(new DSASignatureFactory());
 			try {
 				encoder.write(buf2, message, null);
-				PeerAddress recipientAddress = message.recipient();
+				
 				datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(message.sender()));
 
 				// if we send an ack, don't expect any incoming packets
@@ -484,6 +551,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			}
 			return Triple.create(futureMessage,  futureSCTP, futureClose);
 		}
+		
 	}
 
 	/**
@@ -511,6 +579,8 @@ public final class ChannelServer implements DiscoverNetworkListener {
 		shutdownFuture().done();
 		return shutdownFuture();
 	}
+	
+	
 
 	/**
 	 * @return The shutdown future that is used when calling {@link #shutdown()}
@@ -518,5 +588,8 @@ public final class ChannelServer implements DiscoverNetworkListener {
 	public FutureDone<Void> shutdownFuture() {
 		return futureServerDone;
 	}
+	
+	
+	
 
 }

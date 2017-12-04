@@ -97,7 +97,7 @@ public class TestNATLocal implements Serializable {
 						// now peer1 and peer2 know each other locally.
 						PeerAddress punr2 = peer2.peerAddress();
 						InetAddress internal = Inet4Address.getByName("0.0.0.3");
-						punr2 = punr2.withIpInternalSocket((PeerSocket4Address)PeerSocketAddress.create(internal, 5001, 5001, 5002));
+						punr2 = punr2.withIpInternalSocket((PeerSocket4Address)PeerSocketAddress.create(internal, 5001));
 						//TODO: mark reachable
 						FuturePing fp1 = peer1.ping().peerAddress(punr2).start().awaitUninterruptibly();
 						sb.append(fp1.isSuccess());

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import net.sctp4nat.origin.SctpDataCallback;
 import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
@@ -90,7 +91,10 @@ public class Peer {
     private volatile boolean shutdown = false;
     
     private List<AutomaticFuture> automaticFutures = Collections.synchronizedList(new ArrayList<AutomaticFuture>(1)); 
-    private List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>(5)); 
+    private List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>(5));
+	
+    //callback for SCTP connections
+    private SctpDataCallback sctpDataCallback; 
 
     /**
      * Creates a peer. Please use {@link PeerBuilder} to create a {@link Peer} instance.
@@ -362,6 +366,11 @@ public class Peer {
 	
 	public Peer removeAutomaticFuture(AutomaticFuture automaticFuture) {
 		automaticFutures.remove(automaticFuture);
+		return this;
+	}
+
+	public Peer sctpDataCallback(SctpDataCallback sctpDataCallback) {
+		this.sctpDataCallback = sctpDataCallback;
 		return this;
 	}
 }

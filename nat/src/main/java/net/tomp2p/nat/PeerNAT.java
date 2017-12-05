@@ -220,6 +220,7 @@ public class PeerNAT {
 									if (future.isSuccess()) {
 										Message response = future.object();
 										LOG.error("response message was {}", response.type().toString());
+										futureDone.done(cc);
 									}
 								}
 

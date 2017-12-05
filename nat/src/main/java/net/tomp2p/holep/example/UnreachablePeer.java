@@ -106,20 +106,6 @@ public class UnreachablePeer extends AbstractPeer {
 
 			cc.sendUDP(message);
 		}
-
-		// set up 3 relays
-		// uNat.
-		// FutureRelayNAT frn = uNat.startRelay(bootstrapPeerAddress);
-		// frn.awaitUninterruptibly();
-
-		// find neighbors again
-		// FutureBootstrap fb =
-		// peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
-		// fb.awaitUninterruptibly();
-
-		// do maintenance
-		// uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
-		// uNat.startRelayMaintenance(futureRelay);
 	}
 
 }

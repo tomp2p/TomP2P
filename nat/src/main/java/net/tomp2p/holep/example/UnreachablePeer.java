@@ -84,64 +84,23 @@ public class UnreachablePeer extends AbstractPeer {
 		FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
 		futureBootstrap.awaitUninterruptibly();
 
-		Message message = new Message().command(Commands.RELAY.getNr()).type(Type.REQUEST_1).sender(peer.peerAddress())
-				.recipient(masterPeerAddress).version(1).sctp(true);
-
 		// setup relay
 		PeerNAT uNat = new PeerBuilderNAT(peer).start();
-		FutureChannelCreator cc = peer.connectionBean().reservation().create(1)
-				.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-					@Override
-					public void operationComplete(final FutureChannelCreator future) throws Exception {
-						if (future.isSuccess()) {
-							LOG.error("Fire UDP to {}.", message.recipient());
-							Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = future
-									.channelCreator().sendUDP(message);
-							Utils.addReleaseListener(future.channelCreator());
+		FutureDone<ChannelClient> futureRelay = uNat.startParticularRelay(masterPeerAddress);
 
-							p.first.addListener(new BaseFutureListener<FutureDone<Message>>() {
-
-								@Override
-								public void operationComplete(FutureDone<Message> future) throws Exception {
-									if (future.isSuccess()) {
-										Message response = future.object();
-										LOG.debug("response message was {}", response.type().toString());
-									}
-								}
-
-								@Override
-								public void exceptionCaught(Throwable t) throws Exception {
-									LOG.error("no response message");
-									System.exit(1);
-								}
-							});
-
-							p.second.addListener(new BaseFutureListener<FutureDone<SctpChannelFacade>>() {
-
-								@Override
-								public void operationComplete(FutureDone<SctpChannelFacade> future) throws Exception {
-									if (future.isSuccess()) {
-										LOG.debug(future.toString());
-									}
-								}
-
-								@Override
-								public void exceptionCaught(Throwable t) throws Exception {
-									LOG.error("no sctp channel");
-								}
-
-							});
-						} else {
-							Utils.addReleaseListener(future.channelCreator());
-							LOG.warn("handleResponse for REQUEST_1 failed (UDP) {}", future.failedReason());
-						}
-					}
-				});
-
-		cc.awaitUninterruptibly();
-		if (!cc.isSuccess()) {
+		futureRelay.awaitUninterruptibly();
+		if (!futureRelay.isSuccess()) {
 			LOG.error("Could not setup Relay!");
 			System.exit(1);
+		} else {
+			ChannelClient cc = futureRelay.object();
+
+			PeerAddress u2 = PeerAddress.builder().peerId(unreachablePeerId2).build();
+
+			Message message = new Message().command(Commands.HOLEP.getNr()).type(Type.REQUEST_1)
+					.sender(peer.peerAddress()).recipient(masterPeerAddress);
+
+			cc.sendUDP(message);
 		}
 
 		// set up 3 relays

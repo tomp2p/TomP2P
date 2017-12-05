@@ -1,4 +1,4 @@
-package net.tomp2p.rcon.prototype;
+package net.tomp2p.holep.example.legacy;
 
 import java.net.UnknownHostException;
 

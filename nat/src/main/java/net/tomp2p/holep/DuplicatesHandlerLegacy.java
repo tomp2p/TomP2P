@@ -4,7 +4,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import net.tomp2p.connection.Dispatcher;
-import net.tomp2p.holep.strategy.AbstractHolePStrategy;
+import net.tomp2p.holep.strategy.legacy.AbstractHolePStrategy;
 import net.tomp2p.message.Message;
 
 import org.slf4j.Logger;
@@ -19,15 +19,15 @@ import org.slf4j.LoggerFactory;
  * 
  */
 @Sharable
-public class DuplicatesHandler extends SimpleChannelInboundHandler<Message> {
+public class DuplicatesHandlerLegacy extends SimpleChannelInboundHandler<Message> {
 
 	private static final int POSITION_ZERO = 0;
-	private static final Logger LOG = LoggerFactory.getLogger(DuplicatesHandler.class);
+	private static final Logger LOG = LoggerFactory.getLogger(DuplicatesHandlerLegacy.class);
 	private final Dispatcher dispatcher;
 	private volatile int messageId = 0;
 	private volatile boolean first = true;
 
-	public DuplicatesHandler(final Dispatcher dispatcher) {
+	public DuplicatesHandlerLegacy(final Dispatcher dispatcher) {
 		this.dispatcher = dispatcher;
 	}
 

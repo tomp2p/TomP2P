@@ -7,21 +7,21 @@ public class TestHolePunchScheduler {
 
 	@Test
 	public void testHolePunchSchedulerFail() {
-		HolePScheduler holePunchScheduler = null;
+		HolePSchedulerLegacy holePunchScheduler = null;
 		try {
-			holePunchScheduler = new HolePScheduler(-1, null);
+			holePunchScheduler = new HolePSchedulerLegacy(-1, null);
 		} catch (Exception e) {
 			//do nothing
 		}
 		
 		try {
-			holePunchScheduler = new HolePScheduler(301, null);
+			holePunchScheduler = new HolePSchedulerLegacy(301, null);
 		} catch (Exception e) {
 			//do nothing
 		}
 		
 		try {
-			holePunchScheduler = new HolePScheduler(10, null);
+			holePunchScheduler = new HolePSchedulerLegacy(10, null);
 		} catch (Exception e) {
 			//do nothing
 		}

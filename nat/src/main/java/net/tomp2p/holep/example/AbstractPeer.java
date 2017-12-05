@@ -9,8 +9,6 @@ import net.tomp2p.peers.PeerAddress;
 
 public abstract class AbstractPeer {
 
-	
-	protected static final Random RND = new Random(new Date().getTime());
 	protected static final String HELLO_WORLD = 
 			"  _    _ ______ _      _      ____   __          ______  _____  _      _____  \n" + 
 			" | |  | |  ____| |    | |    / __ \\  \\ \\        / / __ \\|  __ \\| |    |  __ \\ \n" + 
@@ -21,15 +19,18 @@ public abstract class AbstractPeer {
 			"                                                                              \n" + 
 			"                                                                              ";
 	protected static final String MASTER_SEED = "master";
-	
+	protected static final String UNREACHABLE_1_SEED = "u1";
+	protected static final String UNREACHABLE_2_SEED = "u2";
 	
 	protected final InetSocketAddress local;
-	protected final PeerAddress masterPeerAddress;
-	protected final Number160 peerId;
+	protected final Number160 masterPeerId;
+	protected final Number160 unreachablePeerId1;
+	protected final Number160 unreachablePeerId2;
 	
 	public AbstractPeer(InetSocketAddress local) {
 		this.local = local;
-		this.masterPeerAddress = PeerAddress.create(Number160.createHash(MASTER_SEED), local);
-		this.peerId = Number160.createHash(RND.nextInt());
+		this.masterPeerId = Number160.createHash(MASTER_SEED);
+		this.unreachablePeerId1 = Number160.createHash(UNREACHABLE_1_SEED);
+		this.unreachablePeerId2 = Number160.createHash(UNREACHABLE_2_SEED);
 	}
 }

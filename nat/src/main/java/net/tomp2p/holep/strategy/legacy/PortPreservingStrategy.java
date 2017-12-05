@@ -1,4 +1,4 @@
-package net.tomp2p.holep.strategy;
+package net.tomp2p.holep.strategy.legacy;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;

@@ -1,5 +1,5 @@
 
-package net.tomp2p.holep.strategy;
+package net.tomp2p.holep.strategy.legacy;
 
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;

@@ -1,4 +1,4 @@
-package net.tomp2p.holep.strategy;
+package net.tomp2p.holep.strategy.legacy;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -20,9 +20,9 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.holep.DuplicatesHandler;
+import net.tomp2p.holep.DuplicatesHandlerLegacy;
 import net.tomp2p.holep.NATHandlerImpl;
-import net.tomp2p.holep.HolePScheduler;
+import net.tomp2p.holep.HolePSchedulerLegacy;
 import net.tomp2p.holep.NATType;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -133,7 +133,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 				//handlerList.add(handlers);
 			}
 		} else {
-			inboundHandler = new DuplicatesHandler(peer.connectionBean().dispatcher());
+			inboundHandler = new DuplicatesHandlerLegacy(peer.connectionBean().dispatcher());
 			for (int i = 0; i < numberOfHoles; i++) {
 				// we need an own futureresponse for every hole we try to punch
 				futureResponses.add(new FutureResponse(originalMessage));
@@ -279,7 +279,7 @@ public abstract class AbstractHolePStrategy implements HolePStrategy {
 	}
 
 	/**
-	 * This methods is only called by a {@link HolePScheduler}. It simply
+	 * This methods is only called by a {@link HolePSchedulerLegacy}. It simply
 	 * creates a dummyMessage and sends it from a given localPort (
 	 * {@link ChannelFuture}) to a given remotePort. This procedure then punches
 	 * the holes needed by the initiating {@link Peer}.

@@ -3,8 +3,8 @@ package net.tomp2p.holep;
 import java.io.IOException;
 
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.holep.strategy.NonPreservingSequentialStrategy;
-import net.tomp2p.holep.strategy.PortPreservingStrategy;
+import net.tomp2p.holep.strategy.legacy.NonPreservingSequentialStrategy;
+import net.tomp2p.holep.strategy.legacy.PortPreservingStrategy;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;

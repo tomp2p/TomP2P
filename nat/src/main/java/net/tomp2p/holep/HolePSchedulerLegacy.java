@@ -1,6 +1,6 @@
 package net.tomp2p.holep;
 
-import net.tomp2p.holep.strategy.HolePStrategy;
+import net.tomp2p.holep.strategy.legacy.HolePStrategy;
 
 /**
  * This class is used as a {@link Thread} specifically for the
@@ -10,14 +10,14 @@ import net.tomp2p.holep.strategy.HolePStrategy;
  * @author Jonas Wagner
  * 
  */
-public class HolePScheduler implements Runnable {
+public class HolePSchedulerLegacy implements Runnable {
 
 	private static final int FIVE_MINUTES = 300;
 	private static final int ONE_SECOND_MILLIS = 1000;
 	private int numberOfPunches;
 	private final HolePStrategy holePuncher;
 
-	public HolePScheduler(final int numberOfTrials, final HolePStrategy holePuncher) {
+	public HolePSchedulerLegacy(final int numberOfTrials, final HolePStrategy holePuncher) {
 		// 300 -> 5min
 		if (numberOfTrials > FIVE_MINUTES) {
 			throw new IllegalArgumentException("numberOfTrials can't be higher than 300 (5min)!");

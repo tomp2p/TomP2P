@@ -82,7 +82,7 @@ public class PeerBuilderNAT {
 	/**
 	 * specifies how many times the hole will be punched (e.g. if
 	 * holePNumberOfPunches = 3, then then all holes will be punched with dummy
-	 * messages 3 times in a row with 1 second delay (see {@link HolePScheduler}
+	 * messages 3 times in a row with 1 second delay (see {@link HolePSchedulerLegacy}
 	 * ).
 	 * 
 	 * @param holePNumberOfPunches

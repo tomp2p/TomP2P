@@ -210,6 +210,6 @@ public abstract class DispatchHandler {
      * @throws Exception
      *             Any exception
      */
-    public abstract void handleResponse(Responder reponder, Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception;
+    public abstract void handleResponse(Responder responder, Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception;
 
 }

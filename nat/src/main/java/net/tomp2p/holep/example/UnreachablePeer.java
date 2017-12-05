@@ -54,6 +54,11 @@ public class UnreachablePeer extends AbstractPeer {
 
 	}
 
+	public UnreachablePeer(InetSocketAddress local, InetSocketAddress remote, boolean connected,
+			Thread manualPunch) {
+		super(local);		// TODO Auto-generated constructor stub
+	}
+
 	private void createPeer(boolean isUnreachable1) throws IOException {
 		LOG.debug("start creating unreachablePeer...");
 		if (isUnreachable1 == true) {

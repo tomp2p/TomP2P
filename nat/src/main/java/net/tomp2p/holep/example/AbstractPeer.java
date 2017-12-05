@@ -4,6 +4,8 @@ import java.net.InetSocketAddress;
 import java.util.Date;
 import java.util.Random;
 
+import net.sctp4nat.origin.Sctp;
+import net.sctp4nat.util.SctpUtils;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -28,6 +30,9 @@ public abstract class AbstractPeer {
 	protected final Number160 unreachablePeerId2;
 	
 	public AbstractPeer(InetSocketAddress local) {
+		if (!Sctp.isInitialized()) {
+			Sctp.getInstance().init();
+		}
 		this.local = local;
 		this.masterPeerId = Number160.createHash(MASTER_SEED);
 		this.unreachablePeerId1 = Number160.createHash(UNREACHABLE_1_SEED);

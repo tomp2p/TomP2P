@@ -43,8 +43,10 @@ public class HoleCheater {
 		builder.append("-v " + remoteAddress + " ");
 
 		Runtime runtime = Runtime.getRuntime();
-		runtime.exec(builder.toString()).waitFor();
-		runtime.exec(builder.toString()).waitFor();
-		runtime.exec(builder.toString()).waitFor();
+		Process process = runtime.exec(builder.toString());
+		process.waitFor();
+		if (process.isAlive()) {
+			System.out.println("not yet finished");
+		}
 	}
 }

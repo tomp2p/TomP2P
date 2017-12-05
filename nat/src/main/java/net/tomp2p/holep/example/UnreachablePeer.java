@@ -1,26 +1,16 @@
 package net.tomp2p.holep.example;
 
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.channel.ChannelFutureListener;
-import net.sctp4nat.connection.SctpDefaultStreamConfig;
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.origin.SctpDataCallback;
 import net.tomp2p.connection.ChannelClient;
-import net.tomp2p.connection.Dispatcher;
-import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureDiscover;
+import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -30,10 +20,9 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.rpc.RPC.Commands;
-import net.tomp2p.utils.Triple;
-import net.tomp2p.utils.Utils;
 
 public class UnreachablePeer extends AbstractPeer {
 
@@ -55,8 +44,26 @@ public class UnreachablePeer extends AbstractPeer {
 	}
 
 	public UnreachablePeer(InetSocketAddress local, InetSocketAddress remote, boolean connected,
-			Thread manualPunch) {
-		super(local);		// TODO Auto-generated constructor stub
+			Thread manualPunch, boolean isUnreachable) throws IOException {
+		super(local);
+		
+		createPeer(isUnreachable);
+		manualPunch.start();
+		
+		System.out.println("1 = connect");
+		while (!connected) {
+			int input = System.in.read();
+			
+			if (input == 1) {
+				PeerSocketAddress peerSocketAddress = PeerSocketAddress.create(remote.getAddress(), remote.getPort(), 0, 0);
+				PeerAddress recipientAddress = PeerAddress.create(unreachablePeerId2).withIPSocket(peerSocketAddress);
+				FutureDirect direct = peer.sendDirect(recipientAddress).object(HELLO_WORLD).start();
+				direct.awaitUninterruptibly();
+				connected = true;
+			}
+		}
+		
+		
 	}
 
 	private void createPeer(boolean isUnreachable1) throws IOException {

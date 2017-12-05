@@ -71,19 +71,25 @@ public class ExampleNAT {
 									LOG.debug("punch a hole manually with local {} and remote {}",
 											args[0] + ":" + args[1], args[2] + ":" + args[4]);
 									try {
+										while (!connected) {
+										LOG.error("entering manual hole punching thread...");
 										HoleCheater.cheatHolePunch(args[0], Integer.valueOf(args[1]), args[3],
 												Integer.valueOf(args[4]));
-										
-										Thread.sleep(20000); //refresh NAT mapping after 20 seconds
+
+										Thread.sleep(20000); // refresh NAT mapping after 20 seconds
+										}
+										LOG.error("exiting manual hole punching thread...");
 									} catch (NumberFormatException | IOException | InterruptedException e) {
 										fail(e);
 									}
 								}
 							}
 						});
-						
-						new UnreachablePeer(new InetSocketAddress(InetAddress.getByName(args[0]), Integer.valueOf(args[1])),
-								new InetSocketAddress(InetAddress.getByName(args[3]), Integer.valueOf(args[4])), connected, manualPunch);
+
+						new UnreachablePeer(
+								new InetSocketAddress(InetAddress.getByName(args[0]), Integer.valueOf(args[1])),
+								new InetSocketAddress(InetAddress.getByName(args[3]), Integer.valueOf(args[4])),
+								connected, manualPunch, args[2].equals("u1") ? true : false);
 					}
 				} catch (NumberFormatException e) {
 					fail(e);

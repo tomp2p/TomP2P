@@ -87,7 +87,8 @@ public class Peer {
     private NeighborRPC neighborRPC;
     private DirectDataRPC directDataRPC;
     private BroadcastRPC broadcastRPC;
-
+    private AbstractHolePRPC holePRPC;
+    
     private volatile boolean shutdown = false;
     
     private List<AutomaticFuture> automaticFutures = Collections.synchronizedList(new ArrayList<AutomaticFuture>(1)); 
@@ -174,6 +175,15 @@ public class Peer {
     public Peer broadcastRPC(BroadcastRPC broadcastRPC) {
         this.broadcastRPC = broadcastRPC;
         return this;
+    }
+    
+    public Peer holePRPC(AbstractHolePRPC holePRPC) {
+    	this.holePRPC = holePRPC;
+    	return this;
+    }
+    
+    public AbstractHolePRPC holePRPC() {
+    	return this.holePRPC;
     }
 
     public DistributedRouting distributedRouting() {

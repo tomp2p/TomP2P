@@ -96,7 +96,11 @@ public class UnreachablePeer extends AbstractPeer {
 			ChannelClient cc = futureRelay.object();
 
 			PeerAddress u2 = PeerAddress.builder().peerId(unreachablePeerId2).build();
-
+				
+			
+			FutureDone<SctpChannelFacade> futureSctpChannel = new FutureDone<>();
+			
+			
 			Message message = new Message().command(Commands.HOLEP.getNr()).type(Type.REQUEST_1)
 					.sender(peer.peerAddress()).recipient(masterPeerAddress);
 

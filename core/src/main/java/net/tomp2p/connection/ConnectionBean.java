@@ -18,107 +18,113 @@ package net.tomp2p.connection;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * A bean that holds sharable configuration settings for the peer. The non-sharable configurations are stored
- * in {@link PeerBean}.
+ * A bean that holds sharable configuration settings for the peer. The
+ * non-sharable configurations are stored in {@link PeerBean}.
  * 
  * @author Thomas Bocek
  */
 public class ConnectionBean {
 
-    public enum Protocol {UDP, TCP, UDT}
-    
-    /**
-     * The thread name is important to identify threads where blocking (wait) is possible.
-     */
-    public static final String THREAD_NAME = "NETTY-TOMP2P - ";
-    
-    //non-final to be able to adapt changes
-    public static int DEFAULT_TCP_IDLE_MILLIS = 5 * 1000;
-    public static int DEFAULT_TCP_IDLE_SLOW_MILLIS = 30 * 1000;
-    public static int DEFAULT_UDP_IDLE_MILLIS = 5 * 1000;
-    public static int DEFAULT_CONNECTION_TIMEOUT_TCP = 3 * 1000;
-    public static int DEFAULT_HEARTBEAT_SECONDS = 2;
-    
-    public static int UDP_LIMIT = 1400;
+	public enum Protocol {
+		UDP, TCP, UDT
+	}
 
-    private final int p2pId;
-    private final Dispatcher dispatcher;
-    private final ChannelServer channelServer;
-    private final BulkReservation reservation;
-    private final ChannelClientConfiguration resourceConfiguration;
-    private final ScheduledExecutorService timer;
-    
-    /**
-	 * The connection bean with unmodifiable objects. Once it is set, it cannot be changed. If it is required
-	 * to change, then the peer must be shut down and a new one created.
-     * 
-     * @param p2pId
+	/**
+	 * The thread name is important to identify threads where blocking (wait) is
+	 * possible.
+	 */
+	public static final String THREAD_NAME = "NETTY-TOMP2P - ";
+
+	// non-final to be able to adapt changes
+	public static int DEFAULT_TCP_IDLE_MILLIS = 5 * 1000;
+	public static int DEFAULT_TCP_IDLE_SLOW_MILLIS = 30 * 1000;
+	public static int DEFAULT_UDP_IDLE_MILLIS = 5 * 1000;
+	public static int DEFAULT_CONNECTION_TIMEOUT_TCP = 3 * 1000;
+	public static int DEFAULT_HEARTBEAT_SECONDS = 2;
+
+	public static int UDP_LIMIT = 1400;
+
+	private final int p2pId;
+	private final Dispatcher dispatcher;
+	private final ChannelServer channelServer;
+	private final BulkReservation reservation;
+	private final ChannelClientConfiguration resourceConfiguration;
+	private final ScheduledExecutorService timer;
+
+	/**
+	 * The connection bean with unmodifiable objects. Once it is set, it cannot be
+	 * changed. If it is required to change, then the peer must be shut down and a
+	 * new one created.
+	 * 
+	 * @param p2pId
 	 *            The P2P ID
-     * @param dispatcher
-     *            The dispatcher object that receives all messages
-     * @param channelServer
-     *            The channel server that listens on incoming connections
-     * @param reservation
-     *            The connection reservation that is responsible for resource management
-     * @param resourceConfiguration
-     *            The configuration that is responsible for the resource numbers
-     * @param timer
-     *            The timer for the discovery process
-     */
-    public ConnectionBean(final int p2pId, final Dispatcher dispatcher,
-            final ChannelServer channelServer, final BulkReservation reservation,
-            final ChannelClientConfiguration resourceConfiguration, final ScheduledExecutorService timer) {
-        this.p2pId = p2pId;
-        this.dispatcher = dispatcher;
-        this.channelServer = channelServer;
-        this.reservation = reservation;
-        this.resourceConfiguration = resourceConfiguration;
-        this.timer = timer;
-    }
+	 * @param dispatcher
+	 *            The dispatcher object that receives all messages
+	 * @param channelServer
+	 *            The channel server that listens on incoming connections
+	 * @param reservation
+	 *            The connection reservation that is responsible for resource
+	 *            management
+	 * @param resourceConfiguration
+	 *            The configuration that is responsible for the resource numbers
+	 * @param timer
+	 *            The timer for the discovery process
+	 */
+	public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final ChannelServer channelServer,
+			final BulkReservation reservation, final ChannelClientConfiguration resourceConfiguration,
+			final ScheduledExecutorService timer) {
+		this.p2pId = p2pId;
+		this.dispatcher = dispatcher;
+		this.channelServer = channelServer;
+		this.reservation = reservation;
+		this.resourceConfiguration = resourceConfiguration;
+		this.timer = timer;
+	}
 
-    /**
+	/**
 	 * @return The P2P ID
-     */
-    public int p2pId() {
-        return p2pId;
-    }
+	 */
+	public int p2pId() {
+		return p2pId;
+	}
 
-    /**
-     * @return The dispatcher object that receives all messages
-     */
-    public Dispatcher dispatcher() {
-        return dispatcher;
-    }
+	/**
+	 * @return The dispatcher object that receives all messages
+	 */
+	public Dispatcher dispatcher() {
+		return dispatcher;
+	}
 
-    /**
-     * @return The sender object that sends out messages
-     */
-    
-    /**
-     * @return The channel server that listens on incoming connections
-     */
-    public ChannelServer channelServer() {
-        return channelServer;
-    }
+	/**
+	 * @return The sender object that sends out messages
+	 */
 
-    /**
-     * @return The connection reservation that is responsible for resource management
-     */
-    public BulkReservation reservation() {
-        return reservation;
-    }
+	/**
+	 * @return The channel server that listens on incoming connections
+	 */
+	public ChannelServer channelServer() {
+		return channelServer;
+	}
 
-    /**
-     * @return The configuration that is responsible for the resource numbers
-     */
-    public ChannelClientConfiguration resourceConfiguration() {
-        return resourceConfiguration;
-    }
+	/**
+	 * @return The connection reservation that is responsible for resource
+	 *         management
+	 */
+	public BulkReservation reservation() {
+		return reservation;
+	}
 
-    /**
-     * @return The timer used for the discovery
-     */
-    public ScheduledExecutorService timer() {
-        return timer;
-    }
+	/**
+	 * @return The configuration that is responsible for the resource numbers
+	 */
+	public ChannelClientConfiguration resourceConfiguration() {
+		return resourceConfiguration;
+	}
+
+	/**
+	 * @return The timer used for the discovery
+	 */
+	public ScheduledExecutorService timer() {
+		return timer;
+	}
 }

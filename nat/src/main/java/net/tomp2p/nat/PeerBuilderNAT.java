@@ -1,13 +1,21 @@
 package net.tomp2p.nat;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.sctp4nat.core.SctpChannelFacade;
+import net.tomp2p.connection.Dispatcher;
+import net.tomp2p.connection.NATHandler;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.holep.HolePRPC;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
@@ -200,6 +208,42 @@ public class PeerBuilderNAT {
 			public BaseFuture shutdown() {
 				natUtils.shutdown();
 				return new FutureDone<Void>().done();
+			}
+		});
+		
+		peer.holePRPC(new HolePRPC(peer));
+		
+		peer.peerBean().natHandler(new NATHandler() {
+			
+			@Override
+			public List<FutureResponse> handleRcon(Dispatcher dispatcher, Message message, FutureResponse futureResponse,
+					int idleUDPMillis, ScheduledExecutorService executorService) {
+				// TODO jwa: do we need to implement this?
+				return null;
+			}
+			
+			@Override
+			public FutureDone<Message> handleHolePunch(int idleUDPSeconds, FutureResponse futureResponse,
+					Message originalMessage) {
+				// TODO jwa: do we need to implement this?
+				return null;
+			}
+
+			@Override
+			public FutureDone<SctpChannelFacade> handleHolePunch(FutureResponse futureResponse,
+					Message originalMessage) {
+				
+				/**
+				 * 
+				 * 
+				 * 
+				 * CONTINUE HERE!!!!!!!!!
+				 * 
+				 * 
+				 * 
+				 */
+				
+				return null;
 			}
 		});
 

@@ -8,11 +8,12 @@ import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
+import net.tomp2p.p2p.AbstractHolePRPC;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 
-public class HolePRPC extends DispatchHandler {
+public class HolePRPC extends AbstractHolePRPC {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePRPC.class);
 	private final Peer peer;

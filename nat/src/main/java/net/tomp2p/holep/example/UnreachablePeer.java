@@ -10,25 +10,30 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.channel.ChannelFutureListener;
 import net.sctp4nat.connection.SctpDefaultStreamConfig;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.SctpDataCallback;
 import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.Dispatcher;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.IP.IPv4;
-import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
-import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.Triple;
+import net.tomp2p.utils.Utils;
 
 public class UnreachablePeer extends AbstractPeer {
 
@@ -45,53 +50,8 @@ public class UnreachablePeer extends AbstractPeer {
 		PeerAddress masterPeerAddress = PeerAddress.create(masterPeerId);
 
 		LOG.debug("now starting bootstrap to masterPeer with peerAddress:" + masterPeerAddress.toString() + "...");
-		FutureBootstrap future = peer.bootstrap().inetAddress(local.getAddress()).ports(9899)
-				.bootstrapTo(Arrays.asList(masterPeerAddress)).start();
-		future.addListener(new BaseFutureListener<FutureBootstrap>() {
+		natBootstrap(master);
 
-			@Override
-			public void operationComplete(FutureBootstrap future) throws Exception {
-				if (future.isSuccess()) {
-					LOG.debug("Bootstrap success!");
-
-					// TODO jwa: add object data reply
-					peer.sctpDataCallback(new SctpDataCallback() {
-
-						@Override
-						public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context,
-								int flags, SctpChannelFacade facade) {
-							System.out.println("I WAS HERE");
-							System.out.println("got data: " + new String(data, StandardCharsets.UTF_8));
-							facade.send(data, new SctpDefaultStreamConfig());
-						}
-					});
-
-					natBootstrap(master);
-
-					// PeerAddress u2 = PeerAddress.create(unreachablePeerId2);
-					//
-					// Message holePInitMessage = new Message();
-					// holePInitMessage.command(Commands.HOLEP.getNr());
-					// holePInitMessage.sender(peer.peerAddress());
-					// holePInitMessage.recipient(u2);
-					//
-					// peer.sendDirect(masterPeerAddress).object(HELLO_WORLD);
-					//
-					// Message message = new Message();
-					// message.recipient(masterPeerAddress);
-
-				} else {
-					LOG.error("Could not bootstrap masterpeer. Now closing program!");
-					System.exit(1);
-				}
-			}
-
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				LOG.error("Could not bootstrap masterpeer. Now closing program!");
-				System.exit(1);
-			}
-		});
 	}
 
 	private void createPeer(boolean isUnreachable1) throws IOException {
@@ -114,23 +74,49 @@ public class UnreachablePeer extends AbstractPeer {
 		this.masterPeerAddress = bootstrapPeerAddress;
 
 		// Set the isFirewalledUDP and isFirewalledTCP flags
-		PeerAddress upa = peer.peerBean().serverPeerAddress();
-		peer.peerBean().serverPeerAddress(upa);
+//		PeerAddress upa = peer.peerBean().serverPeerAddress();
+//		peer.peerBean().serverPeerAddress(upa);
+//		peer.peerBean().serverPeerAddress(peer.peerAddress());
 
+		peer.peerBean().serverPeerAddress(peer.peerAddress());
+		
 		// find neighbors
 		FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
 		futureBootstrap.awaitUninterruptibly();
 
+		Message message = new Message().command(Commands.RELAY.getNr()).type(Type.REQUEST_1).sender(peer.peerAddress()).recipient(masterPeerAddress);
+		
 		// setup relay
 		PeerNAT uNat = new PeerBuilderNAT(peer).start();
+		FutureChannelCreator cc = peer.connectionBean().reservation().create(1).addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+			@Override
+			public void operationComplete(final FutureChannelCreator future) throws Exception {
+				if (future.isSuccess()) {
+					LOG.error("Fire UDP to {}.", message.recipient());
+					Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = future.channelCreator().sendUDP(message);
+					Utils.addReleaseListener(future.channelCreator());
+				} else {
+					Utils.addReleaseListener(future.channelCreator());
+					LOG.warn("handleResponse for REQUEST_1 failed (UDP) {}", future.failedReason());
+				}
+			}
+		});
+		
+		cc.awaitUninterruptibly();
+		if (!cc.isSuccess()) {
+			LOG.error("Could not setup Relay!");
+			System.exit(1);
+		}
+
 		// set up 3 relays
-//		uNat.
-//		FutureRelayNAT frn = uNat.startRelay(bootstrapPeerAddress);
-//		frn.awaitUninterruptibly();
+		// uNat.
+		// FutureRelayNAT frn = uNat.startRelay(bootstrapPeerAddress);
+		// frn.awaitUninterruptibly();
 
 		// find neighbors again
-//		FutureBootstrap fb = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
-//		fb.awaitUninterruptibly();
+		// FutureBootstrap fb =
+		// peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
+		// fb.awaitUninterruptibly();
 
 		// do maintenance
 		// uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));

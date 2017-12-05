@@ -76,7 +76,7 @@ import net.tomp2p.utils.Triple;
  * 
  * @author Thomas Bocek
  */
-public class ChannelClient { // TODO: rename to ChannelClient
+public class ChannelClient {
 	private static final Logger LOG = LoggerFactory.getLogger(ChannelClient.class);
 
 	private final int maxPermitsUDP;
@@ -208,14 +208,14 @@ public class ChannelClient { // TODO: rename to ChannelClient
 			@Override
 			public void onSctpNotification(SctpAcceptable socket2, SctpNotification notification) {
 				LOG.debug("SCTP notification {}", notification.toString());
-				if (notification.toString().indexOf("ADDR_CONFIRMED") >= 0) {
+				if (notification.toString().indexOf(SctpNotification.ADDR_CONFIRMED_STR) >= 0) {
 					futureSCTP.done((SctpChannelFacade) socket);
-				} else if (notification.toString().indexOf("SHUTDOWN_COMP") >= 0) {
+				} else if (notification.toString().indexOf(SctpNotification.SHUTDOWN_COMP_STR) >= 0) {
 					socket.close();
-				} else if (notification.toString().indexOf("ADDR_UNREACHABLE") >= 0){
+				} else if (notification.toString().indexOf(SctpNotification.ADDR_UNREACHABLE_STR) >= 0){
 					LOG.error("Heartbeat missing! Now shutting down the SCTP connection...");
 					socket.close();
-				}  else if (notification.toString().indexOf("COMM_LOST") >= 0){
+				}  else if (notification.toString().indexOf(SctpNotification.COMM_LOST_STR) >= 0){
 					LOG.error("Communication aborted! Now shutting down the udp connection...");
 					socket.close();
 				} 

@@ -103,7 +103,8 @@ public class ChannelClient {
 	
 	private final Dispatcher dispatcher;
 
-	ChannelClient(int maxPermitsUDP, final ChannelClientConfiguration channelClientConfiguration,
+	//FIXME jwa: make this package private again. It is only public now for testing
+	public ChannelClient(int maxPermitsUDP, final ChannelClientConfiguration channelClientConfiguration,
 			Dispatcher dispatcher, FutureDone<Void> futureChannelClose) {
 		this.maxPermitsUDP = maxPermitsUDP;
 		this.semaphoreUPD = new Semaphore(maxPermitsUDP);

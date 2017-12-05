@@ -312,6 +312,7 @@ public class BulkReservation {
 
 				final InetAddress fromAddress;
 
+				//FIXME why is this only supporting ipv4???
 				if (channelClientConfiguration.fromAddress() != null) {
 					fromAddress = channelClientConfiguration.fromAddress();
 				} else if (peerBean.serverPeerAddress() == null) {

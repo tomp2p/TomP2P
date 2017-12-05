@@ -8,6 +8,8 @@ import java.net.UnknownHostException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.sctp4nat.util.SctpInitException;
+
 /**
  * 
  * Example class to simulate NAT behaviour with TomP2P peers.
@@ -25,8 +27,9 @@ public class ExampleNAT {
 	 * args[2] = isUnreachable && (if u1 -> unreachable 1 else unreachable 2)
 	 * 
 	 * @param args
+	 * @throws SctpInitException 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SctpInitException {
 
 		if (args.length < 2) {
 			LOG.error(
@@ -76,7 +79,7 @@ public class ExampleNAT {
 										HoleCheater.cheatHolePunch(args[0], Integer.valueOf(args[1]), args[3],
 												Integer.valueOf(args[4]));
 
-										Thread.sleep(20000); // refresh NAT mapping after 20 seconds
+										Thread.sleep(10000); // refresh NAT mapping after 20 seconds
 										}
 										LOG.error("exiting manual hole punching thread...");
 									} catch (NumberFormatException | IOException | InterruptedException e) {
@@ -89,7 +92,7 @@ public class ExampleNAT {
 						new UnreachablePeer(
 								new InetSocketAddress(InetAddress.getByName(args[0]), Integer.valueOf(args[1])),
 								new InetSocketAddress(InetAddress.getByName(args[3]), Integer.valueOf(args[4])),
-								connected, manualPunch, args[2].equals("u1") ? true : false);
+								connected, manualPunch, args[5].equals("u1") ? true : false);
 					}
 				} catch (NumberFormatException e) {
 					fail(e);

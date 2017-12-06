@@ -404,6 +404,7 @@ public class ChannelClient {
 						// TODO make sure request was also keepalive
 						if (!responseMessage.isKeepAlive()) {
 							// start SCTP
+							LOG.debug("did not set keep alive for {}", responseMessage);
 							isKeepAlive = false;
 						}
 						
@@ -454,6 +455,7 @@ public class ChannelClient {
 						}
 					}
 				}
+				LOG.debug("no more loop for "+datagramChannel.getLocalAddress());
 				link.close("regular close of datagram channel in reader");
 			} catch (SocketTimeoutException s) {
 				link.close("TIMEOUT");

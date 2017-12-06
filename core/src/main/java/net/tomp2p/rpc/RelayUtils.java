@@ -1,4 +1,4 @@
-package net.tomp2p.relay;
+package net.tomp2p.rpc;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

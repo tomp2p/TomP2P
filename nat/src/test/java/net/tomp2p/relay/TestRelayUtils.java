@@ -19,7 +19,7 @@ import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.relay.RelayUtils;
+import net.tomp2p.rpc.RelayUtils;
 
 import org.junit.Assert;
 import org.junit.Test;

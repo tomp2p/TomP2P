@@ -57,7 +57,7 @@ public class DirectDataRPC extends DispatchHandler {
 		}
 		// TODO: this flag comes from the sendirectbuilder
 		message.keepAlive(true);
-		message.sctp(true);
+		//message.sctp(true);
 		return channelCreator.sendUDP(message);
 	}
 
@@ -69,6 +69,7 @@ public class DirectDataRPC extends DispatchHandler {
 
 		}
 		
+		if(p!=null) {
 		p.done(new DoneCallback<SctpChannelFacade>() {
 			@Override
 			public void onDone(SctpChannelFacade result) {
@@ -82,7 +83,7 @@ public class DirectDataRPC extends DispatchHandler {
 					}
 				});
 			}
-		});
+		});}
 		
 		Message m2 = createResponseMessage(message, Type.OK);
 		m2.keepAlive(true);

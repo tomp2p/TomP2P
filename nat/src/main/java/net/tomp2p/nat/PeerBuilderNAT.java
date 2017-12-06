@@ -19,7 +19,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
-import net.tomp2p.relay.RelayRPC;
+import net.tomp2p.rpc.RelayRPC;
 
 public class PeerBuilderNAT {
 

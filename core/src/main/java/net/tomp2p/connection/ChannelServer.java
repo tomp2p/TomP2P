@@ -137,14 +137,15 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			final ScheduledExecutorService timer, PeerBean peerBean) throws IOException {
 		this.channelServerConfiguration = channelServerConfiguration;
 		this.dispatcher = dispatcher;
-
+		this.peerBean = peerBean;
+		
 		this.discoverNetworks = new DiscoverNetworks(5000, channelServerConfiguration.bindings(), timer);
 
 		discoverNetworks.addDiscoverNetworkListener(this);
 		if (timer != null) {
 			discoverNetworks.start().awaitUninterruptibly();
 		}
-		this.peerBean = peerBean;
+		
 		pendingMessages.expirationHandler(new ExpirationHandler<FutureDone<Message>>() {
 			@Override
 			public void expired(FutureDone<Message> oldValue) {
@@ -435,7 +436,8 @@ public final class ChannelServer implements DiscoverNetworkListener {
 					}
 					pendingMessages.clear();
 					
-				}  catch (Exception e) {
+				}  catch (Throwable e) {
+					e.printStackTrace();
 					if (!datagramChannel.isOpen()) {
 						LOG.debug("shutting down {}", listenAddresses);
 					} else {
@@ -450,7 +452,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 				final DatagramChannel datagramChannel, final InetSocketAddress remote, Message m)
 				throws Exception {
 			final Promise<SctpChannelFacade, Exception, Void> p;
-			if(m.isKeepAlive() && m.isRequest()) {
+			if(m.isKeepAlive() && m.isRequest() && m.sctp()) {
 				LOG.debug("setup SCTP connection: {}", m);
 				
 				int localSctpPort = ChannelUtils.localSctpPort(IP.fromInet4Address(remote.getAddress()), remote.getPort());
@@ -513,7 +515,12 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			FutureDone<Void> futureClose = new FutureDone<>();
 			FutureDone<SctpChannelFacade> futureSCTP = new FutureDone<>();
 			PeerAddress recipientAddress = message.recipient();
-			InetSocketAddress recipient = recipientAddress.createUDPSocket(message.sender());
+			final InetSocketAddress recipient; 
+			if(message.recipientSocket() != null) {
+				recipient = message.recipientSocket();
+			} else {
+				recipient = recipientAddress.createUDPSocket(message.sender());
+			}
 			
 			final SctpChannel sctpChannel;
 			if(message.sctp()) {
@@ -536,8 +543,8 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			Encoder encoder = new Encoder(new DSASignatureFactory());
 			try {
 				encoder.write(buf2, message, null);
-				
-				datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(message.sender()));
+				System.out.println("SEND BACK to: "+recipient+ " / "+message+ "//"+buf2.readableBytes());
+				datagramChannel.send(ChannelUtils.convert(buf2), recipient);
 
 				// if we send an ack, don't expect any incoming packets
 				if (!message.isAck() && futureMessage != null) {

@@ -528,6 +528,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 	
 
 	public InetSocketAddress createUDPSocket(final PeerAddress other) {
+		
 		final boolean canIPv6 = ipv6Flag && other.ipv6Flag;
 		final boolean canIPv4 = ipv4Flag && other.ipv4Flag;
 		if((preferIPv6Addresses && canIPv6) || 
@@ -535,12 +536,46 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 			if(ipv6Socket == null) {
 				throw new RuntimeException("Flag indicates that ipv6 is present, but its not");
 			}
-			return ipv6Socket.createUDPSocket();
+			//check if reachable
+			if(reachable6UDP) {
+				return ipv6Socket.createUDPSocket();
+			} else if(relaySize > 0) {
+				for(PeerSocketAddress relay:relays()) {
+					if(relay instanceof PeerSocket6Address) {
+						return ((PeerSocket6Address) relay).createUDPSocket();
+					}
+				}
+				for(PeerSocketAddress relay:relays()) {
+					if(relay instanceof PeerSocket4Address) {
+						return ((PeerSocket4Address) relay).createUDPSocket();
+					}
+				}
+				return null; //unreachable and no relay defined, cannot contact!
+			} else {
+				return null; //unreachable and no relay defined, cannot contact!
+			}
 		} else if(canIPv4) {
 			if(ipv4Socket == null) {
 				throw new RuntimeException("Flag indicates that ipv4 is present, but its not");
 			}
-			return ipv4Socket.createUDPSocket();
+			//check if reachable
+			if(reachable4UDP) {
+				return ipv4Socket.createUDPSocket();
+			} else if(relaySize > 0) {
+				for(PeerSocketAddress relay:relays()) {
+					if(relay instanceof PeerSocket4Address) {
+						return ((PeerSocket4Address) relay).createUDPSocket();
+					}
+				}
+				for(PeerSocketAddress relay:relays()) {
+					if(relay instanceof PeerSocket6Address) {
+						return ((PeerSocket6Address) relay).createUDPSocket();
+					}
+				}
+				return null; //unreachable and no relay defined, cannot contact!
+			} else {
+				return null; //unreachable and no relay defined, cannot contact!
+			}
 		}
 		else {
 			throw new RuntimeException("No matching protocal found");

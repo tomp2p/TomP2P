@@ -1,5 +1,6 @@
-package net.tomp2p.relay;
+package net.tomp2p.rpc;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -24,10 +25,8 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
-import net.tomp2p.rpc.DispatchHandler;
-import net.tomp2p.rpc.RPC;
-import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.ConcurrentCacheMap;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Triple;
 
 public class RelayRPC extends DispatchHandler {
@@ -49,7 +48,7 @@ public class RelayRPC extends DispatchHandler {
 	
 	private List<Map<Number160,Map<Number160, PeerStatistic>>> peerMaps;
 	
-	final private ConcurrentCacheMap<Number160, ChannelSender> activeRelays = new ConcurrentCacheMap<>(60, 10000);
+	final private ConcurrentCacheMap<Number160, Pair<InetSocketAddress, ChannelSender>> activeRelays = new ConcurrentCacheMap<>(60, 10000);
 	
 	public RelayRPC(Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
@@ -97,16 +96,17 @@ public class RelayRPC extends DispatchHandler {
 	
 	@Override
 	public void handleResponse(Responder r, Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
+		LOG.debug("handle relay RPC");
 		if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
 			//no capacity restrictions yet
-			activeRelays.putIfAbsent(message.recipient().peerId(), sender);
+			activeRelays.putIfAbsent(message.sender().peerId(), Pair.create(message.senderSocket(), sender));
 			r.response(handleSetup(message));
 		} else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
 			//no capacity restrictions yet
-			activeRelays.putIfAbsent(message.recipient().peerId(), sender);
+			activeRelays.putIfAbsent(message.sender().peerId(), Pair.create(message.senderSocket(), sender));
 		} else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
 			int portRequester = message.intAt(0);
-			ChannelSender storedSender = activeRelays.get(message.sender().peerId());
+			/*ChannelSender storedSender = activeRelays.get(message.sender().peerId());
 			if(storedSender != null) {
 				message.restoreBuffers();
 				message.restoreContentReferences();
@@ -126,23 +126,25 @@ public class RelayRPC extends DispatchHandler {
 				Message response = createResponseMessage(message, Type.OK);
 				response.intValue(port);
 				r.response(response);
-			}
+			}*/
 			
 			
 		} else {
 			//forward
-			ChannelSender storedSender = activeRelays.get(message.sender().peerId());
-			if(storedSender != null) {
+			Pair<InetSocketAddress, ChannelSender> pr = activeRelays.get(message.recipient().peerId());
+			if(pr != null) {
 				message.restoreBuffers();
 				message.restoreContentReferences();
-				storedSender.send(message).first.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+				message.recipientSocket(pr.element0());
+				pr.element1().send(message).first.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 					@Override
 					public void operationComplete(FutureDone<Message> future) throws Exception {
+						System.err.println("GOT IT");
 						r.response(future.object());
 					}
 				});
 			} else {
-				LOG.debug("no dispatcher");
+				LOG.debug("no acive relays found for {}, only for {}", message.sender().peerId(), activeRelays.keySet());
 			}
 		}
 	}
@@ -152,15 +154,15 @@ public class RelayRPC extends DispatchHandler {
 		//TODO: add myself as relay
 		//peerBean().notifyPeerFound(unreachablePeerConnectionCopy.remotePeer(), null, unreachablePeerConnectionCopy, null);
 		
-		for (Commands command : RPC.Commands.values()) {
+		for (RPC.Commands command : RPC.Commands.values()) {
 			//if (command != RPC.Commands.RELAY) {
 				// Register this class to handle all relay messages (currently used when a slow message
 				// arrives)
-				LOG.debug("register this for {}, {}",command.toString(), message);
+				LOG.debug("register {} for peer {} on behalf of {}", command.toString(), peer.peerID(), unreachablePeerId);
 				dispatcher().registerIoHandler(peer.peerID(), unreachablePeerId, this, command.getNr());
 			//}
 		}
-		return createResponseMessage(message, Type.OK);
+		return createResponseMessage(message, Type.OK).keepAlive(true);
 	}
 	
 	private void handleMap(Message message, Responder responder) {

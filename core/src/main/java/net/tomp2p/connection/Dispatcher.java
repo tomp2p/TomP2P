@@ -288,7 +288,7 @@ public class Dispatcher {
 				// not registered
 				LOG.debug(
 						"Handler not found for type {} we are looking for the server with ID {} on behalf of {}",
-						command, recipientID, onBehalfOf);
+						RPC.Commands.values()[command], recipientID, onBehalfOf);
 				return null;
 			}
 		} finally {

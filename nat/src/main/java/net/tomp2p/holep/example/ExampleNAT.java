@@ -8,6 +8,7 @@ import java.net.UnknownHostException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.sctp4nat.sample.extended.HolePuncher;
 import net.sctp4nat.util.SctpInitException;
 
 /**
@@ -76,7 +77,7 @@ public class ExampleNAT {
 									try {
 										while (!connected) {
 										LOG.error("entering manual hole punching thread...");
-										HoleCheater.cheatHolePunch(args[0], Integer.valueOf(args[1]), args[3],
+										HolePuncher.createNatMapping(args[0], Integer.valueOf(args[1]), args[3],
 												Integer.valueOf(args[4]));
 
 										Thread.sleep(10000); // refresh NAT mapping after 20 seconds

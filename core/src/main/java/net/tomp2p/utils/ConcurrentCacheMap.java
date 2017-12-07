@@ -28,6 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.tomp2p.message.MessageID;
+
 /**
  * A map with expiration and more or less LRU. Since the maps are separated in segments, the LRU is done for each
  * segment. A segment is chosen based on the hash of the key. If one segments is more loaded than another, then an entry
@@ -134,7 +136,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
      * @return The cache map that corresponds to this segment
      */
     private CacheMap<K, ExpiringObject> segment(final Object key) {
-        return segments[(key.hashCode() & Integer.MAX_VALUE) % SEGMENT_NR];
+    	return segments[(key.hashCode() & Integer.MAX_VALUE) % SEGMENT_NR];
     }
 
     @Override

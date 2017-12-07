@@ -70,19 +70,19 @@ public class DirectDataRPC extends DispatchHandler {
 		}
 		
 		if(p!=null) {
-		p.done(new DoneCallback<SctpChannelFacade>() {
-			@Override
-			public void onDone(SctpChannelFacade result) {
-				result.setSctpDataCallback(new SctpDataCallback() {
+			p.done(new DoneCallback<SctpChannelFacade>() {
+				@Override
+				public void onDone(SctpChannelFacade result) {
+					result.setSctpDataCallback(new SctpDataCallback() {
 					
-					@Override
-					public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
+						@Override
+						public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
 							SctpChannelFacade so) {
-						System.err.println("got packet: "+data.length);
-						so.send(new byte[200], true, 0, 0);
-					}
-				});
-			}
+							System.err.println("got packet: "+data.length);
+							so.send(new byte[200], true, 0, 0);
+						}
+					});
+				}
 		});}
 		
 		Message m2 = createResponseMessage(message, Type.OK);

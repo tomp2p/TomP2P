@@ -50,7 +50,7 @@ public final class MessageHeaderCodec {
     }
 
     public static final int HEADER_SIZE_STATIC = 34;
-    public static final int HEADER_SIZE_MIN = HEADER_SIZE_STATIC + PeerAddress.MIN_SIZE_HEADER; //59
+    public static final int HEADER_SIZE_MIN = HEADER_SIZE_STATIC + PeerAddress.MIN_SIZE_HEADER; //58
 
     /**
      * Encodes a message object.

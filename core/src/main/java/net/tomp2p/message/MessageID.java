@@ -100,6 +100,6 @@ public class MessageID implements Comparable<MessageID> {
 
     @Override
     public String toString() {
-        return new StringBuilder("MessageId:").append(id).append("/").append(peerAddress).toString();
+        return new StringBuilder("MessageId:").append(id).append("/").append(peerAddress.peerId()).toString();
     }
 }

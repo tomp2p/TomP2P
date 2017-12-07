@@ -21,6 +21,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -65,6 +66,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.IP;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Triple;
@@ -148,7 +150,7 @@ public class ChannelClient {
 				}
 				return Triple.create(futureMessage.failed(e),  futureSCTP.failed(e), futureClose.done());
 			}
-			LOG.debug("bound to {}", datagramChannel.socket().getLocalSocketAddress());
+			LOG.debug("bound to {}, I'm {}", datagramChannel.socket().getLocalSocketAddress(), dispatcher.peerBean().serverPeerAddress());
 			MyLink link = MyLink.of(futureClose, datagramChannel, pendingMessages, new MessageID(message), channelsUDP, semaphoreUPD);
 			
 			final SctpChannel sctpChannel;
@@ -420,6 +422,7 @@ public class ChannelClient {
 											responseMessage.verified();
 										}
 										//send(remote, m2);
+										LOG.debug("22replying to {} / {}", responseMessage, responseMessage.senderSocket());
 										send(responseMessage, null);
 									} else {
 										LOG.debug("not replying to {}", responseMessage);
@@ -429,15 +432,14 @@ public class ChannelClient {
 								
 								@Override
 								public void failed(String reason) {
-									// TODO Auto-generated method stub
-									
+									LOG.error(reason);
 								}
 							};
 							
 							dispatcher.dispatch(r, responseMessage, p, this);
 							
 						} else {
-							LOG.debug("peer isVerified: {}", responseMessage.isVerified());
+							LOG.debug("peer isVerified: {}, I'm {}", responseMessage.isVerified(), dispatcher.peerBean().serverPeerAddress());
 							if (!responseMessage.isVerified()) {
 								Message ackMessage = DispatchHandler.createAckMessage(responseMessage, Type.ACK, senderPeerAddress);
 								send(ackMessage, null);
@@ -458,8 +460,10 @@ public class ChannelClient {
 				LOG.debug("no more loop for "+datagramChannel.getLocalAddress());
 				link.close("regular close of datagram channel in reader");
 			} catch (SocketTimeoutException s) {
+				LOG.debug("timeout");
 				link.close("TIMEOUT");
 			} catch (ClosedChannelException s) {
+				LOG.debug("closed channel");
 				link.close("Closed channel");
 			} catch (Throwable t) {
 				t.printStackTrace();
@@ -473,8 +477,20 @@ public class ChannelClient {
 			Encoder encoder = new Encoder(new DSASignatureFactory());
 			try {
 				encoder.write(buf2, message, null);
+				
 				PeerAddress recipientAddress = message.recipient();
-				datagramChannel.send(ChannelUtils.convert(buf2), recipientAddress.createUDPSocket(message.sender()));
+				final InetSocketAddress recipient; 
+				if(message.senderSocket() != null && !message.senderSocket().getAddress().isAnyLocalAddress()) {
+					recipient = message.senderSocket();
+				} else {
+					recipient = recipientAddress.createUDPSocket(message.sender());
+				}
+				//announce port for holepunching
+				
+				
+				
+				LOG.debug("sending back to {}", recipient);
+				datagramChannel.send(ChannelUtils.convert(buf2), recipient);
 
 				// if we send an ack, don't expect any incoming packets
 				if (!message.isAck() && futureMessage != null) {

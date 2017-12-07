@@ -62,8 +62,9 @@ public class TestRelayRPC {
 			Assert.assertTrue(future.isSuccess());
 			Collection<PeerSocketAddress> pa = new ArrayList<>();
 			pa.add(relayPeer.peerAddress().ipv4Socket());
-			behindNAT1Peer.peerBean().serverPeerAddress(behindNAT1Peer.peerAddress().withRelays(pa).withReachable4UDP(false));
+			behindNAT1Peer.peerBean().serverPeerAddress(behindNAT1Peer.peerAddress().withRelays(pa).withReachable4UDP(false).withHolePunching(true));
 			
+			behindNAT2Peer.peerBean().serverPeerAddress(behindNAT2Peer.peerAddress().withReachable4UDP(false).withHolePunching(true));
 			FutureChannelCreator fcc2 = behindNAT2Peer.connectionBean().reservation().create(1);
             fcc2.awaitUninterruptibly();
             cc2 = fcc2.channelCreator();

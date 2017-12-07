@@ -29,6 +29,7 @@
   
   <logger name="net.tomp2p.rpc.RelayRPC" level="TRACE"/>
   <logger name="net.tomp2p.connection.Dispatcher" level="TRACE"/>
+  <logger name="net.tomp2p.utils.ConcurrentCacheMap" level="TRACE"/>
   <!--  <logger name="net.tomp2p.connection.Dispatcher" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.Sender" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.TCPChannelCache" level="TRACE"/> -->

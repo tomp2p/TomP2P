@@ -65,6 +65,7 @@ public class TestDirectData {
 	            fr.second.addListener(new BaseFutureAdapter<FutureDone<SctpChannelFacade>>() {
 					@Override
 					public void operationComplete(FutureDone<SctpChannelFacade> future) throws Exception {
+						if(future.isSuccess()) {
 						future.object().setSctpDataCallback(new SctpDataCallback() {
 							
 							@Override
@@ -76,7 +77,8 @@ public class TestDirectData {
 								}
 							}
 						});
-						future.object().send(new byte[1000], true, 0, 0);						
+						future.object().send(new byte[1000], true, 0, 0);
+						}
 					}
 				});
 	            

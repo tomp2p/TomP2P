@@ -93,7 +93,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     @Getter @Wither private final int ipInternalNetworkPrefix;
     //
-    @Getter @Wither  private final PeerSocket4Address ipv4Socket;
+    @Getter @Wither private final PeerSocket4Address ipv4Socket;
     @Getter @Wither private final PeerSocket6Address ipv6Socket;
     
     @Getter @Wither private final boolean ipv4Flag;
@@ -118,7 +118,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     // that is always checked, peerMap that is either added or checked if
     // already present. Also peers from the neighbor list sent over the wire are
     // added to the peermap.
-    private final int hashCode;
+    //private final int hashCode;
 
     //relays
     @Wither(value=AccessLevel.PRIVATE) private final Collection<PeerSocketAddress> relays0;
@@ -283,7 +283,6 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     	
 		final Pair<Number160, Integer> pair;
 		final PeerAddress peerAddress = builder.peerId((pair = Number160.decode(array, offset)).element0())
-			.hashCode(builder.peerId.hashCode())
 			.build();
 		return new Pair<PeerAddress, Integer>(peerAddress, pair.element1());
     }
@@ -312,7 +311,6 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 		}
 		return builder
 				.peerId(Number160.decode(buf))
-				.hashCode(builder.peerId.hashCode())
 				.build();
     }
 
@@ -478,8 +476,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     @Override
     public int hashCode() {
-        // don't calculate all the time, only once.
-        return this.hashCode;
+        return peerId.hashCode();
     }
 
 	public PeerAddress withIPSocket(PeerSocketAddress ps) {

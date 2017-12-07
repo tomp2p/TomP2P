@@ -149,6 +149,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 		pendingMessages.expirationHandler(new ExpirationHandler<FutureDone<Message>>() {
 			@Override
 			public void expired(FutureDone<Message> oldValue) {
+				System.err.println("TIME: "+oldValue);
 				oldValue.failed("Timeout occurred");
 			}
 		});
@@ -409,18 +410,22 @@ public final class ChannelServer implements DiscoverNetworkListener {
 						
 							
 						} else {
-							LOG.debug("peer isVerified: {}", m.isVerified());
+							LOG.debug("peer isVerified: {}, I'm: {}", m.isVerified(), peerBean.serverPeerAddress());
 							if (!m.isVerified()) {
 								Message ackMessage = DispatchHandler.createAckMessage(m, Type.ACK, peerBean.serverPeerAddress());
-								PeerAddress recipientAddress = m.recipient();
+								//PeerAddress recipientAddress = m.recipient();
+								PeerAddress recipientAddress = peerBean.serverPeerAddress();
 								send(recipientAddress.createUDPSocket(m.sender()), ackMessage);
 							} else {
 								//nothing to send anymore
 							}
 							
+							System.err.println("WTF: "+ pendingMessages.keySet());
+							LOG.debug("looking for message with id {}, I'm {}", new MessageID(m), peerBean.serverPeerAddress());
 							FutureDone<Message> currentFuture = pendingMessages.remove(new MessageID(m));
 						
 							if(currentFuture != null) {
+								LOG.debug("message removed: {}",m);
 								currentFuture.done(m);
 							} else {
 								LOG.warn("got response message without sending a request, ignoring...");
@@ -548,7 +553,9 @@ public final class ChannelServer implements DiscoverNetworkListener {
 
 				// if we send an ack, don't expect any incoming packets
 				if (!message.isAck() && futureMessage != null) {
+					LOG.debug("pending message add: {} with id {}, I'm {}", message, new MessageID(message), peerBean.serverPeerAddress());
 					pendingMessages.put(new MessageID(message), futureMessage);
+					System.err.println("XX:["+pendingMessages.keySet()+"]");
 				}
 			} catch (Throwable t) {
 				t.printStackTrace();

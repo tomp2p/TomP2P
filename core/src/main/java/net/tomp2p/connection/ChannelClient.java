@@ -45,7 +45,7 @@ import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import javassist.NotFoundException;
 import lombok.RequiredArgsConstructor;
-import net.sctp4nat.core.NetworkLink;
+import net.sctp4nat.connection.NetworkLink;
 import net.sctp4nat.core.SctpChannel;
 import net.sctp4nat.core.SctpChannelBuilder;
 import net.sctp4nat.core.SctpChannelFacade;

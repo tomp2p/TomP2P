@@ -39,8 +39,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
-import net.tomp2p.peers.IP.IPv4;
-import net.tomp2p.peers.IP.IPv6;
+import net.tomp2p.peers.IP;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -366,15 +365,15 @@ public class Utils2 {
 
 	public static PeerSocketAddress creatPeerSocket(InetAddress localHost, int udp) {
 		if(localHost instanceof Inet4Address) {
-			return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(localHost)).udpPort(udp).build();
+			return PeerSocket4Address.builder().ipv4(IP.fromInet4Address((Inet4Address)localHost)).udpPort(udp).build();
 		} else {
-			return PeerSocket6Address.builder().ipv6(IPv6.fromInet6Address(localHost)).udpPort(udp).build();
+			return PeerSocket6Address.builder().ipv6(IP.fromInet6Address((Inet6Address)localHost)).udpPort(udp).build();
 		}
 		
 	}
 	
 	public static PeerSocket4Address creatPeerSocket4(Inet4Address localHost, int udp) {
-		return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(localHost)).udpPort(udp).build();
+		return PeerSocket4Address.builder().ipv4(IP.fromInet4Address(localHost)).udpPort(udp).build();
 	}
 
 	public static PeerAddress createPeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP,

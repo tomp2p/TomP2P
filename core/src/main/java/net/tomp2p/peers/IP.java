@@ -1,12 +1,23 @@
 package net.tomp2p.peers;
 
+import java.net.DatagramSocket;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import lombok.NonNull;
+
 public abstract class IP {
-	public static class IPv4 extends IP {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(IP.class);
+	
+	public static class IPv4 {
+		public final static IPv4 WILDCARD = new IPv4(0);
 		private final int bits;
 
 		private IPv4(final int bits) {
@@ -44,14 +55,14 @@ public abstract class IP {
 			return new IPv4(newBits);
 		}
 		
-		public InetAddress toInetAddress() {
+		public Inet4Address toInet4Address() {
 			final byte[] ip = new byte[4];
 			ip[0] = (byte) (bits >>> 24);
 			ip[1] = (byte) (bits >>> 16);
 			ip[2] = (byte) (bits >>> 8);
 			ip[3] = (byte) (bits);
 			try {
-				return Inet4Address.getByAddress(ip);
+				return (Inet4Address) Inet4Address.getByAddress(ip);
 			} catch (UnknownHostException e) {
 				//we know the size, so this should not throw an exception
 				e.printStackTrace();
@@ -61,6 +72,22 @@ public abstract class IP {
 		
 		public int toInt() {
 			return bits;
+		}
+		
+		//https://stackoverflow.com/questions/5945288/get-default-gateway-in-java
+		public static IPv4 outboundInterfaceAddress() {
+			try(DatagramSocket s=new DatagramSocket())
+			{
+			    s.connect(Inet4Address.getByAddress(new byte[]{8,8,8,8}), 0);
+			    InetAddress local = s.getLocalAddress();
+			    if(local instanceof Inet4Address) {
+			    	LOG.debug("outbound address: {}", local);
+			    	return IP.fromInet4Address((Inet4Address) local);
+			    }
+			} catch (SocketException | UnknownHostException e) {
+				LOG.error("host issue?", e);
+			}
+			return WILDCARD;
 		}
 
 		@Override
@@ -93,10 +120,9 @@ public abstract class IP {
 			return sb.toString();
 		}
 	}
-	
-	
 
-	public static class IPv6 extends IP {
+	public static class IPv6 {
+		public final static IPv6 WILDCARD = new IPv6(0,0);
 		private final long highBits;
 		private final long lowBits;
 
@@ -118,7 +144,7 @@ public abstract class IP {
 			}
 		}
 		
-		public InetAddress toInetAddress() {
+		public Inet6Address toInet6Address() {
 			final byte[] ip = new byte[16];
 			ip[0]  = (byte) (highBits >>> 56);
 			ip[1]  = (byte) (highBits >>> 48);
@@ -137,7 +163,7 @@ public abstract class IP {
 			ip[14] = (byte) (lowBits >>> 8);
 			ip[15] = (byte) (lowBits);
 			try {
-				return Inet6Address.getByAddress(ip);
+				return (Inet6Address) Inet6Address.getByAddress(ip);
 			} catch (UnknownHostException e) {
 				//we know the size, so this should not throw an exception
 				e.printStackTrace();
@@ -151,6 +177,24 @@ public abstract class IP {
 		
 		public long toLongLo() {
 			return lowBits;
+		}
+		
+		//https://stackoverflow.com/questions/5945288/get-default-gateway-in-java
+		public static IPv6 outboundInterfaceAddress() {
+			try(DatagramSocket s=new DatagramSocket())
+			{
+				s.connect(Inet6Address.getByAddress(new byte[]{
+						0x20,0x1,0x48,0x60,0x48,0x60, 0, 0, 0, 0, 0, 0, 0, 0, (byte)0x88, (byte)0x88}), 0);
+				System.err.println(Inet6Address.getByName("2001:4860:4860::8888"));
+				InetAddress local = s.getLocalAddress();
+				if(local instanceof Inet6Address) {
+					LOG.debug("outbound address: {}",s.getInetAddress());
+					return IP.fromInet6Address((Inet6Address)local);
+				}
+			} catch (SocketException | UnknownHostException e) {
+				LOG.error("host issue?", e);
+			}
+			return WILDCARD;
 		}
 
 		@Override
@@ -192,18 +236,12 @@ public abstract class IP {
 		}
 	}
 	
-	public abstract InetAddress toInetAddress();
 	
 	public static IPv4 fromInt(final int bits) {
 		return new IPv4(bits);
 	}
 	
-	public static IPv4 fromInet4Address(final InetAddress inetAddress) {
-		if (inetAddress == null) {
-			throw new IllegalArgumentException("Cannot construct from null.");
-		} else if (!(inetAddress instanceof Inet4Address)) {
-			throw new IllegalArgumentException("Must be IPv4.");
-		}
+	public static IPv4 fromInet4Address(@NonNull final Inet4Address inetAddress) {
 		final byte[] buf = ((Inet4Address) inetAddress).getAddress();
 
 		final int ip = ((buf[0] & 0xFF) << 24) | ((buf[1] & 0xFF) << 16) | ((buf[2] & 0xFF) << 8)
@@ -215,12 +253,7 @@ public abstract class IP {
 		return new IPv6(highBits, lowBits);
 	}
 	
-	public static IPv6 fromInet6Address(final InetAddress inetAddress) {
-		if (inetAddress == null) {
-			throw new IllegalArgumentException("Cannot construct from null.");
-		} else if (!(inetAddress instanceof Inet6Address)) {
-			throw new IllegalArgumentException("Must be IPv6.");
-		}
+	public static IPv6 fromInet6Address(@NonNull final Inet6Address inetAddress) {
 		final byte[] buf = ((Inet6Address) inetAddress).getAddress();
 
 		final long highBits = ((buf[0] & 0xFFL) << 56) | ((buf[1] & 0xFFL) << 48) | ((buf[2] & 0xFFL) << 40)

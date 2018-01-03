@@ -37,8 +37,6 @@ public class Bindings {
     private final List<InetAddress> addresses = new ArrayList<InetAddress>(1);
     private final List<String> interfaceHints = new ArrayList<String>(1);
     private final List<StandardProtocolFamily> protocolHint = new ArrayList<StandardProtocolFamily>(1);
-
-    private boolean listenAny = false;
     
     /**
      * Adds an address that we want to listen to. If the address is not found,
@@ -142,25 +140,6 @@ public class Bindings {
     public boolean isIPv6() {
         return anyProtocols() || protocolHint.contains(StandardProtocolFamily.INET6);
     }
-
-    /**
-     * @return Checks if the user wants to listen to a wildcard address
-     */
-    public boolean isListenAny() {
-        return listenAny;
-    }
-    
-    public Bindings listenAny() {
-    	setListenAny(true);
-    	return this;
-    }
-    
-    public Bindings setListenAny(boolean listenAny) {
-    	this.listenAny = listenAny;
-    	return this;
-    }
-    
-    
 
     /**
      * Checks if the user provided an interface hint.

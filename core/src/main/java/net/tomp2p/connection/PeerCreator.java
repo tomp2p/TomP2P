@@ -17,6 +17,7 @@
 package net.tomp2p.connection;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.security.KeyPair;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.peers.IP;
 import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -193,7 +195,8 @@ public class PeerCreator {
 			throw new IOException("Not listening to anything. Maybe the binding information is wrong.");
 		}
 		
-		final PeerSocket4Address peerSocketAddress = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(outsideAddress))
+		
+		final PeerSocket4Address peerSocketAddress = PeerSocket4Address.builder().ipv4(IP.fromInet4Address((Inet4Address)outsideAddress))
 				.udpPort(channelServerConfiguration.ports().udpPort())
 				
 				.build(); 

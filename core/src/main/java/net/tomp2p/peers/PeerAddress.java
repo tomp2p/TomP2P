@@ -17,6 +17,7 @@ package net.tomp2p.peers;
 
 import java.io.Serializable;
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -503,7 +504,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 	public static PeerAddress create(final Number160 peerId, InetAddress inet, int udpPort) {
 		if(inet instanceof Inet4Address) {
 			final PeerSocket4Address ps4a = PeerSocket4Address.builder()
-					.ipv4(IP.IPv4.fromInet4Address(inet))
+					.ipv4(IP.fromInet4Address((Inet4Address)inet))
 					.udpPort(udpPort)
 					.build();
 			return builder()
@@ -512,7 +513,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 					.build();
 		} else {
 			final PeerSocket6Address ps6a = PeerSocket6Address.builder()
-					.ipv6(IP.IPv6.fromInet6Address(inet))
+					.ipv6(IP.fromInet6Address((Inet6Address)inet))
 					.udpPort(udpPort)
 					.build();
 			return builder()

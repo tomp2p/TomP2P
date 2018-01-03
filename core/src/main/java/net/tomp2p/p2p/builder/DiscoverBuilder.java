@@ -16,13 +16,14 @@
 
 package net.tomp2p.p2p.builder;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.util.Collection;
 
 import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClient;
-import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
@@ -40,8 +41,8 @@ import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
-import net.tomp2p.peers.IP.IPv4;
-import net.tomp2p.utils.Pair;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
+import net.tomp2p.peers.IP;
 import net.tomp2p.utils.Triple;
 import net.tomp2p.utils.Utils;
 
@@ -100,7 +101,7 @@ public class DiscoverBuilder {
     }
     
     public DiscoverBuilder peerSocketAddress(PeerSocket4Address peerSocketAddress) {
-    	 this.inetAddress = peerSocketAddress.ipv4().toInetAddress();
+    	 this.inetAddress = peerSocketAddress.ipv4().toInet4Address();
          this.portUDP = peerSocketAddress.udpPort();
          return this;
 	}
@@ -175,8 +176,21 @@ public class DiscoverBuilder {
         }
 
         if (peerAddress == null && inetAddress != null) {
-        	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inetAddress)).udpPort(portUDP).build();
-        	peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
+        	if(inetAddress instanceof Inet4Address) {
+        		PeerSocket4Address psa = PeerSocket4Address
+        				.builder()
+        				.ipv4(IP.fromInet4Address((Inet4Address)inetAddress))
+        				.udpPort(portUDP)
+        				.build();
+        		peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
+        	} else {
+        		PeerSocket6Address psa = PeerSocket6Address
+        				.builder()
+        				.ipv6(IP.fromInet6Address((Inet6Address)inetAddress))
+        				.udpPort(portUDP)
+        				.build();
+        		peerAddress = PeerAddress.builder().ipv6Socket(psa).peerId(Number160.ZERO).build();
+        	}
         }
         if (peerAddress == null) {
             throw new IllegalArgumentException("Peer address or inet address required.");
@@ -269,13 +283,13 @@ public class DiscoverBuilder {
                         if (!peer.peerAddress().ipv4Socket().equalsWithoutPorts(seenAs.ipv4Socket())) {
                             // check if we have this interface in that we can
                             // listen to
-                            Bindings bindings2 = new Bindings().addAddress(seenAs.ipv4Socket().ipv4().toInetAddress());
+                            Bindings bindings2 = new Bindings().addAddress(seenAs.ipv4Socket().ipv4().toInet4Address());
                           
                             DiscoverResults discoverResults = DiscoverNetworks.discoverInterfaces(bindings2);
                             String status = discoverResults.status();
                             LOG.info("2nd interface discovery: {}", status);
                             if (discoverResults.newAddresses().size() > 0
-                                    && discoverResults.newAddresses().contains(seenAs.ipv4Socket().ipv4().toInetAddress())) {
+                                    && discoverResults.newAddresses().contains(seenAs.ipv4Socket().ipv4().toInet4Address())) {
                                 serverAddress = serverAddress.withIpv4Socket(seenAs.ipv4Socket());
                                 peer.peerBean().serverPeerAddress(serverAddress);
                                 LOG.info("This peer had the wrong interface. Changed it to {}.", serverAddress);

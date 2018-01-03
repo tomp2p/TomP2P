@@ -15,18 +15,16 @@ public class DiscoverResults {
 	private final Collection<InetAddress> existingAddresses;
 	private final Collection<InetAddress> existingBroadcastAddresses;
 	private final String status;
-	private final boolean listenAny;
 
 	public DiscoverResults(Collection<InetAddress> newAddresses, Collection<InetAddress> newBroadcastAddresses,
 	        Collection<InetAddress> removedFoundAddresses, Collection<InetAddress> removedFoundBroadcastAddresses,
-	        Collection<InetAddress> existingAddresses, Collection<InetAddress> existingBroadcastAddresses, boolean listenAny, String status) {
+	        Collection<InetAddress> existingAddresses, Collection<InetAddress> existingBroadcastAddresses, String status) {
 		this.newAddresses = newAddresses;
 		this.newBroadcastAddresses = newBroadcastAddresses;
 		this.removedFoundAddresses = removedFoundAddresses;
 		this.removedFoundBroadcastAddresses = removedFoundBroadcastAddresses;
 		this.existingAddresses = existingAddresses;
 		this.existingBroadcastAddresses = existingBroadcastAddresses;
-		this.listenAny = listenAny;
 		this.status = status;
 	}
 
@@ -52,10 +50,6 @@ public class DiscoverResults {
 
 	public Collection<InetAddress> existingBroadcastAddresses() {
 		return existingBroadcastAddresses;
-	}
-
-	public boolean isListenAny() {
-		return listenAny;
 	}
 	
 	public String status() {

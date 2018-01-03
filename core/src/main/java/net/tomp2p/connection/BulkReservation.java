@@ -318,7 +318,7 @@ public class BulkReservation {
 				} else if (peerBean.serverPeerAddress() == null) {
 					fromAddress = Inet4Address.getByAddress(new byte[4]);
 				} else {
-					fromAddress = peerBean.serverPeerAddress().ipv4Socket().ipv4().toInetAddress();
+					fromAddress = peerBean.serverPeerAddress().ipv4Socket().ipv4().toInet4Address();
 				}
 
 				LOG.debug("channel from {} upd:{}. Remaining UDP: {}", fromAddress, permitsUDP,

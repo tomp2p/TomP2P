@@ -19,6 +19,7 @@ package net.tomp2p.connection;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
@@ -46,14 +47,9 @@ import javassist.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.sctp4nat.connection.NetworkLink;
-import net.sctp4nat.connection.SctpConnection;
 import net.sctp4nat.core.SctpChannel;
 import net.sctp4nat.core.SctpChannelBuilder;
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.core.SctpMapper;
-import net.sctp4nat.origin.SctpAcceptable;
-import net.sctp4nat.origin.SctpNotification;
-import net.sctp4nat.origin.SctpSocket.NotificationListener;
 import net.sctp4nat.util.SctpUtils;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
@@ -64,6 +60,8 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.MessageHeaderCodec;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.IP;
+import net.tomp2p.peers.IP.IPv4;
+import net.tomp2p.peers.IP.IPv6;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.utils.ConcurrentCacheMap;
@@ -108,6 +106,8 @@ public final class ChannelServer implements DiscoverNetworkListener {
 	public static final int MAX_PORT = 65535;
 	public static final int MIN_DYN_PORT = 49152;
 	
+	public volatile DatagramChannel sendingDatagramChannel;
+	
 	public static long packetCounterSend() {
 		return packetCounterSend.get();
 	}
@@ -142,8 +142,12 @@ public final class ChannelServer implements DiscoverNetworkListener {
 		this.discoverNetworks = new DiscoverNetworks(5000, channelServerConfiguration.bindings(), timer);
 
 		discoverNetworks.addDiscoverNetworkListener(this);
+		//search in this thread and call notifylisteners
+		discoverNetworks.discoverInterfaces();
+		
+		//now start a thread to check periodically for new interfaces
 		if (timer != null) {
-			discoverNetworks.start().awaitUninterruptibly();
+			discoverNetworks.start();
 		}
 		
 		pendingMessages.expirationHandler(new ExpirationHandler<FutureDone<Message>>() {
@@ -173,31 +177,34 @@ public final class ChannelServer implements DiscoverNetworkListener {
 				if (shutdown) {
 					return;
 				}
-
-				if (discoverResults.isListenAny()) {
-					listenAny();
+				listenSpecificInetAddresses(discoverResults);
+				IPv4 outbound4 = IPv4.outboundInterfaceAddress();
+				if(outbound4 != IPv4.WILDCARD) {
+					ServerThread serverThread = channelsUDP.get(outbound4.toInet4Address());
+					if(serverThread!=null) {
+						sendingDatagramChannel = serverThread.datagramChannel;
+						return; //we are done
+					} else {
+						LOG.debug("no matching IPv4 channel found for {}", outbound4);
+					}
 				} else {
-					listenSpecificInetAddresses(discoverResults);
+					LOG.debug("outbound IPv4 interface is wildcard");
+				}
+				IPv6 outbound6 = IPv6.outboundInterfaceAddress();
+				if(outbound6 != IPv6.WILDCARD) {
+					ServerThread serverThread = channelsUDP.get(outbound6.toInet6Address());
+					if(serverThread!=null) {
+						sendingDatagramChannel = serverThread.datagramChannel;
+						return; //we are done
+					} else {
+						LOG.debug("no matching IPv6 channel found for {}", outbound6);
+					}
+				} else {
+					LOG.debug("outbound IPv6 interface is wildcard");
 				}
 			}
 		}
 
-	}
-
-	private void listenAny() {
-
-		final InetSocketAddress udpSocket = new InetSocketAddress(channelServerConfiguration.ports().udpPort());
-		final boolean udpStart = startupUDP(udpSocket, true);
-		if (!udpStart) {
-			final boolean udpStart2 = startupUDP(udpSocket, false);
-			if (!udpStart2) {
-				LOG.warn("cannot bind UDP on socket at all {}", udpSocket);
-			} else {
-				LOG.warn("can only bind to UDP without broadcast support {}", udpSocket);
-			}
-		} else {
-			LOG.info("Listening UDP on socket {}", udpSocket);
-		}
 	}
 
 	// this method has blocking calls in it
@@ -460,7 +467,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			if(m.isKeepAlive() && m.isRequest() && m.sctp()) {
 				LOG.debug("setup SCTP connection: {}", m);
 				
-				int localSctpPort = ChannelUtils.localSctpPort(IP.fromInet4Address(remote.getAddress()), remote.getPort());
+				int localSctpPort = ChannelUtils.localSctpPort(IP.fromInet4Address((Inet4Address)remote.getAddress()), remote.getPort());
 				SctpChannel sctpChannel = new SctpChannelBuilder()
 						.remoteAddress(remote.getAddress())
 						.remotePort(remote.getPort())
@@ -533,7 +540,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 					sctpChannel = ChannelUtils.creatSCTPSocket(
 						recipient.getAddress(), 
 						recipient.getPort(), 
-						ChannelUtils.localSctpPort(IP.fromInet4Address(recipient.getAddress()), recipient.getPort()), 
+						ChannelUtils.localSctpPort(IP.fromInet4Address((Inet4Address)recipient.getAddress()), recipient.getPort()), 
 						futureSCTP);
 					openConnections.put(recipient, sctpChannel);
 				} catch (net.sctp4nat.util.SctpInitException e) {

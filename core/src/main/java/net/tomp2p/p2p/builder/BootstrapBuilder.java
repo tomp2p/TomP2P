@@ -16,6 +16,8 @@
 
 package net.tomp2p.p2p.builder;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -34,10 +36,11 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.peers.IP.IPv4;
+import net.tomp2p.peers.IP;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -124,7 +127,7 @@ public class BootstrapBuilder {
     }
     
     public BootstrapBuilder peerSocketAddress(PeerSocket4Address socket) {
-    	this.inetAddress = socket.ipv4().toInetAddress();
+    	this.inetAddress = socket.ipv4().toInet4Address();
     	this.portUDP = socket.udpPort();
 	    return this;
     }
@@ -185,8 +188,21 @@ public class BootstrapBuilder {
             routingConfiguration = new RoutingConfiguration(8, 10, 2);
         }
         if (peerAddress == null && inetAddress != null && bootstrapTo == null) {
-        	PeerSocket4Address psa = PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inetAddress)).udpPort(portUDP).build();
-        	PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
+        	if(inetAddress instanceof Inet4Address) {
+        		PeerSocket4Address psa = PeerSocket4Address
+        				.builder()
+        				.ipv4(IP.fromInet4Address((Inet4Address)inetAddress))
+        				.udpPort(portUDP)
+        				.build();
+        		PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
+        	} else {
+        		PeerSocket6Address psa = PeerSocket6Address
+        				.builder()
+        				.ipv6(IP.fromInet6Address((Inet6Address)inetAddress))
+        				.udpPort(portUDP)
+        				.build();
+        		PeerAddress peerAddress = PeerAddress.builder().ipv6Socket(psa).peerId(Number160.ZERO).build();
+        	}
             return bootstrapPing(peerAddress);
         } 
         if (peerAddress != null && bootstrapTo == null) {

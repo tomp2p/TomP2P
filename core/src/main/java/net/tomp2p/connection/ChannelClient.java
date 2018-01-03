@@ -19,6 +19,7 @@ package net.tomp2p.connection;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -519,7 +520,7 @@ public class ChannelClient {
 					sctpChannel = ChannelUtils.creatSCTPSocket(
 						recipient.getAddress(), 
 						recipient.getPort(), 
-						ChannelUtils.localSctpPort(IP.fromInet4Address(recipient.getAddress()), recipient.getPort()), 
+						ChannelUtils.localSctpPort(IP.fromInet4Address((Inet4Address)recipient.getAddress()), recipient.getPort()), 
 						futureSCTP);
 					openConnections.put(recipient, sctpChannel);
 				} catch (net.sctp4nat.util.SctpInitException e) {

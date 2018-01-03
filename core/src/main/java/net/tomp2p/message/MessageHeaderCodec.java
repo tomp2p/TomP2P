@@ -16,6 +16,7 @@
 package net.tomp2p.message;
 
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
@@ -25,8 +26,7 @@ import io.netty.buffer.ByteBuf;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.message.Message.ProtocolType;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.peers.IP.IPv4;
-import net.tomp2p.peers.IP.IPv6;
+import net.tomp2p.peers.IP;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.peers.Number160;
@@ -145,10 +145,10 @@ public final class MessageHeaderCodec {
         
         final PeerAddress sender = PeerAddress.decode(header, buffer);
         if(senderSocket.getAddress() instanceof Inet4Address) {
-        	PeerSocket4Address psa4 = sender.ipv4Socket().withIpv4(IPv4.fromInet4Address(senderSocket.getAddress()));
+        	PeerSocket4Address psa4 = sender.ipv4Socket().withIpv4(IP.fromInet4Address((Inet4Address)senderSocket.getAddress()));
         	message.sender(sender.withIpv4Socket(psa4));	
         } else {
-        	PeerSocket6Address psa6 = sender.ipv6Socket().withIpv6(IPv6.fromInet6Address(senderSocket.getAddress()));
+        	PeerSocket6Address psa6 = sender.ipv6Socket().withIpv6(IP.fromInet6Address((Inet6Address)senderSocket.getAddress()));
         	message.sender(sender.withIpv6Socket(psa6));	
         }
         

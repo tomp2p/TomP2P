@@ -1,6 +1,7 @@
 package net.tomp2p.peers;
 
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
@@ -45,7 +46,7 @@ public abstract class PeerSocketAddress {
 			if(!skipAddress) {
 				final int ip = Utils.byteArrayToInt(array, offset);
 				offset +=4;
-				builder.ipv4(IPv4.fromInt(ip));
+				builder.ipv4(IP.fromInt(ip));
 			}
 			final int udpPort = Utils.byteArrayToShort(array, offset);
 			offset +=2;
@@ -61,7 +62,7 @@ public abstract class PeerSocketAddress {
 		public static PeerSocket4Address decode(ByteBuf buf, final boolean skipAddress) {
 			PeerSocket4AddressBuilder builder = new PeerSocket4AddressBuilder();
 			if(!skipAddress) {
-				builder.ipv4(IPv4.fromInt(buf.readInt()));
+				builder.ipv4(IP.fromInt(buf.readInt()));
 			}
 			return builder.udpPort(buf.readUnsignedShort())
 					.build();
@@ -96,11 +97,11 @@ public abstract class PeerSocketAddress {
 		}
 		
 		public InetSocketAddress createUDPSocket() {
-			return new InetSocketAddress(ipv4.toInetAddress(), udpPort);
+			return new InetSocketAddress(ipv4.toInet4Address(), udpPort);
 		}
 		
 		public InetSocketAddress createSocket(int port) {
-			return new InetSocketAddress(ipv4.toInetAddress(), port);
+			return new InetSocketAddress(ipv4.toInet4Address(), port);
 		}
 
 		@Override
@@ -146,7 +147,7 @@ public abstract class PeerSocketAddress {
 	    }
 	    
 	    public static PeerSocket4Address create(Inet4Address inet, int udpPort) {
-			return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inet)).udpPort(udpPort).build();
+			return PeerSocket4Address.builder().ipv4(IP.fromInet4Address(inet)).udpPort(udpPort).build();
 		}
 
 		
@@ -174,7 +175,7 @@ public abstract class PeerSocketAddress {
 				offset +=8;
 				final long lo = Utils.byteArrayToLong(array, offset);
 				offset +=8;
-				builder.ipv6(IPv6.fromLong(hi, lo));
+				builder.ipv6(IP.fromLong(hi, lo));
 			}
 			final int udpPort = Utils.byteArrayToShort(array, offset);
 			offset +=2;
@@ -191,7 +192,7 @@ public abstract class PeerSocketAddress {
 		public static PeerSocket6Address decode(ByteBuf buf, final boolean skipAddress) {
 			PeerSocket6AddressBuilder builder = new PeerSocket6AddressBuilder();
 			if(!skipAddress) {
-				builder.ipv6(IPv6.fromLong(buf.readLong(),buf.readLong()));
+				builder.ipv6(IP.fromLong(buf.readLong(),buf.readLong()));
 			}
 			return builder.udpPort(buf.readUnsignedShort())
 					.build();
@@ -227,11 +228,11 @@ public abstract class PeerSocketAddress {
 		}
 		
 		public InetSocketAddress createUDPSocket() {
-			return new InetSocketAddress(ipv6.toInetAddress(), udpPort);
+			return new InetSocketAddress(ipv6.toInet6Address(), udpPort);
 		}
 		
 		public InetSocketAddress createSocket(int port) {
-			return new InetSocketAddress(ipv6.toInetAddress(), port);
+			return new InetSocketAddress(ipv6.toInet6Address(), port);
 		}
 		
 		@Override
@@ -280,9 +281,9 @@ public abstract class PeerSocketAddress {
 
 	public static PeerSocketAddress create(InetAddress inet, int udpPort, int tcpPort, int udtPort) {
 		if(inet instanceof Inet4Address) {
-			return PeerSocket4Address.builder().ipv4(IPv4.fromInet4Address(inet)).udpPort(udpPort).build();
+			return PeerSocket4Address.builder().ipv4(IP.fromInet4Address((Inet4Address)inet)).udpPort(udpPort).build();
 		} else {
-			return PeerSocket6Address.builder().ipv6(IPv6.fromInet6Address(inet)).udpPort(udpPort).build();
+			return PeerSocket6Address.builder().ipv6(IP.fromInet6Address((Inet6Address)inet)).udpPort(udpPort).build();
 		}
 		
 	}

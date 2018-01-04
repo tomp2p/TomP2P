@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.sctp4nat.core.SctpChannelFacade;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
@@ -92,14 +91,13 @@ public class QuitRPC extends DispatchHandler {
 	 *            The channel creator that creates connections
 	 * @return The future response to keep track of future events
 	 */
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder,
-	        final ChannelClient channelCreator) {
+	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder) {
 		final Message message = createMessage(remotePeer, RPC.Commands.QUIT.getNr(), Type.REQUEST_FF_1);
 		if (shutdownBuilder.isSign()) {
 			message.publicKeyAndSign(shutdownBuilder.keyPair());
 		}
 		LOG.debug("send QUIT message {}.", message);
-		return channelCreator.sendUDP(message);
+		return connectionBean().channelServer().sendUDP(message);
 	}
 
 	@Override

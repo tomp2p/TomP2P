@@ -29,7 +29,6 @@ import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FuturePing;
@@ -162,7 +161,7 @@ public class PingBuilder {
 		final FuturePing futurePing = new FuturePing();
 
 		Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDP(peerAddress,
-							future.channelCreator(), connectionConfiguration);
+							connectionConfiguration);
 					addPingListener(futurePing, p.first);
 				
 

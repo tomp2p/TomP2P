@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.SctpDataCallback;
 import net.sctp4nat.util.SctpInitException;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
@@ -49,8 +48,7 @@ public class DirectDataRPC extends DispatchHandler {
 		return createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(), Type.REQUEST_1);
 	}
 
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final PeerAddress remotePeer, final SendDirectBuilderI sendDirectBuilder,
-			final ChannelClient channelCreator) throws SctpInitException {
+	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final PeerAddress remotePeer, final SendDirectBuilderI sendDirectBuilder) throws SctpInitException {
 		Message message = sendInternal0(remotePeer, sendDirectBuilder);
 		if (sendDirectBuilder.isSign()) {
 			message.publicKeyAndSign(sendDirectBuilder.keyPair());
@@ -58,7 +56,7 @@ public class DirectDataRPC extends DispatchHandler {
 		// TODO: this flag comes from the sendirectbuilder
 		message.keepAlive(true);
 		//message.sctp(true);
-		return channelCreator.sendUDP(message);
+		return connectionBean().channelServer().sendUDP(message);
 	}
 
 	@Override

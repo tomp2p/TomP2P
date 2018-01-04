@@ -90,7 +90,7 @@ public class DistributedRouting {
      * @return a FutureRouting object, is set to complete if the route has been found
      */
     public FutureDone<Pair<FutureRouting,FutureRouting>> bootstrap(final Collection<PeerAddress> peerAddresses,
-            final RoutingBuilder routingBuilder, final ChannelServer cc) {
+            final RoutingBuilder routingBuilder) {
         // search close peers
         LOG.debug("Bootstrap to {}.", peerAddresses);
         final FutureDone<Pair<FutureRouting,FutureRouting>> futureDone = new FutureDone<Pair<FutureRouting,FutureRouting>>();
@@ -98,7 +98,7 @@ public class DistributedRouting {
         // first we find close peers to us
         routingBuilder.bootstrap(true);
 
-        final FutureRouting futureRouting0 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST_1, cc);
+        final FutureRouting futureRouting0 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST_1);
         // to not become a Fachidiot (expert idiot), we need to know other peers
         // as well. This is important if this peer is passive and only replies on requests from other peers
         futureRouting0.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -107,7 +107,7 @@ public class DistributedRouting {
                 // setting this to null causes to search for a random number
             	if(future.isSuccess()) {
             		routingBuilder.locationKey(null);
-            		final FutureRouting futureRouting1 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST_1, cc);
+            		final FutureRouting futureRouting1 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST_1);
             		futureRouting1.addListener(new BaseFutureAdapter<FutureRouting>() {
             			@Override
             			public void operationComplete(FutureRouting future) throws Exception {
@@ -123,10 +123,10 @@ public class DistributedRouting {
         return futureDone;
     }
     
-    public FutureRouting quit(final RoutingBuilder routingBuilder, final ChannelServer cc) {
+    public FutureRouting quit(final RoutingBuilder routingBuilder) {
     	Collection<PeerStatistic> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
                 routingBuilder.parallel() * 2);
-        return routing(startPeers, routingBuilder, Type.REQUEST_4, cc);
+        return routing(startPeers, routingBuilder, Type.REQUEST_4);
     }
 
     /**
@@ -141,11 +141,11 @@ public class DistributedRouting {
      * 
      * @return a FutureRouting object, is set to complete if the route has been found
      */
-    public FutureRouting route(final RoutingBuilder routingBuilder, final Type type, final ChannelServer cc) {
+    public FutureRouting route(final RoutingBuilder routingBuilder, final Type type) {
         // for bad distribution, use large NO_NEW_INFORMATION
         Collection<PeerStatistic> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
                 routingBuilder.parallel() * 2);
-        return routing(startPeers, routingBuilder, type, cc);
+        return routing(startPeers, routingBuilder, type);
     }
 
     /**
@@ -156,7 +156,7 @@ public class DistributedRouting {
      * @return a FutureRouting object, is set to complete if the route has been found
      */
     private FutureRouting routing(final Collection<PeerStatistic> peerAddresses,
-            final RoutingBuilder routingBuilder, final Type type, final ChannelServer cc) {
+            final RoutingBuilder routingBuilder, final Type type) {
         if (peerAddresses == null) {
             throw new IllegalArgumentException("Some nodes/addresses need to be specified.");
         }
@@ -244,7 +244,7 @@ public class DistributedRouting {
             boolean isRoutingOnlyToSelf = (peerAddresses.size() == 1 && peerAddresses.iterator().next()
                     .peerAddress().equals(peerBean.serverPeerAddress()));
             routingBuilder.routingOnlyToSelf(isRoutingOnlyToSelf);
-            routingRec(routingBuilder, routingMechanism, type, cc);
+            routingRec(routingBuilder, routingMechanism, type);
         }
         return futureRouting;
     }
@@ -259,7 +259,7 @@ public class DistributedRouting {
      * @param channelCreator
      */
     private void routingRec(final RoutingBuilder routingBuilder, final RoutingMechanism routingMechanism,
-            final Type type, final ChannelServer channelCreator) {
+            final Type type) {
 
         final boolean randomSearch = routingBuilder.locationKey() == null;
         int active = 0;
@@ -337,7 +337,7 @@ public class DistributedRouting {
                     // stop all operations, as we are finished, no need to go further
                 } else {
 
-                    routingRec(routingBuilder, routingMechanism, type, channelCreator);
+                    routingRec(routingBuilder, routingMechanism, type);
                 }
             }
         });

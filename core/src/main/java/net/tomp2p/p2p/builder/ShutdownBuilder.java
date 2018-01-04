@@ -18,10 +18,8 @@ package net.tomp2p.p2p.builder;
 
 import java.security.KeyPair;
 
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.Peer;
@@ -73,18 +71,13 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
         }
         
         int conn = routingConfiguration.parallel();
-        FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn);
         final FutureDone<Void> futureShutdown = new FutureDone<Void> ();
-        Utils.addReleaseListener(fcc, futureShutdown);
         
-        fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-            @Override
-            public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception {
-            	if (futureChannelCreator.isSuccess()) {
-            		ChannelClient cc = futureChannelCreator.channelCreator();
+        
+        
             		RoutingBuilder routingBuilder = BootstrapBuilder.createBuilder(routingConfiguration, forceRoutingOnlyToSelf);
             		routingBuilder.locationKey(peer.peerID());
-            		FutureRouting futureRouting = peer.distributedRouting().quit(routingBuilder, cc);
+            		FutureRouting futureRouting = peer.distributedRouting().quit(routingBuilder);
             		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
 						@Override
                         public void operationComplete(FutureRouting future) throws Exception {
@@ -95,11 +88,6 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
 	                       }
                         }
 					});
-            	} else {
-            		futureShutdown.failed(futureChannelCreator);
-            	}
-            }
-        });
         return futureShutdown;
     }
 

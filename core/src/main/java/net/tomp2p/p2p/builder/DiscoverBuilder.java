@@ -23,14 +23,12 @@ import java.util.Collection;
 
 import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
@@ -215,18 +213,7 @@ public class DiscoverBuilder {
      */
     private FutureDiscover discover(final PeerAddress peerAddress, final ConnectionConfiguration configuration, 
     		final FutureDiscover futureDiscover) {
-        FutureChannelCreator fcc = peer.connectionBean().reservation().create(1);
-        Utils.addReleaseListener(fcc, futureDiscover);
-        fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-            @Override
-            public void operationComplete(final FutureChannelCreator future) throws Exception {
-                if (future.isSuccess()) {
-                    discover(futureDiscover, peerAddress, future.channelCreator(), configuration);
-                } else {
-                    futureDiscover.failed(future);
-                }
-            }
-        });
+        discover(futureDiscover, peerAddress, configuration);
         return futureDiscover;
     }
 
@@ -238,7 +225,7 @@ public class DiscoverBuilder {
      * @return
      */
     private void discover(final FutureDiscover futureDiscover, final PeerAddress peerAddress,
-            final ChannelClient cc, final ConnectionConfiguration configuration) {
+            final ConnectionConfiguration configuration) {
     	LOG.debug("starting discover to {}",peerAddress);
     	final FutureDone<Void> pingDone = new FutureDone<Void>();
 
@@ -255,7 +242,7 @@ public class DiscoverBuilder {
         });
 
         
-        Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDPDiscover(peerAddress, cc,
+        Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDPDiscover(peerAddress, 
                 configuration); 
         
          
@@ -324,7 +311,7 @@ public class DiscoverBuilder {
                         // else -> we announce exactly how the other peer sees
                         // us
                         
-                        Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDPProbe(peerAddress, cc,
+                        Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDPProbe(peerAddress, 
                                 configuration);
                         
                         p.first.addListener(new BaseFutureAdapter<FutureResponse>() {

@@ -3,12 +3,10 @@ package net.tomp2p.rpc;
 
 import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelServer;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
@@ -44,16 +42,12 @@ public class TestPing {
         Peer sender = null;
         Peer recv1 = null;
         ChannelServer.resetCounters();
-        ChannelClient cc = null;
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean());
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = handshake.pingUDP(recv1.peerAddress(), cc,
+            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = handshake.pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
             fr.first.awaitUninterruptibly();
             System.err.println(fr.first.failedReason());
@@ -62,9 +56,6 @@ public class TestPing {
             //we shutdown between the 1 and 2 received packet, so it might be 1 or 2
             Assert.assertEquals(true, ChannelServer.packetCounterReceive() == 1 || ChannelServer.packetCounterReceive() == 2);
         } finally {
-            if (cc != null) {
-                cc.shutdown();
-            }
             if (sender != null) {
                 sender.shutdown().await();
             }
@@ -78,22 +69,18 @@ public class TestPing {
     public void testPingUDPKnowPeer() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
-        ChannelClient cc = null;
         ChannelServer.resetCounters();
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(9876).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(1234).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean());
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>>  fr = handshake.pingUDP(recv1.peerAddress(), cc,
+            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>>  fr = handshake.pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
             fr.first.awaitUninterruptibly();
             fr.third.awaitUninterruptibly();
             
-            fr = handshake.pingUDP(recv1.peerAddress(), cc,
+            fr = handshake.pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
             
             fr.first.awaitUninterruptibly();
@@ -104,9 +91,6 @@ public class TestPing {
             Assert.assertEquals(3, ChannelServer.packetCounterReceive());
             
         } finally {
-            if (cc != null) {
-                cc.shutdown();
-            }
             if (sender != null) {
                 sender.shutdown().await();
             }
@@ -121,26 +105,22 @@ public class TestPing {
     public void testPingTCPDeadLock2() throws Exception {
         Peer sender1 = null;
         Peer recv11 = null;
-        ChannelClient cc = null;
         try {
             final Peer sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
             sender1 = sender;
             final Peer recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
             recv11 = recv1;
 
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-            final ChannelClient cc1 = cc;
 
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
+
+            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
             fr.first.awaitUninterruptibly();
 
             fr.first.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
                 @Override
                 public void operationComplete(final FutureDone<Message> future) throws Exception {
-                	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(), cc1,
+                	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                             new DefaultConnectionConfiguration());
                     try {
                         fr2.first.await();
@@ -152,9 +132,6 @@ public class TestPing {
             Thread.sleep(1000);
             Assert.assertEquals(true, fr.first.isSuccess());
         } finally {
-            if (cc != null) {
-                cc.shutdown();
-            }
             if (sender1 != null) {
                 sender1.shutdown().await();
             }
@@ -168,24 +145,18 @@ public class TestPing {
     public void testPingHandlerError() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
-        ChannelClient cc = null;
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean(), false, true,
                     false);
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, false);
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = handshake.pingUDP(recv1.peerAddress(), cc,
+            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = handshake.pingUDP(recv1.peerAddress(),
                     new DefaultConnectionConfiguration());
             fr.first.awaitUninterruptibly();
             Assert.assertEquals(false, fr.first.isSuccess());
         } finally {
-            if (cc != null) {
-                cc.shutdown();
-            }
+
             if (sender != null) {
                 sender.shutdown().await();
             }
@@ -199,17 +170,13 @@ public class TestPing {
     public void testPingTimeout() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
-        ChannelClient cc = null;
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean(), false, true,
                     true);
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, true);
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress(), cc,
+            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress(), 
                     new DefaultConnectionConfiguration());
             fr.first.awaitUninterruptibly();
             Assert.assertEquals(false, fr.first.isSuccess());
@@ -217,9 +184,6 @@ public class TestPing {
             Assert.assertEquals(true, fr.first.failedReason().contains("TIMEOUT"));
             
         } finally {
-            if (cc != null) {
-                cc.shutdown();
-            }
             if (sender != null) {
                 sender.shutdown().await();
             }
@@ -233,16 +197,12 @@ public class TestPing {
     public void testPingPool() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
-        ChannelClient cc = null;
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
             List<Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>>> list = new ArrayList<>(50);
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(50);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
             for (int i = 0; i < 50; i++) {
-            	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
+            	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                         new DefaultConnectionConfiguration());
                 list.add(fr);
             }
@@ -252,9 +212,6 @@ public class TestPing {
                 Assert.assertTrue(fr2.first.isSuccess());
             }
         } finally {
-            if (cc != null) {
-                cc.shutdown();
-            }
             if (sender != null) {
                 sender.shutdown().await();
             }
@@ -273,17 +230,9 @@ public class TestPing {
             }
             List<Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>>> list = new ArrayList<>();
             for (int i = 0; i < p.length; i++) {
-                FutureChannelCreator fcc = p[0].connectionBean().reservation().create(1);
-                fcc.awaitUninterruptibly();
-                final ChannelClient cc = fcc.channelCreator();
-                Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = p[0].pingRPC().pingUDP(p[i].peerAddress(), cc,
+                Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = p[0].pingRPC().pingUDP(p[i].peerAddress(), 
                         new DefaultConnectionConfiguration());
-                fr.third.addListener(new BaseFutureAdapter<FutureDone<ClientChannel>>() {
-					@Override
-					public void operationComplete(FutureDone<ClientChannel> future) throws Exception {
-						cc.shutdown();
-					}
-				});
+                
                 
                 list.add(fr);
             }
@@ -313,16 +262,12 @@ public class TestPing {
             long start = System.currentTimeMillis();
             List<Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>>> list = new ArrayList<>(100);
             for (int i = 0; i < 20; i++) {
-                FutureChannelCreator fcc = recv1.connectionBean().reservation().create(50);
-                fcc.awaitUninterruptibly();
-                ChannelClient cc = fcc.channelCreator();
                 for (int j = 0; j < 50; j++) {
-                	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
+                	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                             new DefaultConnectionConfiguration());
                     list.add(fr);
                 }
                 list.clear();
-                cc.shutdown();
             }
             System.out.println("UDP time: " + (System.currentTimeMillis() - start));
             for (Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 : list) {
@@ -354,20 +299,16 @@ public class TestPing {
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
-            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
-            fcc.awaitUninterruptibly();
-            ChannelClient cc = fcc.channelCreator();
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
+            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
             
             fr.first.awaitUninterruptibly();
             fr.third.awaitUninterruptibly();
-            cc.shutdown();
             
             System.err.println(fr.first.failedReason());
             Assert.assertEquals(true, fr.first.isSuccess());
             
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(), cc,
+            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(),
                     new DefaultConnectionConfiguration());
             fr2.first.awaitUninterruptibly();
             fr2.third.awaitUninterruptibly();

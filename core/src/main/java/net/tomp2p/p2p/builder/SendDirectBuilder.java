@@ -22,7 +22,6 @@ import java.security.KeyPair;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;

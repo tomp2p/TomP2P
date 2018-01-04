@@ -9,8 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.sctp4nat.core.SctpChannelFacade;
-import net.sctp4nat.core.SctpPorts;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.Dispatcher;
@@ -58,11 +56,11 @@ public class RelayRPC extends DispatchHandler {
 	}
 	
 	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> sendSetupMessage(
-			final PeerAddress candidate, final ChannelClient channelCreator) {
+			final PeerAddress candidate) {
 		
 		final Message message = createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
 		message.keepAlive(true);
-		return channelCreator.sendUDP(message);
+		return connectionBean().channelServer().sendUDP(message);
 		
 	}
 	
@@ -83,15 +81,13 @@ public class RelayRPC extends DispatchHandler {
 	}
 	
 	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> sendRendezvousMessage(
-			final PeerAddress remote, final ChannelClient channelCreator, final int port) {
+			final PeerAddress remote, final int port) {
 		
 		final Message message = createMessage(remote, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
 		message.keepAlive(true);
 		message.intAt(port);
-		return channelCreator.sendUDP(message);
-		
-		//fire up holes!
-		
+		return connectionBean().channelServer().sendUDP(message);	
+		//fire up holes!	
 	}
 	
 	@Override

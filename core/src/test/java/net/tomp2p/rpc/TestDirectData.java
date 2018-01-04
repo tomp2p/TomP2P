@@ -12,10 +12,8 @@ import org.junit.runner.Description;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.Sctp;
 import net.sctp4nat.origin.SctpDataCallback;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelServer;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
@@ -38,7 +36,6 @@ public class TestDirectData {
 	    	Peer sender = null;
 	        Peer recv1 = null;
 	        ChannelServer.resetCounters();
-	        ChannelClient cc = null;
 	        try {
 	            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(9876).start();
 	            DirectDataRPC direct = new DirectDataRPC(sender.peerBean(), sender.connectionBean());
@@ -53,11 +50,9 @@ public class TestDirectData {
 	            recv1 = b.start();
 	            
 	            new DirectDataRPC(recv1.peerBean(), recv1.connectionBean());
-	            FutureChannelCreator fcc = recv1.connectionBean().reservation().create(1);
-	            fcc.awaitUninterruptibly();
-	            cc = fcc.channelCreator();
+
 	            SendDirectBuilder s = new SendDirectBuilder(sender, recv1.peerAddress());
-	            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = direct.send(recv1.peerAddress(), s, cc);
+	            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = direct.send(recv1.peerAddress(), s);
 	            fr.first.awaitUninterruptibly();
 	            Assert.assertEquals(true, fr.first.isSuccess());
 	            //Thread.sleep(1000);
@@ -85,9 +80,6 @@ public class TestDirectData {
 	            l.await();
 	            
 	        } finally {
-	            if (cc != null) {
-	                cc.shutdown();
-	            }
 	            if (sender != null) {
 	                sender.shutdown().await();
 	            }

@@ -12,8 +12,6 @@ import org.junit.runner.Description;
 
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.Sctp;
-import net.tomp2p.connection.ChannelClient;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
@@ -40,8 +38,6 @@ public class TestRelayRPC {
 		Peer behindNAT1Peer = null;
 		Peer behindNAT2Peer = null;
 		Peer relayPeer = null;
-		ChannelClient cc = null;
-		ChannelClient cc2 = null;
 		try {
 			behindNAT1Peer = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(1234).start();
 			RelayRPC behindNAT1Relay = new RelayRPC(behindNAT1Peer);
@@ -54,10 +50,7 @@ public class TestRelayRPC {
 			relayPeer = new PeerBuilder(new Number160("0x5665")).p2pId(55).enableMaintenance(false).port(5665).start();
 			RelayRPC relayRelay = new RelayRPC(relayPeer);
 			
-			FutureChannelCreator fcc = behindNAT1Peer.connectionBean().reservation().create(1);
-            fcc.awaitUninterruptibly();
-            cc = fcc.channelCreator();
-			FutureDone<Message> future = behindNAT1Relay.sendSetupMessage(relayPeer.peerAddress(), cc).first;
+			FutureDone<Message> future = behindNAT1Relay.sendSetupMessage(relayPeer.peerAddress()).first;
 			future.awaitUninterruptibly();
 			Assert.assertTrue(future.isSuccess());
 			Collection<PeerSocketAddress> pa = new ArrayList<>();
@@ -65,11 +58,8 @@ public class TestRelayRPC {
 			behindNAT1Peer.peerBean().serverPeerAddress(behindNAT1Peer.peerAddress().withRelays(pa).withReachable4UDP(false).withHolePunching(true));
 			
 			behindNAT2Peer.peerBean().serverPeerAddress(behindNAT2Peer.peerAddress().withReachable4UDP(false).withHolePunching(true));
-			FutureChannelCreator fcc2 = behindNAT2Peer.connectionBean().reservation().create(1);
-            fcc2.awaitUninterruptibly();
-            cc2 = fcc2.channelCreator();
 			SendDirectBuilder s = new SendDirectBuilder(behindNAT2Peer, behindNAT1Peer.peerAddress());
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = d2.send(behindNAT1Peer.peerAddress(), s, cc2);
+            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = d2.send(behindNAT1Peer.peerAddress(), s);
 			fr.first.awaitUninterruptibly();
 			Assert.assertTrue(fr.first.isSuccess());
 			
@@ -78,12 +68,6 @@ public class TestRelayRPC {
 		} catch (Throwable t) {
 			t.printStackTrace();
 		} finally {
-            if (cc != null) {
-                cc.shutdown();
-            }
-            if (cc2 != null) {
-                cc2.shutdown();
-            }
             if (behindNAT1Peer != null) {
             	behindNAT1Peer.shutdown().await();
             }

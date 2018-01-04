@@ -16,7 +16,6 @@
 package net.tomp2p.rpc;
 
 import net.sctp4nat.core.SctpChannelFacade;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
@@ -50,7 +49,7 @@ public class BroadcastRPC extends DispatchHandler {
     }
 
     public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
-            final ChannelClient channelCreator, final ConnectionConfiguration configuration, int bucketNr) {
+            final ConnectionConfiguration configuration, int bucketNr) {
         final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
         message.intValue(broadcastBuilder.hopCounter());
         message.intValue(bucketNr);
@@ -59,7 +58,7 @@ public class BroadcastRPC extends DispatchHandler {
         if (broadcastBuilder.dataMap() != null) {
             message.setDataMap(new DataMap(broadcastBuilder.dataMap()));
         }
-        return channelCreator.sendUDP(message);
+        return connectionBean().channelServer().sendUDP(message);
 
     }
 

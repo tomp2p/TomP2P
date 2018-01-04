@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.NavigableSet;
 
 import net.sctp4nat.core.SctpChannelFacade;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
@@ -112,7 +111,7 @@ public class NeighborRPC extends DispatchHandler {
      * @return The future response to keep track of future events
      */
     public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
-            final Type type, final ChannelClient channelCreator, final ConnectionConfiguration configuration) {
+            final Type type, final ConnectionConfiguration configuration) {
         Message message = createMessage(remotePeer, RPC.Commands.NEIGHBOR.getNr(), type);
         if (!message.isRequest()) {
             throw new IllegalArgumentException("The type must be a request");
@@ -140,10 +139,10 @@ public class NeighborRPC extends DispatchHandler {
         	}
         }
         LOG.debug("Ask remote peer for neighbors with msg {}", message);
-        return send(message, configuration, channelCreator);
+        return send(message, configuration);
     }
 
-    private Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final Message message, final ConnectionConfiguration configuration, final ChannelClient channelCreator) {
+    private Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final Message message, final ConnectionConfiguration configuration) {
         final FutureResponse futureResponse = new FutureResponse(message);
         futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override
@@ -163,7 +162,7 @@ public class NeighborRPC extends DispatchHandler {
             }
         });
         
-        return channelCreator.sendUDP(message);
+        return connectionBean().channelServer().sendUDP(message);
     }
 
     @Override

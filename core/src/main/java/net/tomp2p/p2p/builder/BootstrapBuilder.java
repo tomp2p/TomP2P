@@ -221,7 +221,7 @@ public class BootstrapBuilder {
         int conn = routingConfiguration.parallel();
         RoutingBuilder routingBuilder = createBuilder(routingConfiguration, forceRoutingOnlyToSelf);
                     FutureDone<Pair<FutureRouting,FutureRouting>> futureBootstrap = peer.distributedRouting().bootstrap(
-                            bootstrapTo, routingBuilder, futureChannelCreator.channelCreator());
+                            bootstrapTo, routingBuilder);
                     result.waitFor(futureBootstrap);
                 
         return result;

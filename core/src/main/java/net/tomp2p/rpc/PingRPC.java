@@ -19,15 +19,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.sctp4nat.core.SctpChannelFacade;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ChannelSender;
+import net.tomp2p.connection.ChannelServer;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -112,11 +111,10 @@ public class PingRPC extends DispatchHandler {
 	 *
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> pingUDP(final PeerAddress remotePeer, final ChannelClient channelCreator,
-			final ConnectionConfiguration configuration) {
+	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> pingUDP(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
 		LOG.debug("Pinging UDP the remote peer {}.", remotePeer);
 		Message message = createHandler(remotePeer, Type.REQUEST_1, configuration);
-		return channelCreator.sendUDP(message);
+		return connectionBean().channelServer().sendUDP(message);
 	}
 
 	/**
@@ -129,10 +127,9 @@ public class PingRPC extends DispatchHandler {
 	 * @return The future that will be triggered when we receive an answer or
 	 *         something fails.
 	 */
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fireUDP(final PeerAddress remotePeer, final ChannelClient channelCreator,
-			final ConnectionConfiguration configuration) {
+	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fireUDP(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
 		final Message message = createHandler(remotePeer, Type.REQUEST_FF_1, configuration);
-		return channelCreator.sendUDP(message);
+		return connectionBean().channelServer().sendUDP(message);
 	}
 
 	/**

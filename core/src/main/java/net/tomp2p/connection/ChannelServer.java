@@ -82,6 +82,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 
 	private final Map<InetAddress, ServerThread> channelsUDP = Collections
 			.synchronizedMap(new HashMap<InetAddress, ServerThread>());
+	
 
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
@@ -608,6 +609,11 @@ public final class ChannelServer implements DiscoverNetworkListener {
 	 */
 	public FutureDone<Void> shutdownFuture() {
 		return futureServerDone;
+	}
+
+	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> sendUDP(Message message) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	

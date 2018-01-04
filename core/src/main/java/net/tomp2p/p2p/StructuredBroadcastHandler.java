@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -177,29 +176,18 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 			final PeerAddress peerAddress,
 			final int bucketNr) {
 
-		FutureChannelCreator frr = peer.connectionBean().reservation()
-				.create(1);
-		frr.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-			@Override
-			public void operationComplete(final FutureChannelCreator future)
-					throws Exception {
-				if (future.isSuccess()) {
+		
 					BroadcastBuilder broadcastBuilder = new BroadcastBuilder(
 							peer, messageKey);
 					broadcastBuilder.dataMap(dataMap);
 					broadcastBuilder.hopCounter(hopCounter + 1);
-					Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.broadcastRPC()
+					/*Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.broadcastRPC()
 							.send(peerAddress, broadcastBuilder,
 									future.channelCreator(), broadcastBuilder,
-									bucketNr);
+									bucketNr);*/
+					//TODO: make this work again
 					LOG.debug("send to {}", peerAddress);
 					messageCounter.incrementAndGet();
-					Utils.addReleaseListener(future.channelCreator(),
-							p.first);
-				} else {
-					Utils.addReleaseListener(future.channelCreator());
-				}
-			}
-		});
+					
 	}
 }

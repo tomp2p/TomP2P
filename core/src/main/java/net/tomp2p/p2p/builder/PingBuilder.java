@@ -161,21 +161,10 @@ public class PingBuilder {
 	private FuturePing ping(PeerAddress peerAddress) {
 		final FuturePing futurePing = new FuturePing();
 
-		FutureChannelCreator fcc = peer.connectionBean().reservation().create(1);
-		Utils.addReleaseListener(fcc, futurePing);
-		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-			@Override
-			public void operationComplete(final FutureChannelCreator future) throws Exception {
-				if (future.isSuccess()) {
-					Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDP(peerAddress,
+		Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDP(peerAddress,
 							future.channelCreator(), connectionConfiguration);
 					addPingListener(futurePing, p.first);
-				} else {
-					futurePing.failed(future);
-				}
-			}
-
-		});
+				
 
 		return futurePing;
 	}

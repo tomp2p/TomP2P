@@ -20,14 +20,12 @@ import java.util.Collections;
 import java.util.List;
 
 import net.sctp4nat.origin.SctpDataCallback;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 //import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureDoneAttachment;
 import net.tomp2p.futures.FutureLateJoin;

@@ -89,8 +89,7 @@ public class PeerCreator {
 		        dispatcher, timer, peerBean);	
 		
 		//connection bean
-		BulkReservation reservation = new BulkReservation(channelClientConfiguration, peerBean, dispatcher);
-		connectionBean = new ConnectionBean(p2pId, dispatcher, channelServer, reservation,
+		connectionBean = new ConnectionBean(p2pId, dispatcher, channelServer,
 		        channelClientConfiguration, timer);
 		this.master = true;
 	}
@@ -140,17 +139,13 @@ public class PeerCreator {
 		}
 		
 		LOG.debug("Shutting down client...");
-		connectionBean.reservation().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+		connectionBean.channelServer().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {		
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
-				connectionBean.channelServer().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {		
-                    @Override
-					public void operationComplete(final FutureDone<Void> future) throws Exception {
-                    	futureServerDone.done();
-					}
-				});
+				futureServerDone.done();
 			}
 		});
+			
 		// this is blocking
 		return futureServerDone;
 	}

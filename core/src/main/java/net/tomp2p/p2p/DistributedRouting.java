@@ -24,7 +24,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import net.tomp2p.connection.ChannelClient;
+import net.tomp2p.connection.ChannelServer;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -90,7 +90,7 @@ public class DistributedRouting {
      * @return a FutureRouting object, is set to complete if the route has been found
      */
     public FutureDone<Pair<FutureRouting,FutureRouting>> bootstrap(final Collection<PeerAddress> peerAddresses,
-            final RoutingBuilder routingBuilder, final ChannelClient cc) {
+            final RoutingBuilder routingBuilder, final ChannelServer cc) {
         // search close peers
         LOG.debug("Bootstrap to {}.", peerAddresses);
         final FutureDone<Pair<FutureRouting,FutureRouting>> futureDone = new FutureDone<Pair<FutureRouting,FutureRouting>>();
@@ -123,7 +123,7 @@ public class DistributedRouting {
         return futureDone;
     }
     
-    public FutureRouting quit(final RoutingBuilder routingBuilder, final ChannelClient cc) {
+    public FutureRouting quit(final RoutingBuilder routingBuilder, final ChannelServer cc) {
     	Collection<PeerStatistic> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
                 routingBuilder.parallel() * 2);
         return routing(startPeers, routingBuilder, Type.REQUEST_4, cc);
@@ -141,7 +141,7 @@ public class DistributedRouting {
      * 
      * @return a FutureRouting object, is set to complete if the route has been found
      */
-    public FutureRouting route(final RoutingBuilder routingBuilder, final Type type, final ChannelClient cc) {
+    public FutureRouting route(final RoutingBuilder routingBuilder, final Type type, final ChannelServer cc) {
         // for bad distribution, use large NO_NEW_INFORMATION
         Collection<PeerStatistic> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
                 routingBuilder.parallel() * 2);
@@ -156,7 +156,7 @@ public class DistributedRouting {
      * @return a FutureRouting object, is set to complete if the route has been found
      */
     private FutureRouting routing(final Collection<PeerStatistic> peerAddresses,
-            final RoutingBuilder routingBuilder, final Type type, final ChannelClient cc) {
+            final RoutingBuilder routingBuilder, final Type type, final ChannelServer cc) {
         if (peerAddresses == null) {
             throw new IllegalArgumentException("Some nodes/addresses need to be specified.");
         }
@@ -259,7 +259,7 @@ public class DistributedRouting {
      * @param channelCreator
      */
     private void routingRec(final RoutingBuilder routingBuilder, final RoutingMechanism routingMechanism,
-            final Type type, final ChannelClient channelCreator) {
+            final Type type, final ChannelServer channelCreator) {
 
         final boolean randomSearch = routingBuilder.locationKey() == null;
         int active = 0;

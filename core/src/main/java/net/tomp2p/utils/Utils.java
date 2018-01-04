@@ -54,10 +54,8 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import io.netty.buffer.ByteBuf;
-import net.tomp2p.connection.ChannelClient;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.IP.IPv4;
@@ -837,51 +835,6 @@ public class Utils {
             }
         }
         return b;
-    }
-
-    /**
-	 * Adds a listener to the response futures and releases all acquired channels in the channel creator.
-     * 
-     * @param channelCreator
-     *            The channel creator that will be shutdown and all connections will be closed
-     * @param baseFutures
-	 *            The futures to listen to. If all the futures finished, then the channel creator is shut down.
-	 *            If null is provided, then the channel crator is shut down immediately.
-     */
-    public static void addReleaseListener(final ChannelClient channelCreator,
-            final BaseFuture... baseFutures) {
-        if (baseFutures == null) {
-            channelCreator.shutdown();
-            return;
-        }
-        final int count = baseFutures.length;
-        final AtomicInteger finished = new AtomicInteger(0);
-        for (BaseFuture baseFuture : baseFutures) {
-            baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() {
-                @Override
-                public void operationComplete(final BaseFuture future) throws Exception {
-                    if (finished.incrementAndGet() == count) {
-                        channelCreator.shutdown();
-                    }
-                }
-            });
-        }
-    }
-    
-    public static void addReleaseListener(final FutureChannelCreator fcc, final BaseFuture baseFuture) {
-    	baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() {
-    		@Override
-            public void operationComplete(final BaseFuture future) throws Exception {
-    			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-					@Override
-                    public void operationComplete(FutureChannelCreator future) throws Exception {
-						if(future.channelCreator()!=null) {
-							future.channelCreator().shutdown();
-						}
-                    }
-				});
-    		}
-    	});
     }
 
     /**

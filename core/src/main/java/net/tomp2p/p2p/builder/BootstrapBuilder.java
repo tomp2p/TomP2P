@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureRouting;
@@ -220,21 +219,11 @@ public class BootstrapBuilder {
         final FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>> result = new FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>>();
         result.bootstrapTo(bootstrapTo);
         int conn = routingConfiguration.parallel();
-        FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn);
-        Utils.addReleaseListener(fcc, result);
-        fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-            @Override
-            public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception {
-                if (futureChannelCreator.isSuccess()) {
-                    RoutingBuilder routingBuilder = createBuilder(routingConfiguration, forceRoutingOnlyToSelf);
+        RoutingBuilder routingBuilder = createBuilder(routingConfiguration, forceRoutingOnlyToSelf);
                     FutureDone<Pair<FutureRouting,FutureRouting>> futureBootstrap = peer.distributedRouting().bootstrap(
                             bootstrapTo, routingBuilder, futureChannelCreator.channelCreator());
                     result.waitFor(futureBootstrap);
-                } else {
-                    result.failed(futureChannelCreator);
-                }
-            }
-        });
+                
         return result;
     }
 

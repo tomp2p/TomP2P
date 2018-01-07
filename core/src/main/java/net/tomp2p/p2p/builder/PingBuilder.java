@@ -160,9 +160,9 @@ public class PingBuilder {
 	private FuturePing ping(PeerAddress peerAddress) {
 		final FuturePing futurePing = new FuturePing();
 
-		Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDP(peerAddress,
+		Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> p = peer.pingRPC().pingUDP(peerAddress,
 							connectionConfiguration);
-					addPingListener(futurePing, p.first);
+					addPingListener(futurePing, p.element0());
 				
 
 		return futurePing;

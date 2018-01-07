@@ -48,7 +48,7 @@ public class BroadcastRPC extends DispatchHandler {
         this.broadcastHandler = broadcastHandler;
     }
 
-    public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
+    public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
             final ConnectionConfiguration configuration, int bucketNr) {
         final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
         message.intValue(broadcastBuilder.hopCounter());

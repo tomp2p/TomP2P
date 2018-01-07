@@ -91,7 +91,7 @@ public class QuitRPC extends DispatchHandler {
 	 *            The channel creator that creates connections
 	 * @return The future response to keep track of future events
 	 */
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder) {
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder) {
 		final Message message = createMessage(remotePeer, RPC.Commands.QUIT.getNr(), Type.REQUEST_FF_1);
 		if (shutdownBuilder.isSign()) {
 			message.publicKeyAndSign(shutdownBuilder.keyPair());

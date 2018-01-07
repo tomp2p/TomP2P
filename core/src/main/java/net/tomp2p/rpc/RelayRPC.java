@@ -55,7 +55,7 @@ public class RelayRPC extends DispatchHandler {
 		register(RPC.Commands.RELAY.getNr());
 	}
 	
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> sendSetupMessage(
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> sendSetupMessage(
 			final PeerAddress candidate) {
 		
 		final Message message = createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
@@ -80,7 +80,7 @@ public class RelayRPC extends DispatchHandler {
 		return f;
 	}
 	
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> sendRendezvousMessage(
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> sendRendezvousMessage(
 			final PeerAddress remote, final int port) {
 		
 		final Message message = createMessage(remote, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
@@ -132,7 +132,7 @@ public class RelayRPC extends DispatchHandler {
 				message.restoreBuffers();
 				message.restoreContentReferences();
 				message.recipientSocket(pr.element0());
-				pr.element1().send(message).first.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+				pr.element1().send(message).element0().addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 					@Override
 					public void operationComplete(FutureDone<Message> future) throws Exception {
 						System.err.println("GOT IT");

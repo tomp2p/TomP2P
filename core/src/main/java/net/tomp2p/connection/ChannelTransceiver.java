@@ -50,6 +50,7 @@ import net.sctp4nat.connection.NetworkLink;
 import net.sctp4nat.core.SctpChannel;
 import net.sctp4nat.core.SctpChannelBuilder;
 import net.sctp4nat.core.SctpChannelFacade;
+import net.sctp4nat.util.SctpInitException;
 import net.sctp4nat.util.SctpUtils;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Decoder;
@@ -66,7 +67,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.ExpirationHandler;
-import net.tomp2p.utils.Triple;
+import net.tomp2p.utils.Pair;
 
 /**
  * The "server" part that accepts connections.
@@ -154,7 +155,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		pendingMessages.expirationHandler(new ExpirationHandler<FutureDone<Message>>() {
 			@Override
 			public void expired(FutureDone<Message> oldValue) {
-				System.err.println("TIME: "+oldValue);
+				LOG.debug("Timout occured for {}", oldValue);
 				oldValue.failed("Timeout occurred");
 			}
 		});
@@ -344,92 +345,56 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		public void run() {
 			while (datagramChannel.isOpen()) {
 				try {
-					//LOG.debug("listening for incoming packets on {}", datagramChannel.socket().getLocalSocketAddress());
-					//buffer.clear();
-					// blocks until
+					LOG.debug("listening for incoming packets on {}", datagramChannel.socket().getLocalSocketAddress());
 					
-					//does not timout!!
+					//the commented code below does not timeout!!
 					//https://stackoverflow.com/questions/15337845/how-to-achieve-timeout-handling-in-blocking-datagramchannel-without-using-select
 					//final InetSocketAddress remote = (InetSocketAddress) datagramChannel.receive(buffer);
+					//buffer.flip();
+					//ByteBuf buf = Unpooled.wrappedBuffer(buffer);
 					
 					DatagramPacket packet = new DatagramPacket(buffer, 65536);
 					datagramChannel.socket().receive(packet);
 					final InetSocketAddress remote = (InetSocketAddress) packet.getSocketAddress();
-					
 					ByteBuf buf = Unpooled.wrappedBuffer(buffer, 0, packet.getLength());
-					
-					//final InetSocketAddress remote = (InetSocketAddress) datagramChannel.receive(buffer);
-					//LOG.debug("got incoming data:"+buffer.remaining() + " from " + remote);
 					packetCounterReceive.incrementAndGet();
+					
+					LOG.debug("got incoming data UDP:"+buf.readableBytes() + " from " + remote);
+					
+					final ProtocolType type = MessageHeaderCodec.peekProtocolType(buf.getByte(0));
+					if (buf.readableBytes() > 0 && type == ProtocolType.SCTP) {
+						handleSCTP(remote, buf);
 
-					//buffer.flip();
-					//ByteBuf buf = Unpooled.wrappedBuffer(buffer);
+					} else if (buf.readableBytes() > 0 && type == ProtocolType.UDP) {
 
-					if (buf.readableBytes() > 0
-							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.SCTP) {
-						//System.err.println(".");
-						buf.skipBytes(1);
-						//attention, start offset with 1
-						SctpChannel socket = openConnections.get(remote);
-						socket.onConnIn(buf.array(), buf.arrayOffset() + buf.readerIndex(), buf.readableBytes());
-						openConnections.putIfAbsent(remote, socket); //refresh timeout
-
-					} else if (buf.readableBytes() > 0
-							&& MessageHeaderCodec.peekProtocolType(buf.getByte(0)) == ProtocolType.UDP) {
-
-						DatagramSocket s = datagramChannel.socket();
-						InetSocketAddress local = new InetSocketAddress(s.getLocalAddress(), s.getLocalPort());
-
-						Decoder decoder = new Decoder(new DSASignatureFactory());
-						boolean finished = decoder.decode(buf, local, remote);
-						if (!finished) {
-							continue;
-						}
-						Message m = decoder.message();
+						Message m = decodeMessage(remote, buf);
+						LOG.debug("Message decoded: {}", m);
 						
-						final Promise<SctpChannelFacade, Exception, Void> p = connectSCTP(openConnections, datagramChannel, remote, m);
-
-						if(m.isRequest() || m.isAck()) {
-							Responder r = new Responder() {
-								
-								@Override
-								public void response(Message responseMessage) {
-									if (responseMessage != null) {
-										if (dispatcher.peerBean().peerMap().checkPeer(m.sender())) {
-											responseMessage.verified();
-										}
-										try {
-											send(remote, responseMessage);
-										} catch (Exception e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-											failed(e.getMessage());
-										}
-									} else {
-										LOG.debug("not replying to {}", m);
-									}
-								}
-								
-								@Override
-								public void failed(String reason) {
-									LOG.error(reason);
-								}
-							};
+						if(m.isRequest()) {
+							if(m.isAck()) {
+								dispatcher.dispatch(null, m, null, null); //ack, just update peermap
+								LOG.debug("ack received");
+								continue;
+							} 
+							final Promise<SctpChannelFacade, Exception, Void> p;
+							if(m.isKeepAlive() && m.sctp()) {
+								LOG.debug("got request for SCTP connection");
+								p = connectSCTP(openConnections, datagramChannel, remote, m);
+							} else {
+								LOG.debug("no SCTP connection");
+								p = null;
+							}
+							Responder r = createResponder(remote, m);
 							dispatcher.dispatch(r, m, p, this);
-						
-							
+					
 						} else {
 							LOG.debug("peer isVerified: {}, I'm: {}", m.isVerified(), peerBean.serverPeerAddress());
 							if (!m.isVerified()) {
-								Message ackMessage = DispatchHandler.createAckMessage(m, Type.ACK, peerBean.serverPeerAddress());
-								//PeerAddress recipientAddress = m.recipient();
-								PeerAddress recipientAddress = peerBean.serverPeerAddress();
-								send(recipientAddress.createUDPSocket(m.sender()), ackMessage);
+								sendAck(m);
 							} else {
-								//nothing to send anymore
+								LOG.debug("no need for sending ACK");
 							}
 							
-							System.err.println("WTF: "+ pendingMessages.keySet());
 							LOG.debug("looking for message with id {}, I'm {}", new MessageID(m), peerBean.serverPeerAddress());
 							FutureDone<Message> currentFuture = pendingMessages.remove(new MessageID(m));
 						
@@ -437,7 +402,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 								LOG.debug("message removed: {}",m);
 								currentFuture.done(m);
 							} else {
-								LOG.warn("got response message without sending a request, ignoring...");
+								LOG.warn("got response message without sending a request, ignoring... {}", m);
 							}
 						}
 					}
@@ -451,22 +416,77 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 					pendingMessages.clear();
 					
 				}  catch (Throwable e) {
-					e.printStackTrace();
-					if (!datagramChannel.isOpen()) {
-						LOG.debug("shutting down {}", listenAddresses);
-					} else {
-						dispatcher.exceptionCaught(datagramChannel, e);
-					}
+					LOG.error("error in transceier loop", e);
 				}
 			}
 			LOG.debug("ending loop");
+		}
+
+		private void sendAck(Message m) throws InvalidKeyException, SignatureException, IOException {
+			Message ackMessage = DispatchHandler.createAckMessage(m, Type.ACK, peerBean.serverPeerAddress());
+			//PeerAddress recipientAddress = m.recipient();
+			PeerAddress recipientAddress = peerBean.serverPeerAddress();
+			send(recipientAddress.createUDPSocket(m.sender()), ackMessage);
+		}
+
+		private Responder createResponder(final InetSocketAddress remote, Message m) {
+			Responder r = new Responder() {
+				
+				@Override
+				public void response(Message responseMessage) {
+					if (responseMessage != null) {
+						if (dispatcher.peerBean().peerMap().checkPeer(m.sender())) {
+							responseMessage.verified();
+						}
+						try {
+							send(remote, responseMessage);
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							failed(e.getMessage());
+						}
+					} else {
+						LOG.debug("not replying to {}", m);
+					}
+				}
+				
+				@Override
+				public void failed(String reason) {
+					LOG.error(reason);
+				}
+			};
+			return r;
+		}
+
+		private Message decodeMessage(final InetSocketAddress remote, ByteBuf buf) {
+			DatagramSocket s = datagramChannel.socket();
+			InetSocketAddress local = new InetSocketAddress(s.getLocalAddress(), s.getLocalPort());
+
+			Decoder decoder = new Decoder(new DSASignatureFactory());
+			boolean finished = decoder.decode(buf, local, remote);
+			if (!finished) {
+				LOG.error("expecting always full packets!");
+			}
+			Message m = decoder.message();
+			return m;
+		}
+		
+		private void handleSCTP(final InetSocketAddress remote, ByteBuf buf) {
+			buf.skipBytes(1); //attention, start offset with 1
+			SctpChannel socket = openConnections.get(remote);
+			if(socket != null) {
+				socket.onConnIn(buf.array(), buf.arrayOffset() + buf.readerIndex(), buf.readableBytes());
+				openConnections.putIfAbsent(remote, socket); //refresh timeout
+			} else {
+				LOG.debug("we have an SCTP message, but no open connections for {}", remote);
+			}
 		}
 
 		public static Promise<SctpChannelFacade, Exception, Void> connectSCTP(final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections, 
 				final DatagramChannel datagramChannel, final InetSocketAddress remote, Message m)
 				throws Exception {
 			final Promise<SctpChannelFacade, Exception, Void> p;
-			if(m.isKeepAlive() && m.isRequest() && m.sctp()) {
+			
 				LOG.debug("setup SCTP connection: {}", m);
 				
 				int localSctpPort = ChannelUtils.localSctpPort(IP.fromInet4Address((Inet4Address)remote.getAddress()), remote.getPort());
@@ -489,7 +509,6 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 							LOG.debug("server out SCTP: "+buf.remaining() + " to " + remote);
 							datagramChannel.send(buf, remote);
 						} catch (Throwable t) {
-							t.printStackTrace();	
 							LOG.error("cannot send",t);
 						}
 					}
@@ -502,9 +521,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				});
 
 				p = sctpChannel.connect(remote);
-			} else {
-				p = null;
-			}
+			
 			return p;
 		}
 
@@ -524,7 +541,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		}
 
 		@Override
-		public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(Message message) {
+		public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(Message message) {
 			return serv.send(message, datagramChannel);
 		}
 		
@@ -566,61 +583,90 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		return futureServerDone;
 	}
 
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> sendUDP(Message message) {
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> sendUDP(Message message) {
 		return send(message, sendingDatagramChannel);
 	}
 	
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(Message message, DatagramChannel datagramChannel) {
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(Message message, DatagramChannel datagramChannel) {
 		
 		FutureDone<Message> futureMessage = new FutureDone<Message>();
-		FutureDone<Void> futureClose = new FutureDone<>();
 		FutureDone<SctpChannelFacade> futureSCTP = new FutureDone<>();
-		PeerAddress recipientAddress = message.recipient();
-		final InetSocketAddress recipient; 
-		if(message.recipientSocket() != null) {
-			recipient = message.recipientSocket();
-		} else {
-			recipient = recipientAddress.createUDPSocket(message.sender());
+		
+		final InetSocketAddress recipient = findRecipient(message); 
+		LOG.debug("sending a UDP message to {} with message {}", recipient, message);
+		
+		try {
+			handleInitSctpSender(recipient, futureSCTP, openConnections, message);		
+		} catch (net.sctp4nat.util.SctpInitException e) {
+			LOG.error("cannot init SCTP from the sender", e);
+			return Pair.create(futureMessage.failed(e),  futureSCTP.failed(e));
 		}
 		
-		final SctpChannel sctpChannel;
+		sendRaw(datagramChannel, message, futureMessage, recipient, pendingMessages);
+		
+		return Pair.create(futureMessage,  futureSCTP);
+	}
+	
+	/**
+	 * Find recipient from a message. If the message is a request message, the recipient socket is not
+	 * set and a new socket has to be created. If it was a reply, the recipient socket is set and we need
+	 * to send it back to that socket 
+	 * @param message
+	 * @return
+	 */
+	private static InetSocketAddress findRecipient(Message message) {
+		if(message.recipientSocket() != null) {
+			LOG.debug("the message has a socket, its a reply: {}", message);
+			return message.recipientSocket();
+		}
+		LOG.debug("the message has no socket, its a request: {}", message);
+		return message.recipient().createUDPSocket(message.sender());
+	}
+	
+	private static void handleInitSctpSender(
+			final InetSocketAddress recipient,
+			final FutureDone<SctpChannelFacade> futureSCTP,
+			final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections,
+			final Message message) throws SctpInitException {
 		if(message.sctp()) {
-			try {
-				sctpChannel = ChannelUtils.creatSCTPSocket(
-					recipient.getAddress(), 
-					recipient.getPort(), 
-					ChannelUtils.localSctpPort(IP.fromInet4Address((Inet4Address)recipient.getAddress()), recipient.getPort()), 
-					futureSCTP);
-				openConnections.put(recipient, sctpChannel);
-			} catch (net.sctp4nat.util.SctpInitException e) {
-				return Triple.create(futureMessage.failed(e),  futureSCTP.failed(e), futureClose.done());
-			}
+			SctpChannel sctpChannel = ChannelUtils.creatSCTPSocket(
+				recipient.getAddress(),
+				recipient.getPort(), ChannelUtils
+				.localSctpPort(
+						IP.fromInet4Address((Inet4Address) recipient.getAddress()), 
+						recipient.getPort()),
+				futureSCTP);
+			openConnections.put(recipient, sctpChannel);
+			LOG.debug("SCTP init was requested: {}", message);
 		} else {
-			sctpChannel = null;
+			LOG.debug("no SCTP init was requested: {}", message);
 			futureSCTP.failed("no sctp requested");
 		}
-		
+	}
+	
+	private static void sendRaw(
+			DatagramChannel datagramChannel, 
+			Message message, 
+			FutureDone<Message> futureMessage, 
+			final InetSocketAddress recipient,
+			final ConcurrentCacheMap<MessageID, FutureDone<Message>> pendingMessages) {
 		CompositeByteBuf buf2 = Unpooled.compositeBuffer();
 		Encoder encoder = new Encoder(new DSASignatureFactory());
 		try {
 			encoder.write(buf2, message, null);
-			System.out.println("SEND BACK to: "+recipient+ " / "+message+ "//"+buf2.readableBytes());
+			LOG.debug("send raw UDP packet to {} with length {} for message {}", recipient, buf2.readableBytes(), message);
 			datagramChannel.send(ChannelUtils.convert(buf2), recipient);
 
 			// if we send an ack, don't expect any incoming packets
-			if (!message.isAck() && futureMessage != null) {
-				LOG.debug("pending message add: {} with id {}, I'm {}", message, new MessageID(message), peerBean.serverPeerAddress());
+			if (!message.isAck()) {
+				LOG.debug("pending message add: {} with id {}", message, new MessageID(message));
 				pendingMessages.put(new MessageID(message), futureMessage);
-				System.err.println("XX:["+pendingMessages.keySet()+"]");
+				LOG.debug("we have the following pending messages: {}", pendingMessages.keySet()); 
 			}
 		} catch (Throwable t) {
-			t.printStackTrace();
-			if (futureMessage != null) {
-				futureMessage.failed(t);
-			}
+			LOG.error("could not send", t);
+			futureMessage.failed(t);
 		}
-		return Triple.create(futureMessage,  futureSCTP, futureClose);
 	}
-	
 
 }

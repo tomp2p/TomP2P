@@ -41,6 +41,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.peers.IP;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Triple;
 import net.tomp2p.utils.Utils;
 
@@ -242,12 +243,12 @@ public class DiscoverBuilder {
         });
 
         
-        Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDPDiscover(peerAddress, 
+        Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> p = peer.pingRPC().pingUDPDiscover(peerAddress, 
                 configuration); 
         
          
         
-        p.first.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+        p.element0().addListener(new BaseFutureAdapter<FutureDone<Message>>() {
             @Override
             public void operationComplete(FutureDone<Message> future) throws Exception {
                 PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
@@ -311,10 +312,10 @@ public class DiscoverBuilder {
                         // else -> we announce exactly how the other peer sees
                         // us
                         
-                        Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> p = peer.pingRPC().pingUDPProbe(peerAddress, 
+                        Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> p = peer.pingRPC().pingUDPProbe(peerAddress, 
                                 configuration);
                         
-                        p.first.addListener(new BaseFutureAdapter<FutureResponse>() {
+                        p.element0().addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
                             public void operationComplete(FutureResponse future) throws Exception {
 	                            if(future.isFailed() ) {

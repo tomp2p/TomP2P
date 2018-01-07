@@ -31,6 +31,7 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Triple;
 
 //This will use SCTP!
@@ -48,7 +49,7 @@ public class DirectDataRPC extends DispatchHandler {
 		return createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(), Type.REQUEST_1);
 	}
 
-	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final PeerAddress remotePeer, final SendDirectBuilderI sendDirectBuilder) throws SctpInitException {
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(final PeerAddress remotePeer, final SendDirectBuilderI sendDirectBuilder) throws SctpInitException {
 		Message message = sendInternal0(remotePeer, sendDirectBuilder);
 		if (sendDirectBuilder.isSign()) {
 			message.publicKeyAndSign(sendDirectBuilder.keyPair());

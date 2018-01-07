@@ -12,6 +12,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Triple;
 
 import java.util.ArrayList;
@@ -47,11 +48,11 @@ public class TestPing {
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean());
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = handshake.pingUDP(recv1.peerAddress(), 
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = handshake.pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
-            fr.first.awaitUninterruptibly();
-            System.err.println(fr.first.failedReason());
-            Assert.assertEquals(true, fr.first.isSuccess());
+            fr.element0().awaitUninterruptibly();
+            System.err.println(fr.element0().failedReason());
+            Assert.assertEquals(true, fr.element0().isSuccess());
             Assert.assertEquals(1, ChannelTransceiver.packetCounterSend());
             //we shutdown between the 1 and 2 received packet, so it might be 1 or 2
             Assert.assertEquals(true, ChannelTransceiver.packetCounterReceive() == 1 || ChannelTransceiver.packetCounterReceive() == 2);
@@ -75,18 +76,17 @@ public class TestPing {
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(1234).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean());
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>>  fr = handshake.pingUDP(recv1.peerAddress(), 
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>>  fr = handshake.pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
-            fr.first.awaitUninterruptibly();
-            fr.third.awaitUninterruptibly();
+            fr.element0().awaitUninterruptibly();
+            
             
             fr = handshake.pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
             
-            fr.first.awaitUninterruptibly();
-            fr.third.awaitUninterruptibly();
+            fr.element0().awaitUninterruptibly();
             
-            Assert.assertEquals(true, fr.first.isSuccess());
+            Assert.assertEquals(true, fr.element0().isSuccess());
             Assert.assertEquals(2, ChannelTransceiver.packetCounterSend());
             Assert.assertEquals(3, ChannelTransceiver.packetCounterReceive());
             
@@ -113,24 +113,24 @@ public class TestPing {
 
 
 
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
-            fr.first.awaitUninterruptibly();
+            fr.element0().awaitUninterruptibly();
 
-            fr.first.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+            fr.element0().addListener(new BaseFutureAdapter<FutureDone<Message>>() {
                 @Override
                 public void operationComplete(final FutureDone<Message> future) throws Exception {
-                	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(), 
+                	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                             new DefaultConnectionConfiguration());
                     try {
-                        fr2.first.await();
+                        fr2.element0().await();
                     } catch (IllegalStateException ise) {
                         Assert.fail();
                     }
                 }
             });
             Thread.sleep(1000);
-            Assert.assertEquals(true, fr.first.isSuccess());
+            Assert.assertEquals(true, fr.element0().isSuccess());
         } finally {
             if (sender1 != null) {
                 sender1.shutdown().await();
@@ -151,10 +151,10 @@ public class TestPing {
                     false);
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, false);
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = handshake.pingUDP(recv1.peerAddress(),
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = handshake.pingUDP(recv1.peerAddress(),
                     new DefaultConnectionConfiguration());
-            fr.first.awaitUninterruptibly();
-            Assert.assertEquals(false, fr.first.isSuccess());
+            fr.element0().awaitUninterruptibly();
+            Assert.assertEquals(false, fr.element0().isSuccess());
         } finally {
 
             if (sender != null) {
@@ -176,12 +176,12 @@ public class TestPing {
                     true);
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, true);
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress(), 
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress(), 
                     new DefaultConnectionConfiguration());
-            fr.first.awaitUninterruptibly();
-            Assert.assertEquals(false, fr.first.isSuccess());
-            System.err.println("done:" + fr.first.failedReason());
-            Assert.assertEquals(true, fr.first.failedReason().contains("TIMEOUT"));
+            fr.element0().awaitUninterruptibly();
+            Assert.assertEquals(false, fr.element0().isSuccess());
+            System.err.println("done:" + fr.element0().failedReason());
+            Assert.assertEquals(true, fr.element0().failedReason().contains("TIMEOUT"));
             
         } finally {
             if (sender != null) {
@@ -200,16 +200,16 @@ public class TestPing {
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
-            List<Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>>> list = new ArrayList<>(50);
+            List<Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>>> list = new ArrayList<>(50);
             for (int i = 0; i < 50; i++) {
-            	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
+            	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                         new DefaultConnectionConfiguration());
                 list.add(fr);
             }
-            for (Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 : list) {
-                fr2.first.awaitUninterruptibly();
-                System.err.println(fr2.first.failedReason());
-                Assert.assertTrue(fr2.first.isSuccess());
+            for (Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr2 : list) {
+                fr2.element0().awaitUninterruptibly();
+                System.err.println(fr2.element0().failedReason());
+                Assert.assertTrue(fr2.element0().isSuccess());
             }
         } finally {
             if (sender != null) {
@@ -228,17 +228,17 @@ public class TestPing {
             for (int i = 0; i < p.length; i++) {
                 p[i] = new PeerBuilder(Number160.createHash(i)).p2pId(55).port(2424 + i).start();
             }
-            List<Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>>> list = new ArrayList<>();
+            List<Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>>> list = new ArrayList<>();
             for (int i = 0; i < p.length; i++) {
-                Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = p[0].pingRPC().pingUDP(p[i].peerAddress(), 
+            	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = p[0].pingRPC().pingUDP(p[i].peerAddress(), 
                         new DefaultConnectionConfiguration());
                 
                 
                 list.add(fr);
             }
-            for (Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 : list) {
-                fr2.first.awaitUninterruptibly();
-                boolean success = fr2.first.isSuccess();
+            for (Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr2 : list) {
+                fr2.element0().awaitUninterruptibly();
+                boolean success = fr2.element0().isSuccess();
                 if (!success) {
                     System.err.println("FAIL.");
                     Assert.fail();
@@ -260,19 +260,19 @@ public class TestPing {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
             long start = System.currentTimeMillis();
-            List<Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>>> list = new ArrayList<>(100);
+            List<Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>>> list = new ArrayList<>(100);
             for (int i = 0; i < 20; i++) {
                 for (int j = 0; j < 50; j++) {
-                	Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
+                	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                             new DefaultConnectionConfiguration());
                     list.add(fr);
                 }
                 list.clear();
             }
             System.out.println("UDP time: " + (System.currentTimeMillis() - start));
-            for (Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 : list) {
-                fr2.first.awaitUninterruptibly();
-                Assert.assertEquals(true, fr2.first.isSuccess());
+            for (Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr2 : list) {
+                fr2.element0().awaitUninterruptibly();
+                Assert.assertEquals(true, fr2.element0().isSuccess());
             }
             
         } finally {
@@ -299,22 +299,21 @@ public class TestPing {
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
                     new DefaultConnectionConfiguration());
             
-            fr.first.awaitUninterruptibly();
-            fr.third.awaitUninterruptibly();
+            fr.element0().awaitUninterruptibly();
             
-            System.err.println(fr.first.failedReason());
-            Assert.assertEquals(true, fr.first.isSuccess());
             
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(),
+            System.err.println(fr.element0().failedReason());
+            Assert.assertEquals(true, fr.element0().isSuccess());
+            
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(),
                     new DefaultConnectionConfiguration());
-            fr2.first.awaitUninterruptibly();
-            fr2.third.awaitUninterruptibly();
+            fr2.element0().awaitUninterruptibly();
             // we have released the reservation here
             // System.err.println(fr2.getFailedReason());
-            Assert.assertEquals(false, fr2.first.isSuccess());
+            Assert.assertEquals(false, fr2.element0().isSuccess());
 
         } finally {
             if (sender != null) {

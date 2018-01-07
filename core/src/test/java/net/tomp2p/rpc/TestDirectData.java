@@ -20,6 +20,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Triple;
 
 public class TestDirectData {
@@ -52,12 +53,12 @@ public class TestDirectData {
 	            new DirectDataRPC(recv1.peerBean(), recv1.connectionBean());
 
 	            SendDirectBuilder s = new SendDirectBuilder(sender, recv1.peerAddress());
-	            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = direct.send(recv1.peerAddress(), s);
-	            fr.first.awaitUninterruptibly();
-	            Assert.assertEquals(true, fr.first.isSuccess());
+	            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = direct.send(recv1.peerAddress(), s);
+	            fr.element0().awaitUninterruptibly();
+	            Assert.assertEquals(true, fr.element0().isSuccess());
 	            //Thread.sleep(1000);
 	            final CountDownLatch l = new CountDownLatch(1);
-	            fr.second.addListener(new BaseFutureAdapter<FutureDone<SctpChannelFacade>>() {
+	            fr.element1().addListener(new BaseFutureAdapter<FutureDone<SctpChannelFacade>>() {
 					@Override
 					public void operationComplete(FutureDone<SctpChannelFacade> future) throws Exception {
 						if(future.isSuccess()) {

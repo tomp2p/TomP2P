@@ -21,6 +21,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.RelayRPC;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Triple;
 
 public class TestRelayRPC {
@@ -50,7 +51,7 @@ public class TestRelayRPC {
 			relayPeer = new PeerBuilder(new Number160("0x5665")).p2pId(55).enableMaintenance(false).port(5665).start();
 			RelayRPC relayRelay = new RelayRPC(relayPeer);
 			
-			FutureDone<Message> future = behindNAT1Relay.sendSetupMessage(relayPeer.peerAddress()).first;
+			FutureDone<Message> future = behindNAT1Relay.sendSetupMessage(relayPeer.peerAddress()).element0();
 			future.awaitUninterruptibly();
 			Assert.assertTrue(future.isSuccess());
 			Collection<PeerSocketAddress> pa = new ArrayList<>();
@@ -59,11 +60,11 @@ public class TestRelayRPC {
 			
 			behindNAT2Peer.peerBean().serverPeerAddress(behindNAT2Peer.peerAddress().withReachable4UDP(false).withHolePunching(true));
 			SendDirectBuilder s = new SendDirectBuilder(behindNAT2Peer, behindNAT1Peer.peerAddress());
-            Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> fr = d2.send(behindNAT1Peer.peerAddress(), s);
-			fr.first.awaitUninterruptibly();
-			Assert.assertTrue(fr.first.isSuccess());
+			Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = d2.send(behindNAT1Peer.peerAddress(), s);
+			fr.element0().awaitUninterruptibly();
+			Assert.assertTrue(fr.element0().isSuccess());
 			
-			System.err.println(fr.first.failedReason());
+			System.err.println(fr.element0().failedReason());
 		
 		} catch (Throwable t) {
 			t.printStackTrace();

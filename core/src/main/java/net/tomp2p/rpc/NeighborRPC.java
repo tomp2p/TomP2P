@@ -110,7 +110,7 @@ public class NeighborRPC extends DispatchHandler {
 	 *            The client-side connection configuration
      * @return The future response to keep track of future events
      */
-    public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
+    public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
             final Type type, final ConnectionConfiguration configuration) {
         Message message = createMessage(remotePeer, RPC.Commands.NEIGHBOR.getNr(), type);
         if (!message.isRequest()) {
@@ -142,7 +142,7 @@ public class NeighborRPC extends DispatchHandler {
         return send(message, configuration);
     }
 
-    private Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(final Message message, final ConnectionConfiguration configuration) {
+    private Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(final Message message, final ConnectionConfiguration configuration) {
         final FutureResponse futureResponse = new FutureResponse(message);
         futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override

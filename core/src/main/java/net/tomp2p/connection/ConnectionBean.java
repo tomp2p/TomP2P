@@ -46,7 +46,7 @@ public class ConnectionBean {
 
 	private final int p2pId;
 	private final Dispatcher dispatcher;
-	private final ChannelServer channelServer;
+	private final ChannelTransceiver channelServer;
 	private final ChannelClientConfiguration resourceConfiguration;
 	private final ScheduledExecutorService timer;
 
@@ -69,7 +69,7 @@ public class ConnectionBean {
 	 * @param timer
 	 *            The timer for the discovery process
 	 */
-	public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final ChannelServer channelServer,
+	public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final ChannelTransceiver channelServer,
 			final ChannelClientConfiguration resourceConfiguration,
 			final ScheduledExecutorService timer) {
 		this.p2pId = p2pId;
@@ -100,7 +100,7 @@ public class ConnectionBean {
 	/**
 	 * @return The channel server that listens on incoming connections
 	 */
-	public ChannelServer channelServer() {
+	public ChannelTransceiver channelServer() {
 		return channelServer;
 	}
 

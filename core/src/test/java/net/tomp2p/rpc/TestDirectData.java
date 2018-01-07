@@ -12,7 +12,7 @@ import org.junit.runner.Description;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.Sctp;
 import net.sctp4nat.origin.SctpDataCallback;
-import net.tomp2p.connection.ChannelServer;
+import net.tomp2p.connection.ChannelTransceiver;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
@@ -35,7 +35,7 @@ public class TestDirectData {
 	    	Sctp.getInstance().init();
 	    	Peer sender = null;
 	        Peer recv1 = null;
-	        ChannelServer.resetCounters();
+	        ChannelTransceiver.resetCounters();
 	        try {
 	            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(9876).start();
 	            DirectDataRPC direct = new DirectDataRPC(sender.peerBean(), sender.connectionBean());

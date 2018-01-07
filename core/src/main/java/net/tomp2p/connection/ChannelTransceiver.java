@@ -76,9 +76,9 @@ import net.tomp2p.utils.Triple;
  */
 
 @Accessors(chain = true, fluent = true)
-public final class ChannelServer implements DiscoverNetworkListener {
+public final class ChannelTransceiver implements DiscoverNetworkListener {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ChannelServer.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ChannelTransceiver.class);
 
 	private final Map<InetAddress, ServerThread> channelsUDP = Collections
 			.synchronizedMap(new HashMap<InetAddress, ServerThread>());
@@ -134,7 +134,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 	 * @throws IOException
 	 *             If device discovery failed.
 	 */
-	public ChannelServer(final ChannelServerConfiguration channelServerConfiguration, final Dispatcher dispatcher,
+	public ChannelTransceiver(final ChannelServerConfiguration channelServerConfiguration, final Dispatcher dispatcher,
 			final ScheduledExecutorService timer, PeerBean peerBean) throws IOException {
 		this.channelServerConfiguration = channelServerConfiguration;
 		this.dispatcher = dispatcher;
@@ -174,7 +174,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 	@Override
 	public void discoverNetwork(DiscoverResults discoverResults) {
 		if (!channelServerConfiguration.disableBind()) {
-			synchronized (ChannelServer.this) {
+			synchronized (ChannelTransceiver.this) {
 				if (shutdown) {
 					return;
 				}
@@ -320,7 +320,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			}
 			return false;
 		}
-		ServerThread serverThread = ServerThread.of(datagramChannel, dispatcher, listenAddresses, channelServerConfiguration, pendingMessages, openConnections, peerBean);
+		ServerThread serverThread = ServerThread.of(datagramChannel, dispatcher, listenAddresses, channelServerConfiguration, pendingMessages, openConnections, peerBean, this);
 		serverThread.start();
 		channelsUDP.put(listenAddresses.getAddress(), serverThread);
 		return true;
@@ -337,6 +337,7 @@ public final class ChannelServer implements DiscoverNetworkListener {
 		final private Map<MessageID, FutureDone<Message>> pendingMessages;
 		final private ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections;
 		final private PeerBean peerBean;
+		final private ChannelTransceiver serv;
 		final private byte[] buffer= new byte[65536];
 
 		@Override
@@ -521,58 +522,12 @@ public final class ChannelServer implements DiscoverNetworkListener {
 			
 			datagramChannel.send(ChannelUtils.convert(buf2), remote);
 		}
-		
-		public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(Message message) {
-			
-			FutureDone<Message> futureMessage = new FutureDone<Message>();
-			FutureDone<Void> futureClose = new FutureDone<>();
-			FutureDone<SctpChannelFacade> futureSCTP = new FutureDone<>();
-			PeerAddress recipientAddress = message.recipient();
-			final InetSocketAddress recipient; 
-			if(message.recipientSocket() != null) {
-				recipient = message.recipientSocket();
-			} else {
-				recipient = recipientAddress.createUDPSocket(message.sender());
-			}
-			
-			final SctpChannel sctpChannel;
-			if(message.sctp()) {
-				try {
-					sctpChannel = ChannelUtils.creatSCTPSocket(
-						recipient.getAddress(), 
-						recipient.getPort(), 
-						ChannelUtils.localSctpPort(IP.fromInet4Address((Inet4Address)recipient.getAddress()), recipient.getPort()), 
-						futureSCTP);
-					openConnections.put(recipient, sctpChannel);
-				} catch (net.sctp4nat.util.SctpInitException e) {
-					return Triple.create(futureMessage.failed(e),  futureSCTP.failed(e), futureClose.done());
-				}
-			} else {
-				sctpChannel = null;
-				futureSCTP.failed("no sctp requested");
-			}
-			
-			CompositeByteBuf buf2 = Unpooled.compositeBuffer();
-			Encoder encoder = new Encoder(new DSASignatureFactory());
-			try {
-				encoder.write(buf2, message, null);
-				System.out.println("SEND BACK to: "+recipient+ " / "+message+ "//"+buf2.readableBytes());
-				datagramChannel.send(ChannelUtils.convert(buf2), recipient);
 
-				// if we send an ack, don't expect any incoming packets
-				if (!message.isAck() && futureMessage != null) {
-					LOG.debug("pending message add: {} with id {}, I'm {}", message, new MessageID(message), peerBean.serverPeerAddress());
-					pendingMessages.put(new MessageID(message), futureMessage);
-					System.err.println("XX:["+pendingMessages.keySet()+"]");
-				}
-			} catch (Throwable t) {
-				t.printStackTrace();
-				if (futureMessage != null) {
-					futureMessage.failed(t);
-				}
-			}
-			return Triple.create(futureMessage,  futureSCTP, futureClose);
+		@Override
+		public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(Message message) {
+			return serv.send(message, datagramChannel);
 		}
+		
 		
 	}
 
@@ -612,11 +567,60 @@ public final class ChannelServer implements DiscoverNetworkListener {
 	}
 
 	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> sendUDP(Message message) {
-		// TODO Auto-generated method stub
-		return null;
+		return send(message, sendingDatagramChannel);
 	}
 	
-	
+	public Triple<FutureDone<Message>, FutureDone<SctpChannelFacade>, FutureDone<Void>> send(Message message, DatagramChannel datagramChannel) {
+		
+		FutureDone<Message> futureMessage = new FutureDone<Message>();
+		FutureDone<Void> futureClose = new FutureDone<>();
+		FutureDone<SctpChannelFacade> futureSCTP = new FutureDone<>();
+		PeerAddress recipientAddress = message.recipient();
+		final InetSocketAddress recipient; 
+		if(message.recipientSocket() != null) {
+			recipient = message.recipientSocket();
+		} else {
+			recipient = recipientAddress.createUDPSocket(message.sender());
+		}
+		
+		final SctpChannel sctpChannel;
+		if(message.sctp()) {
+			try {
+				sctpChannel = ChannelUtils.creatSCTPSocket(
+					recipient.getAddress(), 
+					recipient.getPort(), 
+					ChannelUtils.localSctpPort(IP.fromInet4Address((Inet4Address)recipient.getAddress()), recipient.getPort()), 
+					futureSCTP);
+				openConnections.put(recipient, sctpChannel);
+			} catch (net.sctp4nat.util.SctpInitException e) {
+				return Triple.create(futureMessage.failed(e),  futureSCTP.failed(e), futureClose.done());
+			}
+		} else {
+			sctpChannel = null;
+			futureSCTP.failed("no sctp requested");
+		}
+		
+		CompositeByteBuf buf2 = Unpooled.compositeBuffer();
+		Encoder encoder = new Encoder(new DSASignatureFactory());
+		try {
+			encoder.write(buf2, message, null);
+			System.out.println("SEND BACK to: "+recipient+ " / "+message+ "//"+buf2.readableBytes());
+			datagramChannel.send(ChannelUtils.convert(buf2), recipient);
+
+			// if we send an ack, don't expect any incoming packets
+			if (!message.isAck() && futureMessage != null) {
+				LOG.debug("pending message add: {} with id {}, I'm {}", message, new MessageID(message), peerBean.serverPeerAddress());
+				pendingMessages.put(new MessageID(message), futureMessage);
+				System.err.println("XX:["+pendingMessages.keySet()+"]");
+			}
+		} catch (Throwable t) {
+			t.printStackTrace();
+			if (futureMessage != null) {
+				futureMessage.failed(t);
+			}
+		}
+		return Triple.create(futureMessage,  futureSCTP, futureClose);
+	}
 	
 
 }

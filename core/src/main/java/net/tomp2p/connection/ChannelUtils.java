@@ -34,7 +34,7 @@ public class ChannelUtils {
     }
 
 	public static int localSctpPort(IPv4 ipv4, int port) {
-		return Math.abs(((ipv4.toInt() ^ port)) % ChannelServer.MAX_PORT) + 1;
+		return Math.abs(((ipv4.toInt() ^ port)) % ChannelTransceiver.MAX_PORT) + 1;
 	}
 	
 	public static SctpChannel creatSCTPSocket(InetAddress remoteAddress, int remoteSctpPort, int localSctpPort, 

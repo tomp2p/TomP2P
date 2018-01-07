@@ -3,7 +3,7 @@ package net.tomp2p.rpc;
 
 import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelServer;
+import net.tomp2p.connection.ChannelTransceiver;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -41,7 +41,7 @@ public class TestPing {
     public void testPingUDP() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
-        ChannelServer.resetCounters();
+        ChannelTransceiver.resetCounters();
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
@@ -52,9 +52,9 @@ public class TestPing {
             fr.first.awaitUninterruptibly();
             System.err.println(fr.first.failedReason());
             Assert.assertEquals(true, fr.first.isSuccess());
-            Assert.assertEquals(1, ChannelServer.packetCounterSend());
+            Assert.assertEquals(1, ChannelTransceiver.packetCounterSend());
             //we shutdown between the 1 and 2 received packet, so it might be 1 or 2
-            Assert.assertEquals(true, ChannelServer.packetCounterReceive() == 1 || ChannelServer.packetCounterReceive() == 2);
+            Assert.assertEquals(true, ChannelTransceiver.packetCounterReceive() == 1 || ChannelTransceiver.packetCounterReceive() == 2);
         } finally {
             if (sender != null) {
                 sender.shutdown().await();
@@ -69,7 +69,7 @@ public class TestPing {
     public void testPingUDPKnowPeer() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
-        ChannelServer.resetCounters();
+        ChannelTransceiver.resetCounters();
         try {
             sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(9876).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
@@ -87,8 +87,8 @@ public class TestPing {
             fr.third.awaitUninterruptibly();
             
             Assert.assertEquals(true, fr.first.isSuccess());
-            Assert.assertEquals(2, ChannelServer.packetCounterSend());
-            Assert.assertEquals(3, ChannelServer.packetCounterReceive());
+            Assert.assertEquals(2, ChannelTransceiver.packetCounterSend());
+            Assert.assertEquals(3, ChannelTransceiver.packetCounterReceive());
             
         } finally {
             if (sender != null) {

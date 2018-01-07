@@ -85,7 +85,7 @@ public class PeerCreator {
 		
 		//start server
 		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConfiguration);
-		final ChannelServer channelServer = new ChannelServer(channelServerConfiguration,
+		final ChannelTransceiver channelServer = new ChannelTransceiver(channelServerConfiguration,
 		        dispatcher, timer, peerBean);	
 		
 		//connection bean

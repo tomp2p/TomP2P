@@ -1,6 +1,9 @@
 package net.tomp2p.connection;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
@@ -15,7 +18,9 @@ import net.sctp4nat.origin.SctpNotification;
 import net.sctp4nat.origin.SctpSocket.NotificationListener;
 import net.sctp4nat.util.SctpUtils;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.peers.IP;
 import net.tomp2p.peers.IP.IPv4;
+import net.tomp2p.peers.IP.IPv6;
 
 public class ChannelUtils {
 	
@@ -32,9 +37,24 @@ public class ChannelUtils {
     	    return ByteBuffer.wrap(bytes);
     	}
     }
+	
+	public static int localSctpPort(InetSocketAddress inetSocketAddress) {
+		int port = inetSocketAddress.getPort();
+		if(inetSocketAddress.getAddress() instanceof Inet4Address) {
+			return localSctpPort(IP.fromInet4Address((Inet4Address)inetSocketAddress.getAddress()), port);
+		} else {
+			return localSctpPort(IP.fromInet6Address((Inet6Address)inetSocketAddress.getAddress()), port);
+		}
+	}
 
-	public static int localSctpPort(IPv4 ipv4, int port) {
-		return Math.abs(((ipv4.toInt() ^ port)) % ChannelTransceiver.MAX_PORT) + 1;
+	public static int localSctpPort(IPv4 ipv4, int udpPort) {
+		int sctpPort = Math.abs(((ipv4.toInt() ^ udpPort)) % ChannelTransceiver.MAX_PORT - 1) + 1;
+		LOG.debug("port calculation based on: {}/{}={}", ipv4.toInt(), udpPort, sctpPort);
+		return sctpPort;
+	}
+	
+	public static int localSctpPort(IPv6 ipv6, int port) {
+		return Math.abs(((Long.hashCode(ipv6.toLongHi()) ^ Long.hashCode(ipv6.toLongLo()) ^ port)) % ChannelTransceiver.MAX_PORT - 1) + 1;
 	}
 	
 	public static SctpChannel creatSCTPSocket(InetAddress remoteAddress, int remoteSctpPort, int localSctpPort, 

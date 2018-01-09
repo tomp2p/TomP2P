@@ -374,7 +374,11 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 					
 					final ProtocolType type = MessageHeaderCodec.peekProtocolType(buf.getByte(0));
 					if (buf.readableBytes() > 0 && type == ProtocolType.SCTP) {
-						handleSCTP(remote, buf);
+						
+						int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
+						InetSocketAddress remoteSctpSocket = new InetSocketAddress(remote.getAddress(), remotePort);
+						
+						handleSCTP(remoteSctpSocket, buf);
 
 					} else if (buf.readableBytes() > 0 && type == ProtocolType.UDP) {
 
@@ -390,7 +394,12 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 							final Promise<SctpChannelFacade, Exception, Void> p;
 							if(m.sctp()) {
 								LOG.debug("got request for SCTP connection");
-								p = connectSCTP(openConnections, datagramChannel, remote, peerBean.serverPeerAddress().ipv4Socket().udpPort(), m);
+								int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
+								InetSocketAddress remoteSctpSocket = new InetSocketAddress(remote.getAddress(), remotePort);
+								
+								int localSctpPort = ChannelUtils.localSctpPort(remote);
+								
+								p = connectSCTP(openConnections, datagramChannel, remoteSctpSocket, remote, localSctpPort, m);
 							} else {
 								LOG.debug("no SCTP connection");
 								p = null;
@@ -510,8 +519,9 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		public static Promise<SctpChannelFacade, Exception, Void> connectSCTP(
 				final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections, 
 				final DatagramChannel datagramChannel, 
-				final InetSocketAddress remote,
-				final int localPort,
+				final InetSocketAddress remoteSctp,
+				final InetSocketAddress remoteUdp,
+				final int localSctpPort,
 				Message m)
 				throws Exception {
 			final Promise<SctpChannelFacade, Exception, Void> p;
@@ -519,12 +529,12 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				LOG.debug("setup SCTP connection: {}", m);
 				
 				SctpChannel sctpChannel = new SctpChannelBuilder()
-						.remoteAddress(remote.getAddress())
-						.remotePort(remote.getPort())
+						.remoteAddress(remoteSctp.getAddress())
+						.remotePort(remoteSctp.getPort())
 						.mapper(SctpUtils.getMapper())
-						.localSctpPort(localPort).build();
-				LOG.debug("local sctp port: {}, remote: {}", localPort, remote);
-				openConnections.put(remote, sctpChannel);
+						.localSctpPort(localSctpPort).build();
+				LOG.debug("remote sctp remote: {}, local: {}", remoteSctp, localSctpPort);
+				openConnections.put(remoteSctp, sctpChannel);
 				sctpChannel.setLink(new NetworkLink() {
 					
 					@Override
@@ -540,10 +550,10 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 								for (byte b : packet) {
 									formatter.format("%02x", b);
 								}
-								LOG.debug("server out SCTP({}): to {} - {} ",packet.length, remote, formatter.toString());
+								LOG.debug("server out SCTP({}): to {} - {} ",packet.length, remoteSctp, formatter.toString());
 							}
 							
-							datagramChannel.send(buf, remote);
+							datagramChannel.send(buf, remoteUdp);
 						} catch (Throwable t) {
 							LOG.error("cannot send",t);
 						}
@@ -556,7 +566,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 					}
 				});
 
-				p = sctpChannel.connect(remote);
+				p = sctpChannel.connect(remoteSctp);
 			
 			return p;
 		}
@@ -619,7 +629,10 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		LOG.debug("sending a UDP message to {} with message {}", recipient, message);
 		
 		try {
-			handleInitSctpSender(datagramChannel, recipient, peerBean.serverPeerAddress().ipv4Socket().udpPort(), futureSCTP, openConnections, message);		
+			int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
+			InetSocketAddress remoteSctpSocket = new InetSocketAddress(recipient.getAddress(), remotePort);
+			int localSctpPort = ChannelUtils.localSctpPort(recipient);
+			handleInitSctpSender(datagramChannel, remoteSctpSocket, recipient, localSctpPort, futureSCTP, openConnections, message);		
 		} catch (net.sctp4nat.util.SctpInitException e) {
 			LOG.error("cannot init SCTP from the sender", e);
 			return Pair.create(futureMessage.failed(e),  futureSCTP.failed(e));
@@ -648,18 +661,19 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	
 	private static void handleInitSctpSender(
 			final DatagramChannel datagramChannel,
-			final InetSocketAddress recipient,
-			final int localPort,
+			final InetSocketAddress recipientSctp,
+			final InetSocketAddress recipientUdp,
+			final int localSctpPort,
 			final FutureDone<SctpChannelFacade> futureSCTP,
 			final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections,
 			final Message message) throws SctpInitException {
 		if(message.sctp()) {
 			SctpChannel sctpChannel = ChannelUtils.creatSCTPSocket(
-				recipient.getAddress(),
-				recipient.getPort(), 
-				localPort, 
+				recipientSctp.getAddress(),
+				recipientSctp.getPort(), 
+				localSctpPort,
 				futureSCTP);
-			openConnections.put(recipient, sctpChannel);
+			openConnections.put(recipientSctp, sctpChannel);
 			
 			sctpChannel.setLink(new NetworkLink() {
 				
@@ -676,10 +690,10 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 							for (byte b : packet) {
 								formatter.format("%02x", b);
 							}
-							LOG.debug("server out SCTP({}): to {} - {} ",packet.length, recipient, formatter.toString());
+							LOG.debug("server out SCTP({}): to {} - {} ",packet.length, recipientSctp, formatter.toString());
 						}
 						
-						datagramChannel.send(buf, recipient);
+						datagramChannel.send(buf, recipientUdp);
 					} catch (Throwable t) {
 						LOG.error("cannot send",t);
 					}
@@ -692,7 +706,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				}
 			});
 			
-			LOG.debug("SCTP init was requested, port ({}): {}", localPort, message);
+			LOG.debug("SCTP init was requested, remote ({}): {}, local: {}", recipientSctp, message, localSctpPort);
 		} else {
 			LOG.debug("no SCTP init was requested: {}", message);
 			futureSCTP.failed("no sctp requested");

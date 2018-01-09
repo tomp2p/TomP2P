@@ -619,7 +619,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		LOG.debug("sending a UDP message to {} with message {}", recipient, message);
 		
 		try {
-			handleInitSctpSender(recipient, peerBean.serverPeerAddress().ipv4Socket().udpPort(), futureSCTP, openConnections, message);		
+			handleInitSctpSender(datagramChannel, recipient, peerBean.serverPeerAddress().ipv4Socket().udpPort(), futureSCTP, openConnections, message);		
 		} catch (net.sctp4nat.util.SctpInitException e) {
 			LOG.error("cannot init SCTP from the sender", e);
 			return Pair.create(futureMessage.failed(e),  futureSCTP.failed(e));
@@ -647,6 +647,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	}
 	
 	private static void handleInitSctpSender(
+			final DatagramChannel datagramChannel,
 			final InetSocketAddress recipient,
 			final int localPort,
 			final FutureDone<SctpChannelFacade> futureSCTP,
@@ -659,6 +660,38 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				localPort, 
 				futureSCTP);
 			openConnections.put(recipient, sctpChannel);
+			
+			sctpChannel.setLink(new NetworkLink() {
+				
+				@Override
+				public void onConnOut(final SctpChannelFacade so, final byte[] packet, final int tos) throws IOException, NotFoundException {
+					try {
+						ByteBuffer buf = ByteBuffer.allocate(packet.length+1);
+						buf.put((byte)(1 << 6));
+						buf.put(packet);
+						buf.flip();
+						
+						if(LOG.isDebugEnabled()) {
+							Formatter formatter = new Formatter();
+							for (byte b : packet) {
+								formatter.format("%02x", b);
+							}
+							LOG.debug("server out SCTP({}): to {} - {} ",packet.length, recipient, formatter.toString());
+						}
+						
+						datagramChannel.send(buf, recipient);
+					} catch (Throwable t) {
+						LOG.error("cannot send",t);
+					}
+				}
+				
+				@Override
+				public void close() {
+					//do nothing, server keeps its connection open
+					//TODO
+				}
+			});
+			
 			LOG.debug("SCTP init was requested, port ({}): {}", localPort, message);
 		} else {
 			LOG.debug("no SCTP init was requested: {}", message);

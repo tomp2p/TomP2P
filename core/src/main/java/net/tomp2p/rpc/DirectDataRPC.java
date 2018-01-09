@@ -55,8 +55,7 @@ public class DirectDataRPC extends DispatchHandler {
 			message.publicKeyAndSign(sendDirectBuilder.keyPair());
 		}
 		// TODO: this flag comes from the sendirectbuilder
-		message.keepAlive(true);
-		//message.sctp(true);
+		message.sctp(true);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
@@ -85,7 +84,7 @@ public class DirectDataRPC extends DispatchHandler {
 		});}
 		
 		Message m2 = createResponseMessage(message, Type.OK);
-		m2.keepAlive(true);
+		m2.sctp(true);
 		r.response(m2);
 	}
 

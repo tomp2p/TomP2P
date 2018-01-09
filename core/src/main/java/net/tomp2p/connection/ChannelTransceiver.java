@@ -24,11 +24,13 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -119,8 +121,8 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	}
 
 	public static void resetCounters() {
-		packetCounterSend.set(0);
 		packetCounterReceive.set(0);
+		packetCounterSend.set(0);
 	}
 
 	/**
@@ -321,7 +323,15 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			}
 			return false;
 		}
-		ServerThread serverThread = ServerThread.of(datagramChannel, dispatcher, listenAddresses, channelServerConfiguration, pendingMessages, openConnections, peerBean, this);
+		ServerThread serverThread = ServerThread.of(
+				datagramChannel, 
+				dispatcher, 
+				listenAddresses, 
+				channelServerConfiguration, 
+				pendingMessages, 
+				openConnections, 
+				peerBean, 
+				this);
 		serverThread.start();
 		channelsUDP.put(listenAddresses.getAddress(), serverThread);
 		return true;
@@ -358,6 +368,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 					final InetSocketAddress remote = (InetSocketAddress) packet.getSocketAddress();
 					ByteBuf buf = Unpooled.wrappedBuffer(buffer, 0, packet.getLength());
 					packetCounterReceive.incrementAndGet();
+					//TODO: per channel counter
 					
 					LOG.debug("got incoming data UDP:"+buf.readableBytes() + " from " + remote);
 					
@@ -370,16 +381,16 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 						Message m = decodeMessage(remote, buf);
 						LOG.debug("Message decoded: {}", m);
 						
-						if(m.isRequest()) {
-							if(m.isAck()) {
-								dispatcher.dispatch(null, m, null, null); //ack, just update peermap
-								LOG.debug("ack received");
-								continue;
-							} 
+						if(m.isAck()) {
+							dispatcher.dispatch(null, m, null, null); //ack, just update peermap
+							LOG.debug("ack received");
+							continue;
+						} else if(m.isRequest()) {
+							 
 							final Promise<SctpChannelFacade, Exception, Void> p;
-							if(m.isKeepAlive() && m.sctp()) {
+							if(m.sctp()) {
 								LOG.debug("got request for SCTP connection");
-								p = connectSCTP(openConnections, datagramChannel, remote, m);
+								p = connectSCTP(openConnections, datagramChannel, remote, peerBean.serverPeerAddress().ipv4Socket().udpPort(), m);
 							} else {
 								LOG.debug("no SCTP connection");
 								p = null;
@@ -415,8 +426,19 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 					}
 					pendingMessages.clear();
 					
-				}  catch (Throwable e) {
+				} catch (ClosedChannelException e) {
+					LOG.debug("user shut down...");
+					for(FutureDone<Message> future: pendingMessages.values()) {
+						future.failed("user closed connection");
+					}
+					pendingMessages.clear();
+				}
+				catch (Throwable e) {
 					LOG.error("error in transceier loop", e);
+					for(FutureDone<Message> future: pendingMessages.values()) {
+						future.failed("error", e);
+					}
+					pendingMessages.clear();
 				}
 			}
 			LOG.debug("ending loop");
@@ -426,7 +448,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			Message ackMessage = DispatchHandler.createAckMessage(m, Type.ACK, peerBean.serverPeerAddress());
 			//PeerAddress recipientAddress = m.recipient();
 			PeerAddress recipientAddress = peerBean.serverPeerAddress();
-			send(recipientAddress.createUDPSocket(m.sender()), ackMessage);
+			sendNetwork(datagramChannel, m.senderSocket(), ackMessage);
 		}
 
 		private Responder createResponder(final InetSocketAddress remote, Message m) {
@@ -437,9 +459,12 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 					if (responseMessage != null) {
 						if (dispatcher.peerBean().peerMap().checkPeer(m.sender())) {
 							responseMessage.verified();
+							LOG.debug("peer is known, don't request an ack: {}", m);
+						} else {
+							LOG.debug("peer is unknown, request an ack: {}", m);
 						}
 						try {
-							send(remote, responseMessage);
+							sendNetwork(datagramChannel, remote, responseMessage);
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -482,20 +507,23 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			}
 		}
 
-		public static Promise<SctpChannelFacade, Exception, Void> connectSCTP(final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections, 
-				final DatagramChannel datagramChannel, final InetSocketAddress remote, Message m)
+		public static Promise<SctpChannelFacade, Exception, Void> connectSCTP(
+				final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections, 
+				final DatagramChannel datagramChannel, 
+				final InetSocketAddress remote,
+				final int localPort,
+				Message m)
 				throws Exception {
 			final Promise<SctpChannelFacade, Exception, Void> p;
 			
 				LOG.debug("setup SCTP connection: {}", m);
 				
-				int localSctpPort = ChannelUtils.localSctpPort(IP.fromInet4Address((Inet4Address)remote.getAddress()), remote.getPort());
 				SctpChannel sctpChannel = new SctpChannelBuilder()
 						.remoteAddress(remote.getAddress())
 						.remotePort(remote.getPort())
 						.mapper(SctpUtils.getMapper())
-						.localSctpPort(localSctpPort).build();
-				LOG.debug("local sctp port: {}", localSctpPort);
+						.localSctpPort(localPort).build();
+				LOG.debug("local sctp port: {}, remote: {}", localPort, remote);
 				openConnections.put(remote, sctpChannel);
 				sctpChannel.setLink(new NetworkLink() {
 					
@@ -506,7 +534,15 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 							buf.put((byte)(1 << 6));
 							buf.put(packet);
 							buf.flip();
-							LOG.debug("server out SCTP: "+buf.remaining() + " to " + remote);
+							
+							if(LOG.isDebugEnabled()) {
+								Formatter formatter = new Formatter();
+								for (byte b : packet) {
+									formatter.format("%02x", b);
+								}
+								LOG.debug("server out SCTP({}): to {} - {} ",packet.length, remote, formatter.toString());
+							}
+							
 							datagramChannel.send(buf, remote);
 						} catch (Throwable t) {
 							LOG.error("cannot send",t);
@@ -525,20 +561,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			return p;
 		}
 
-		private void send(final InetSocketAddress remote, Message m2)
-				throws InvalidKeyException, SignatureException, IOException {
-			
-			LOG.debug("peer isVerified: {}", m2.isVerified());
-
-			CompositeByteBuf buf2 = Unpooled.compositeBuffer();
-			Encoder encoder = new Encoder(new DSASignatureFactory());
-			encoder.write(buf2, m2, null);
-			packetCounterSend.incrementAndGet();
-			
-			LOG.debug("server out UDP:"+ByteBufUtil.prettyHexDump(buf2) + " to " + remote);
-			
-			datagramChannel.send(ChannelUtils.convert(buf2), remote);
-		}
+		
 
 		@Override
 		public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(Message message) {
@@ -596,13 +619,13 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		LOG.debug("sending a UDP message to {} with message {}", recipient, message);
 		
 		try {
-			handleInitSctpSender(recipient, futureSCTP, openConnections, message);		
+			handleInitSctpSender(recipient, peerBean.serverPeerAddress().ipv4Socket().udpPort(), futureSCTP, openConnections, message);		
 		} catch (net.sctp4nat.util.SctpInitException e) {
 			LOG.error("cannot init SCTP from the sender", e);
 			return Pair.create(futureMessage.failed(e),  futureSCTP.failed(e));
 		}
 		
-		sendRaw(datagramChannel, message, futureMessage, recipient, pendingMessages);
+		sendRequest(datagramChannel, message, futureMessage, recipient, pendingMessages);
 		
 		return Pair.create(futureMessage,  futureSCTP);
 	}
@@ -625,38 +648,52 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	
 	private static void handleInitSctpSender(
 			final InetSocketAddress recipient,
+			final int localPort,
 			final FutureDone<SctpChannelFacade> futureSCTP,
 			final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections,
 			final Message message) throws SctpInitException {
 		if(message.sctp()) {
 			SctpChannel sctpChannel = ChannelUtils.creatSCTPSocket(
 				recipient.getAddress(),
-				recipient.getPort(), ChannelUtils
-				.localSctpPort(
-						IP.fromInet4Address((Inet4Address) recipient.getAddress()), 
-						recipient.getPort()),
+				recipient.getPort(), 
+				localPort, 
 				futureSCTP);
 			openConnections.put(recipient, sctpChannel);
-			LOG.debug("SCTP init was requested: {}", message);
+			LOG.debug("SCTP init was requested, port ({}): {}", localPort, message);
 		} else {
 			LOG.debug("no SCTP init was requested: {}", message);
 			futureSCTP.failed("no sctp requested");
 		}
 	}
 	
-	private static void sendRaw(
+	private static void sendNetwork(DatagramChannel datagramChannel, final InetSocketAddress remote, Message m2)
+			throws InvalidKeyException, SignatureException, IOException {
+		
+		LOG.debug("peer isVerified: {}", m2.isVerified());
+
+		CompositeByteBuf buf2 = Unpooled.compositeBuffer();
+		Encoder encoder = new Encoder(new DSASignatureFactory());
+		encoder.write(buf2, m2, null);
+		packetCounterSend.incrementAndGet();
+				
+		LOG.debug("server out UDP {}: {} to {}", m2, ByteBufUtil.prettyHexDump(buf2), remote);
+		
+		datagramChannel.send(ChannelUtils.convert(buf2), remote);
+	}
+	
+	private static void sendRequest(
 			DatagramChannel datagramChannel, 
 			Message message, 
 			FutureDone<Message> futureMessage, 
 			final InetSocketAddress recipient,
 			final ConcurrentCacheMap<MessageID, FutureDone<Message>> pendingMessages) {
-		CompositeByteBuf buf2 = Unpooled.compositeBuffer();
-		Encoder encoder = new Encoder(new DSASignatureFactory());
+		//CompositeByteBuf buf2 = Unpooled.compositeBuffer();
+		//Encoder encoder = new Encoder(new DSASignatureFactory());
 		try {
-			encoder.write(buf2, message, null);
-			LOG.debug("send raw UDP packet to {} with length {} for message {}", recipient, buf2.readableBytes(), message);
-			datagramChannel.send(ChannelUtils.convert(buf2), recipient);
-
+			//encoder.write(buf2, message, null);
+			//LOG.debug("send raw UDP packet to {} with length {} for message {}", recipient, buf2.readableBytes(), message);
+			//datagramChannel.send(ChannelUtils.convert(buf2), recipient);
+			sendNetwork(datagramChannel, recipient, message);
 			// if we send an ack, don't expect any incoming packets
 			if (!message.isAck()) {
 				LOG.debug("pending message add: {} with id {}", message, new MessageID(message));

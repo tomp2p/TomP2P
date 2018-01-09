@@ -53,9 +53,9 @@ public class TestPing {
             fr.element0().awaitUninterruptibly();
             System.err.println(fr.element0().failedReason());
             Assert.assertEquals(true, fr.element0().isSuccess());
-            Assert.assertEquals(1, ChannelTransceiver.packetCounterSend());
+            Assert.assertEquals(3, ChannelTransceiver.packetCounterSend());
             //we shutdown between the 1 and 2 received packet, so it might be 1 or 2
-            Assert.assertEquals(true, ChannelTransceiver.packetCounterReceive() == 1 || ChannelTransceiver.packetCounterReceive() == 2);
+            Assert.assertEquals(true, ChannelTransceiver.packetCounterReceive() == 3 || ChannelTransceiver.packetCounterReceive() == 2);
         } finally {
             if (sender != null) {
                 sender.shutdown().await();
@@ -87,8 +87,8 @@ public class TestPing {
             fr.element0().awaitUninterruptibly();
             
             Assert.assertEquals(true, fr.element0().isSuccess());
-            Assert.assertEquals(2, ChannelTransceiver.packetCounterSend());
-            Assert.assertEquals(3, ChannelTransceiver.packetCounterReceive());
+            Assert.assertEquals(5, ChannelTransceiver.packetCounterSend());
+            Assert.assertEquals(5, ChannelTransceiver.packetCounterReceive());
             
         } finally {
             if (sender != null) {
@@ -181,7 +181,7 @@ public class TestPing {
             fr.element0().awaitUninterruptibly();
             Assert.assertEquals(false, fr.element0().isSuccess());
             System.err.println("done:" + fr.element0().failedReason());
-            Assert.assertEquals(true, fr.element0().failedReason().contains("TIMEOUT"));
+            Assert.assertEquals(true, fr.element0().failedReason().contains("timeout"));
             
         } finally {
             if (sender != null) {
@@ -284,45 +284,4 @@ public class TestPing {
             }
         }
     }
-
-    @Test
-    public void testPingReserveLoop() throws Exception {
-        for (int i = 0; i < 100; i++) {
-            testPingReserve();
-        }
-    }
-
-    @Test
-    public void testPingReserve() throws Exception {
-        Peer sender = null;
-        Peer recv1 = null;
-        try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
-            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
-                    new DefaultConnectionConfiguration());
-            
-            fr.element0().awaitUninterruptibly();
-            
-            
-            System.err.println(fr.element0().failedReason());
-            Assert.assertEquals(true, fr.element0().isSuccess());
-            
-            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(),
-                    new DefaultConnectionConfiguration());
-            fr2.element0().awaitUninterruptibly();
-            // we have released the reservation here
-            // System.err.println(fr2.getFailedReason());
-            Assert.assertEquals(false, fr2.element0().isSuccess());
-
-        } finally {
-            if (sender != null) {
-                sender.shutdown().await();
-            }
-            if (recv1 != null) {
-                recv1.shutdown().await();
-            }
-        }
-    }
-
 }

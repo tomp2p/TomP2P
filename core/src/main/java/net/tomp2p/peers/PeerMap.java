@@ -945,6 +945,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 	}
 
 	public boolean verifiedPeer(PeerAddress sender) {
+		LOG.debug("Peer {} is verified, I'm {}", sender, self);
 		if(knownPeers.contains(sender)) {
 			return true;
 		} 

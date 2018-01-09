@@ -1,6 +1,9 @@
 package net.tomp2p.rpc;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +25,9 @@ import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatistic;
+import net.tomp2p.peers.PeerAddress.PeerAddressBuilder;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Triple;
@@ -64,7 +69,10 @@ public class RelayRPC extends DispatchHandler {
 		
 	}
 	
-	public FutureDone<Message> sendPeerMap(final PeerAddress relayPeer, final List<Map<Number160, PeerStatistic>> map, 
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> sendPeerMap(
+			final PeerAddress relayPeer, 
+			final List<Map<Number160, 
+			PeerStatistic>> map, 
 			final ClientChannel channel) {
 		
 		final Message message = createMessage(relayPeer, RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
@@ -72,21 +80,30 @@ public class RelayRPC extends DispatchHandler {
 		NeighborSet ns = new NeighborSet(5, RelayUtils.flatten(map));
 		message.neighborsSet(ns);
 		LOG.debug("send neighbors " + ns);
-		// append relay-type specific data (if necessary)
-		//relayConfig.prepareMapUpdateMessage(message);
-		message.keepAlive(true);
-		FutureDone<Message> f = new FutureDone<>();
-		channel.send(message, f);
-		return f;
+		return connectionBean().channelServer().sendUDP(message);
 	}
 	
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> sendRendezvousMessage(
-			final PeerAddress remote, final int port) {
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> sendReverseConnectionMessage(
+			final PeerAddress rendezVous, final PeerAddress firewalledPeer) {
 		
-		final Message message = createMessage(remote, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
-		message.keepAlive(true);
-		message.intAt(port);
-		return connectionBean().channelServer().sendUDP(message);	
+		final Message messageRelay = createMessage(rendezVous, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
+		if(peerBean().serverPeerAddress().ipv4Socket() != null) {
+			messageRelay.peerSocketAddress(peerBean().serverPeerAddress().ipv4Socket());
+		} else if(peerBean().serverPeerAddress().ipv6Socket() != null) {
+			messageRelay.peerSocketAddress(peerBean().serverPeerAddress().ipv6Socket());
+		} else {
+			return null; //todo return failure
+		}
+		//if I'm behind port preserving NAT, fire message to open connection
+		final Message holePunchingMessage = createMessage(firewalledPeer, RPC.Commands.RELAY.getNr(), Type.REQUEST_5);
+		try {
+			connectionBean().channelServer().fireUDP(holePunchingMessage, connectionBean().dispatcher().peerBean().serverPeerAddress());
+		} catch (InvalidKeyException | SignatureException | IOException e) {
+			e.printStackTrace();
+		}
+		
+		messageRelay.sctp(true);
+		return connectionBean().channelServer().sendUDP(messageRelay);
 		//fire up holes!	
 	}
 	
@@ -100,32 +117,41 @@ public class RelayRPC extends DispatchHandler {
 		} else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
 			//no capacity restrictions yet
 			activeRelays.putIfAbsent(message.sender().peerId(), Pair.create(message.senderSocket(), sender));
-		} else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
-			int portRequester = message.intAt(0);
-			/*ChannelSender storedSender = activeRelays.get(message.sender().peerId());
-			if(storedSender != null) {
-				message.restoreBuffers();
-				message.restoreContentReferences();
-				storedSender.send(message).first.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
-					@Override
-					public void operationComplete(FutureDone<Message> future) throws Exception {
-						r.response(future.object());
-					}
-				});
+		} else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr() 
+				&& dispatcher().isPrimaryTarget(message.recipient().peerId())) {
+			//we now got the holepunching request
+			
+			PeerAddressBuilder builder = PeerAddress.builder();
+			if(!message.peerSocket4AddressList().isEmpty()) {
+				builder.ipv4Socket(message.peerSocket4Address(0));
+			} else if(!message.peerSocket6AddressList().isEmpty()) {
+				builder.ipv6Socket(message.peerSocket6Address(0));
 			} else {
-				//this is executed by the unreachable peer
-				int portRequester2 = message.intAt(0);
-				int port = SctpPorts.getInstance().generateDynPort();
-				
-				//fire up holes!
-				
-				Message response = createResponseMessage(message, Type.OK);
-				response.intValue(port);
-				r.response(response);
-			}*/
+				//TOOD: fail
+			}
+			builder.peerId(message.recipient().peerId());
 			
+			final Message holePunchingMessage = createMessage(builder.build(), RPC.Commands.RELAY.getNr(), Type.REQUEST_4);
+			r.response(createResponseMessage(message, Type.OK));
 			
-		} else {
+			connectionBean().channelServer().fireUDP(holePunchingMessage, connectionBean().dispatcher().peerBean().serverPeerAddress());
+			
+		} else if (message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
+			//this will never arrive... if yes, ignore it
+			LOG.debug("got hole punching message, seems that hole was already punched");
+			final Message holePunchingMessage = createMessage(message.sender(), RPC.Commands.RELAY.getNr(), Type.REQUEST_5);
+			try {
+				connectionBean().channelServer().fireUDP(holePunchingMessage, connectionBean().dispatcher().peerBean().serverPeerAddress());
+			} catch (InvalidKeyException | SignatureException | IOException e) {
+				e.printStackTrace();
+			}
+		} else if (message.type() == Type.REQUEST_5 && message.command() == RPC.Commands.RELAY.getNr()) {
+			//this will never arrive... if yes, ignore it
+			LOG.debug("holepunching established");
+			//SCTP already handled!!
+		}
+		
+		else {
 			//forward
 			Pair<InetSocketAddress, ChannelSender> pr = activeRelays.get(message.recipient().peerId());
 			if(pr != null) {

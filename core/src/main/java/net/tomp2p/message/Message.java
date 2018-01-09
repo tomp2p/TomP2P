@@ -145,7 +145,7 @@ public class Message {
 		 * <li>for {@link Commands#PEX} means fire and forget, coming from primary</li>
 		 * </ul>
 		 */
-		REQUEST_FF_2,
+		REQUEST_5,
 		
 		/**
 		 * The request was processed and everything is alright
@@ -500,7 +500,7 @@ public class Message {
      */
     public boolean isRequest() {
 		return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3 || type == Type.REQUEST_4
-				|| type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
+				|| type == Type.REQUEST_FF_1;
     }
     
     public boolean isAck() {
@@ -511,7 +511,7 @@ public class Message {
      * @return True if its a fire and forget, that means we don't expect an answer
      */
     public boolean isFireAndForget() {
-        return type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
+        return type == Type.REQUEST_FF_1;
     }
 
     /**

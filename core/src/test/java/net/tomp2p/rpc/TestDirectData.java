@@ -41,13 +41,7 @@ public class TestDirectData {
 	            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(9876).start();
 	            DirectDataRPC direct = new DirectDataRPC(sender.peerBean(), sender.connectionBean());
 	            PeerBuilder b = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(1234);
-	            /*b.sctpCallback(new SctpDataCallback() {
-					@Override
-					public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
-							SctpChannelFacade so) {
-						so.send(new byte[100], true, 0, 0);
-					}
-				});*/
+	            
 	            recv1 = b.start();
 	            
 	            new DirectDataRPC(recv1.peerBean(), recv1.connectionBean());

@@ -268,6 +268,21 @@ public class Dispatcher {
 			return null;
 		}
 	}
+	
+	//not relaying
+	public boolean isPrimaryTarget(final Number160 recipientID) {
+		readLock.lock();
+		final Map<Integer, DispatchHandler> ioHandlers;
+		try {
+			ioHandlers = search(recipientID, recipientID);
+		} finally {
+			readLock.unlock();
+		}
+		if(ioHandlers == null) {
+			return false;
+		}
+		return true;
+	}
 
     /**
      * Looks for a registered handler according to the given parameters.

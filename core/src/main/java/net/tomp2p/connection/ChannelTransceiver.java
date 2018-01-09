@@ -66,7 +66,9 @@ import net.tomp2p.peers.IP;
 import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.IP.IPv6;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.DispatchHandler;
+import net.tomp2p.rpc.RPC;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.ExpirationHandler;
 import net.tomp2p.utils.Pair;
@@ -392,14 +394,30 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 						} else if(m.isRequest()) {
 							 
 							final Promise<SctpChannelFacade, Exception, Void> p;
-							if(m.sctp()) {
-								LOG.debug("got request for SCTP connection");
-								int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
-								InetSocketAddress remoteSctpSocket = new InetSocketAddress(remote.getAddress(), remotePort);
+							if(m.sctp() && dispatcher.isPrimaryTarget(m.recipient().peerId())) {
+								if (m.type() == Type.REQUEST_5 && m.command() == RPC.Commands.RELAY.getNr()) {
+									//the address is in the message itself
+									int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
+									InetSocketAddress remoteSctpSocket2;
+									if(!m.peerSocket4AddressList().isEmpty()) {
+										remoteSctpSocket2 = m.peerSocket4Address(0).createUDPSocket();
+									} else if(!m.peerSocket6AddressList().isEmpty()) {
+										remoteSctpSocket2 = m.peerSocket6Address(0).createUDPSocket();
+									} else {
+										remoteSctpSocket2 = null; //TOOD: fail
+									}
+									InetSocketAddress remoteSctpSocket = new InetSocketAddress(remoteSctpSocket2.getAddress(), remotePort);
+									int localSctpPort = ChannelUtils.localSctpPort(remote);
+									p = connectSCTP(openConnections, datagramChannel, remoteSctpSocket, remote, localSctpPort, m);
+									
+								} else {
+									LOG.debug("got request for SCTP connection");
+									int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
+									InetSocketAddress remoteSctpSocket = new InetSocketAddress(remote.getAddress(), remotePort);
 								
-								int localSctpPort = ChannelUtils.localSctpPort(remote);
-								
-								p = connectSCTP(openConnections, datagramChannel, remoteSctpSocket, remote, localSctpPort, m);
+									int localSctpPort = ChannelUtils.localSctpPort(remote);
+									p = connectSCTP(openConnections, datagramChannel, remoteSctpSocket, remote, localSctpPort, m);
+								}
 							} else {
 								LOG.debug("no SCTP connection");
 								p = null;
@@ -618,6 +636,12 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 
 	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> sendUDP(Message message) {
 		return send(message, sendingDatagramChannel);
+	}
+	
+	public ChannelTransceiver fireUDP(Message message, PeerAddress self) throws InvalidKeyException, SignatureException, IOException {
+		InetSocketAddress remote = message.recipient().createUDPSocket(self);
+		sendNetwork(sendingDatagramChannel, remote, message);
+		return this;
 	}
 	
 	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(Message message, DatagramChannel datagramChannel) {

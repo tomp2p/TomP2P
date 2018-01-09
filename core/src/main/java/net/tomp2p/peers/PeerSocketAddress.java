@@ -279,7 +279,7 @@ public abstract class PeerSocketAddress {
 	    }
 	}
 
-	public static PeerSocketAddress create(InetAddress inet, int udpPort, int tcpPort, int udtPort) {
+	public static PeerSocketAddress create(InetAddress inet, int udpPort) {
 		if(inet instanceof Inet4Address) {
 			return PeerSocket4Address.builder().ipv4(IP.fromInet4Address((Inet4Address)inet)).udpPort(udpPort).build();
 		} else {

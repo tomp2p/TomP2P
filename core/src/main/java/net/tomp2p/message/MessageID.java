@@ -54,7 +54,7 @@ public class MessageID implements Comparable<MessageID> {
      * @param nodeAddress
      *            The node address
      */
-    private MessageID(final int id, final PeerAddress nodeAddress) {
+    public MessageID(final int id, final PeerAddress nodeAddress) {
         this.id = id;
         this.peerAddress = nodeAddress;
     }

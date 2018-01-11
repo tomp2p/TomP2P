@@ -69,6 +69,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.ExpirationHandler;
 import net.tomp2p.utils.Pair;
@@ -394,31 +395,37 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 						} else if(m.isRequest()) {
 							 
 							final Promise<SctpChannelFacade, Exception, Void> p;
-							if(m.sctp() && dispatcher.isPrimaryTarget(m.recipient().peerId())) {
-								if (m.type() == Type.REQUEST_5 && m.command() == RPC.Commands.RELAY.getNr()) {
-									//the address is in the message itself
-									int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
-									InetSocketAddress remoteSctpSocket2;
-									if(!m.peerSocket4AddressList().isEmpty()) {
-										remoteSctpSocket2 = m.peerSocket4Address(0).createUDPSocket();
-									} else if(!m.peerSocket6AddressList().isEmpty()) {
-										remoteSctpSocket2 = m.peerSocket6Address(0).createUDPSocket();
-									} else {
-										remoteSctpSocket2 = null; //TOOD: fail
-									}
-									InetSocketAddress remoteSctpSocket = new InetSocketAddress(remoteSctpSocket2.getAddress(), remotePort);
-									int localSctpPort = ChannelUtils.localSctpPort(remote);
-									p = connectSCTP(openConnections, datagramChannel, remoteSctpSocket, remote, localSctpPort, m);
-									
-								} else {
-									LOG.debug("got request for SCTP connection");
-									int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
-									InetSocketAddress remoteSctpSocket = new InetSocketAddress(remote.getAddress(), remotePort);
+							if(m.sctp() && m.command() != RPC.Commands.RELAY_REVERSE_CONNECTION.getNr()) {
+								LOG.debug("got request for SCTP connection");
+								int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
+								InetSocketAddress remoteSctpSocket = new InetSocketAddress(remote.getAddress(), remotePort);
 								
-									int localSctpPort = ChannelUtils.localSctpPort(remote);
-									p = connectSCTP(openConnections, datagramChannel, remoteSctpSocket, remote, localSctpPort, m);
+								int localSctpPort = ChannelUtils.localSctpPort(remote);
+								p = connectSCTP(openConnections, datagramChannel, remoteSctpSocket, remote, localSctpPort, m);
+							} else if(m.command() == RPC.Commands.RELAY_REVERSE_CONNECTION.getNr() && m.type() == Type.REQUEST_2) {
+								
+								//the address is in the message itself
+								int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
+								InetSocketAddress remoteUdpSocket;
+								if(!m.peerSocket4AddressList().isEmpty()) {
+									remoteUdpSocket = m.peerSocket4Address(0).createUDPSocket();
+								} else if(!m.peerSocket6AddressList().isEmpty()) {
+									remoteUdpSocket = m.peerSocket6Address(0).createUDPSocket();
+								} else {
+									remoteUdpSocket = null; //TOOD: fail
 								}
-							} else {
+								InetSocketAddress remoteSctpSocket = new InetSocketAddress(remoteUdpSocket.getAddress(), remotePort);
+								int localSctpPort = ChannelUtils.localSctpPort(remote);
+								FutureDone<SctpChannelFacade> tmp = new FutureDone<>();
+								handleInitSctpSender(datagramChannel, remoteSctpSocket, remoteUdpSocket, localSctpPort, tmp, openConnections);
+								p = null;
+							} else if(m.command() == RPC.Commands.RELAY_REVERSE_CONNECTION.getNr() && m.type() == Type.REQUEST_3) {
+								int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
+								InetSocketAddress remoteSctpSocket = new InetSocketAddress(remote.getAddress(), remotePort);
+								int localSctpPort = ChannelUtils.localSctpPort(remote);
+								p = connectSCTP(openConnections, datagramChannel, remoteSctpSocket, remote, localSctpPort, m);
+							} 
+							else {
 								LOG.debug("no SCTP connection");
 								p = null;
 							}
@@ -649,14 +656,23 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		FutureDone<Message> futureMessage = new FutureDone<Message>();
 		FutureDone<SctpChannelFacade> futureSCTP = new FutureDone<>();
 		
-		final InetSocketAddress recipient = findRecipient(message); 
+		final InetSocketAddress recipient = findRecipient(message);
 		LOG.debug("sending a UDP message to {} with message {}", recipient, message);
+		
+		PeerAddress sender = message.sender();
+		PeerAddress receiver = message.recipient();
+		
+		if(receiver.portPreserving()) {
+			//need holepunching or reverse connection
+		}
 		
 		try {
 			int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
 			InetSocketAddress remoteSctpSocket = new InetSocketAddress(recipient.getAddress(), remotePort);
 			int localSctpPort = ChannelUtils.localSctpPort(recipient);
-			handleInitSctpSender(datagramChannel, remoteSctpSocket, recipient, localSctpPort, futureSCTP, openConnections, message);		
+			if(message.sctp() && message.command() != Commands.RELAY.getNr() && message.type() == Type.REQUEST_3) {
+				handleInitSctpSender(datagramChannel, remoteSctpSocket, recipient, localSctpPort, futureSCTP, openConnections);
+			}
 		} catch (net.sctp4nat.util.SctpInitException e) {
 			LOG.error("cannot init SCTP from the sender", e);
 			return Pair.create(futureMessage.failed(e),  futureSCTP.failed(e));
@@ -689,9 +705,10 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			final InetSocketAddress recipientUdp,
 			final int localSctpPort,
 			final FutureDone<SctpChannelFacade> futureSCTP,
-			final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections,
-			final Message message) throws SctpInitException {
-		if(message.sctp()) {
+			final ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections) throws SctpInitException {
+		
+			//type 3 of relay is a message that is relayed. that means neither the sender or the relay wants to setup
+			//sctp. Nevertheless this flag needs to be set so that the firewalled peer can initiate sctp
 			SctpChannel sctpChannel = ChannelUtils.creatSCTPSocket(
 				recipientSctp.getAddress(),
 				recipientSctp.getPort(), 
@@ -730,11 +747,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				}
 			});
 			
-			LOG.debug("SCTP init was requested, remote ({}): {}, local: {}", recipientSctp, message, localSctpPort);
-		} else {
-			LOG.debug("no SCTP init was requested: {}", message);
-			futureSCTP.failed("no sctp requested");
-		}
+		LOG.debug("SCTP init was requested, remote ({}): local: {}", recipientSctp, localSctpPort);
 	}
 	
 	private static void sendNetwork(DatagramChannel datagramChannel, final InetSocketAddress remote, Message m2)

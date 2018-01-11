@@ -57,7 +57,7 @@ public class DefaultSendBehavior implements SendBehavior {
                 // relayed. Thus send the message to
                 // one of the receiver's relay peers
                 LOG.debug("relay or hole punching TCP");
-                if(recipient.holePunching() && sender.holePunching()) {
+                if(recipient.portPreserving() && sender.portPreserving()) {
                     return SendMethod.HOLEPUNCHING;
                 } else {
                     return SendMethod.RELAY;

@@ -88,7 +88,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     
     //next 1 Byte - 8 bits - we can have at most 7 relays
     
-    private static final int HOLE_PUNCHING = 0x100;			// xxxxxxx1 xxxxxxxx
+    private static final int PORT_PRESERVIVG = 0x100;			// xxxxxxx1 xxxxxxxx
     private static final int RELAY_TYPE_MASK = 0xfe00;		// 1111111x xxxxxxxx
     
 
@@ -108,7 +108,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     @Getter @Wither private final Number160 peerId;
     // connection information
     @Getter @Wither private final int relaySize;
-    @Getter @Wither private final boolean holePunching;
+    @Getter @Wither private final boolean portPreserving;
     @Getter @Wither private final boolean skipIP;
     
     @Wither private final BitSet relayTypes;
@@ -323,7 +323,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 			.reachable4UDP((header & REACHABLE4_UDP) == REACHABLE4_UDP)
     		.reachable6UDP((header & REACHABLE6_UDP) == REACHABLE6_UDP)
     		.relaySize((header & RELAY_SIZE_MASK) >>> 5)
-			.holePunching((header & HOLE_PUNCHING) == HOLE_PUNCHING)
+			.portPreserving((header & PORT_PRESERVIVG) == PORT_PRESERVIVG)
 			.skipIP((header & SKIP_IP) == SKIP_IP)
 			.relayTypes(BitSet.valueOf(tmp));
 		return builder;
@@ -412,7 +412,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 				| (reachable4UDP ? REACHABLE4_UDP : 0)
 				| (reachable6UDP ? REACHABLE6_UDP : 0)
 				| ((relaySize << 5) & RELAY_SIZE_MASK)
-				| (holePunching ? HOLE_PUNCHING : 0)
+				| (portPreserving ? PORT_PRESERVIVG : 0)
 				| (skipIP ? SKIP_IP : 0)
 				| ((relayTypes() << 9) & RELAY_TYPE_MASK);
 	}
@@ -438,8 +438,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     		}
 		}
 		sb.append('{');
-		if(holePunching) {
-			sb.append('h');
+		if(portPreserving) {
+			sb.append('*');
 		}
 		if(skipIP) {
 			sb.append('s');

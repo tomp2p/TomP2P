@@ -93,7 +93,7 @@ public class QuitRPC extends DispatchHandler {
 	 */
 	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder) {
 		final Message message = createMessage(remotePeer, RPC.Commands.QUIT.getNr(), Type.REQUEST_FF_1);
-		if (shutdownBuilder.isSign()) {
+		if (shutdownBuilder.sign()) {
 			message.publicKeyAndSign(shutdownBuilder.keyPair());
 		}
 		LOG.debug("send QUIT message {}.", message);

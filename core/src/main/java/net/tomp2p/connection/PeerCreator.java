@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.IP;
-import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
@@ -75,11 +74,10 @@ public class PeerCreator {
 	 */
 	public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
 	        final ChannelServerConfiguration channelServerConfiguration,
-	        final ChannelClientConfiguration channelClientConfiguration,
 	        final ScheduledExecutorService timer, SendBehavior sendBehavior) throws IOException {
 		//peer bean
 		peerBean = new PeerBean().keyPair(keyPair);
-		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConfiguration);
+		PeerAddress self = findPeerAddress(peerId, channelServerConfiguration);
 		peerBean.serverPeerAddress(self);
 		LOG.info("Visible address to other peers: {}", self);
 		
@@ -89,8 +87,7 @@ public class PeerCreator {
 		        dispatcher, timer, peerBean);	
 		
 		//connection bean
-		connectionBean = new ConnectionBean(p2pId, dispatcher, channelServer,
-		        channelClientConfiguration, timer);
+		connectionBean = new ConnectionBean(p2pId, dispatcher, channelServer, timer);
 		this.master = true;
 	}
 
@@ -176,10 +173,9 @@ public class PeerCreator {
 	 *             If the address could not be determined
 	 */
 	private static PeerAddress findPeerAddress(final Number160 peerId,
-	        final ChannelClientConfiguration channelClientConfiguration,
 	        final ChannelServerConfiguration channelServerConfiguration) throws IOException {
 		final DiscoverResults discoverResults = DiscoverNetworks.discoverInterfaces(
-				channelClientConfiguration.bindings());
+				channelServerConfiguration.bindings());
 		final String status = discoverResults.status();
 		if (LOG.isInfoEnabled()) {
 			LOG.info("Status of external address search: " + status);
@@ -193,7 +189,6 @@ public class PeerCreator {
 		
 		final PeerSocket4Address peerSocketAddress = PeerSocket4Address.builder().ipv4(IP.fromInet4Address((Inet4Address)outsideAddress))
 				.udpPort(channelServerConfiguration.ports().udpPort())
-				
 				.build(); 
 		
 		final PeerAddress self = PeerAddress.builder()

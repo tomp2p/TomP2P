@@ -16,6 +16,8 @@
 
 package net.tomp2p.connection;
 
+import java.security.KeyPair;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -31,6 +33,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @Accessors(chain = true, fluent = true)
 public class DefaultConnectionConfiguration implements ConnectionConfiguration {
-    @Getter @Setter private int idleUDPMillis = ConnectionBean.DEFAULT_UDP_IDLE_MILLIS;
-    @Getter @Setter private int heartBeatSeconds = ConnectionBean.DEFAULT_HEARTBEAT_SECONDS;
+    @Getter @Setter private boolean sign = false;
+    @Getter @Setter private boolean sctp = false;
+    @Getter @Setter private KeyPair keyPair = null;
 }

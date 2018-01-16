@@ -48,8 +48,7 @@ public class TestPing {
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean());
-            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = handshake.pingUDP(recv1.peerAddress(), 
-                    new DefaultConnectionConfiguration());
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = handshake.pingUDP(recv1.peerAddress());
             fr.element0().awaitUninterruptibly();
             System.err.println(fr.element0().failedReason());
             Assert.assertEquals(true, fr.element0().isSuccess());
@@ -76,13 +75,11 @@ public class TestPing {
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(1234).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean());
-            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>>  fr = handshake.pingUDP(recv1.peerAddress(), 
-                    new DefaultConnectionConfiguration());
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>>  fr = handshake.pingUDP(recv1.peerAddress());
             fr.element0().awaitUninterruptibly();
             
             
-            fr = handshake.pingUDP(recv1.peerAddress(), 
-                    new DefaultConnectionConfiguration());
+            fr = handshake.pingUDP(recv1.peerAddress());
             
             fr.element0().awaitUninterruptibly();
             
@@ -113,15 +110,13 @@ public class TestPing {
 
 
 
-            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
-                    new DefaultConnectionConfiguration());
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress());
             fr.element0().awaitUninterruptibly();
 
             fr.element0().addListener(new BaseFutureAdapter<FutureDone<Message>>() {
                 @Override
                 public void operationComplete(final FutureDone<Message> future) throws Exception {
-                	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(), 
-                            new DefaultConnectionConfiguration());
+                	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr2 = sender.pingRPC().pingUDP(recv1.peerAddress());
                     try {
                         fr2.element0().await();
                     } catch (IllegalStateException ise) {
@@ -151,8 +146,7 @@ public class TestPing {
                     false);
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, false);
-            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = handshake.pingUDP(recv1.peerAddress(),
-                    new DefaultConnectionConfiguration());
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = handshake.pingUDP(recv1.peerAddress());
             fr.element0().awaitUninterruptibly();
             Assert.assertEquals(false, fr.element0().isSuccess());
         } finally {
@@ -176,8 +170,7 @@ public class TestPing {
                     true);
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, true);
-            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress(), 
-                    new DefaultConnectionConfiguration());
+            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress());
             fr.element0().awaitUninterruptibly();
             Assert.assertEquals(false, fr.element0().isSuccess());
             System.err.println("done:" + fr.element0().failedReason());
@@ -202,8 +195,7 @@ public class TestPing {
             recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
             List<Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>>> list = new ArrayList<>(50);
             for (int i = 0; i < 50; i++) {
-            	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
-                        new DefaultConnectionConfiguration());
+            	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress());
                 list.add(fr);
             }
             for (Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr2 : list) {
@@ -230,8 +222,7 @@ public class TestPing {
             }
             List<Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>>> list = new ArrayList<>();
             for (int i = 0; i < p.length; i++) {
-            	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = p[0].pingRPC().pingUDP(p[i].peerAddress(), 
-                        new DefaultConnectionConfiguration());
+            	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = p[0].pingRPC().pingUDP(p[i].peerAddress());
                 
                 
                 list.add(fr);
@@ -263,8 +254,7 @@ public class TestPing {
             List<Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>>> list = new ArrayList<>(100);
             for (int i = 0; i < 20; i++) {
                 for (int j = 0; j < 50; j++) {
-                	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress(), 
-                            new DefaultConnectionConfiguration());
+                	Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = sender.pingRPC().pingUDP(recv1.peerAddress());
                     list.add(fr);
                 }
                 list.clear();

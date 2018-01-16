@@ -19,7 +19,6 @@ package net.tomp2p.connection;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
@@ -37,6 +36,8 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.jdeferred.AlwaysCallback;
+import org.jdeferred.DoneCallback;
 import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,11 +63,9 @@ import net.tomp2p.message.Message.ProtocolType;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.MessageHeaderCodec;
 import net.tomp2p.message.MessageID;
-import net.tomp2p.peers.IP;
 import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.IP.IPv6;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
@@ -107,6 +106,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	private final PeerBean peerBean;
 	
 	final private ConcurrentCacheMap<MessageID, FutureDone<Message>> pendingMessages = new ConcurrentCacheMap<>(3, 10000);
+	final private ConcurrentCacheMap<MessageID, FutureDone<SctpChannelFacade>> pendingFutures = new ConcurrentCacheMap<>(3, 10000);
 	
 	final private ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections = new ConcurrentCacheMap<>(60, 10000);
 	
@@ -331,7 +331,8 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				dispatcher, 
 				listenAddresses, 
 				channelServerConfiguration, 
-				pendingMessages, 
+				pendingMessages,
+				pendingFutures,
 				openConnections, 
 				peerBean, 
 				this);
@@ -349,6 +350,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		//final private ByteBuffer buffer = ByteBuffer.allocate(65536);
 		final private ChannelServerConfiguration channelServerConfiguration;
 		final private Map<MessageID, FutureDone<Message>> pendingMessages;
+		final private Map<MessageID, FutureDone<SctpChannelFacade>> pendingFutures;
 		final private ConcurrentCacheMap<InetSocketAddress, SctpChannel> openConnections;
 		final private PeerBean peerBean;
 		final private ChannelTransceiver serv;
@@ -424,6 +426,26 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 								InetSocketAddress remoteSctpSocket = new InetSocketAddress(remote.getAddress(), remotePort);
 								int localSctpPort = ChannelUtils.localSctpPort(remote);
 								p = connectSCTP(openConnections, datagramChannel, remoteSctpSocket, remote, localSctpPort, m);
+								final FutureDone<SctpChannelFacade> futureSctp = pendingFutures.remove(new MessageID(m));
+								if(futureSctp != null) {
+									p.always(new AlwaysCallback<SctpChannelFacade, Exception>(){
+										@Override
+										public void onAlways(org.jdeferred.Promise.State state,
+												SctpChannelFacade resolved, Exception rejected) {
+											if(state == org.jdeferred.Promise.State.RESOLVED) {
+												LOG.debug("sctp connection established");
+												futureSctp.done(resolved);
+											} else {
+												LOG.debug("sctp connection failed");
+												futureSctp.failed(rejected);
+											}
+											
+										}
+									});
+									
+								} else {
+									LOG.warn("no futuresctp in pending futures");
+								}
 							} 
 							else {
 								LOG.debug("no SCTP connection");
@@ -645,8 +667,10 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		return send(message, sendingDatagramChannel);
 	}
 	
-	public ChannelTransceiver fireUDP(Message message, PeerAddress self) throws InvalidKeyException, SignatureException, IOException {
-		InetSocketAddress remote = message.recipient().createUDPSocket(self);
+	public ChannelTransceiver fireUDP(Message message, InetSocketAddress remote) throws InvalidKeyException, SignatureException, IOException {
+		LOG.debug("MSSSGG: {}",message.recipient());
+		//InetSocketAddress remote = message.recipient().createUDPSocket(self);
+		LOG.debug("MSSSGG: {}",remote);
 		sendNetwork(sendingDatagramChannel, remote, message);
 		return this;
 	}
@@ -670,8 +694,12 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			int remotePort = ChannelUtils.localSctpPort(peerBean.serverPeerAddress().ipv4Socket().createUDPSocket());
 			InetSocketAddress remoteSctpSocket = new InetSocketAddress(recipient.getAddress(), remotePort);
 			int localSctpPort = ChannelUtils.localSctpPort(recipient);
-			if(message.sctp() && message.command() != Commands.RELAY.getNr() && message.type() == Type.REQUEST_3) {
+			
+			//if its a relay reverse connection, then this side is not doing the init, its the other side
+			if(message.sctp() && message.command() != Commands.RELAY_REVERSE_CONNECTION.getNr()) {
 				handleInitSctpSender(datagramChannel, remoteSctpSocket, recipient, localSctpPort, futureSCTP, openConnections);
+			} else { //we just need to keep a reference to futureSCTP to get notified when an sctp channel is established
+				pendingFutures.put(new MessageID(message), futureSCTP);
 			}
 		} catch (net.sctp4nat.util.SctpInitException e) {
 			LOG.error("cannot init SCTP from the sender", e);

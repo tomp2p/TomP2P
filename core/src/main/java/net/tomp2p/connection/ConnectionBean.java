@@ -47,7 +47,6 @@ public class ConnectionBean {
 	private final int p2pId;
 	private final Dispatcher dispatcher;
 	private final ChannelTransceiver channelServer;
-	private final ChannelClientConfiguration resourceConfiguration;
 	private final ScheduledExecutorService timer;
 
 	/**
@@ -70,12 +69,10 @@ public class ConnectionBean {
 	 *            The timer for the discovery process
 	 */
 	public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final ChannelTransceiver channelServer,
-			final ChannelClientConfiguration resourceConfiguration,
 			final ScheduledExecutorService timer) {
 		this.p2pId = p2pId;
 		this.dispatcher = dispatcher;
 		this.channelServer = channelServer;
-		this.resourceConfiguration = resourceConfiguration;
 		this.timer = timer;
 	}
 
@@ -102,13 +99,6 @@ public class ConnectionBean {
 	 */
 	public ChannelTransceiver channelServer() {
 		return channelServer;
-	}
-
-	/**
-	 * @return The configuration that is responsible for the resource numbers
-	 */
-	public ChannelClientConfiguration resourceConfiguration() {
-		return resourceConfiguration;
 	}
 
 	/**

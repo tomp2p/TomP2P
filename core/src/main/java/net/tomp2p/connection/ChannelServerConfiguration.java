@@ -16,6 +16,8 @@
 
 package net.tomp2p.connection;
 
+import java.net.InetAddress;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -28,7 +30,7 @@ import lombok.experimental.Accessors;
  * 
  */
 @Getter @Setter @Accessors(fluent = true)
-public class ChannelServerConfiguration implements ConnectionConfiguration {
+public class ChannelServerConfiguration {
 
 	private boolean behindFirewall = false;
 	private boolean disableBind = false;
@@ -43,6 +45,7 @@ public class ChannelServerConfiguration implements ConnectionConfiguration {
 	private Ports portsForwarding = new Ports(Ports.DEFAULT_PORT);
 	private Ports ports = new Ports(Ports.DEFAULT_PORT);
 	private int maxUDPIncomingConnections = 1000;
+	private InetAddress fromAddress = null;
 	
 	//private SctpDataCallback sctpCallback = null;
 }

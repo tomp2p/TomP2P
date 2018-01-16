@@ -44,7 +44,16 @@ public class TestDirectData {
 	            
 	            recv1 = b.start();
 	            
-	            new DirectDataRPC(recv1.peerBean(), recv1.connectionBean());
+	            DirectDataRPC direct2= new DirectDataRPC(recv1.peerBean(), recv1.connectionBean());
+	            
+	            direct2.dataCallbackSCTP(new SctpDataCallback() {
+					
+					@Override
+					public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
+							SctpChannelFacade facade) {
+						facade.send(new byte[200], true, sid, (int)ppid);
+					}
+				});
 
 	            SendDirectBuilder s = new SendDirectBuilder(sender, recv1.peerAddress());
 	            Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fr = direct.send(recv1.peerAddress(), s);
@@ -56,18 +65,18 @@ public class TestDirectData {
 					@Override
 					public void operationComplete(FutureDone<SctpChannelFacade> future) throws Exception {
 						if(future.isSuccess()) {
-						future.object().setSctpDataCallback(new SctpDataCallback() {
+							future.object().setSctpDataCallback(new SctpDataCallback() {
 							
-							@Override
-							public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
+								@Override
+								public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
 									SctpChannelFacade so) {
-								System.err.println("got len: "+ data.length);
-								if(data.length == 200) {
-									l.countDown();
+									System.err.println("got len: "+ data.length);
+									if(data.length == 200) {
+										l.countDown();
+									}
 								}
-							}
-						});
-						future.object().send(new byte[1000], true, 0, 0);
+							});
+							future.object().send(new byte[1000], true, 0, 0);
 						}
 					}
 				});

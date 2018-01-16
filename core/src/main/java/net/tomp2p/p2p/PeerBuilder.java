@@ -25,10 +25,11 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.DSASignatureFactory;
@@ -44,6 +45,7 @@ import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
+import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
@@ -101,8 +103,7 @@ public class PeerBuilder {
 	private PeerMap peerMap = null;
 	private Peer masterPeer = null;
 	@Delegate private final ChannelServerConfiguration channelServerConfiguration = new ChannelServerConfiguration();
-	private ChannelClientConfiguration channelClientConfiguration = new ChannelClientConfiguration();
-	private Boolean behindFirewall = null;
+
 	private BroadcastHandler broadcastHandler;
 	private BloomfilterFactory bloomfilterFactory;
 	private ScheduledExecutorService scheduledExecutorService = null;
@@ -112,6 +113,7 @@ public class PeerBuilder {
 	private SendBehavior sendBehavior;
 
 	// enable / disable RPC/P2P/other
+	@Getter @Setter
 	private boolean enableHandShakeRPC = true;
 	private boolean enableNeighborRPC = true;
 	private boolean enableDirectDataRPC = true;
@@ -151,12 +153,6 @@ public class PeerBuilder {
 	 * @throws IOException .
 	 */
 	public Peer start() throws IOException {
-		boolean isBehindFirewallSet = false;
-		if (behindFirewall == null) {
-			behindFirewall = false;
-		} else {
-			isBehindFirewallSet = true;
-		}
 		
 		if (keyPair == null) {
 			keyPair = EMPTY_KEY_PAIR;
@@ -182,7 +178,7 @@ public class PeerBuilder {
 			peerCreator = new PeerCreator(masterPeer.peerCreator(), peerId, keyPair);
 		} else {
 			peerCreator = new PeerCreator(p2pID, peerId, keyPair, channelServerConfiguration,
-			        channelClientConfiguration, scheduledExecutorService, sendBehavior);
+			        scheduledExecutorService, sendBehavior);
 		}
 
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
@@ -233,8 +229,8 @@ public class PeerBuilder {
 		}
 
 		if (isEnableDirectDataRPC()) {
-			//DirectDataRPC directDataRPC = new DirectDataRPC(peerBean, connectionBean);
-			//peer.directDataRPC(directDataRPC);
+			DirectDataRPC directDataRPC = new DirectDataRPC(peerBean, connectionBean);
+			peer.directDataRPC(directDataRPC);
 		}
 
 		if (isEnableBroadcast()) {
@@ -340,15 +336,6 @@ public class PeerBuilder {
 
 	public PeerBuilder masterPeer(Peer masterPeer) {
 		this.masterPeer = masterPeer;
-		return this;
-	}
-
-	public ChannelClientConfiguration channelClientConfiguration() {
-		return channelClientConfiguration;
-	}
-
-	public PeerBuilder channelClientConfiguration(ChannelClientConfiguration channelClientConfiguration) {
-		this.channelClientConfiguration = channelClientConfiguration;
 		return this;
 	}
 
@@ -482,14 +469,6 @@ public class PeerBuilder {
 	public PeerBuilder enableBroadcast(boolean enableBroadcast) {
 		this.enableBroadcast = enableBroadcast;
 		return this;
-	}
-
-	/**
-	 * @return True if this peer is behind a firewall and cannot be accessed
-	 *         directly
-	 */
-	public boolean isBehindFirewall() {
-		return behindFirewall == null ? false : behindFirewall;
 	}
 	
 	/**

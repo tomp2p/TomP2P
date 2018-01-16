@@ -18,6 +18,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.SctpDataCallback;
 import net.sctp4nat.util.SctpUtils;
@@ -38,6 +40,7 @@ public class SctpTest {
 	Peer clientPeer = null;
 
 	static final String TEST_STR = "Hello World!";
+	static final ByteBuf TEST = Unpooled.buffer().writeBytes(TEST_STR.getBytes());
 
 	@Before
 	public void setUp() throws Exception {
@@ -106,7 +109,7 @@ public class SctpTest {
 					fail("no peer created");
 				}
 
-				clientPeer.sendDirect(serverPeer.peerAddress()).object(TEST_STR).start();
+				clientPeer.sendDirect(serverPeer.peerAddress()).dataBuffer(TEST).start();
 			}
 		});
 

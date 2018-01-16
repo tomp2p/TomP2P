@@ -33,7 +33,6 @@ import net.tomp2p.p2p.PeerReceivedBroadcastPing;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Triple;
 
 import org.jdeferred.Promise;
 import org.slf4j.Logger;
@@ -107,9 +106,9 @@ public class PingRPC extends DispatchHandler {
 	 *
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> pingUDP(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> pingUDP(final PeerAddress remotePeer) {
 		LOG.debug("Pinging UDP the remote peer {}.", remotePeer);
-		Message message = createHandler(remotePeer, Type.REQUEST_1, configuration);
+		Message message = createHandler(remotePeer, Type.REQUEST_1);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
@@ -123,8 +122,8 @@ public class PingRPC extends DispatchHandler {
 	 * @return The future that will be triggered when we receive an answer or
 	 *         something fails.
 	 */
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fireUDP(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
-		final Message message = createHandler(remotePeer, Type.REQUEST_FF_1, configuration);
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fireUDP(final PeerAddress remotePeer) {
+		final Message message = createHandler(remotePeer, Type.REQUEST_FF_1);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
@@ -167,8 +166,7 @@ public class PingRPC extends DispatchHandler {
 	 * @param configuration
 	 * @return The request handler
 	 */
-	private Message createHandler(final PeerAddress remotePeer, final Type type,
-			final ConnectionConfiguration configuration) {
+	private Message createHandler(final PeerAddress remotePeer, final Type type) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), type);
 		return message;
 	}
@@ -220,7 +218,7 @@ public class PingRPC extends DispatchHandler {
 			} else {
 				responseMessage = createResponseMessage(message, Type.OK);
 				LOG.debug("Fire UDP to {}.", message.sender());
-				fireUDP(message.sender(), connectionBean().channelServer().channelServerConfiguration());
+				fireUDP(message.sender());
 			}
 		} else if (message.type() == Type.REQUEST_2) { // discover
 			LOG.debug("Respond to discovering. Found {}.", message.sender());

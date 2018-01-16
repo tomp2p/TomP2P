@@ -16,15 +16,12 @@
 
 package net.tomp2p.p2p.builder;
 
-import java.security.KeyPair;
-
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.utils.Utils;
 
 /**
  * Set the configuration options for the shutdown command. The shutdown does first a rounting, searches for its close
@@ -33,14 +30,12 @@ import net.tomp2p.utils.Utils;
  * @author Thomas Bocek
  * 
  */
-public class ShutdownBuilder extends DefaultConnectionConfiguration implements SignatureBuilder<ShutdownBuilder> {
+public class ShutdownBuilder extends DefaultConnectionConfiguration {
 	
 	private static final FutureDone<Void> FUTURE_SHUTDOWN = new FutureDone<Void>().failed("shutdown");
     
 	private final Peer peer;
-	
-	private KeyPair keyPair = null;
-	
+		
 	private RoutingConfiguration routingConfiguration;
 	
 	private boolean forceRoutingOnlyToSelf = false;
@@ -90,54 +85,6 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
 					});
         return futureShutdown;
     }
-
-    /**
-     * Gets whether the message should be signed.
-	 */
-	public boolean isSign() {
-		return keyPair != null;
-	}
-
-	/**
-	 * Sets whether a message should be signed. For entry protection, set this to true.
-	 * @return This class
-	 */
-	public ShutdownBuilder sign(final boolean signMessage) {
-		if (signMessage) {
-			sign();
-		} else {
-			this.keyPair = null;
-		}
-		return this;
-	}
-
-	/**
-	 * Sets a message to be signed.
-	 */
-	public ShutdownBuilder sign() {
-		this.keyPair = peer.peerBean().keyPair();
-		return this;
-	}
-
-	/**
-	 * @param keyPair
-	 *            The keyPair to sing the complete message. The key will be
-	 *            attached to the message and stored potentially with a data
-	 *            object (if there is such an object in the message).
-	 * @return This class
-	 */
-	public ShutdownBuilder keyPair(KeyPair keyPair) {
-		this.keyPair = keyPair;
-		return this;
-	}
-
-	/**
-	 * @return The current keypair to sign the message. If null, no signature is
-	 *         applied.
-	 */
-	public KeyPair keyPair() {
-		return keyPair;
-	}
 	
 	public RoutingConfiguration routingConfiguration() {
         return routingConfiguration;

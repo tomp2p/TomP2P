@@ -242,7 +242,7 @@ public class TestPeerAddress {
     public static void compare(final PeerAddress pa1, final PeerAddress pa2) {
         Assert.assertEquals(pa1.peerId(), pa2.peerId());
         Assert.assertEquals(pa1.ipInternalNetworkPrefix(), pa2.ipInternalNetworkPrefix());
-        Assert.assertEquals(pa1.holePunching(), pa2.holePunching());
+        Assert.assertEquals(pa1.portPreserving(), pa2.portPreserving());
         Assert.assertEquals(pa1.ipv4Flag(), pa2.ipv4Flag());
         Assert.assertEquals(pa1.ipv4Socket(), pa2.ipv4Socket());
         Assert.assertEquals(pa1.ipv6Flag(), pa2.ipv6Flag());

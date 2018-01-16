@@ -99,7 +99,8 @@ public class RelayRPC extends DispatchHandler {
 	public Triple<FutureDone<Message>, FutureDone<Message>, FutureDone<SctpChannelFacade>> sendReverseConnectionMessage(
 			final PeerAddress rendezVous, final PeerAddress firewalledPeer, final boolean sctp) {
 		
-		final Message messageRelay = createMessage(rendezVous, RPC.Commands.RELAY_REVERSE_CONNECTION.getNr(), Type.REQUEST_1).sctp(sctp);
+		PeerAddress rendezVousMut = rendezVous.withPeerId(firewalledPeer.peerId());
+		final Message messageRelay = createMessage(rendezVousMut, RPC.Commands.RELAY_REVERSE_CONNECTION.getNr(), Type.REQUEST_1).sctp(sctp);
 		if(peerBean().serverPeerAddress().ipv4Socket() != null) {
 			messageRelay.peerSocketAddress(peerBean().serverPeerAddress().ipv4Socket());
 		} else if(peerBean().serverPeerAddress().ipv6Socket() != null) {
@@ -110,13 +111,16 @@ public class RelayRPC extends DispatchHandler {
 		
 		//if I'm behind port preserving NAT, fire message to open connection
 		//otherwise, I'm reachable and the other peer can contact us just fine
-		if(peerBean().serverPeerAddress().portPreserving()) {
+		if(peerBean().serverPeerAddress().portPreserving() && !peerBean().serverPeerAddress().reachable4UDP()) {
 			final Message holePunchingMessage = createMessage(firewalledPeer, RPC.Commands.RELAY_REVERSE_CONNECTION.getNr(), Type.REQUEST_4).sctp(sctp);
 			try {
-				connectionBean().channelServer().fireUDP(holePunchingMessage, connectionBean().dispatcher().peerBean().serverPeerAddress());
+				InetSocketAddress remote = firewalledPeer.createUDPSocket(connectionBean().dispatcher().peerBean().serverPeerAddress());
+				connectionBean().channelServer().fireUDP(holePunchingMessage, remote);
 			} catch (InvalidKeyException | SignatureException | IOException e) {
 				e.printStackTrace();
 			}
+		} else {
+			LOG.debug("peer seems to be firewalled, but not natted, so don't punch!");
 		}
 		
 		FutureDone<Message> holepunched = new FutureDone<>();
@@ -151,7 +155,8 @@ public class RelayRPC extends DispatchHandler {
 			}
 			builder.peerId(message.recipient().peerId());
 			final Message holePunchingMessage = createMessage(builder.build(), RPC.Commands.RELAY_REVERSE_CONNECTION.getNr(), Type.REQUEST_3);
-			connectionBean().channelServer().fireUDP(holePunchingMessage, connectionBean().dispatcher().peerBean().serverPeerAddress());
+			//InetSocketAddress remote = message.recipient().createUDPSocket(connectionBean().dispatcher().peerBean().serverPeerAddress(), true);
+			connectionBean().channelServer().fireUDP(holePunchingMessage, message.recipientSocket());
 			
 		} else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY_REVERSE_CONNECTION.getNr()) {
 			//this will never arrive... if yes, ignore it
@@ -166,7 +171,9 @@ public class RelayRPC extends DispatchHandler {
 			//this will never arrive... if yes, send back a request 4 to indicate we could be reached.
 			LOG.debug("holepunching established");
 			final Message holePunchingMessage = createMessage(message.sender(), RPC.Commands.RELAY_REVERSE_CONNECTION.getNr(), Type.REQUEST_3);
-			connectionBean().channelServer().fireUDP(holePunchingMessage, connectionBean().dispatcher().peerBean().serverPeerAddress());
+			
+			//InetSocketAddress remote = message.sender().createUDPSocket(connectionBean().dispatcher().peerBean().serverPeerAddress());
+			connectionBean().channelServer().fireUDP(holePunchingMessage, message.senderSocket());
 		}
 		
 		else {
@@ -188,7 +195,7 @@ public class RelayRPC extends DispatchHandler {
 					}
 				});
 			} else {
-				LOG.debug("no acive relays found for {}, only for {}", message.sender().peerId(), activeRelays.keySet());
+				LOG.debug("no acive relays found for {}, only for {}", message.recipient().peerId(), activeRelays.keySet());
 			}
 		}
 	}

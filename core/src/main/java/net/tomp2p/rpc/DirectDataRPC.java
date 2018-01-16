@@ -15,16 +15,21 @@
  */
 package net.tomp2p.rpc;
 
+
 import org.jdeferred.DoneCallback;
 import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.sctp4nat.core.SctpChannelFacade;
 import net.sctp4nat.origin.SctpDataCallback;
 import net.sctp4nat.util.SctpInitException;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDone;
@@ -32,27 +37,26 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Triple;
 
 //This will use SCTP!
 
+@Getter @Setter @Accessors(fluent = true)
 public class DirectDataRPC extends DispatchHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DirectDataRPC.class);
+	
+	private volatile DataCallbackUDP dataCallbackUDP = null;
+	private volatile SctpDataCallback dataCallbackSCTP = null;
 
 	public DirectDataRPC(PeerBean peerBean, ConnectionBean connectionBean) {
 		super(peerBean, connectionBean);
 		register(RPC.Commands.DIRECT_DATA.getNr());
 	}
 
-	public Message sendInternal0(final PeerAddress remotePeer, final SendDirectBuilderI sendDirectBuilder) {
-		return createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(), Type.REQUEST_1);
-	}
-
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(final PeerAddress remotePeer, final SendDirectBuilderI sendDirectBuilder) throws SctpInitException {
-		Message message = sendInternal0(remotePeer, sendDirectBuilder);
-		if (sendDirectBuilder.isSign()) {
-			message.publicKeyAndSign(sendDirectBuilder.keyPair());
+	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(final PeerAddress remotePeer, final ConnectionConfiguration conf) throws SctpInitException {
+		Message message = createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(), Type.REQUEST_1);
+		if (conf.sign()) {
+			message.publicKeyAndSign(conf.keyPair());
 		}
 		// TODO: this flag comes from the sendirectbuilder
 		message.sctp(true);
@@ -61,31 +65,31 @@ public class DirectDataRPC extends DispatchHandler {
 
 	@Override
 	public void handleResponse(Responder r, Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
-		if (message.type() == Type.REQUEST_1) {
-			
-			//message.sctpChannel(c);
-
-		}
-		
 		if(p!=null) {
 			p.done(new DoneCallback<SctpChannelFacade>() {
 				@Override
 				public void onDone(SctpChannelFacade result) {
-					result.setSctpDataCallback(new SctpDataCallback() {
-					
-						@Override
-						public void onSctpPacket(byte[] data, int sid, int ssn, int tsn, long ppid, int context, int flags,
-							SctpChannelFacade so) {
-							System.err.println("got packet: "+data.length);
-							so.send(new byte[200], true, 0, 0);
-						}
-					});
+					if(dataCallbackSCTP != null) {
+						result.setSctpDataCallback(dataCallbackSCTP);
+					}
 				}
-		});}
-		
-		Message m2 = createResponseMessage(message, Type.OK);
-		m2.sctp(true);
-		r.response(m2);
+			});
+		}
+		if (dataCallbackUDP != null) {
+			Message m2 = dataCallbackUDP.data(message, r, this);
+			if(m2 != null) {
+				r.response(m2);
+			} else {
+				LOG.debug("udp callback sent it back");
+			}
+		} else {
+			LOG.debug("no udp callback set, default ok");
+			Message m2 = createResponseMessage(message, Type.OK);
+			if(message.sctp()) {
+				m2.sctp(true);
+			}
+			r.response(m2);
+		}
 	}
 
 }

@@ -22,28 +22,21 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import net.sctp4nat.core.SctpChannelFacade;
-import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
-import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FuturePing;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.IP;
-import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Triple;
-import net.tomp2p.utils.Utils;
 
 public class PingBuilder {
     private static final FuturePing FUTURE_PING_SHUTDOWN = new FuturePing().failed("Peer is shutting down.");
@@ -160,8 +153,7 @@ public class PingBuilder {
 	private FuturePing ping(PeerAddress peerAddress) {
 		final FuturePing futurePing = new FuturePing();
 
-		Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> p = peer.pingRPC().pingUDP(peerAddress,
-							connectionConfiguration);
+		Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> p = peer.pingRPC().pingUDP(peerAddress);
 					addPingListener(futurePing, p.element0());
 				
 

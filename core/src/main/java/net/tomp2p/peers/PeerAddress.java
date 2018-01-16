@@ -523,9 +523,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 		}
 	}
 
-	
-
 	public InetSocketAddress createUDPSocket(final PeerAddress other) {
+		return createUDPSocket(other, false);
+	}
+
+	public InetSocketAddress createUDPSocket(final PeerAddress other, boolean forceUnreachable) {
 		
 		final boolean canIPv6 = ipv6Flag && other.ipv6Flag;
 		final boolean canIPv4 = ipv4Flag && other.ipv4Flag;
@@ -535,7 +537,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 				throw new RuntimeException("Flag indicates that ipv6 is present, but its not");
 			}
 			//check if reachable
-			if(reachable6UDP) {
+			if(reachable6UDP || forceUnreachable) {
 				return ipv6Socket.createUDPSocket();
 			} else if(relaySize > 0) {
 				for(PeerSocketAddress relay:relays()) {
@@ -557,7 +559,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 				throw new RuntimeException("Flag indicates that ipv4 is present, but its not");
 			}
 			//check if reachable
-			if(reachable4UDP) {
+			if(reachable4UDP || forceUnreachable) {
 				return ipv4Socket.createUDPSocket();
 			} else if(relaySize > 0) {
 				for(PeerSocketAddress relay:relays()) {

@@ -189,9 +189,6 @@ public class Dispatcher {
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             LOG.debug("About to respond to request message {}.", message);
-            if(message.command() == RPC.Commands.DIRECT_DATA.getNr()) {
-            	System.out.println("AOEUOAEU");
-            }
             myHandler.forwardMessage(responder, message, p, sender);
         } else {
         	if (LOG.isWarnEnabled()) {

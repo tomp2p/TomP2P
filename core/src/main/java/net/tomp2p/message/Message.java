@@ -31,11 +31,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.TreeMap;
 
-import lombok.Getter;
-import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.sctp4nat.connection.SctpConnection;
-import net.sctp4nat.core.SctpChannel;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -613,6 +609,34 @@ public class Message {
     public boolean sctp() {
         return (options & 4) > 0;
     }
+    
+    public Message target(boolean target) {
+        if (target) {
+            options |= 8;
+        } else {
+            options &= ~8;
+        }
+        return this;
+    }
+
+    public boolean target() {
+        return (options & 8) > 0;
+    }
+    
+    public Message relayed(boolean relayed) {
+        if (relayed) {
+            options |= 16;
+        } else {
+            options &= ~16;
+        }
+        return this;
+    }
+
+    public boolean relayed() {
+        return (options & 16) > 0;
+    }
+    
+    
 
     // Header data ends here *********************************** static payload starts now
 
@@ -1030,6 +1054,7 @@ public class Message {
         		.append(recipient)
         		.append(",o=")
         		.append(options)
+        		.append(isVerified() ? "✓": "❌")
         		.toString();        
     }
 

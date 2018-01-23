@@ -524,10 +524,6 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 	}
 
 	public InetSocketAddress createUDPSocket(final PeerAddress other) {
-		return createUDPSocket(other, false);
-	}
-
-	public InetSocketAddress createUDPSocket(final PeerAddress other, boolean forceUnreachable) {
 		
 		final boolean canIPv6 = ipv6Flag && other.ipv6Flag;
 		final boolean canIPv4 = ipv4Flag && other.ipv4Flag;
@@ -537,45 +533,13 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 				throw new RuntimeException("Flag indicates that ipv6 is present, but its not");
 			}
 			//check if reachable
-			if(reachable6UDP || forceUnreachable) {
-				return ipv6Socket.createUDPSocket();
-			} else if(relaySize > 0) {
-				for(PeerSocketAddress relay:relays()) {
-					if(relay instanceof PeerSocket6Address) {
-						return ((PeerSocket6Address) relay).createUDPSocket();
-					}
-				}
-				for(PeerSocketAddress relay:relays()) {
-					if(relay instanceof PeerSocket4Address) {
-						return ((PeerSocket4Address) relay).createUDPSocket();
-					}
-				}
-				return null; //unreachable and no relay defined, cannot contact!
-			} else {
-				return null; //unreachable and no relay defined, cannot contact!
-			}
+			return ipv6Socket.createUDPSocket();
 		} else if(canIPv4) {
 			if(ipv4Socket == null) {
 				throw new RuntimeException("Flag indicates that ipv4 is present, but its not");
 			}
 			//check if reachable
-			if(reachable4UDP || forceUnreachable) {
-				return ipv4Socket.createUDPSocket();
-			} else if(relaySize > 0) {
-				for(PeerSocketAddress relay:relays()) {
-					if(relay instanceof PeerSocket4Address) {
-						return ((PeerSocket4Address) relay).createUDPSocket();
-					}
-				}
-				for(PeerSocketAddress relay:relays()) {
-					if(relay instanceof PeerSocket6Address) {
-						return ((PeerSocket6Address) relay).createUDPSocket();
-					}
-				}
-				return null; //unreachable and no relay defined, cannot contact!
-			} else {
-				return null; //unreachable and no relay defined, cannot contact!
-			}
+			return ipv4Socket.createUDPSocket();
 		}
 		else {
 			throw new RuntimeException("No matching protocal found");

@@ -15,6 +15,7 @@
  */
 package net.tomp2p.message;
 
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -30,7 +31,7 @@ public class MessageID implements Comparable<MessageID> {
 
     // The peer address depends on the message.
     // Either its the sender or the recipient.
-    private final PeerAddress peerAddress;
+    private final Number160 senderReceiverPair;
 
     /**
      * Creates a message ID. If the message is a request, the peer address is the sender. Otherwise it is the recipient.
@@ -41,7 +42,12 @@ public class MessageID implements Comparable<MessageID> {
      *            The message
      */
     public MessageID(final Message message) {
-        this(message.messageId(), message.isRequest() ? message.sender() : message.recipient());
+        this(message.messageId(), message.sender().peerId().xor(message.recipient().peerId()));
+    }
+    
+    public MessageID(final int id, final PeerAddress sender, final PeerAddress receiver) {
+        this.id = id;
+        this.senderReceiverPair = sender.peerId().xor(receiver.peerId());
     }
 
     /**
@@ -54,9 +60,9 @@ public class MessageID implements Comparable<MessageID> {
      * @param nodeAddress
      *            The node address
      */
-    public MessageID(final int id, final PeerAddress nodeAddress) {
+    public MessageID(final int id, final Number160 senderReceiverPair) {
         this.id = id;
-        this.peerAddress = nodeAddress;
+        this.senderReceiverPair = senderReceiverPair;
     }
 
     /**
@@ -66,18 +72,11 @@ public class MessageID implements Comparable<MessageID> {
         return id;
     }
 
-    /**
-     * @return The peer address of the sender or the recipient
-     */
-    public PeerAddress peerAddress() {
-        return peerAddress;
-    }
-
     @Override
     public int compareTo(final MessageID o) {
         final int diff = id - o.id;
         if (diff == 0) {
-            return peerAddress.compareTo(o.peerAddress);
+            return senderReceiverPair.compareTo(o.senderReceiverPair);
         }
         return diff;
     }
@@ -95,11 +94,11 @@ public class MessageID implements Comparable<MessageID> {
 
     @Override
     public int hashCode() {
-        return id ^ peerAddress.hashCode();
+        return id ^ senderReceiverPair.hashCode();
     }
 
     @Override
     public String toString() {
-        return new StringBuilder("MessageId:").append(id).append("/").append(peerAddress.peerId()).toString();
+        return new StringBuilder("MessageId:").append(id).append("/").append(senderReceiverPair).toString();
     }
 }

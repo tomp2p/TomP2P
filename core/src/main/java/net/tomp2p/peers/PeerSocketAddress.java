@@ -26,6 +26,8 @@ public abstract class PeerSocketAddress {
 	public abstract PeerSocketAddress encode(final ByteBuf buf, boolean skipAddress);
 	public abstract String toString();
 	
+	public abstract InetSocketAddress createUDPSocket();
+	
 	@Builder
 	@RequiredArgsConstructor
 	@Accessors(fluent = true, chain = true)

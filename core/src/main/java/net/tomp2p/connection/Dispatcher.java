@@ -23,18 +23,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.PeerException.AbortCause;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.network.KCP;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
@@ -43,7 +39,6 @@ import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 
-import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,8 +65,7 @@ public class Dispatcher {
     final private SortedMap<Number320, Map<Integer, DispatchHandler>> ioHandlers = new TreeMap<Number320, Map<Integer, DispatchHandler>>();
     
 	/**
-	 * Map that stores requests that are not answered yet. Normally, the {@link RequestHandler} handles
-	 * responses.
+	 * Map that stores requests that are not answered yet.
 	 */
     //final private Map<Integer, FutureResponse> pendingRequests = new ConcurrentHashMap<Integer, FutureResponse>();
 
@@ -165,7 +159,7 @@ public class Dispatcher {
 		}
 	}
 
-    public void dispatch(Responder responder, final Message message, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws IOException {
+    public void dispatch(Responder responder, final Message message, KCP kcp, ChannelSender sender) throws IOException {
         LOG.debug("Received request message {}", message);
         if (message.version() != p2pID) {
             LOG.error("Wrong version. We are looking for {}, but we got {}. Received: {}.", p2pID,
@@ -189,7 +183,7 @@ public class Dispatcher {
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             LOG.debug("About to respond to request message {}.", message);
-            myHandler.forwardMessage(responder, message, p, sender);
+            myHandler.forwardMessage(responder, message, kcp, sender);
         } else {
         	if (LOG.isWarnEnabled()) {
         		printWarnMessage(message);

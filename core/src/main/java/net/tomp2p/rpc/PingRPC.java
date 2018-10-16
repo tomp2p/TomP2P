@@ -17,8 +17,8 @@ package net.tomp2p.rpc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -28,13 +28,13 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
+import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.p2p.PeerReceivedBroadcastPing;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
 
-import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,13 +100,10 @@ public class PingRPC extends DispatchHandler {
 	 * 
 	 * @param remotePeer
 	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
-	 * @param configuration
 	 *
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> pingUDP(final PeerAddress remotePeer) {
+	public Pair<FutureDone<Message>, KCP> pingUDP(final PeerAddress remotePeer) {
 		LOG.debug("Pinging UDP the remote peer {}.", remotePeer);
 		Message message = createHandler(remotePeer, Type.REQUEST_1);
 		return connectionBean().channelServer().sendUDP(message);
@@ -117,12 +114,10 @@ public class PingRPC extends DispatchHandler {
 	 * 
 	 * @param remotePeer
 	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
 	 * @return The future that will be triggered when we receive an answer or
 	 *         something fails.
 	 */
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> fireUDP(final PeerAddress remotePeer) {
+	public Pair<FutureDone<Message>, KCP> fireUDP(final PeerAddress remotePeer) {
 		final Message message = createHandler(remotePeer, Type.REQUEST_FF_1);
 		return connectionBean().channelServer().sendUDP(message);
 	}
@@ -132,11 +127,9 @@ public class PingRPC extends DispatchHandler {
 	 * 
 	 * @param remotePeer
 	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> pingUDPDiscover(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
+	public Pair<FutureDone<Message>, KCP> pingUDPDiscover(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
 		final Message message = createDiscoverHandler(remotePeer);
 		return connectionBean().channelServer().sendUDP(message);
 	}
@@ -147,11 +140,9 @@ public class PingRPC extends DispatchHandler {
 	 * 
 	 * @param remotePeer
 	 *            The destination peer
-	 * @param channelCreator
-	 *            The channel creator where we create a UPD channel
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> pingUDPProbe(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
+	public Pair<FutureDone<Message>, KCP> pingUDPProbe(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
 		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_3);
 		return connectionBean().channelServer().sendUDP(message);
 	}
@@ -163,7 +154,6 @@ public class PingRPC extends DispatchHandler {
 	 *            The destination peer
 	 * @param type
 	 *            The type of the request
-	 * @param configuration
 	 * @return The request handler
 	 */
 	private Message createHandler(final PeerAddress remotePeer, final Type type) {
@@ -201,7 +191,7 @@ public class PingRPC extends DispatchHandler {
 	}
 
 	@Override
-	public void handleResponse(Responder r, final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
+	public void handleResponse(Responder r, final Message message, final boolean sign, KCP kcp, ChannelSender sender) throws Exception {
 		if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
 				|| message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3
 				|| message.type() == Type.REQUEST_4) && message.command() == RPC.Commands.PING

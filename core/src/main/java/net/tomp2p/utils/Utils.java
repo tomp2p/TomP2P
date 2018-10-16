@@ -418,9 +418,14 @@ public class Utils {
     }*/
     
     public static final int shortToByteArray(int value, byte[] array, int offset) {
-        array[offset++] =  (byte) (value >>> 8);
-        array[offset++] =  (byte) value;
-        return offset;
+        array[offset + 0] =  (byte) (value >>> 8);
+        array[offset + 1] =  (byte) value;
+        return offset + 2;
+    }
+
+    public static final int byteToByteArray(int value, byte[] array, int offset) {
+        array[offset] =  (byte) value;
+        return offset + 1;
     }
     
     /*public static final int mediumToByteArray(int value, byte[] array, int offset) {
@@ -429,13 +434,20 @@ public class Utils {
         array[offset++] =  (byte) value;
         return offset;
     }*/
-    
-    public static final int intToByteArray(int value, byte[] array, int offset) {
-        array[offset++] =  (byte) (value >>> 24);
-        array[offset++] =  (byte) (value >>> 16);
-        array[offset++] =  (byte) (value >>> 8);
-        array[offset++] =  (byte) value;
-        return offset;
+
+    /**
+     * Encode an int value to the array at a specific offset
+     * @param value The value to encode
+     * @param array The array where the encoded will be stored
+     * @param offset The offset in the array
+     * @return The new offset, in this case offset + 4
+     */
+    public static final int intToByteArray(long value, byte[] array, int offset) {
+        array[offset + 0] =  (byte) (value >>> 24);
+        array[offset + 1] =  (byte) (value >>> 16);
+        array[offset + 2] =  (byte) (value >>> 8);
+        array[offset + 3] =  (byte) value;
+        return offset + 4;
     }
     
     public static int longToByteArray(long longHi, long longLo, byte[] array, int offset) {

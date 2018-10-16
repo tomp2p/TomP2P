@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import net.tomp2p.connection.SignatureFactory;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;
@@ -33,7 +32,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatistic;
-//import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 public class RelayUtils {
 
@@ -69,7 +67,7 @@ public class RelayUtils {
 	/**
 	 * Composes all messages of a list into a single buffer object, ready to be transmitted over the network.
 	 * The composing happens in-order. Alternatively, the message size and then the message is written to the
-	 * buffer. Use {@link MessageBuffer#decomposeCompositeBuffer(ByteBuf)} to disassemble.
+	 * buffer.
 	 * 
 	 * @param messages the messages to compose
 	 * @param signatureFactory the signature factory, necessary for encoding the messages
@@ -80,11 +78,10 @@ public class RelayUtils {
 		for (Message msg : messages) {
 			try {
 				msg.restoreContentReferences();
-				msg.restoreBuffers();
-				Buffer encoded = encodeMessage(msg, signatureFactory);
+				byte[] encoded = encodeMessage(msg, signatureFactory);
 
-				buffer.writeInt(encoded.length());
-				buffer.writeBytes(encoded.buffer());
+				buffer.writeInt(encoded.length);
+				buffer.writeBytes(encoded);
 			} catch (Exception e) {
 				LOG.error("Cannot encode the buffered message. Skip it.", e);
 			}
@@ -122,12 +119,14 @@ public class RelayUtils {
 	/**
 	 * Encodes a message into a buffer, such that it can be used as a message payload (piggybacked), stored, etc.
 	 */
-	public static Buffer encodeMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public static byte[] encodeMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
 		Encoder e = new Encoder(signatureFactory);
 		CompositeByteBuf buf = Unpooled.compositeBuffer();
 		e.write(buf, message, message.receivedSignature());
+		byte[] me = new byte[buf.readableBytes()];
+		buf.readBytes(me);
 		System.err.println("got: "+buf);
-		return new Buffer(buf);
+		return me;
 	}
 
 	/**
@@ -145,7 +144,6 @@ public class RelayUtils {
 	
 	/**
 	 * Basically does the same as
-	 * {@link MessageUtils#decodeMessage(Buffer, InetSocketAddress, InetSocketAddress, SignatureFactory)}, but
 	 * in addition checks that the relay peers of the decoded message are set correctly
 	 */
 	public static Message decodeRelayedMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender,
@@ -160,61 +158,12 @@ public class RelayUtils {
 	 */
 	public static int getMessageSize(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
 		// TODO instead of real encoding, calculate it using the content references
-		int size = encodeMessage(message, signatureFactory).length();
+		int size = encodeMessage(message, signatureFactory).length;
 		message.restoreContentReferences();
-		message.restoreBuffers();
 		return size;
 	}
 
-	/**
-	 * Encodes any String into a buffer to send it with a message
-	 * 
-	 * @param content the String to encode into a buffer
-	 * @return a buffer containing the (encoded) String.
-	 */
-	public static Buffer encodeString(String content) {
-		if (content == null) {
-			return null;
-		}
 
-		ByteBuffer byteBuffer;
-		synchronized (encoder) {
-			encoder.reset();
-			try {
-				byteBuffer = encoder.encode(CharBuffer.wrap(content));
-			} catch (CharacterCodingException e) {
-				return null;
-			}
-			encoder.flush(byteBuffer);
-		}
-		ByteBuf wrappedBuffer = Unpooled.wrappedBuffer(byteBuffer);
-		return new Buffer(wrappedBuffer);
-	}
-
-	/**
-	 * Decodes buffer containing a String
-	 * 
-	 * @param buffer the buffer received in a message
-	 * @return the encoded String
-	 */
-	public static String decodeString(Buffer buffer) {
-		if (buffer == null || buffer.buffer() == null) {
-			return null;
-		}
-
-		ByteBuffer nioBuffer = buffer.buffer().nioBuffer();
-		synchronized (decoder) {
-			decoder.reset();
-			CharBuffer decoded;
-			try {
-				decoded = decoder.decode(nioBuffer);
-			} catch (CharacterCodingException e) {
-				return null;
-			}
-			decoder.flush(decoded);
-			return decoded.toString();
-		}
-	}
 	
 	/**
 	 * Send a Message from one Peer to another Peer internally. This avoids the

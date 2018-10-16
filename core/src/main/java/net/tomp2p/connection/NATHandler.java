@@ -6,10 +6,10 @@ package net.tomp2p.connection;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
+import net.tomp2p.network.KCP;
 
 public interface NATHandler {
 
@@ -26,8 +26,8 @@ public interface NATHandler {
 	public FutureDone<Message> handleHolePunch(final int idleUDPSeconds, final FutureResponse futureResponse,
 			final Message originalMessage);
 	
-	public FutureDone<SctpChannelFacade> handleHolePunch(final FutureResponse futureResponse,
-			final Message originalMessage);
+	public FutureDone<KCP> handleHolePunch(final FutureResponse futureResponse,
+										   final Message originalMessage);
 
 	public List<FutureResponse> handleRcon(final Dispatcher dispatcher, final Message message,
 			final FutureResponse futureResponse, int idleUDPMillis, ScheduledExecutorService executorService);

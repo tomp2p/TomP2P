@@ -4,11 +4,6 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.sctp4nat.core.SctpChannelFacade;
-import net.tomp2p.connection.ClientChannel;
-import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.peers.Number160;
@@ -17,9 +12,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.ConcurrentCacheMap;
-import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Triple;
-import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,8 +122,6 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 	 *            The data map to send around
 	 * @param hopCounter
 	 *            The number of hops
-	 * @param isUDP
-	 *            Flag if message can be sent with UDP
 	 */
 	private void firstPeer(final Number160 messageKey,
 			final NavigableMap<Number640, Data> dataMap, final int hopCounter) {
@@ -155,8 +145,6 @@ public class StructuredBroadcastHandler implements BroadcastHandler {
 	 *            The data map to send around
 	 * @param hopCounter
 	 *            The number of hops
-	 * @param isUDP
-	 *            Flag if message can be sent with UDP
 	 */
 	private void otherPeer(Number160 sender, Number160 messageKey,
 			NavigableMap<Number640, Data> dataMap, int hopCounter,

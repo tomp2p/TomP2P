@@ -63,8 +63,6 @@ public class PeerCreator {
 	 * @param channelServerConfiguration
 	 *            The server configuration to create the channel server that is
 	 *            used for listening for incoming connections
-	 * @param channelClientConfiguration
-	 *            The client side configuration
 	 * @param timer
 	 *            The executor service
 	 * @param sendBehavior
@@ -188,7 +186,7 @@ public class PeerCreator {
 		
 		
 		final PeerSocket4Address peerSocketAddress = PeerSocket4Address.builder().ipv4(IP.fromInet4Address((Inet4Address)outsideAddress))
-				.udpPort(channelServerConfiguration.ports().udpPort())
+				.udpPort(channelServerConfiguration.portLocal())
 				.build(); 
 		
 		final PeerAddress self = PeerAddress.builder()

@@ -16,7 +16,6 @@
 package net.tomp2p.message;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.DatagramChannel;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -66,7 +65,7 @@ public class Message {
         PUBLIC_KEY, PEER_SOCKET4, PEER_SOCKET6
     };
     
-    public enum ProtocolType {UDP, SCTP};
+    public enum ProtocolType {UDP, KCP};
 
     /**
      * 1 x 4 bit.
@@ -191,7 +190,7 @@ public class Message {
     private List<KeyCollection> keyCollectionList = null;
     private List<KeyMap640Keys> keyMap640KeysList = null;
     private List<KeyMapByte> keyMapByteList = null;
-    private List<Buffer> bufferList = null;
+    private List<byte[]> bufferList = null;
     private List<TrackerData> trackerDataList = null;
     private List<PublicKey> publicKeyList = null;
     private List<PeerSocket4Address> peerSocket4AddressList = null;
@@ -428,16 +427,6 @@ public class Message {
 			refs.put(contentType, index + 1);
 		}
 	}
-	
-	/**
-	 * Restores all buffers such that they can be re-read (e.g. used for encoding). If the message does not
-	 * have any buffer, this method does nothing.
-	 */
-	public void restoreBuffers() {
-		for (Buffer buffer : bufferList()) {
-			buffer.reset();
-		}
-	}
 
     /**
      * Sets or replaces the content type at a specific index.
@@ -597,8 +586,8 @@ public class Message {
         return (options & 2) > 0;
     }
     
-    public Message sctp(boolean sctp) {
-        if (sctp) {
+    public Message kcp(boolean kcp) {
+        if (kcp) {
             options |= 4;
         } else {
             options &= ~4;
@@ -606,7 +595,7 @@ public class Message {
         return this;
     }
 
-    public boolean sctp() {
+    public boolean kcp() {
         return (options & 4) > 0;
     }
     
@@ -978,25 +967,25 @@ public class Message {
         return privateKey;
     }
 
-    public Message buffer(final Buffer byteBuf) {
+    public Message buffer(final byte[] byteBuf) {
         if (!presetContentTypes) {
             contentType(Content.BYTE_BUFFER);
         }
         if (bufferList == null) {
-            bufferList = new ArrayList<Buffer>(1);
+            bufferList = new ArrayList<byte[]>(1);
         }
         bufferList.add(byteBuf);
         return this;
     }
 
-    public List<Buffer> bufferList() {
+    public List<byte[]> bufferList() {
         if (bufferList == null) {
             return Collections.emptyList();
         }
         return bufferList;
     }
 
-    public Buffer buffer(final int index) {
+    public byte[] buffer(final int index) {
         if (bufferList == null || index > bufferList.size() - 1) {
             return null;
         }
@@ -1299,8 +1288,8 @@ public class Message {
 		}
 		
 		if(bufferList != null) {
-			for (Buffer buffer : bufferList) {
-				current += 4 + buffer.length();
+			for (byte[] buffer : bufferList) {
+				current += 4 + buffer.length;
 			}
 		}
 		

@@ -85,8 +85,6 @@ public class DistributedRouting {
      *            the node to which bootstrap should be performed to
      * @param routingBuilder
      *            All relevant information for the routing process
-     * @param cc
-     *            The channel creator
      * @return a FutureRouting object, is set to complete if the route has been found
      */
     public FutureDone<Pair<FutureRouting,FutureRouting>> bootstrap(final Collection<PeerAddress> peerAddresses,
@@ -136,8 +134,6 @@ public class DistributedRouting {
      *            All relevant information for the routing process
      * @param type
      *            The type of the routing, there can at most four types
-     * @param cc
-     *            The channel creator
      * 
      * @return a FutureRouting object, is set to complete if the route has been found
      */
@@ -256,7 +252,6 @@ public class DistributedRouting {
      * @param routingBuilder
      * @param routingMechanism
      * @param type
-     * @param channelCreator
      */
     private void routingRec(final RoutingBuilder routingBuilder, final RoutingMechanism routingMechanism,
             final Type type) {

@@ -1,10 +1,15 @@
-buildscript {
-    repositories {
-        maven { url 'https://plugins.gradle.org/m2/' }
-    }
-    dependencies {
-        classpath 'io.franzbecker:gradle-lombok:1.6'
-    }
+plugins {
+    id 'io.franzbecker.gradle-lombok' version '1.14'
+    id 'java'
+}
+
+repositories {
+    jcenter() // or Maven central, required for Lombok dependency
+}
+
+lombok {
+    version = '1.18.2'
+    sha256 = ""
 }
 
 allprojects  {
@@ -15,7 +20,8 @@ version = '5.0-Beta9-SNAPSHOT'
 }
 
 subprojects {
-  apply plugin: 'java'
+    apply plugin: 'java'
+    apply plugin: 'io.franzbecker.gradle-lombok'
   sourceCompatibility = 1.8
   targetCompatibility = 1.8
 
@@ -35,7 +41,6 @@ artifacts.archives packageSources
   
   dependencies {
     compile group: 'org.slf4j', name: 'slf4j-api', version:'1.7.5'
-    compileOnly group: 'org.projectlombok', name: 'lombok', version:'1.16.18'
 }
 
   

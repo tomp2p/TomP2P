@@ -26,7 +26,6 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDone;
@@ -67,9 +66,7 @@ public class BootstrapBuilder {
 
     private InetAddress inetAddress;
 
-    private int portUDP = Ports.DEFAULT_PORT;
-
-    private int portTCP = Ports.DEFAULT_PORT;
+    private int port = 7700;
 
     private RoutingConfiguration routingConfiguration;
 
@@ -120,38 +117,22 @@ public class BootstrapBuilder {
     
     public BootstrapBuilder inetSocketAddress(InetSocketAddress socket) {
     	this.inetAddress = socket.getAddress();
-    	this.portTCP = socket.getPort();
-    	this.portUDP = socket.getPort();
+    	this.port = socket.getPort();
 	    return this;
     }
     
     public BootstrapBuilder peerSocketAddress(PeerSocket4Address socket) {
     	this.inetAddress = socket.ipv4().toInet4Address();
-    	this.portUDP = socket.udpPort();
+    	this.port = socket.udpPort();
 	    return this;
     }
 
-    public int portUDP() {
-        return portUDP;
+    public int port() {
+        return port;
     }
 
-    public BootstrapBuilder portUDP(int portUDP) {
-        this.portUDP = portUDP;
-        return this;
-    }
-
-    public int portTCP() {
-        return portTCP;
-    }
-
-    public BootstrapBuilder portTCP(int portTCP) {
-        this.portTCP = portTCP;
-        return this;
-    }
-
-    public BootstrapBuilder ports(int port) {
-        this.portTCP = port;
-        this.portUDP = port;
+    public BootstrapBuilder port(int port) {
+        this.port = port;
         return this;
     }
 
@@ -191,14 +172,14 @@ public class BootstrapBuilder {
         		PeerSocket4Address psa = PeerSocket4Address
         				.builder()
         				.ipv4(IP.fromInet4Address((Inet4Address)inetAddress))
-        				.udpPort(portUDP)
+        				.udpPort(port)
         				.build();
         		PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
         	} else {
         		PeerSocket6Address psa = PeerSocket6Address
         				.builder()
         				.ipv6(IP.fromInet6Address((Inet6Address)inetAddress))
-        				.udpPort(portUDP)
+        				.udpPort(port)
         				.build();
         		PeerAddress peerAddress = PeerAddress.builder().ipv6Socket(psa).peerId(Number160.ZERO).build();
         	}

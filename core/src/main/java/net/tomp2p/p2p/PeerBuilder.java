@@ -36,7 +36,6 @@ import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.DefaultSendBehavior;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerCreator;
-import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.SendBehavior;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.peers.Number160;
@@ -45,7 +44,6 @@ import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
-import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
@@ -228,11 +226,6 @@ public class PeerBuilder {
 			peer.neighborRPC(neighborRPC);
 		}
 
-		if (isEnableDirectDataRPC()) {
-			DirectDataRPC directDataRPC = new DirectDataRPC(peerBean, connectionBean);
-			peer.directDataRPC(directDataRPC);
-		}
-
 		if (isEnableBroadcast()) {
 			BroadcastRPC broadcastRPC = new BroadcastRPC(peerBean, connectionBean, broadcastHandler);
 			peer.broadcastRPC(broadcastRPC);
@@ -299,7 +292,7 @@ public class PeerBuilder {
 	 * @return
 	 */
 	public PeerBuilder port(int port) {
-		this.channelServerConfiguration.ports(new Ports(port));
+		this.channelServerConfiguration.portLocal(port);
 		return this;
 	}
 	
@@ -317,7 +310,6 @@ public class PeerBuilder {
 	/**
 	 * Sets the interface- and external bindings to the specified value.
 	 *
-	 * @param bindings
 	 * @return
 	 */
 

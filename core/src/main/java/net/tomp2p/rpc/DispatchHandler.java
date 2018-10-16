@@ -15,7 +15,6 @@
  */
 package net.tomp2p.rpc;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
@@ -23,13 +22,15 @@ import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.network.KCP;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 
-import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * The dispatcher handlers that can be added to the Dispatcher.
@@ -169,7 +170,7 @@ public abstract class DispatchHandler {
      *            The request message
      * @param responder The responder used to respond the response message
      */
-    public void forwardMessage(Responder responder, final Message requestMessage, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) {
+    public void forwardMessage(Responder responder, final Message requestMessage, final KCP kcp, ChannelSender sender) {
         // Here, we need a referral since we got contacted and we don't know if
         // we can contact the peer with its address. The peer may be behind a NAT.
     	
@@ -186,7 +187,7 @@ public abstract class DispatchHandler {
     	}
         
         try {
-            handleResponse(responder, requestMessage, sign, p, sender);
+            handleResponse(responder, requestMessage, sign, kcp, sender);
         } catch (Throwable e) {
         	synchronized (peerBean.peerStatusListeners()) {
         		for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
@@ -210,6 +211,6 @@ public abstract class DispatchHandler {
      * @throws Exception
      *             Any exception
      */
-    public abstract void handleResponse(Responder responder, Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception;
+    public abstract void handleResponse(Responder responder, Message message, boolean sign, KCP kcp, ChannelSender sender) throws Exception;
 
 }

@@ -1,24 +1,41 @@
 package net.tomp2p.utils;
 
 public class Triple<F, S, T> {
-    public final F first;
-    public final S second;
-    public final T third;
+    private final F element0;
+    private final S element1;
+    private final T element2;
 
-    public Triple(F first, S second, T third) {
-        this.first = first;
-        this.second = second;
-        this.third = third;
+    public Triple(F element0, S element1, T element2) {
+        this.element0 = element0;
+        this.element1 = element1;
+        this.element2 = element2;
+    }
+
+    public F e0() {
+        return element0;
+    }
+
+    public S e1() {
+        return element1;
+    }
+
+    public T e2() {
+        return element2;
+    }
+
+
+    public static <F, S, T> Triple<F, S, T> of(F element0, S element1, T element2) {
+        return new Triple<F, S, T>(element0, element1, element2);
     }
     
-    public static <F, S, T> Triple<F, S, T> create(F first, S second, T third) {
-		return new Triple<F, S, T>(first, second, third);
+    public static <F, S, T> Triple<F, S, T> create(F element0, S element1, T element2) {
+		return new Triple<F, S, T>(element0, element1, element2);
 	}
 
     @Override
     public int hashCode() {
-        return (first == null ? 0 : first.hashCode()) ^ (second == null ? 0 : second.hashCode())
-                ^ (third == null ? 0 : third.hashCode());
+        return (element0 == null ? 0 : element0.hashCode()) ^ (element1 == null ? 0 : element1.hashCode())
+                ^ (element2 == null ? 0 : element2.hashCode());
     }
 
     @Override
@@ -28,8 +45,8 @@ public class Triple<F, S, T> {
         }
 
         final Triple<?, ?, ?> other = (Triple<?, ?, ?>) o;
-        return objectsEqual(other.first, first) && objectsEqual(other.second, second)
-                && objectsEqual(other.third, third);
+        return objectsEqual(other.element0, element0) && objectsEqual(other.element1, element1)
+                && objectsEqual(other.element2, element2);
     }
 
     private static boolean objectsEqual(Object a, Object b) {
@@ -38,6 +55,6 @@ public class Triple<F, S, T> {
 
     @Override
     public String toString() {
-        return "Triple{" + String.valueOf(first) + " " + String.valueOf(second) + " " + String.valueOf(third) + "}";
+        return "Triple{" + String.valueOf(element0) + " " + String.valueOf(element1) + " " + String.valueOf(element2) + "}";
     }
 }

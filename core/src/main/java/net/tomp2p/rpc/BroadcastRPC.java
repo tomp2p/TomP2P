@@ -15,9 +15,7 @@
  */
 package net.tomp2p.rpc;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelSender;
-import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
@@ -26,15 +24,16 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.BroadcastHandler;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Triple;
 
-import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.CompletableFuture;
 
 public class BroadcastRPC extends DispatchHandler {
 
@@ -48,7 +47,7 @@ public class BroadcastRPC extends DispatchHandler {
         this.broadcastHandler = broadcastHandler;
     }
 
-    public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
+    public Pair<FutureDone<Message>, KCP> send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
             final ConnectionConfiguration configuration, int bucketNr) {
         final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
         message.intValue(broadcastBuilder.hopCounter());
@@ -63,7 +62,7 @@ public class BroadcastRPC extends DispatchHandler {
     }
 
     @Override
-    public void handleResponse(Responder r, final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
+    public void handleResponse(Responder r, final Message message, final boolean sign, KCP p, ChannelSender sender) throws Exception {
         if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.BROADCAST.getNr())) {
             throw new IllegalArgumentException("Message content is wrong for this handler.");
         }

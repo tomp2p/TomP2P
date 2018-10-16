@@ -70,9 +70,7 @@ public final class MessageHeaderCodec {
      *  
      *  It total,
      * the header is of size 57 bytes.
-     * 
-     * @param buffer
-     *            The buffer to encode to
+     *
      * @param message
      *            The message with the header that will be encoded
      * @return The buffer passed as an argument

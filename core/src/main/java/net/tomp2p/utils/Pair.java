@@ -5,6 +5,10 @@ public class Pair<K, V> {
 	private final K element0;
 	private final V element1;
 
+	public static <K, V> Pair<K, V> of(K element0, V element1) {
+		return new Pair<K, V>(element0, element1);
+	}
+
 	public static <K, V> Pair<K, V> create(K element0, V element1) {
 		return new Pair<K, V>(element0, element1);
 	}
@@ -14,6 +18,14 @@ public class Pair<K, V> {
 		this.element1 = element1;
 	}
 
+	public K e0() {
+		return element0;
+	}
+
+	public V e1() {
+		return element1;
+	}
+
 	public K element0() {
 		return element0;
 	}
@@ -21,14 +33,6 @@ public class Pair<K, V> {
 	public V element1() {
 		return element1;
 	}
-	
-	public Pair<K, V> element0(K element0) {
-	    return new Pair<K, V>(element0, element1);
-    }
-	
-	public Pair<K, V> element1(V element1) {
-	    return new Pair<K, V>(element0, element1);
-    }
 	
 	public boolean isEmpty() {
 		return element0 == null && element1 == null;
@@ -73,5 +77,10 @@ public class Pair<K, V> {
 	private static boolean equals(Object a, Object b) {
         return (a == b) || (a != null && a.equals(b));
     }
+
+	@Override
+	public String toString() {
+		return "Pair{" + String.valueOf(element0) + " " + String.valueOf(element1) + "}";
+	}
 
 }

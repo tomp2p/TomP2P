@@ -15,6 +15,8 @@
  */
 package net.tomp2p.connection;
 
+import net.tomp2p.rpc.DataStream;
+
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -25,7 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class ConnectionBean {
 
-	public enum Protocol {
+    public enum Protocol {
 		UDP, TCP, UDT
 	}
 
@@ -60,11 +62,6 @@ public class ConnectionBean {
 	 *            The dispatcher object that receives all messages
 	 * @param channelServer
 	 *            The channel server that listens on incoming connections
-	 * @param reservation
-	 *            The connection reservation that is responsible for resource
-	 *            management
-	 * @param resourceConfiguration
-	 *            The configuration that is responsible for the resource numbers
 	 * @param timer
 	 *            The timer for the discovery process
 	 */

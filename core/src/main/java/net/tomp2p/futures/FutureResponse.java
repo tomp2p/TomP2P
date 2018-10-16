@@ -19,7 +19,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
 
-import net.tomp2p.message.Buffer;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TrackerData;
@@ -242,9 +241,6 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     
     private FutureResponse releaseMessage(Message message) {
     	if(message != null) {
-    		for(Buffer buffer:message.bufferList()) {
-    			buffer.buffer().release();
-    		}
     		for(DataMap dataMap:message.dataMapList()) {
     			for(Map.Entry<Number640, Data> entry: dataMap.dataMap().entrySet()) {
     				entry.getValue().release();

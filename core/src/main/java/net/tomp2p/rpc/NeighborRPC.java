@@ -22,10 +22,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.concurrent.CompletableFuture;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelSender;
-import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
@@ -39,6 +38,7 @@ import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
+import net.tomp2p.network.KCP;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
@@ -46,9 +46,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Triple;
 
-import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,13 +102,11 @@ public class NeighborRPC extends DispatchHandler {
      *            <li>REQUEST_3 for NEIGHBORS means check for get (with digest) for tracker</li>
      *            <li>REQUEST_4 for NEIGHBORS means check for put (with digest) for task</li>
      *            </ul>
-     * @param channelCreator
-     *            The channel creator that creates connections
      * @param configuration
 	 *            The client-side connection configuration
      * @return The future response to keep track of future events
      */
-    public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
+    public Pair<FutureDone<Message>, KCP> closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
             final Type type, final ConnectionConfiguration configuration) {
         Message message = createMessage(remotePeer, RPC.Commands.NEIGHBOR.getNr(), type);
         if (!message.isRequest()) {
@@ -142,7 +138,7 @@ public class NeighborRPC extends DispatchHandler {
         return send(message, configuration);
     }
 
-    private Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> send(final Message message, final ConnectionConfiguration configuration) {
+    private Pair<FutureDone<Message>, KCP> send(final Message message, final ConnectionConfiguration configuration) {
         final FutureResponse futureResponse = new FutureResponse(message);
         futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override
@@ -166,7 +162,7 @@ public class NeighborRPC extends DispatchHandler {
     }
 
     @Override
-    public void handleResponse(Responder r, final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws IOException {
+    public void handleResponse(Responder r, final Message message, final boolean sign, KCP kcp, ChannelSender sender) throws IOException {
         if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("At least location and domain keys are needed.");
         }

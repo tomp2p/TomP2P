@@ -1,17 +1,14 @@
 package net.tomp2p.rpc;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.security.InvalidKeyException;
-import java.security.SignatureException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-import org.jdeferred.Promise;
+import net.tomp2p.network.KCP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.Dispatcher;
@@ -27,11 +24,9 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
-import net.tomp2p.peers.PeerAddress.PeerAddressBuilder;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.ExpirationHandler;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Triple;
 
 public class RelayRPC extends DispatchHandler {
 
@@ -73,7 +68,7 @@ public class RelayRPC extends DispatchHandler {
 		});
 	}
 	
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> sendSetupMessage(
+	public Pair<FutureDone<Message>, KCP> sendSetupMessage(
 			final PeerAddress candidate) {
 		
 		final Message message = createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
@@ -82,7 +77,7 @@ public class RelayRPC extends DispatchHandler {
 		
 	}
 	
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> sendPeerMap(
+	public Pair<FutureDone<Message>, KCP> sendPeerMap(
 			final PeerAddress relayPeer, 
 			final List<Map<Number160, 
 			PeerStatistic>> map, 
@@ -97,7 +92,7 @@ public class RelayRPC extends DispatchHandler {
 	}
 	
 	@Override
-	public void handleResponse(Responder r, Message message, boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
+	public void handleResponse(Responder r, Message message, boolean sign, KCP kcp, ChannelSender sender) throws Exception {
 		LOG.debug("handle relay RPC");
 		if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
 			//no capacity restrictions yet
@@ -113,7 +108,6 @@ public class RelayRPC extends DispatchHandler {
 			//forward
 			Pair<InetSocketAddress, ChannelSender> pr = activeRelays.get(message.recipient().peerId());
 			if(pr != null) {
-				message.restoreBuffers();
 				message.restoreContentReferences();
 				message.recipientSocket(pr.element0());
 				if(message.relayed() && !message.target()) {

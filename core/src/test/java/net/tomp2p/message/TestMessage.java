@@ -143,7 +143,7 @@ public class TestMessage {
 		m1.longValue(8888888);
 		byte[] me = new byte[10000];
 		ByteBuf tmp = Unpooled.wrappedBuffer(me);
-		m1.buffer(new Buffer(tmp));
+		m1.buffer(me);
 		Message m2 = encodeDecode(m1);
 		m1.sender(m1.sender().withSkipIP(true));
 		Assert.assertEquals(false, m2.buffer(0) == null);
@@ -403,7 +403,7 @@ public class TestMessage {
 			InvalidKeyException, SignatureException, NoSuchAlgorithmException,
 			InvalidKeySpecException {
 		Message m1 = Utils2.createDummyMessage();
-		m1.buffer(new Buffer(Unpooled.buffer()));
+		m1.buffer(new byte[0]);
 		Encoder e = new Encoder(null);
 		CompositeByteBuf buf = Unpooled.compositeBuffer();
 		e.write(buf, m1, null);
@@ -424,7 +424,7 @@ public class TestMessage {
 			ClassNotFoundException, InvalidKeyException, SignatureException {
 		try {
 			Message m1 = Utils2.createDummyMessage();
-			m1.buffer(new Buffer(Unpooled.buffer()));
+			m1.buffer(new byte[0]);
 			Utils.encodeJavaObject(m1);
 			Assert.fail("Unserializable exception here");
 		} catch (Throwable t) {
@@ -563,7 +563,7 @@ public class TestMessage {
 		
 		// add some data
 		ByteBuf c = Unpooled.buffer().writeInt(99);
-		message.buffer(new Buffer(c));
+		message.buffer(new byte[0]);
 		
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		message.publicKey(gen.generateKeyPair().getPublic());

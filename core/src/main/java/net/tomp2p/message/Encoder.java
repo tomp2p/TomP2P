@@ -182,11 +182,10 @@ public class Encoder {
                 message.contentReferences().poll();
                 break;
             case BYTE_BUFFER:
-            	final Buffer buffer = message.buffer(next.index());
+            	final byte[] buffer = message.buffer(next.index());
             	// length
-                buf.writeInt(buffer.length());
-                buf.writeBytes(buffer.buffer());
-                //buf.addComponent(buffer.buffer());
+                buf.writeInt(buffer.length);
+                buf.writeBytes(buffer);
                 message.contentReferences().poll();
                 break;
             case SET_TRACKER_DATA:

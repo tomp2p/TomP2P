@@ -21,19 +21,18 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.util.Collection;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.connection.DiscoverResults;
-import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.peers.Number160;
@@ -41,10 +40,8 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.peers.IP;
-import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Triple;
-import net.tomp2p.utils.Utils;
 
+import net.tomp2p.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +55,7 @@ public class DiscoverBuilder {
 
     private InetAddress inetAddress;
 
-    private int portUDP = Ports.DEFAULT_PORT;
-    private int portTCP = Ports.DEFAULT_PORT;
-    //private int portUDT = Ports.DEFAULT_PORT + 1;
+    private int port = 7700;
 
     private PeerAddress peerAddress;
 
@@ -87,45 +82,22 @@ public class DiscoverBuilder {
     
     public DiscoverBuilder inetSocketAddress(InetAddress inetAddress, int port) {
         this.inetAddress = inetAddress;
-        this.portTCP = port;
-        this.portUDP = port;
-        return this;
-    }
-    
-    public DiscoverBuilder inetSocketAddress(InetAddress inetAddress, int portTCP, int portUDP) {
-        this.inetAddress = inetAddress;
-        this.portTCP = portTCP;
-        this.portUDP = portUDP;
+        this.port = port;
         return this;
     }
     
     public DiscoverBuilder peerSocketAddress(PeerSocket4Address peerSocketAddress) {
     	 this.inetAddress = peerSocketAddress.ipv4().toInet4Address();
-         this.portUDP = peerSocketAddress.udpPort();
+         this.port = peerSocketAddress.udpPort();
          return this;
 	}
 
-    public int portUDP() {
-        return portUDP;
+    public int port() {
+        return port;
     }
 
-    public DiscoverBuilder portUDP(int portUDP) {
-        this.portUDP = portUDP;
-        return this;
-    }
-
-    public int portTCP() {
-        return portTCP;
-    }
-
-    public DiscoverBuilder portTCP(int portTCP) {
-        this.portTCP = portTCP;
-        return this;
-    }
-
-    public DiscoverBuilder ports(int port) {
-        this.portTCP = port;
-        this.portUDP = port;
+    public DiscoverBuilder port(int port) {
+        this.port = port;
         return this;
     }
 
@@ -179,14 +151,14 @@ public class DiscoverBuilder {
         		PeerSocket4Address psa = PeerSocket4Address
         				.builder()
         				.ipv4(IP.fromInet4Address((Inet4Address)inetAddress))
-        				.udpPort(portUDP)
+        				.udpPort(port)
         				.build();
         		peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
         	} else {
         		PeerSocket6Address psa = PeerSocket6Address
         				.builder()
         				.ipv6(IP.fromInet6Address((Inet6Address)inetAddress))
-        				.udpPort(portUDP)
+        				.udpPort(port)
         				.build();
         		peerAddress = PeerAddress.builder().ipv6Socket(psa).peerId(Number160.ZERO).build();
         	}
@@ -222,7 +194,6 @@ public class DiscoverBuilder {
      * Needs 3 connections. Cleans up ChannelCreator, which means they will be released.
      * 
      * @param peerAddress
-     * @param cc
      * @return
      */
     private void discover(final FutureDiscover futureDiscover, final PeerAddress peerAddress,
@@ -243,7 +214,7 @@ public class DiscoverBuilder {
         });
 
         
-        Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> p = peer.pingRPC().pingUDPDiscover(peerAddress, 
+        Pair<FutureDone<Message>, KCP> p = peer.pingRPC().pingUDPDiscover(peerAddress,
                 configuration); 
         
          
@@ -284,11 +255,11 @@ public class DiscoverBuilder {
                             } else {
                                 // now we know our internal IP, where we receive
                                 // packets
-                                final Ports ports = peer.connectionBean().channelServer().channelServerConfiguration().portsForwarding();
-                                if (ports.isManualPort()) {
+                                final int port = peer.connectionBean().channelServer().channelServerConfiguration().portForwarding();
+                                if (port > 0) {
                                 	final PeerAddress serverAddressOrig = serverAddress;
                                 	PeerSocket4Address serverSocket = serverAddress.ipv4Socket();
-                                	serverSocket = serverSocket.withUdpPort(ports.udpPort());
+                                	serverSocket = serverSocket.withUdpPort(port);
                                 	serverSocket = serverSocket.withIpv4(seenAs.ipv4Socket().ipv4());
                                     //manual port forwarding detected, set flag
                                     //peer.peerBean().serverPeerAddress(serverAddress.withIpv4Socket(serverSocket).withIpInternalSocket(serverAddressOrig.ipv4Socket()));
@@ -312,7 +283,7 @@ public class DiscoverBuilder {
                         // else -> we announce exactly how the other peer sees
                         // us
                         
-                        Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> p = peer.pingRPC().pingUDPProbe(peerAddress, 
+                        Pair<FutureDone<Message>, KCP> p = peer.pingRPC().pingUDPProbe(peerAddress,
                                 configuration);
                         
                         p.element0().addListener(new BaseFutureAdapter<FutureResponse>() {

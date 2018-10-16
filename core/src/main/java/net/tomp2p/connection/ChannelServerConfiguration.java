@@ -42,8 +42,8 @@ public class ChannelServerConfiguration {
     //interface bindings
 	private Bindings bindings = new Bindings();
 	private SignatureFactory signatureFactory = new DSASignatureFactory();
-	private Ports portsForwarding = new Ports(Ports.DEFAULT_PORT);
-	private Ports ports = new Ports(Ports.DEFAULT_PORT);
+	private int portForwarding = 7700;
+	private int portLocal = 7700;
 	private int maxUDPIncomingConnections = 1000;
 	private InetAddress fromAddress = null;
 	

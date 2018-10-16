@@ -21,15 +21,14 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
-import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.message.Message;
+import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.IP;
 import net.tomp2p.peers.Number160;
@@ -47,7 +46,7 @@ public class PingBuilder {
 
     private InetAddress inetAddress;
 
-    private int port = Ports.DEFAULT_PORT;
+    private int port = 7700;
 
     private ConnectionConfiguration connectionConfiguration;
 
@@ -118,8 +117,6 @@ public class PingBuilder {
      * 
      * @param address
      *            The address of the remote peer.
-     * @param isUDP
-     *            Set to true if UDP should be used, false for TCP.
      * @return The future response
      */
     private FuturePing ping(final InetAddress address, int port, final Number160 peerId) {
@@ -146,14 +143,12 @@ public class PingBuilder {
      * 
      * @param peerAddress
      *            The peer address of the remote peer.
-     * @param isUDP
-     *            Set to true if UDP should be used, false for TCP.
      * @return The future response
      */
 	private FuturePing ping(PeerAddress peerAddress) {
 		final FuturePing futurePing = new FuturePing();
 
-		Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> p = peer.pingRPC().pingUDP(peerAddress);
+		Pair<FutureDone<Message>, KCP> p = peer.pingRPC().pingUDP(peerAddress);
 					addPingListener(futurePing, p.element0());
 				
 

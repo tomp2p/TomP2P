@@ -17,10 +17,9 @@ package net.tomp2p.rpc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-import net.sctp4nat.core.SctpChannelFacade;
 import net.tomp2p.connection.ChannelSender;
-import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerException;
@@ -29,13 +28,12 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Triple;
 
-import org.jdeferred.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,11 +85,9 @@ public class QuitRPC extends DispatchHandler {
 	 * @param shutdownBuilder
 	 *            Used for the sign and force TCP flag Set if the message should
 	 *            be signed
-	 * @param channelCreator
-	 *            The channel creator that creates connections
 	 * @return The future response to keep track of future events
 	 */
-	public Pair<FutureDone<Message>, FutureDone<SctpChannelFacade>> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder) {
+	public Pair<FutureDone<Message>, KCP> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder) {
 		final Message message = createMessage(remotePeer, RPC.Commands.QUIT.getNr(), Type.REQUEST_FF_1);
 		if (shutdownBuilder.sign()) {
 			message.publicKeyAndSign(shutdownBuilder.keyPair());
@@ -101,7 +97,7 @@ public class QuitRPC extends DispatchHandler {
 	}
 
 	@Override
-	public void handleResponse(Responder r, final Message message, final boolean sign, Promise<SctpChannelFacade, Exception, Void> p, ChannelSender sender) throws Exception {
+	public void handleResponse(Responder r, final Message message, final boolean sign, KCP kcp, ChannelSender sender) throws Exception {
 		if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.QUIT.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong for this handler.");
 		}

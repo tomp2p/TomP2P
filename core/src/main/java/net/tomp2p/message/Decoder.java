@@ -464,12 +464,14 @@ public class Decoder {
 					return false;
 				}
                                 
-                                if (buffer == null) {
+                if (buffer == null) {
 					buffer = Unpooled.buffer();
 				}
-                                buffer.writeBytes(buf, bufferSize);
-				
-				message.buffer(new Buffer(buffer, bufferSize));
+                buffer.writeBytes(buf, bufferSize);
+
+                byte[] tmp = new byte[bufferSize];
+                buffer.readBytes(tmp);
+				message.buffer(tmp);
 				lastContent = contentTypes.poll();
 				bufferSize = -1;
 				bufferTransferred = 0;

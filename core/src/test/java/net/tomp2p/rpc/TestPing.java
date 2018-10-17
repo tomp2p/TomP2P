@@ -172,7 +172,7 @@ public class TestPing {
             fr.element0().awaitUninterruptibly();
             Assert.assertEquals(false, fr.element0().isSuccess());
             System.err.println("done:" + fr.element0().failedReason());
-            Assert.assertEquals(true, fr.element0().failedReason().contains("Timeout"));
+            Assert.assertEquals(true, fr.element0().failedReason().contains("timeout"));
             
         } finally {
             if (sender != null) {

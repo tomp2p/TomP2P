@@ -73,8 +73,8 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ChannelTransceiver.class);
 
-	private final Map<InetAddress, ServerThread> channelsUDP = Collections
-			.synchronizedMap(new HashMap<InetAddress, ServerThread>());
+	private final Map<InetAddress, Pair<ServerThread, PacketThread>> channelsUDP = Collections
+			.synchronizedMap(new HashMap<InetAddress, Pair<ServerThread,PacketThread>>());
 	
 
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
@@ -176,8 +176,9 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				listenSpecificInetAddresses(discoverResults);
 				IPv4 outbound4 = IPv4.outboundInterfaceAddress();
 				if(outbound4 != IPv4.WILDCARD) {
-					ServerThread serverThread = channelsUDP.get(outbound4.toInet4Address());
-					if(serverThread!=null) {
+					Pair<ServerThread, PacketThread> pair = channelsUDP.get(outbound4.toInet4Address());
+					if(pair!=null) {
+					    ServerThread serverThread = pair.e0();
 						sendingDatagramChannel = serverThread.asyncUDPSvr;
 						return; //we are done
 					} else {
@@ -188,8 +189,9 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				}
 				IPv6 outbound6 = IPv6.outboundInterfaceAddress();
 				if(outbound6 != IPv6.WILDCARD) {
-					ServerThread serverThread = channelsUDP.get(outbound6.toInet6Address());
-					if(serverThread!=null) {
+                    Pair<ServerThread, PacketThread> pair = channelsUDP.get(outbound6.toInet6Address());
+					if(pair!=null) {
+                        ServerThread serverThread = pair.e0();
 						sendingDatagramChannel = serverThread.asyncUDPSvr;
 						return; //we are done
 					} else {
@@ -206,7 +208,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	// this method has blocking calls in it
 	private void listenSpecificInetAddresses(DiscoverResults discoverResults) {
 
-	    new PacketQueue().start();
+
 
 		/**
 		 * Travis-ci has the same inet address as the broadcast adress, handle it
@@ -238,10 +240,11 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		}
 
 		for (InetAddress inetAddress : discoverResults.removedFoundBroadcastAddresses()) {
-			ServerThread channelUDP = channelsUDP.remove(inetAddress);
-			if (channelUDP != null) {
+            Pair<ServerThread, PacketThread> pair = channelsUDP.remove(inetAddress);
+			if (pair != null) {
                 try {
-                    channelUDP.shutdown();
+                    pair.e0().shutdown();
+                    pair.e1().shutdown();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -281,10 +284,11 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		}
 
 		for (InetAddress inetAddress : discoverResults.removedFoundAddresses()) {
-			ServerThread channelUDP = channelsUDP.remove(inetAddress);
-			if (channelUDP != null) {
+            Pair<ServerThread, PacketThread> pair = channelsUDP.remove(inetAddress);
+			if (pair != null) {
                 try {
-                    channelUDP.shutdown();
+                    pair.e0().shutdown();
+                    pair.e1().shutdown();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -318,9 +322,12 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			datagramSocket.bind(listenAddresses);
 			datagramSocket.setSoTimeout(100);*/
 
+            PacketThread packetThread = new PacketThread();
+            packetThread.start();
+
             ServerThread serverThread = new ServerThread(listenAddresses, packetQueue);
             serverThread.start();
-            channelsUDP.put(listenAddresses.getAddress(), serverThread);
+            channelsUDP.put(listenAddresses.getAddress(), Pair.of(serverThread, packetThread));
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -348,14 +355,21 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 
     final private BlockingQueue<Triple<InetSocketAddress, ByteBuffer, OutgoingData>> packetQueue = new LinkedBlockingQueue<>();
 
-    public class PacketQueue extends Thread {
+    public class PacketThread extends Thread {
+
+        private final CompletableFuture<Void> shutdownFuture = new CompletableFuture<>();
+        private boolean running = true;
 
         @Override
         public void run() {
-            while(true) {
+            while(running) {
                 try {
                     Triple<InetSocketAddress, ByteBuffer, OutgoingData> pair = packetQueue.poll(100, TimeUnit.MILLISECONDS);
-
+                    if(!running || (pair!=null && pair.isEmpty())) {
+                        packetQueue.clear();
+                        shutdownFuture.complete(null);
+                        return;
+                    }
                     //probably called too often...
                     for(KCP kcp: openConnections.values()) {
                         kcp.update(System.currentTimeMillis());
@@ -467,6 +481,9 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
                 }
                 System.out.println("done?????");
             }
+            packetQueue.clear();
+            shutdownFuture.complete(null);
+            return;
         }
 
         private void sendAck(Message m, OutgoingData outgoingData) throws InvalidKeyException, SignatureException, IOException {
@@ -564,8 +581,10 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
             socket.update(System.currentTimeMillis());
         }
 
-        public void shutdown() {
-            packetQueue.add(null);
+        public CompletableFuture<Void> shutdown() {
+            running = false;
+            packetQueue.add(Triple.empty());
+            return shutdownFuture;
         }
 	}
 
@@ -620,11 +639,12 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		List<CompletableFuture<Void>> list = new ArrayList<>();
 		synchronized (channelsUDP) {
 			// TODO: wait until thread is finished
-			for (ServerThread channelUDP : channelsUDP.values()) {
+			for (Pair<ServerThread, PacketThread> pair : channelsUDP.values()) {
 				try {
-				    list.add(channelUDP.shutdown());
+				    list.add(pair.e0().shutdown());
+                    list.add(pair.e1().shutdown());
 				} catch (IOException e) {
-					LOG.debug("could not close {}", channelUDP);
+					LOG.error("could not close", e);
 				}
 			}
 		}

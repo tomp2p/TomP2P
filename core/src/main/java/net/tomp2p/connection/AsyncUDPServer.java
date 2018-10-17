@@ -42,7 +42,7 @@ public class AsyncUDPServer implements OutgoingData {
         this.channel.configureBlocking(false);
         this.selector = Selector.open();
         this.clientKey = channel.register(selector, SelectionKey.OP_READ);
-        LOG.debug("bound to {}", bindTo);
+        LOG.debug("Bound to {}", bindTo);
     }
 
     public CompletableFuture<Void> shutdown() throws IOException {
@@ -118,10 +118,10 @@ public class AsyncUDPServer implements OutgoingData {
         try {
             final InetSocketAddress remote = (InetSocketAddress) chan.receive(b);
             b.flip();
-            LOG.debug("read data (len: {}) from {}", b.remaining(), remote);
+            LOG.debug("Read data (len: {}) from {}", b.remaining(), remote);
             incomingData.incoming(remote, b, AsyncUDPServer.this);
         } catch (IOException e) {
-            LOG.warn("glitch, continuing... ", e);
+            LOG.warn("Glitch, continuing... ", e);
         }
     }
 
@@ -131,13 +131,13 @@ public class AsyncUDPServer implements OutgoingData {
         while((triple = writeQueue.poll())!=null) {
             if (triple != null) {
                 try {
-                    LOG.debug("write data (len: {}) to {}", triple.e1().remaining(), triple.e0());
+                    LOG.debug("Write data (len: {}) to {}", triple.e1().remaining(), triple.e0());
                     final int result = chan.send(triple.e1(), triple.e0());
                     if(result == 0) {
-                        LOG.warn("message dropped, being busy");
-                        triple.e2().completeExceptionally(new IOException("message dropped, being busy"));
+                        LOG.warn("Message dropped, being busy");
+                        triple.e2().completeExceptionally(new IOException("Message dropped, being busy"));
                     } else {
-                        LOG.debug("wrote {} bytes", result);
+                        LOG.debug("Wrote {} bytes", result);
                         triple.e2().complete(result);
                     }
                 } catch (IOException e) {

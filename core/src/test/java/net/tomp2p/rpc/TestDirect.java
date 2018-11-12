@@ -2,14 +2,9 @@ package net.tomp2p.rpc;
 
 import net.tomp2p.connection.ChannelTransceiver;
 import net.tomp2p.connection.DataSend;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.message.Message;
-import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.utils.Pair;
-import org.junit.Assert;
+import net.tomp2p.peers.Number256;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -23,7 +18,7 @@ public class TestDirect {
         Peer recv1 = null;
         ChannelTransceiver.resetCounters();
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
+            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
 
             byte[] testArray = new byte[222];
             for(int i=0;i<testArray.length;i++) {
@@ -31,7 +26,7 @@ public class TestDirect {
             }
             System.out.println("Send ARR: "+ Arrays.toString(testArray));
 
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
+            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
 
             final CountDownLatch done = new CountDownLatch(1);
 
@@ -75,7 +70,7 @@ public class TestDirect {
         Peer recv1 = null;
         ChannelTransceiver.resetCounters();
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
+            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
 
             byte[] testArray = new byte[9000]; //TODO: figure out why 6000 is not working
             for(int i=0;i<testArray.length;i++) {
@@ -83,7 +78,7 @@ public class TestDirect {
             }
             System.out.println("Send ARR: "+ Arrays.toString(testArray));
 
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
+            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
 
             final CountDownLatch done = new CountDownLatch(1);
 

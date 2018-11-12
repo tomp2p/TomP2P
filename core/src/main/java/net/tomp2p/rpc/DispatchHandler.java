@@ -23,14 +23,12 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.network.KCP;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.CompletableFuture;
 
 /**
  * The dispatcher handlers that can be added to the Dispatcher.
@@ -65,7 +63,7 @@ public abstract class DispatchHandler {
      * @param names
      */
     public void register(final int... names) {
-    	Number160 onBehalfOf = peerBean.serverPeerAddress().peerId();
+    	Number256 onBehalfOf = peerBean.serverPeerAddress().peerId();
     	register(onBehalfOf, names);
     }
     
@@ -74,7 +72,7 @@ public abstract class DispatchHandler {
       * @param onBehalfOf
      * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of a relay node).
      */
-    public void register(Number160 onBehalfOf, final int... names) {
+    public void register(Number256 onBehalfOf, final int... names) {
     	LOG.debug("registering {} for {} with {}", peerBean.serverPeerAddress().peerId(), onBehalfOf, names);
         connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), onBehalfOf, this, names);
     }
@@ -113,8 +111,7 @@ public abstract class DispatchHandler {
      * @return The created request message
      */
     public Message createMessage(final PeerAddress recipient, final byte name, final Type type) {
-    	PeerAddress senderShort = peerBean().serverPeerAddress().withSkipIP(true);
-        return new Message().recipient(recipient).sender(senderShort)
+    	return new Message().recipient(recipient).sender(peerBean().serverPeerAddress())
                 .command(name).type(type).version(connectionBean().p2pId());
     }
 
@@ -137,8 +134,7 @@ public abstract class DispatchHandler {
         replyMessage.senderSocket(requestMessage.senderSocket());
         replyMessage.recipientSocket(requestMessage.recipientSocket());
         replyMessage.recipient(requestMessage.sender());
-        PeerAddress senderShort = peerAddress.withSkipIP(true);
-        replyMessage.sender(senderShort);
+        replyMessage.sender(peerAddress);
         replyMessage.command(requestMessage.command());
         replyMessage.type(replyType);
         replyMessage.version(requestMessage.version());
@@ -152,10 +148,7 @@ public abstract class DispatchHandler {
         //ackMessage.senderSocket(responseMessage.senderSocket());
         //ackMessage.recipientSocket(responseMessage.recipientSocket());
         ackMessage.recipient(responseMessage.sender());
-        
-        PeerAddress senderShort = peerAddress.withSkipIP(true);
-        ackMessage.sender(senderShort);
-        
+        ackMessage.sender(peerAddress);
         ackMessage.command(responseMessage.command());
         ackMessage.type(replyType);
         ackMessage.version(responseMessage.version());
@@ -175,7 +168,7 @@ public abstract class DispatchHandler {
         // we can contact the peer with its address. The peer may be behind a NAT.
     	
     	//TODO: figure out how to include this. The only thing we currently missing are the ports
-    	if(
+    	/*if(
     			(requestMessage.type() == Type.REQUEST_1 && requestMessage.command() == RPC.Commands.RELAY.getNr()) ||
     			(requestMessage.type() == Type.REQUEST_2 && requestMessage.command() == RPC.Commands.PING.getNr()) ) {
     		//request 2/ping is a ping discover, where we don't know our external address and port. Don't add this!
@@ -195,7 +188,7 @@ public abstract class DispatchHandler {
 				}
         	}
         	LOG.error("Exception in custom handler.", e);
-        }
+        }*/
     }
     
     /**

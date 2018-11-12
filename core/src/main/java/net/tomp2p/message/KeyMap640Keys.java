@@ -4,19 +4,18 @@ import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.Set;
 
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.utils.Utils;
 
 public class KeyMap640Keys {
 
-	private final NavigableMap<Number640, Collection<Number160>> keysMap;
+	private final NavigableMap<Object, Collection<Number256>> keysMap;
 
-	public KeyMap640Keys(NavigableMap<Number640, Collection<Number160>> keysMap) {
+	public KeyMap640Keys(NavigableMap<Object, Collection<Number256>> keysMap) {
 		this.keysMap = keysMap;
 	}
 
-	public NavigableMap<Number640, Collection<Number160>> keysMap() {
+	public NavigableMap<Object, Collection<Number256>> keysMap() {
 		return keysMap;
 	}
 
@@ -24,7 +23,7 @@ public class KeyMap640Keys {
 		return keysMap.size();
 	}
 
-	public void put(Number640 key, Set<Number160> value) {
+	public void put(Object key, Set<Number256> value) {
 		keysMap.put(key, value);
 	}
 

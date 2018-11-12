@@ -15,9 +15,10 @@
  */
 package net.tomp2p.peers;
 
-import java.util.Random;
+import java.nio.ByteBuffer;
+import java.security.SecureRandom;
 
-import io.netty.buffer.ByteBuf;
+import net.tomp2p.crypto.Crypto;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -27,11 +28,11 @@ import net.tomp2p.utils.Utils;
  * 
  * @author Thomas Bocek
  */
-public final class Number160 extends Number implements Comparable<Number160> {
+public final class Number256 extends Number implements Comparable<Number256> {
     private static final long serialVersionUID = -6386562272459272306L;
 
     // This key has *always* 160 bit. Do not change.
-    public static final int BITS = 160;
+    public static final int BITS = 256;
 
     private static final long LONG_MASK = 0xffffffffL;
 
@@ -39,35 +40,35 @@ public final class Number160 extends Number implements Comparable<Number160> {
 
     private static final int CHAR_MASK = 0xf;
 
-    private static final int STRING_LENGTH = 42;
+    private static final int STRING_LENGTH = 66;
 
     // a map used for String <-> Key conversion
     private static final char[] DIGITS = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c',
             'd', 'e', 'f' };
 
     // size of the backing integer array
-    public static final int INT_ARRAY_SIZE = BITS / Integer.SIZE;
+    public static final int LONG_ARRAY_SIZE = BITS / Long.SIZE;
 
     // size of a byte array
     public static final int BYTE_ARRAY_SIZE = BITS / Byte.SIZE;
 
-    public static final int CHARS_PER_INT = 8;
+    public static final int CHARS_PER_LONG = Long.SIZE / (Byte.SIZE / 2);
 
     // backing integer array
-    private final int[] val;
+    private final long[] val;
 
     // constants
-    public static final Number160 ZERO = new Number160(0);
+    public static final Number256 ZERO = new Number256(0);
 
-    public static final Number160 ONE = new Number160(1);
+    public static final Number256 ONE = new Number256(1);
 
-    public static final Number160 MAX_VALUE = new Number160(new int[] { -1, -1, -1, -1, -1 });
+    public static final Number256 MAX_VALUE = new Number256(-1, -1, -1, -1);
 
     /**
      * Create a Key with value 0.
      */
-    public Number160() {
-        this.val = new int[INT_ARRAY_SIZE];
+    public Number256() {
+        this.val = new long[LONG_ARRAY_SIZE];
     }
 
     /**
@@ -77,13 +78,13 @@ public final class Number160 extends Number implements Comparable<Number160> {
      *            The value to copy to the backing array. Since this class stores 160bit numbers, the array needs to be
      *            of size 5 or smaller.
      */
-    public Number160(final int... val) {
-        if (val.length > INT_ARRAY_SIZE) {
-            throw new IllegalArgumentException(String.format("Can only deal with arrays of size smaller or equal to %s. Provided array has %s length.", INT_ARRAY_SIZE, val.length));
+    public Number256(final long... val) {
+        if (val.length > LONG_ARRAY_SIZE) {
+            throw new IllegalArgumentException(String.format("Can only deal with arrays of size smaller or equal to %s. Provided array has %s length.", LONG_ARRAY_SIZE, val.length));
         }
-        this.val = new int[INT_ARRAY_SIZE];
+        this.val = new long[LONG_ARRAY_SIZE];
         final int len = val.length;
-        for (int i = len - 1, j = INT_ARRAY_SIZE - 1; i >= 0; i--, j--) {
+        for (int i = len - 1, j = LONG_ARRAY_SIZE - 1; i >= 0; i--, j--) {
             this.val[j] = val[i];
         }
     }
@@ -95,7 +96,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * @param val
      *            The characters allowed are [0-9a-f], which is in hexadecimal
      */
-    public Number160(final String val) {
+    public Number256(final String val) {
         if (val.length() > STRING_LENGTH) {
             throw new IllegalArgumentException(String.format("Can only deal with strings of size smaller or equal to %s. Provided string has %s length.", STRING_LENGTH, val.length()));
         }
@@ -103,11 +104,11 @@ public final class Number160 extends Number implements Comparable<Number160> {
             throw new IllegalArgumentException(val
                     + " is not in hexadecimal form. Decimal form is not supported yet");
         }
-        this.val = new int[INT_ARRAY_SIZE];
+        this.val = new long[LONG_ARRAY_SIZE];
         final char[] tmp = val.toCharArray();
         final int len = tmp.length;
         for (int i = STRING_LENGTH - len, j = 2; i < (STRING_LENGTH - 2); i++, j++) {
-            this.val[i >> 3] <<= 4;
+            this.val[i >> 4] <<= 4; //divide by 16, we handle 4bits in this loop, 64/4 = 16
 
             int digit = Character.digit(tmp[j], 16);
             if (digit < 0) {
@@ -115,7 +116,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
                         + "\". The range is [0-9a-f]");
             }
             // += or |= does not matter here
-            this.val[i >> 3] += digit & CHAR_MASK;
+            this.val[i >> 4] += digit & CHAR_MASK; //divide by 16
         }
     }
 
@@ -125,21 +126,9 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * @param val
      *            integer value
      */
-    public Number160(final int val) {
-        this.val = new int[INT_ARRAY_SIZE];
-        this.val[INT_ARRAY_SIZE - 1] = val;
-    }
-
-    /**
-     * Creates a Key with the long value.
-     * 
-     * @param val
-     *            long value
-     */
-    public Number160(final long val) {
-        this.val = new int[INT_ARRAY_SIZE];
-        this.val[INT_ARRAY_SIZE - 1] = (int) val;
-        this.val[INT_ARRAY_SIZE - 2] = (int) (val >> Integer.SIZE);
+    public Number256(final long val) {
+        this.val = new long[LONG_ARRAY_SIZE];
+        this.val[LONG_ARRAY_SIZE - 1] = val;
     }
 
     /**
@@ -148,7 +137,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * @param val
      *            byte array
      */
-    public Number160(final byte[] val) {
+    public Number256(final byte[] val) {
         this(val, 0, val.length);
     }
 
@@ -162,28 +151,27 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * @param length
      *            the length to read
      */
-    public Number160(final byte[] val, final int offset, final int length) {
+    public Number256(final byte[] val, final int offset, final int length) {
         if (length > BYTE_ARRAY_SIZE) {
             throw new IllegalArgumentException(String.format("Can only deal with byte arrays of size smaller or equal to %s. Provided array has %s length.", BYTE_ARRAY_SIZE, length));
         }
-        this.val = new int[INT_ARRAY_SIZE];
-        for (int i = length + offset - 1, j = BYTE_ARRAY_SIZE - 1, k = 0; i >= offset; i--, j--, k++) {
-            // += or |= does not matter here
-            this.val[j >> 2] |= (val[i] & BYTE_MASK) << ((k % 4) << 3);
+        this.val = new long[LONG_ARRAY_SIZE];
+        for(int i=0; i<LONG_ARRAY_SIZE;i++) {
+            this.val[i] = Utils.byteArrayToLong(val, offset + (i*8));
         }
     }
 
     /**
      * Creates a new Key with random values in it.
      * 
-     * @param random
+     * @param secureRandom
      *            The object to create pseudo random numbers. For testing and debugging, the seed in the random class
      *            can be set to make the random values repeatable.
      */
-    public Number160(final Random random) {
-        this.val = new int[INT_ARRAY_SIZE];
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
-            this.val[i] = random.nextInt();
+    public Number256(final SecureRandom secureRandom) {
+        this.val = new long[LONG_ARRAY_SIZE];
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
+            this.val[i] = secureRandom.nextLong();
         }
     }
 
@@ -192,45 +180,44 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * 
      * @param timestamp
      *            The long value that will be set in the beginning (most significant)
-     * @param number96
+     * @param number192
      *            The rest will be filled with this number
      */
-    public Number160(final long timestamp, Number160 number96) {
-        this.val = new int[INT_ARRAY_SIZE];
-        this.val[0] = (int) (timestamp >> Integer.SIZE);
-        this.val[1] = (int) timestamp;
-        this.val[2] = number96.val[2];
-        this.val[3] = number96.val[3];
-        this.val[4] = number96.val[4];
+    public Number256(final long timestamp, Number256 number192) {
+        this.val = new long[LONG_ARRAY_SIZE];
+        this.val[0] = timestamp;
+        this.val[1] = number192.val[1];
+        this.val[2] = number192.val[2];
+        this.val[3] = number192.val[3];
     }
 
     /**
      * @return The first (most significant) 64bits
      */
     public long timestamp() {
-        return ((this.val[0] & LONG_MASK) << Integer.SIZE) + (this.val[1] & LONG_MASK);
+        return this.val[0];
     }
     
     /**
      * @return The lower (least significant) 96 bits
      */
-    public Number160 number96() {
-        return new Number160(0, 0, this.val[2], this.val[3], this.val[4]);
+    public Number256 number192() {
+        return new Number256(0, val[1], val[2], val[3], val[4]);
     }
 
     /**
      * Xor operation. This operation is ~2.5 times faster than with BigInteger
-     * 
+     *
      * @param key
      *            The second operand for the xor operation
      * @return A new key with the result of the xor operation
      */
-    public Number160 xor(final Number160 key) {
-        final int[] result = new int[INT_ARRAY_SIZE];
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
+    public Number256 xor(final Number256 key) {
+        final long[] result = new long[LONG_ARRAY_SIZE];
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
             result[i] = this.val[i] ^ key.val[i];
         }
-        return new Number160(result);
+        return new Number256(result);
     }
 
     /**
@@ -238,11 +225,9 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * 
      * @return a copy of the backing array
      */
-    public int[] toIntArray() {
-        final int[] retVal = new int[INT_ARRAY_SIZE];
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
-            retVal[i] = this.val[i];
-        }
+    public long[] toLongArray() {
+        final long[] retVal = new long[LONG_ARRAY_SIZE];
+        System.arraycopy(val,0, retVal, 0, LONG_ARRAY_SIZE);
         return retVal;
     }
 
@@ -255,18 +240,22 @@ public final class Number160 extends Number implements Comparable<Number160> {
      *            where to start in the byte array
      * @return the offset we have read
      */
-    @Deprecated
     public int toByteArray(final byte[] me, final int offset) {
         if (offset + BYTE_ARRAY_SIZE > me.length) {
             throw new RuntimeException("array too small");
         }
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
-            // multiply by four
-            final int idx = offset + (i << 2);
-            me[idx] = (byte) (val[i] >> 24);
-            me[idx + 1] = (byte) (val[i] >> 16);
-            me[idx + 2] = (byte) (val[i] >> 8);
-            me[idx + 3] = (byte) (val[i]);
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
+            // multiply by eight
+            final int idx = offset + (i << 3);
+
+            me[idx + 0] = (byte) (val[i] >> 56);
+            me[idx + 1] = (byte) (val[i] >> 48);
+            me[idx + 2] = (byte) (val[i] >> 40);
+            me[idx + 3] = (byte) (val[i] >> 32);
+            me[idx + 4] = (byte) (val[i] >> 24);
+            me[idx + 5] = (byte) (val[i] >> 16);
+            me[idx + 6] = (byte) (val[i] >> 8);
+            me[idx + 7] = (byte) (val[i]);
         }
         return offset + BYTE_ARRAY_SIZE;
     }
@@ -284,19 +273,13 @@ public final class Number160 extends Number implements Comparable<Number160> {
 
     /**
      * Shows the content in a human readable manner.
-     * 
-     * @param removeLeadingZero
-     *            Indicates if leading zeros should be removed
+     *
      * @return A human readable representation of this key
      */
-    public String toString(final boolean removeLeadingZero) {
-        boolean removeZero = removeLeadingZero;
+    public String toString() {
         final StringBuilder sb = new StringBuilder("0x");
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
-            toHex(val[i], removeZero, sb);
-            if (removeZero && val[i] != 0) {
-                removeZero = false;
-            }
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
+            toHex(val[i], sb);
         }
         return sb.toString();
     }
@@ -307,7 +290,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * @return True if this number is zero, false otherwise
      */
     public boolean isZero() {
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
             if (this.val[i] != 0) {
                 return false;
             }
@@ -321,40 +304,36 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * @return The bits used
      */
     public int bitLength() {
-        int bits = 0;
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
             if (this.val[i] != 0) {
-                bits += Integer.SIZE - Integer.numberOfLeadingZeros(this.val[i]);
-                bits += Integer.SIZE * (INT_ARRAY_SIZE - ++i);
-                break;
+                return (Long.SIZE * (LONG_ARRAY_SIZE - (i-1))) +
+                        (Long.SIZE - Long.numberOfLeadingZeros(this.val[i]));
             }
         }
-        return bits;
-    }
-
-    @Override
-    public String toString() {
-        return toString(true);
+        return 0;
     }
 
     @Override
     public double doubleValue() {
-        double d = 0;
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
-            d *= LONG_MASK + 1;
-            d += this.val[i] & LONG_MASK;
-        }
-        return d;
+        return Double.NaN;
     }
 
     @Override
     public float floatValue() {
-        return (float) doubleValue();
+        return Float.NaN;
     }
 
     @Override
     public int intValue() {
-        return this.val[INT_ARRAY_SIZE - 1];
+        return (int) longValue();
+    }
+
+    public int intValueMSB() {
+        return intValue();
+    }
+
+    public int intValueLSB() {
+        return (int) (longValueLSB() >>> 32);
     }
 
     /**
@@ -364,19 +343,26 @@ public final class Number160 extends Number implements Comparable<Number160> {
      *            the position in the internal array
      * @return the long of the unsigned int
      */
-    long unsignedInt(final int pos) {
-        return this.val[pos] & LONG_MASK;
+    long longValueAt(final int pos) {
+        return this.val[pos];
     }
 
     @Override
     public long longValue() {
-        return ((this.val[INT_ARRAY_SIZE - 1] & LONG_MASK) << Integer.SIZE)
-                + (this.val[INT_ARRAY_SIZE - 2] & LONG_MASK);
+        return val[LONG_ARRAY_SIZE - 1];
+    }
+
+    public long longValueMSB() {
+        return longValue();
+    }
+
+    public long longValueLSB() {
+        return val[0];
     }
 
     @Override
-    public int compareTo(final Number160 o) {
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
+    public int compareTo(final Number256 o) {
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
             long b1 = val[i] & LONG_MASK;
             long b2 = o.val[i] & LONG_MASK;
             if (b1 < b2) {
@@ -390,14 +376,14 @@ public final class Number160 extends Number implements Comparable<Number160> {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof Number160)) {
+        if (!(obj instanceof Number256)) {
             return false;
         }
         if (obj == this) {
             return true;
         }
-        final Number160 key = (Number160) obj;
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
+        final Number256 key = (Number256) obj;
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
             if (key.val[i] != val[i]) {
                 return false;
             }
@@ -408,8 +394,8 @@ public final class Number160 extends Number implements Comparable<Number160> {
     @Override
     public int hashCode() {
         int hashCode = 0;
-        for (int i = 0; i < INT_ARRAY_SIZE; i++) {
-            hashCode = (int) (31 * hashCode + (val[i] & LONG_MASK));
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
+            hashCode = 31 * hashCode + (int)(val[i] ^ (val[i] >>> 32));
         }
         return hashCode;
     }
@@ -417,80 +403,84 @@ public final class Number160 extends Number implements Comparable<Number160> {
     /**
      * Convert an integer to hex value.
      * 
-     * @param integer2
+     * @param longValue
      *            The integer to convert
-     * @param removeLeadingZero
-     *            indicate if leading zeros should be ignored
      * @param sb
      *            The string builder where to store the result
      */
-    private static void toHex(final int integer2, final boolean removeLeadingZero, final StringBuilder sb) {
-        // 4 bits form a char, thus we have 160/4=40 chars in a key, with an
-        // integer array size of 5, this gives 8 chars per integer
-
-        final char[] buf = new char[CHARS_PER_INT];
-        int charPos = CHARS_PER_INT;
-        int integer = integer2;
-        for (int i = 0; i < CHARS_PER_INT && !(removeLeadingZero && integer == 0); i++) {
-            buf[--charPos] = DIGITS[integer & CHAR_MASK];
+    private static void toHex(long longValue, final StringBuilder sb) {
+        // 4 bits form a char, thus we have 256/4=64 chars in a key, with an
+        // long array size of 4, this gives 16 chars per long
+        final char[] buf = new char[CHARS_PER_LONG];
+        int charPos = CHARS_PER_LONG;
+        for (int i = 0; i < CHARS_PER_LONG; i++) {
+            buf[--charPos] = DIGITS[(int)(longValue & CHAR_MASK)];
             // for hexadecimal, we have 4 bits per char, which ranges from
             // [0-9a-f]
-            integer >>>= 4;
+            longValue >>>= 4;
         }
-        sb.append(buf, charPos, (CHARS_PER_INT - charPos));
+        sb.append(buf, charPos, (CHARS_PER_LONG - charPos));
     }
 
     /**
-     * Create a new Number160 from the integer, which fills all the 160bits. A new random object will be created.
-     * 
-     * @param integerValue
-     *            The value to hash from
-     * @return A hash from based on pseudo random, to fill the 160bits
-     */
-    public static Number160 createHash(final int integerValue) {
-        Random r = new Random(integerValue);
-        return new Number160(r);
-    }
-
-    /**
-     * Creates a new Number160 from the long, which fills all the 160 bits. A new random object will be created, thus, its
-     * thread safe
-     * 
-     * @param longValue
-     *            The value to hash from (seed)
-     * @return A hash based on pseudo random, to fill the 160bits
-     */
-    public static Number160 createHash(final long longValue) {
-        Random r = new Random(longValue);
-        return new Number160(r);
-    }
-
-    /**
-     * Creates a new Number160 using SHA1 on the string.
+     * Creates a new Number256 using SHA1 on the string.
      * 
      * @param string
      *            The value to hash from
      * @return A hash based on SHA1 of the string
      */
-    public static Number160 createHash(final String string) {
+    public static Number256 createHash(final String string) {
         return Utils.makeSHAHash(string);
     }
 
-	public static Pair<Number160, Integer> decode(byte[] me, int offset) {
-		Number160 number160 = new Number160(me, offset, 20);
-		return new Pair<Number160, Integer>(number160, offset + 20);
+	public static Pair<Number256, Integer> decode(byte[] me, int offset) {
+		Number256 number160 = new Number256(me, offset, BYTE_ARRAY_SIZE);
+		return new Pair<>(number160, offset + BYTE_ARRAY_SIZE);
 	}
 
-	public static Number160 decode(ByteBuf buf) {
-		return new Number160(buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
+	public static Number256 decode(ByteBuffer buf) {
+		return new Number256(buf.getLong(), buf.getLong(), buf.getLong(), buf.getLong());
 	}
 
 	public int encode(byte[] me, int offset) {
 		return toByteArray(me, offset);
 	}
 
-	public Number160 encode(ByteBuf buf) {
-		buf.writeInt(val[0]).writeInt(val[1]).writeInt(val[2]).writeInt(val[3]).writeInt(val[4]);
+	public Number256 encode(ByteBuffer buf) {
+		buf.putLong(val[0]).putLong(val[1]).putLong(val[2]).putLong(val[3]);
 		return this;
 	}
+
+    public byte[] xorOverlappedBy4(Number256 peerId) {
+        final byte[] result = new byte[BYTE_ARRAY_SIZE + 4];
+        //32bit steps
+        final byte[] peer1 = toByteArray();
+        final byte[] peer2 = peerId.toByteArray();
+
+        //fill the first and last 4 bytes -> this is used to find the relevant peer Ids.
+        for (int i = 0; i < 4; i++) {
+            result[i] = peer1[i];
+            System.out.println("::"+result[i]);
+            result[i+32] = peer2[i+(32-4)];
+        }
+
+        for (int i = 4; i < BYTE_ARRAY_SIZE; i++) {
+            result[i] = (byte) (peer1[i] ^ peer2[i-4]);
+        }
+        return result;
+    }
+
+    public Number256 deXorOverlappedBy4(byte[] xored, int senderIdShort) {
+        final byte[] result = new byte[BYTE_ARRAY_SIZE];
+
+        final byte[] peer1 = toByteArray();
+
+       // final int len = BYTE_ARRAY_SIZE - 4;
+        Utils.intToByteArray(senderIdShort, result, 0);
+        for (int i = 4; i < BYTE_ARRAY_SIZE; i++) {
+            result[i] = (byte) (peer1[i-4] ^ xored[i]);
+        }
+
+        return new Number256(result);
+    }
 }

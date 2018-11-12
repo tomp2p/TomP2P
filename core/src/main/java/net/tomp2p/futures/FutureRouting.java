@@ -61,10 +61,10 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * @see #routingPath()
      * @param directHits
      *            The direct hits, the peers in the direct set that reports to
-     *            have the key (Number160) we were looking for.
+     *            have the key (Number256) we were looking for.
      * @param potentialHits
      *            The potential hits, the peers in the direct set and those
-     *            peers that reports to *not* have the key (Number160) we were
+     *            peers that reports to *not* have the key (Number256) we were
      *            looking for.
      * @param routingPath
      *            A set of peers that took part in the routing process.
@@ -100,7 +100,7 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
 
     /**
      * The potential hits set contains those peers that are in the direct hit
-     * and that did report to *not* have the key (Number160) we were looking
+     * and that did report to *not* have the key (Number256) we were looking
      * for. We already checked for the content during routing, since we sent the
      * information what we are looking for anyway. So a reply if the content
      * exists or not is not very expensive. However, a peer may lie about this.
@@ -108,7 +108,7 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * @see #directHits()
      * @see #directHitsDigest()
      * @return The potential hits, the peers in the direct set and those peers
-     *         that reports to *not* have the key (Number160) we were looking
+     *         that reports to *not* have the key (Number256) we were looking
      *         for.
      */
     public NavigableSet<PeerAddress> potentialHits() {
@@ -119,7 +119,7 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
 
     /**
      * The direct hits set contains those peers that reported to have the key
-     * (Number160) we were looking for. We already checked for the content during
+     * (Number256) we were looking for. We already checked for the content during
      * routing, since we sent the information what we are looking for anyway. So
      * a reply if the content exists or not is not very expensive. However, a
      * peer may lie about this.
@@ -127,7 +127,7 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * @see #potentialHits()
      * @see #directHitsDigest()
      * @return The direct hits, the peers in the direct set that reports to have
-     *         the key (Number160) we were looking for.
+     *         the key (Number256) we were looking for.
      */
     public NavigableSet<PeerAddress> directHits() {
         synchronized (lock) {
@@ -147,7 +147,7 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
 
     /**
      * The direct hits map contains those peers that reported to have the key
-     * (Number160) we were looking for including its digest (size of the result
+     * (Number256) we were looking for including its digest (size of the result
      * set and its xored hashes). We already check for the content during
      * routing, since we send the information what we are looking for anyway, so
      * a reply if the content exists or not is not very expensive. However, a
@@ -157,7 +157,7 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * @see #directHits()
      * @return The direct hits including its digest (size of the result set and
      *         its xored hashes), when a peer reports to have the key
-     *         (Number160) we were looking for.
+     *         (Number256) we were looking for.
      */
     public SortedMap<PeerAddress, DigestInfo> directHitsDigest() {
         synchronized (lock) {

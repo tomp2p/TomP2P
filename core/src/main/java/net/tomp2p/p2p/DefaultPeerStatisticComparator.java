@@ -2,7 +2,7 @@ package net.tomp2p.p2p;
 
 import java.util.Comparator;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatistic;
 
@@ -13,7 +13,7 @@ import net.tomp2p.peers.PeerStatistic;
  */
 public class DefaultPeerStatisticComparator implements PeerStatisticComparator {
     @Override
-    public Comparator<PeerStatistic> getComparator(Number160 location) {
+    public Comparator<PeerStatistic> getComparator(Number256 location) {
         return PeerMap.createXORStatisticComparator(location);
     }
 }

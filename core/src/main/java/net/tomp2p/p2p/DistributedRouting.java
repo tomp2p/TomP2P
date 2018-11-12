@@ -24,7 +24,6 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import net.tomp2p.connection.ChannelTransceiver;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -34,11 +33,8 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.RoutingBuilder;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerStatistic;
+import net.tomp2p.peers.*;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.utils.Pair;
@@ -96,7 +92,7 @@ public class DistributedRouting {
         // first we find close peers to us
         routingBuilder.bootstrap(true);
 
-        final FutureRouting futureRouting0 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST_1);
+        final FutureRouting futureRouting0 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST);
         // to not become a Fachidiot (expert idiot), we need to know other peers
         // as well. This is important if this peer is passive and only replies on requests from other peers
         futureRouting0.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -105,7 +101,7 @@ public class DistributedRouting {
                 // setting this to null causes to search for a random number
             	if(future.isSuccess()) {
             		routingBuilder.locationKey(null);
-            		final FutureRouting futureRouting1 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST_1);
+            		final FutureRouting futureRouting1 = routing(peerMap().getPeerStatistics(peerAddresses), routingBuilder, Type.REQUEST);
             		futureRouting1.addListener(new BaseFutureAdapter<FutureRouting>() {
             			@Override
             			public void operationComplete(FutureRouting future) throws Exception {
@@ -122,9 +118,10 @@ public class DistributedRouting {
     }
     
     public FutureRouting quit(final RoutingBuilder routingBuilder) {
-    	Collection<PeerStatistic> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
+    	/*Collection<PeerStatistic> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
                 routingBuilder.parallel() * 2);
-        return routing(startPeers, routingBuilder, Type.REQUEST_4);
+        return routing(startPeers, routingBuilder, Type.REQUEST_4);*/
+    	return null;
     }
 
     /**
@@ -185,7 +182,7 @@ public class DistributedRouting {
         potentialHits.add(peerBean.serverPeerAddress());
 
         // domainkey can be null if we bootstrap
-        if (type == Type.REQUEST_2 && routingBuilder.domainKey() != null && !randomSearch && peerBean.digestStorage() !=null) {
+        /*if (type == Type.REQUEST_2 && routingBuilder.domainKey() != null && !randomSearch && peerBean.digestStorage() !=null) {
             final Number640 from;
             final Number640 to;
             if (routingBuilder.from()!=null && routingBuilder.to()!=null) {
@@ -193,14 +190,14 @@ public class DistributedRouting {
             	to = routingBuilder.to();
             } else if (routingBuilder.contentKey() == null) {
                 from = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
-                        Number160.ZERO, Number160.ZERO);
+                        Number256.ZERO, Number256.ZERO);
                 to = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
-                        Number160.MAX_VALUE, Number160.MAX_VALUE);
+                        Number256.MAX_VALUE, Number256.MAX_VALUE);
             } else {
                 from = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
-                        routingBuilder.contentKey(), Number160.ZERO);
+                        routingBuilder.contentKey(), Number256.ZERO);
                 to = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
-                        routingBuilder.contentKey(), Number160.MAX_VALUE);
+                        routingBuilder.contentKey(), Number256.MAX_VALUE);
             }
             DigestInfo digestBean = peerBean.digestStorage().digest(from, to, -1, true);
             if (digestBean.size() > 0) {
@@ -214,7 +211,7 @@ public class DistributedRouting {
             if (digestInfo.size() > 0) {
                 directHits.put(peerBean.serverPeerAddress(), digestInfo);
             }
-        }
+        }*/
         
         final FutureRouting futureRouting = new FutureRouting();
         final RoutingMechanism routingMechanism = routingBuilder.createRoutingMechanism(futureRouting);
@@ -271,7 +268,7 @@ public class DistributedRouting {
                     active++;
                     // If we search for a random peer, then the peer should
                     // return the address farest away.
-                    final Number160 locationKey2 = randomSearch ? next.peerId().xor(Number160.MAX_VALUE)
+                    final Number256 locationKey2 = randomSearch ? next.peerId().xor(Number256.MAX_VALUE)
                             : routingBuilder.locationKey();
                     routingBuilder.locationKey(locationKey2);
                      
@@ -293,7 +290,7 @@ public class DistributedRouting {
             return;
         }
         final boolean last = active == 1;
-        final FutureForkJoin<FutureResponse> fp = new FutureForkJoin<FutureResponse>(1, false,
+        /*final FutureForkJoin<FutureResponse> fp = new FutureForkJoin<FutureResponse>(1, false,
                 routingMechanism.futureResponses());
         fp.addListener(new BaseFutureAdapter<FutureForkJoin<FutureResponse>>() {
             @Override
@@ -307,8 +304,8 @@ public class DistributedRouting {
                     Collection<PeerStatistic> newNeighborStatistics = peerMap().getPeerStatistics(newNeighbors);
 
                     Integer resultSize = lastResponse.intAt(0);
-                    Number160 keyDigest = lastResponse.key(0);
-                    Number160 contentDigest = lastResponse.key(1);
+                    Number256 keyDigest = lastResponse.key(0);
+                    Number256 contentDigest = lastResponse.key(1);
                     DigestInfo digestBean = new DigestInfo(keyDigest, contentDigest, resultSize == null ? 0
                             : resultSize);
                     LOG.debug("Peer ({}) {} reported {} in message {}.", (digestBean.size() > 0 ? "direct" : "none"),
@@ -335,7 +332,7 @@ public class DistributedRouting {
                     routingRec(routingBuilder, routingMechanism, type);
                 }
             }
-        });
+        });*/
     }
 
     public PeerMap peerMap() {

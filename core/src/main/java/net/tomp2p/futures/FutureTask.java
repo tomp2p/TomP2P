@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
@@ -33,7 +33,7 @@ import net.tomp2p.storage.Data;
 public class FutureTask extends BaseFutureImpl<FutureTask> {
     final private List<FutureAsyncTask> requests = new ArrayList<FutureAsyncTask>();
 
-    final private Map<PeerAddress, Map<Number160, Data>> dataMap = new HashMap<PeerAddress, Map<Number160, Data>>();
+    final private Map<PeerAddress, Map<Number256, Data>> dataMap = new HashMap<PeerAddress, Map<Number256, Data>>();
 
     final private StringBuilder message = new StringBuilder();
 
@@ -85,9 +85,9 @@ public class FutureTask extends BaseFutureImpl<FutureTask> {
             if (futureAsyncTask.isSuccess()) {
                 resultSuccess++;
                 PeerAddress peerAddress = futureAsyncTask.remotePeer();
-                Map<Number160, Data> tmp = dataMap.get(peerAddress);
+                Map<Number256, Data> tmp = dataMap.get(peerAddress);
                 if (tmp == null) {
-                    tmp = new HashMap<Number160, Data>();
+                    tmp = new HashMap<Number256, Data>();
                     dataMap.put(peerAddress, tmp);
                 }
                 tmp.putAll(futureAsyncTask.dataMap());
@@ -99,7 +99,7 @@ public class FutureTask extends BaseFutureImpl<FutureTask> {
         }
     }
 
-    public Map<PeerAddress, Map<Number160, Data>> rawDataMap() {
+    public Map<PeerAddress, Map<Number256, Data>> rawDataMap() {
         synchronized (lock) {
             return dataMap;
         }

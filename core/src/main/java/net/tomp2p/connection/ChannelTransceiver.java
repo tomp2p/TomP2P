@@ -19,10 +19,8 @@ package net.tomp2p.connection;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
-import java.security.InvalidKeyException;
-import java.security.SignatureException;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,10 +29,6 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
 import net.tomp2p.network.KCP;
 import net.tomp2p.network.KCPListener;
 import net.tomp2p.rpc.DataStream;
@@ -45,12 +39,10 @@ import org.slf4j.LoggerFactory;
 import lombok.experimental.Accessors;
 
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.message.Decoder;
-import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.ProtocolType;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.message.MessageHeaderCodec;
+import net.tomp2p.message.Codec;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.IP.IPv4;
 import net.tomp2p.peers.IP.IPv6;
@@ -407,7 +399,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
                     byte[] buf = new byte[buffer.remaining()];
                     buffer.get(buf);
 
-                    final ProtocolType type = MessageHeaderCodec.peekProtocolType(header);
+                    final ProtocolType type = Codec.peekProtocolType(header);
                     if (type == ProtocolType.KCP) {
                         LOG.debug("we have KCP!!, count: {}, size: {}. Local {} Remote {}", packetCounterReceiveKCP.incrementAndGet(), buf.length, sendingDatagramChannel.localSocket(), remote);
                         handleKCP(remote, buf);
@@ -424,24 +416,9 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
                             final KCP kcp;
                             if(m.kcp()) {
                                 LOG.debug("got request for KCP connection");
+                                int sessionId = m.messageId();
+                                kcp = openKCP(sessionId, remote);
 
-                                if(m.relayed() && m.target()) {
-                                    InetSocketAddress remoteUdpSocket;
-                                    if(!m.peerSocket4AddressList().isEmpty()) {
-                                        remoteUdpSocket = m.peerSocket4Address(0).createUDPSocket();
-                                    } else if(!m.peerSocket6AddressList().isEmpty()) {
-                                        remoteUdpSocket = m.peerSocket6Address(0).createUDPSocket();
-                                    } else {
-                                        remoteUdpSocket = null; //TOOD: fail
-                                    }
-                                    int sessionId = m.intAt(0);
-                                    kcp = openKCP(sessionId, remote);
-                                } else if(!m.relayed()) {
-                                    int sessionId = m.intAt(0);
-                                    kcp = openKCP(sessionId, remote);
-                                } else {
-                                    kcp = null;
-                                }
                             } else {
                                 kcp = null;
                                 LOG.debug("no KCP connection");
@@ -486,7 +463,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
             return;
         }
 
-        private void sendAck(Message m, OutgoingData outgoingData) throws InvalidKeyException, SignatureException, IOException {
+        private void sendAck(Message m, OutgoingData outgoingData) throws GeneralSecurityException, IOException {
             Message ackMessage = DispatchHandler.createAckMessage(m, Type.ACK, peerBean.serverPeerAddress());
             //PeerAddress recipientAddress = m.recipient();
             PeerAddress recipientAddress = peerBean.serverPeerAddress();
@@ -525,14 +502,12 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
             return r;
         }
 
-        private Message decodeMessage(final InetSocketAddress remote, byte[] buf, InetSocketAddress local) {
-            Decoder decoder = new Decoder(new DSASignatureFactory());
-            ByteBuf byteBuf = Unpooled.wrappedBuffer(buf);
-            boolean finished = decoder.decode(byteBuf, local, remote);
-            if (!finished) {
-                LOG.error("expecting always full packets!");
-            }
-            Message m = decoder.message();
+        private Message decodeMessage(final InetSocketAddress remote, byte[] buf, InetSocketAddress local) throws GeneralSecurityException, IOException {
+
+            Message m = new Message();
+            ByteBuffer buf2 = ByteBuffer.wrap(buf);
+            //TODO: add local and remote to the message: local, remote
+            Codec.decode(buf2, m, peerBean.shortIdLookup(), local, remote);
             return m;
         }
 
@@ -688,7 +663,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		
 		
 		//check if relay is necessary
-		if(!message.recipient().reachable4UDP() && !message.relayed() && !message.target()) {
+		if(!message.recipient().reachable4UDP() && !message.target()) {
 			//we need relay
 			if(message.kcp() && message.recipient().portPreserving()) {
 				//we need holepunching
@@ -708,16 +683,9 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				LOG.debug("impossible to connect directly!");
 				kcp = null;
 			}
-			message.relayed(true);
 			message.target(false);
 			
-			if(peerBean.serverPeerAddress().ipv4Socket() != null) {
-				message.peerSocketAddress(peerBean.serverPeerAddress().ipv4Socket());
-			} else if(peerBean.serverPeerAddress().ipv6Socket() != null) {
-				message.peerSocketAddress(peerBean.serverPeerAddress().ipv6Socket());
-			} else {
-				return null; //todo return failure
-			}
+
 			firewalledRecipientSocket = recipient;
 			recipient = message.recipient().relays().iterator().next().createUDPSocket();
 		}
@@ -775,35 +743,34 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			return message.recipientSocket();
 		}
 		LOG.debug("the message has no socket, its a request: {}", message);
-		return message.recipient().createUDPSocket(message.sender());
+		return message.recipient().createSocket(message.sender());
 	}
 
     private static void sendNetwork(OutgoingData outgoingData, final InetSocketAddress remote, Message m2)
-            throws InvalidKeyException, SignatureException, IOException {
+            throws GeneralSecurityException, IOException {
         LOG.debug("peer isVerified: {}", m2.isVerified());
 
-        CompositeByteBuf buf2 = Unpooled.compositeBuffer();
-        Encoder encoder = new Encoder(new DSASignatureFactory());
-        encoder.write(buf2, m2, null);
+        ByteBuffer buf = ByteBuffer.wrap(new byte[1500]);
+
+        Codec.encode(buf, m2, null, remote.getAddress() instanceof Inet4Address);
         packetCounterSend.incrementAndGet();
 
-        LOG.debug("server out UDP {}: {} to {}", m2, ByteBufUtil.prettyHexDump(buf2), remote);
-        byte[] me = ChannelUtils.convert2(buf2);
+        LOG.debug("server out UDP {} to {}", m2, remote);
+        byte[] me = ChannelUtils.convert2(buf);
         outgoingData.send(remote, me, 0, me.length);
     }
 
 	
 	private static void sendNetwork(DatagramChannel datagramChannel, final InetSocketAddress remote, Message m2)
-			throws InvalidKeyException, SignatureException, IOException {
+			throws GeneralSecurityException, IOException {
 		LOG.debug("peer isVerified: {}", m2.isVerified());
 
-		CompositeByteBuf buf2 = Unpooled.compositeBuffer();
-		Encoder encoder = new Encoder(new DSASignatureFactory());
-		encoder.write(buf2, m2, null);
+        ByteBuffer buf = ByteBuffer.wrap(new byte[1500]);
+        Codec.encode(buf, m2, null, remote.getAddress() instanceof Inet4Address);
 		packetCounterSend.incrementAndGet();
 				
-		LOG.debug("server out UDP {}: {} to {}", m2, ByteBufUtil.prettyHexDump(buf2), remote);
+		LOG.debug("server out UDP {}: to {}", m2, remote);
 		
-		datagramChannel.send(ChannelUtils.convert(buf2), remote);
+		datagramChannel.send(buf, remote);
 	}
 }

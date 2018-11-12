@@ -29,16 +29,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
-import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.DefaultSendBehavior;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerCreator;
 import net.tomp2p.connection.SendBehavior;
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.rpc.BloomfilterFactory;
@@ -91,7 +89,7 @@ public class PeerBuilder {
 	public static final int MAX_PERMITS_TCP = 250;
 
 	// required
-	private final Number160 peerId;
+	private final Number256 peerId;
 
 	// optional with reasonable defaults
 
@@ -128,7 +126,7 @@ public class PeerBuilder {
 	 * @param peerId
 	 *            The peer ID
 	 */
-	public PeerBuilder(final Number160 peerId) {
+	public PeerBuilder(final Number256 peerId) {
 		this.peerId = peerId;
 	}
 
@@ -254,7 +252,7 @@ public class PeerBuilder {
 		return peer;
 	}
 
-	public Number160 peerId() {
+	public Number256 peerId() {
 		return peerId;
 	}
 

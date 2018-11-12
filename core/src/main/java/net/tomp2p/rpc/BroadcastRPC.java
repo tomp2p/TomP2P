@@ -49,21 +49,21 @@ public class BroadcastRPC extends DispatchHandler {
 
     public Pair<FutureDone<Message>, KCP> send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
             final ConnectionConfiguration configuration, int bucketNr) {
-        final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
-        message.intValue(broadcastBuilder.hopCounter());
+        final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF);
+        /*message.intValue(broadcastBuilder.hopCounter());
         message.intValue(bucketNr);
-        message.key(broadcastBuilder.messageKey());
+        message.key(broadcastBuilder.messageKey());*/
         
-        if (broadcastBuilder.dataMap() != null) {
-            message.setDataMap(new DataMap(broadcastBuilder.dataMap()));
-        }
+        //if (broadcastBuilder.dataMap() != null) {
+        //    message.setDataMap(new DataMap(broadcastBuilder.dataMap()));
+        //}
         return connectionBean().channelServer().sendUDP(message);
 
     }
 
     @Override
     public void handleResponse(Responder r, final Message message, final boolean sign, KCP p, ChannelSender sender) throws Exception {
-        if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.BROADCAST.getNr())) {
+        if (!(message.type() == Type.REQUEST_FF && message.command() == RPC.Commands.BROADCAST.getNr())) {
             throw new IllegalArgumentException("Message content is wrong for this handler.");
         }
         LOG.debug("received BRODACAST message: {}", message);

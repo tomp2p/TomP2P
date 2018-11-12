@@ -39,7 +39,7 @@ public class PeerStatistic {
 
     private final AtomicInteger failed = new AtomicInteger(0);
     
-    private final Number160 peerId;
+    private final Number256 peerId;
 
     private PeerAddress peerAddress;
     

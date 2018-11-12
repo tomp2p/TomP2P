@@ -28,14 +28,11 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.BitSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-import net.tomp2p.connection.DSASignatureFactory;
-import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.SignatureCodec;
 import net.tomp2p.p2p.PeerBuilder;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -76,15 +73,14 @@ public class Data {
 	// can be added later
 	private SignatureCodec signature;
 	private int ttlSeconds = -1;
-	private Set<Number160> basedOnSet = new HashSet<Number160>(0);
+	private Set<Number256> basedOnSet = new HashSet<Number256>(0);
 	private PublicKey publicKey;
 	//this goes never over the network! If this is set, we have to sign lazy
 	private transient PrivateKey privateKey;
 
 	// never serialized over the network in this object
 	private long validFromMillis;
-	private SignatureFactory signatureFactory;
-	private Number160 hash;
+	private Number256 hash;
 	private boolean meta;
 	
 	public Data(final ByteBuf buffer) {
@@ -199,7 +195,7 @@ public class Data {
 	 *            The buffer to read from
 	 * @return The data object, may be partially filled
 	 */
-	public static Data decodeHeader(final ByteBuf buf, final SignatureFactory signatureFactory) {
+	public static Data decodeHeader(final ByteBuf buf) {
 		// 2 is the smallest packet size, we could start if we know 1 byte to
 		// decode the header, but we always need
 		// a second byte. Thus, we are waiting for at least 2 bytes.
@@ -247,7 +243,7 @@ public class Data {
 		final int numBasedOn;
 		final int indexPublicKeySize;
 		final int indexBasedOn;
-		final Set<Number160> basedOn = new HashSet<Number160>();
+		final Set<Number256> basedOn = new HashSet<Number256>();
 		if (hasBasedOn(header)) {
 			// get nr of based on keys
 			indexBasedOn = indexBasedOnNr + Utils.BYTE_BYTE_SIZE;
@@ -255,17 +251,17 @@ public class Data {
 				return null;
 			}
 			numBasedOn = buf.getUnsignedByte(buf.readerIndex() + indexBasedOnNr) + 1;
-			indexPublicKeySize = indexBasedOn + (numBasedOn * Number160.BYTE_ARRAY_SIZE);
+			indexPublicKeySize = indexBasedOn + (numBasedOn * Number256.BYTE_ARRAY_SIZE);
 			if (buf.readableBytes() < indexPublicKeySize) {
 				return null;
 			}
 			//get basedon
 			int index = buf.readerIndex() + indexBasedOnNr + Utils.BYTE_BYTE_SIZE;
-			final byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
+			final byte[] me = new byte[Number256.BYTE_ARRAY_SIZE];
 			for (int i = 0; i < numBasedOn; i++) {
 				buf.getBytes(index, me);
-				index += Number160.BYTE_ARRAY_SIZE;
-				basedOn.add(new Number160(me));
+				index += Number256.BYTE_ARRAY_SIZE;
+				basedOn.add(new Number256(me));
 			}
 			
 		} else {
@@ -291,7 +287,7 @@ public class Data {
 			}
 			//get public key
 			buf.skipBytes(indexPublicKeySize);
-			publicKey = signatureFactory.decodePublicKey(buf);
+			//publicKey = signatureFactory.decodePublicKey(buf);
 		} else {
 			publicKeySize = 0;
 			indexPublicKey = indexPublicKeySize;
@@ -303,7 +299,7 @@ public class Data {
 		final Data data = new Data(header, length);
 		data.ttlSeconds = ttl;
 		data.basedOnSet = basedOn;
-		data.publicKey = publicKey;
+		//data.publicKey = publicKey;
 		return data;
 	}
 	
@@ -324,41 +320,42 @@ public class Data {
             return buffer.writerIndex() == length;
 	}
 	
-	public boolean decodeDone(final ByteBuf buf, SignatureFactory signatureFactory) {
+	public boolean decodeDone(final ByteBuf buf) {
 		if (signed) {
-			if(buf.readableBytes() < signatureFactory.signatureSize()) {
+		/*	if(buf.readableBytes() < signatureFactory.signatureSize()) {
 				// don't even try to create a signature
 				return false;
 			}
 			
-			signature = signatureFactory.signatureCodec(buf);
+			signature = signatureFactory.signatureCodec(buf);*/
 		}
 		return true;
 	}
 
-	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey, SignatureFactory signatureFactory) {
+	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey) {
 		if (signed) {
 			if(publicKey != PeerBuilder.EMPTY_PUBLIC_KEY && publicKey!= null && 
 					(this.publicKey==null || this.publicKey == PeerBuilder.EMPTY_PUBLIC_KEY)) {
 				this.publicKey = publicKey;
 			}
 			
-			if(buf.readableBytes() < signatureFactory.signatureSize()) {
+			/*if(buf.readableBytes() < signatureFactory.signatureSize()) {
 				// don't even try to create a signature
 				return false;
 			}
 			
-			signature = signatureFactory.signatureCodec(buf);
+			signature = signatureFactory.signatureCodec(buf);*/
 		}
 		return true;
 	}
 
-	public boolean verify(SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException {
-		return verify(publicKey, signatureFactory);
+	public boolean verify() throws InvalidKeyException, SignatureException {
+		return verify(publicKey);
 	}
 
-	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException {
-		return signatureFactory.verify(publicKey, toByteBuffers(), signature);
+	public boolean verify(PublicKey publicKey) throws InvalidKeyException, SignatureException {
+		//return signatureFactory.verify(publicKey, toByteBuffers(), signature);
+		return true;
 	}
 
 	/**
@@ -374,9 +371,8 @@ public class Data {
 	 * </pre>
 	 * 
 	 * @param buf
-	 * @param signatureFactory
 	 */
-	public void encodeHeader(final ByteBuf buf, SignatureFactory signatureFactory) {
+	public void encodeHeader(final ByteBuf buf) {
 		int header = type.ordinal();
 		if (prepareFlag) {
 			header |= 0x02;
@@ -417,7 +413,7 @@ public class Data {
 		}
 		if (basedOnFlag) {
 			buf.writeByte(basedOnSet.size() - 1);
-			for (Number160 basedOn : basedOnSet) {
+			for (Number256 basedOn : basedOnSet) {
 				buf.writeBytes(basedOn.toByteArray());
 			}
 		}
@@ -425,7 +421,7 @@ public class Data {
 			if (publicKey == null) {
 				buf.writeShort(0);
 			} else {
-				signatureFactory.encodePublicKey(publicKey, buf);
+				//signatureFactory.encodePublicKey(publicKey, buf);
 			}
 		}
 	}
@@ -438,16 +434,16 @@ public class Data {
 		//return transferred == length();
 	}
 	
-	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
-		encodeDone(buf, signatureFactory, null);
+	public void encodeDone(final ByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
+		encodeDone(buf, null);
 	}
 
-	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory, PrivateKey messagePrivateKey) throws InvalidKeyException, SignatureException, IOException {
+	public void encodeDone(final ByteBuf buf, PrivateKey messagePrivateKey) throws InvalidKeyException, SignatureException, IOException {
 		if (signed) {
 			if(signature == null && privateKey != null) {
-				signature = signatureFactory.sign(privateKey, toByteBuffers());
+				//signature = signatureFactory.sign(privateKey, toByteBuffers());
 			} else if (signature == null && messagePrivateKey != null) {
-				signature = signatureFactory.sign(messagePrivateKey, toByteBuffers());
+				//signature = signatureFactory.sign(messagePrivateKey, toByteBuffers());
 			} else if (signature == null) {
 				throw new IllegalArgumentException("A private key is required to sign.");
 			}
@@ -482,18 +478,18 @@ public class Data {
 	    return this;
     }
 	
-	public Data signNow(KeyPair keyPair, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
-		return signNow(keyPair, signatureFactory, false);
+	public Data signNow(KeyPair keyPair) throws InvalidKeyException, SignatureException, IOException {
+		return signNow(keyPair,  false);
 	}
 		
-	public Data protectEntryNow(KeyPair keyPair, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
-		return signNow(keyPair, signatureFactory, true);
+	public Data protectEntryNow(KeyPair keyPair) throws InvalidKeyException, SignatureException, IOException {
+		return signNow(keyPair, true);
 	}	
 	
-	private Data signNow(KeyPair keyPair, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
+	private Data signNow(KeyPair keyPair, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory.sign(keyPair.getPrivate(), toByteBuffers());
+			//this.signature = signatureFactory.sign(keyPair.getPrivate(), toByteBuffers());
 			this.publicKey = keyPair.getPublic();
 			this.publicKeyFlag = true;
 			this.protectedEntry = protectedEntry;
@@ -501,18 +497,18 @@ public class Data {
 		return this;
 	}
 	
-	public Data signNow(PrivateKey privateKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
-		return signNow(privateKey, signatureFactory, false);
+	public Data signNow(PrivateKey privateKey) throws InvalidKeyException, SignatureException, IOException {
+		return signNow(privateKey, false);
 	}
 		
-	public Data protectEntryNow(PrivateKey privateKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
-		return signNow(privateKey, signatureFactory, true);
+	public Data protectEntryNow(PrivateKey privateKey) throws InvalidKeyException, SignatureException, IOException {
+		return signNow(privateKey,  true);
 	}	
 
-	private Data signNow(PrivateKey privateKey, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
+	private Data signNow(PrivateKey privateKey, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory.sign(privateKey, toByteBuffers());
+			//this.signature = signatureFactory.sign(privateKey, toByteBuffers());
 			this.publicKeyFlag = true;
 			this.protectedEntry = protectedEntry;
 		}
@@ -582,28 +578,17 @@ public class Data {
 		return this;
 	}
 
-	public Data addBasedOn(Number160 basedOn) {
+	public Data addBasedOn(Number256 basedOn) {
 		this.basedOnSet.add(basedOn);
 		this.basedOnFlag = true;
 		return this;
 	}
 
-	public Set<Number160> basedOnSet() {
+	public Set<Number256> basedOnSet() {
 		return basedOnSet;
 	}
 
-	public SignatureFactory signatureFactory() {
-		if (signatureFactory == null) {
-			return new DSASignatureFactory();
-		} else {
-			return signatureFactory;
-		}
-	}
 
-	public Data signatureFactory(SignatureFactory signatureFactory) {
-		this.signatureFactory = signatureFactory;
-		return this;
-	}
 
 	public boolean isProtectedEntry() {
 		return protectedEntry;
@@ -863,7 +848,7 @@ public class Data {
 		bs.set(6, flag2);
 		bs.set(7, prepareFlag);
 		int hashCode = bs.hashCode() ^ ttlSeconds ^ type.ordinal() ^ length;
-		for (Number160 basedOn : basedOnSet) {
+		for (Number256 basedOn : basedOnSet) {
 			hashCode = hashCode ^ basedOn.hashCode();
 		}
 		// This is a slow operation, use with care!
@@ -894,7 +879,7 @@ public class Data {
 											// with care!
 	}
 
-	public Number160 hash() {
+	public Number256 hash() {
 		if (hash == null) {
 			hash = Utils.makeSHAHash(toByteBuffers());
 		}

@@ -18,9 +18,8 @@ package net.tomp2p.dht;
 
 import io.netty.buffer.ByteBuf;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.rpc.SendDirectBuilderI;
 
-public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBuilderI {
+public class SendBuilder extends DHTBuilder<SendBuilder> {
 
     private final static FutureSend FUTURE_SHUTDOWN = new FutureSend(null)
             .failed("send builder - peer is shutting down");

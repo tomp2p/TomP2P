@@ -44,10 +44,10 @@ public interface Maintenance {
      * @param exceptionMap The map with the peers that caused an exception
      * @return The same or a new maintenance class
      */
-    Maintenance init(List<Map<Number160, PeerStatistic>> peerMapVerified,
-            List<Map<Number160, PeerStatistic>> peerMapNonVerified,
-            ConcurrentCacheMap<Number160, PeerAddress> offlineMap, 
-            ConcurrentCacheMap<Number160, PeerAddress> shutdownMap, ConcurrentCacheMap<Number160, PeerAddress> exceptionMap);
+    Maintenance init(List<Map<Number256, PeerStatistic>> peerMapVerified,
+                     List<Map<Number256, PeerStatistic>> peerMapNonVerified,
+                     ConcurrentCacheMap<Number256, PeerAddress> offlineMap,
+                     ConcurrentCacheMap<Number256, PeerAddress> shutdownMap, ConcurrentCacheMap<Number256, PeerAddress> exceptionMap);
 
     /**
      * @return The next peer that needs maintenance or null if no maintenance is needed

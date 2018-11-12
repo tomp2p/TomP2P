@@ -69,7 +69,7 @@ public class TestPeerAddress {
     
     @Test
     public void testIPv6Coding() throws UnknownHostException {
-    	PeerAddress pa = Utils2.createPeerAddress(new Number160("0x857e35a42e4677675644522456"),
+    	PeerAddress pa = Utils2.createPeerAddress(new Number256("0x857e35a42e4677675644522456"),
                 InetAddress.getByName("0123:4567:89ab:cdef:1111:2222:3333:4444"), RND.nextInt(BIT_16));
     	byte[] me = pa.encode();
     	PeerAddress pa2 = PeerAddress.decode(me).element0();
@@ -83,7 +83,7 @@ public class TestPeerAddress {
      */
     @Test
     public void testPeerAddress() throws UnknownHostException {
-        Number160 id = new Number160(RND.nextInt());
+        Number256 id = new Number256(RND.nextInt());
         InetAddress address = InetAddress.getByName("127.0.0.1");
         int portUDP = RND.nextInt(BIT_16);
         PeerAddress pa = Utils2.createPeerAddress(id, address, portUDP);
@@ -99,7 +99,7 @@ public class TestPeerAddress {
      */
     @Test
     public void testPeerAddress2() throws UnknownHostException {
-        Number160 id = new Number160("0x657435a424444522456");
+        Number256 id = new Number256("0x657435a424444522456");
         InetAddress address = InetAddress.getByName("192.168.240.230");
         int portUDP = RND.nextInt(BIT_16);
         PeerAddress pa = Utils2.createPeerAddress(id, address, portUDP);
@@ -115,9 +115,9 @@ public class TestPeerAddress {
      */
     @Test
     public void testPeerAddress3() throws UnknownHostException {
-        PeerAddress pa1 = Utils2.createPeerAddress(new Number160("0x857e35a42e444522456"),
+        PeerAddress pa1 = Utils2.createPeerAddress(new Number256("0x857e35a42e444522456"),
                 InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16));
-        PeerAddress pa2 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"),
+        PeerAddress pa2 = Utils2.createPeerAddress(new Number256("0x657435a424444522456"),
                 InetAddress.getByName("192.168.240.230"), RND.nextInt(BIT_16));
         final int length = 200;
         byte[] me = new byte[length];
@@ -140,9 +140,9 @@ public class TestPeerAddress {
      */
     @Test
     public void testPeerAddress4() throws UnknownHostException {
-        PeerAddress pa1 = Utils2.createPeerAddress(new Number160("0x857e35a42e444522456"),
+        PeerAddress pa1 = Utils2.createPeerAddress(new Number256("0x857e35a42e444522456"),
                 InetAddress.getByName("0123:4567:89ab:cdef:0123:4567:89ab:cdef"), RND.nextInt(BIT_16));
-        PeerAddress pa2 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"),
+        PeerAddress pa2 = Utils2.createPeerAddress(new Number256("0x657435a424444522456"),
                 InetAddress.getByName("f123:4567:89ab:cdef:0123:4567:89ab:cdef"), RND.nextInt(BIT_16));
 
         final int length = 200;
@@ -176,9 +176,8 @@ public class TestPeerAddress {
                 RND.nextInt(BIT_16)));
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16)));
         
-        PeerAddress pa3 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"),
-                InetAddress.getByName("f123:4567:89ab:cdef:0123:4567:89ab:cdef"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16), psa);
+        PeerAddress pa3 = Utils2.createPeerAddress(new Number256("0x657435a424444522456"),
+                InetAddress.getByName("f123:4567:89ab:cdef:0123:4567:89ab:cdef"), RND.nextInt(BIT_16), psa);
 
         final int length = 200;
         byte[] me = new byte[length];
@@ -213,7 +212,7 @@ public class TestPeerAddress {
         psa.add(Utils2.creatPeerSocket(InetAddress.getByName("7123:4567:89ab:cdef:0123:4567:89ab:cde5"),
                 RND.nextInt(BIT_16)));
         
-        PeerAddress pa3 = Utils2.createPeerAddress(new Number160("0x657435a424444522456"),
+        PeerAddress pa3 = Utils2.createPeerAddress(new Number256("0x657435a424444522456"),
         		(Inet6Address)Inet6Address.getByName("f123:4567:89ab:cdef:0123:4567:89ab:cdef"), RND.nextInt(BIT_16),
                 psa, Utils2.creatPeerSocket4((Inet4Address)Inet4Address.getByName("192.168.230.231"), RND.nextInt(BIT_16)));
 
@@ -241,7 +240,6 @@ public class TestPeerAddress {
      */
     public static void compare(final PeerAddress pa1, final PeerAddress pa2) {
         Assert.assertEquals(pa1.peerId(), pa2.peerId());
-        Assert.assertEquals(pa1.ipInternalNetworkPrefix(), pa2.ipInternalNetworkPrefix());
         Assert.assertEquals(pa1.portPreserving(), pa2.portPreserving());
         Assert.assertEquals(pa1.ipv4Flag(), pa2.ipv4Flag());
         Assert.assertEquals(pa1.ipv4Socket(), pa2.ipv4Socket());

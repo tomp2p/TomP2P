@@ -4,17 +4,16 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 public class DataMap {
-    private final NavigableMap<Number640, Data> dataMap;
-    private final NavigableMap<Number160, Data> dataMapConvert;
-    private final Number160 locationKey;
-    private final Number160 domainKey;
-    private final Number160 versionKey;
+    /*private final NavigableMap<Number640, Data> dataMap;
+    private final NavigableMap<Number256, Data> dataMapConvert;
+    private final Number256 locationKey;
+    private final Number256 domainKey;
+    private final Number256 versionKey;
     private final boolean convertMeta;
     
     public DataMap(final NavigableMap<Number640, Data> dataMap) {
@@ -30,13 +29,13 @@ public class DataMap {
         this.convertMeta = convertMeta;
     }
     
-    public DataMap(final Number160 locationKey, final Number160 domainKey, final Number160 versionKey,
-            final NavigableMap<Number160, Data> dataMapConvert) {
+    public DataMap(final Number256 locationKey, final Number256 domainKey, final Number256 versionKey,
+                   final NavigableMap<Number256, Data> dataMapConvert) {
     	this(locationKey, domainKey, versionKey, dataMapConvert, false);
     }
 
-    public DataMap(final Number160 locationKey, final Number160 domainKey, final Number160 versionKey,
-            final NavigableMap<Number160, Data> dataMapConvert, boolean convertMeta) {
+    public DataMap(final Number256 locationKey, final Number256 domainKey, final Number256 versionKey,
+                   final NavigableMap<Number256, Data> dataMapConvert, boolean convertMeta) {
         this.dataMap = null;
         this.dataMapConvert = dataMapConvert;
         this.locationKey = locationKey;
@@ -53,25 +52,24 @@ public class DataMap {
         return convert(this);
     }
 
-    public Map<Number160, Data> dataMapConvert() {
+    public Map<Number256, Data> dataMapConvert() {
         return dataMapConvert;
     }
 
-    public Number160 locationKey() {
+    public Number256 locationKey() {
         return locationKey;
     }
 
-    public Number160 domainKey() {
+    public Number256 domainKey() {
         return domainKey;
     }
 
-    public Number160 versionKey() {
+    public Number256 versionKey() {
         return versionKey;
     }
 
-    /**
-     * @return The size of either the datamap with the number480 as key, or datamap with the number160 as key
-     */
+
+    // @return The size of either the datamap with the number480 as key, or datamap with the number160 as key
     public int size() {
         if (dataMap != null) {
             return dataMap.size();
@@ -81,22 +79,20 @@ public class DataMap {
         return 0;
     }
 
-    /**
-     * @return True if we have number160 stored and we need to add the location and domain key
-     */
+    // @return True if we have number160 stored and we need to add the location and domain key
     public boolean isConvert() {
         return dataMapConvert != null;
     }
 
-    public NavigableMap<Number640, Number160> convertToHash() {
-    	NavigableMap<Number640, Number160> retVal = new TreeMap<Number640, Number160>();
+    public NavigableMap<Number640, Number256> convertToHash() {
+    	NavigableMap<Number640, Number256> retVal = new TreeMap<Number640, Number256>();
         if (dataMap != null) {
             for (Map.Entry<Number640, Data> entry : dataMap.entrySet()) {
                 retVal.put(entry.getKey(), entry.getValue().hash());
             }
 
         } else if (dataMapConvert != null) {
-            for (Map.Entry<Number160, Data> entry : dataMapConvert.entrySet()) {
+            for (Map.Entry<Number256, Data> entry : dataMapConvert.entrySet()) {
                 retVal.put(new Number640(locationKey, domainKey, entry.getKey(), versionKey), entry
                         .getValue().hash());
             }
@@ -108,7 +104,7 @@ public class DataMap {
         final NavigableMap<Number640, Data> dataMap3;
         if (d.dataMapConvert != null) {
             dataMap3 = new TreeMap<Number640, Data>();
-            for (Map.Entry<Number160, Data> entry : d.dataMapConvert.entrySet()) {
+            for (Map.Entry<Number256, Data> entry : d.dataMapConvert.entrySet()) {
                 dataMap3.put(new Number640(d.locationKey, d.domainKey, entry.getKey(), d.versionKey),
                         entry.getValue());
             }
@@ -145,5 +141,5 @@ public class DataMap {
         final boolean test1 = Utils.isSameSets(dataMapThis.keySet(), dataMapOther.keySet());
         final boolean test2 = Utils.isSameSets(dataMapThis.values(), dataMapOther.values());
         return test1 && test2;
-    }
+    }*/
 }

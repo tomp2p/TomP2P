@@ -29,9 +29,9 @@ import net.tomp2p.p2p.PeerStatisticComparator;
  */
 public class PeerMapConfiguration {
 
-    private final Number160 self;
-    private int[] bagSizesVerified = new int[Number160.BITS];
-    private int[] bagSizesOverflow = new int[Number160.BITS];
+    private final Number256 self;
+    private int[] bagSizesVerified = new int[Number256.BITS];
+    private int[] bagSizesOverflow = new int[Number256.BITS];
     private int offlineTimeout;
     private int shutdownTimeout;
     private int exceptionTimeout;
@@ -47,7 +47,7 @@ public class PeerMapConfiguration {
      * @param self
      *            The peer ID of this peer
      */
-    public PeerMapConfiguration(final Number160 self) {
+    public PeerMapConfiguration(final Number256 self) {
         this.self = self;
         setDoublingVerifiedBagSizes();
         setDoublingOverflowBagSizes();
@@ -62,7 +62,7 @@ public class PeerMapConfiguration {
     /**
      * @return The peer ID of this peer
      */
-    public Number160 self() {
+    public Number256 self() {
         return self;
     }
 
@@ -102,11 +102,11 @@ public class PeerMapConfiguration {
      * @return This PeerMapConfiguration object
      */
     public PeerMapConfiguration setDoublingVerifiedBagSizes() {
-        for (int i = 0; i < Number160.BITS; i++) {
-            if (i < Number160.BITS - 4) {
+        for (int i = 0; i < Number256.BITS; i++) {
+            if (i < Number256.BITS - 4) {
                 bagSizesVerified[i] = 8;
             }else {
-                bagSizesVerified[i] = 128 / (int)Math.pow(2,Number160.BITS - i - 1);
+                bagSizesVerified[i] = 128 / (int)Math.pow(2, Number256.BITS - i - 1);
             }
         }
         return this;
@@ -114,14 +114,14 @@ public class PeerMapConfiguration {
 
     /**
      * Allows to define custom bag sizes for the verified peers
-     * @param bagSizesVerified Array of length Number160.BITS, specifying the size
+     * @param bagSizesVerified Array of length Number256.BITS, specifying the size
      *                         for each bag. bagSizesVerified[0] is the closest bag,
      *                         bagSizesVerified[159] is the most distant bag.
      * @return This PeerMapConfiguration object
      */
     public PeerMapConfiguration setBagSizesVerified(final int[] bagSizesVerified) {
-        if (bagSizesVerified.length != Number160.BITS)
-            throw new IllegalArgumentException("The array of bag sizes must have length of " + Number160.BITS);
+        if (bagSizesVerified.length != Number256.BITS)
+            throw new IllegalArgumentException("The array of bag sizes must have length of " + Number256.BITS);
         this.bagSizesVerified = bagSizesVerified;
         return this;
     }
@@ -160,11 +160,11 @@ public class PeerMapConfiguration {
      * @return This PeerMapConfiguration object
      */
     public PeerMapConfiguration setDoublingOverflowBagSizes() {
-        for (int i = 0; i < Number160.BITS; i++) {
-            if (i < Number160.BITS - 4) {
+        for (int i = 0; i < Number256.BITS; i++) {
+            if (i < Number256.BITS - 4) {
                 bagSizesOverflow[i] = 8;
             }else {
-                bagSizesOverflow[i] = 128 / (int)Math.pow(2,Number160.BITS - i - 1);
+                bagSizesOverflow[i] = 128 / (int)Math.pow(2, Number256.BITS - i - 1);
             }
         }
         return this;
@@ -172,14 +172,14 @@ public class PeerMapConfiguration {
 
     /**
      * Allows to define custom bag sizes for the overflow peers
-     * @param bagSizesOverflow Array of length Number160.BITS, specifying the size
+     * @param bagSizesOverflow Array of length Number256.BITS, specifying the size
      *                         for each bag. bagSizesOverflow[0] is the closest bag,
      *                         bagSizesOverflow[159] is the most distant bag.
      * @return This PeerMapConfiguration object
      */
     public PeerMapConfiguration setBagSizesOverflow(final int[] bagSizesOverflow) {
-        if (bagSizesOverflow.length != Number160.BITS)
-            throw new IllegalArgumentException("The array of bag sizes must have length of " + Number160.BITS);
+        if (bagSizesOverflow.length != Number256.BITS)
+            throw new IllegalArgumentException("The array of bag sizes must have length of " + Number256.BITS);
         this.bagSizesOverflow = bagSizesOverflow;
         return this;
     }

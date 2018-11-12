@@ -1,15 +1,15 @@
 package net.tomp2p.message;
 
-import java.util.Random;
-
-import net.tomp2p.message.Message.Content;
-
+import net.tomp2p.peers.Number256;
+import net.tomp2p.utils.Utils;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+
+import java.util.Arrays;
 
 public class TestMessageHeaderCodec {
 	
@@ -19,38 +19,30 @@ public class TestMessageHeaderCodec {
           System.out.println("Starting test: " + description.getMethodName());
        }
     };
-    
+
     @Test
-    public void testContentTypeCodec() {
+    public void testOverlap() {
+        Number256 sender = new Number256(-1, -2, -3, -4);
+        Number256 recipient = new Number256(-5, -6, -7, -8);
+        byte[] overlap = sender.xorOverlappedBy4(recipient);
 
-        Random rnd = new Random(42);
-        System.err.print("Round:");
-        for (int i = 0; i < 100; i++) {
-        	System.err.print(i + " ");
-            Content[] types1 = initContentTypes(rnd);
-            int nr = MessageHeaderCodec.encodeContentTypes(types1);
-            Content[] types2 = MessageHeaderCodec.decodeContentTypes(nr, new Message());
-            compare(types2, types1);
-        }
-        System.err.println(" done.");
+        int recipientShort = recipient.intValueMSB();
+        int senderShort = sender.intValueLSB();
+
+
+        Assert.assertEquals(senderShort, Utils.byteArrayToInt(overlap));
+        Assert.assertEquals(recipientShort, Utils.byteArrayToInt(overlap, 32));
     }
 
-    private void compare(Content[] types2, Content[] types1) {
-        Assert.assertEquals(types1.length, types2.length);
-        for(int i=0;i<types1.length;i++) {
-            if(types1[i] == null) {
-                types1[i] = Content.EMPTY;
-            }
-        }
-        Assert.assertArrayEquals(types2, types1);
-    }
+    @Test
+    public void testDeOverlap() {
+        Number256 sender = new Number256(-2, -3, -4, -5);
+        Number256 recipient = new Number256(-6, -7, -8, -9);
+        byte[] overlap = sender.xorOverlappedBy4(recipient);
 
-    private Content[] initContentTypes(Random rnd) {
-        Content[] contents = new Content[Message.CONTENT_TYPE_LENGTH];
-        int len = rnd.nextInt(9);
-        for (int i = 0; i < len; i++) {
-            contents[i] = Content.values()[rnd.nextInt(8)];
-        }
-        return contents;
+        int senderShort = sender.intValueLSB();
+
+        Number256 sender2 = recipient.deXorOverlappedBy4(overlap, senderShort);
+        Assert.assertEquals(sender, sender2);
     }
 }

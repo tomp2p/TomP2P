@@ -565,21 +565,13 @@ public class DistributedHashTable {
      */
     public static <K extends FutureDHT<?>> K parallelRequests(final RequestP2PConfiguration p2pConfiguration,
             final NavigableSet<PeerAddress> directHit, final NavigableSet<PeerAddress> potentialHit, final boolean cancleOnFinish,
-            final FutureChannelCreator futureChannelCreator, final OperationMapper<K> operation,
+            final OperationMapper<K> operation,
             final K futureDHT) {
 
-        futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-            @Override
-            public void operationComplete(final FutureChannelCreator future) throws Exception {
-                if (future.isSuccess()) {
-                    parallelRequests(p2pConfiguration, directHit, potentialHit, futureDHT, cancleOnFinish,
+        parallelRequests(p2pConfiguration, directHit, potentialHit, futureDHT, cancleOnFinish,
                             future.channelCreator(), operation);
                     UtilsDHT.addReleaseListener(future.channelCreator(), futureDHT);
-                } else {
-                    futureDHT.failed(future);
-                }
-            }
-        });
+
         return futureDHT;
     }
 

@@ -9,7 +9,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.utils.Pair;
 
 import java.util.ArrayList;
@@ -40,9 +40,9 @@ public class TestPing {
         Peer sender = null;
         Peer recv1 = null;
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
+            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
+            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean());
             Pair<FutureDone<Message>, KCP> fr = handshake.pingUDP(recv1.peerAddress());
             fr.element0().awaitUninterruptibly();
@@ -67,9 +67,9 @@ public class TestPing {
         Peer sender = null;
         Peer recv1 = null;
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(9876).start();
+            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).enableMaintenance(false).port(9876).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(1234).start();
+            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).enableMaintenance(false).port(1234).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean());
             Pair<FutureDone<Message>, KCP>  fr = handshake.pingUDP(recv1.peerAddress());
             fr.element0().awaitUninterruptibly();
@@ -100,9 +100,9 @@ public class TestPing {
         Peer sender1 = null;
         Peer recv11 = null;
         try {
-            final Peer sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
+            final Peer sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).port(2424).start();
             sender1 = sender;
-            final Peer recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
+            final Peer recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).port(8088).start();
             recv11 = recv1;
 
 
@@ -139,10 +139,10 @@ public class TestPing {
         Peer sender = null;
         Peer recv1 = null;
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
+            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean(), false, true,
                     false);
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
+            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, false);
             Pair<FutureDone<Message>, KCP> fr = handshake.pingUDP(recv1.peerAddress());
             fr.element0().awaitUninterruptibly();
@@ -163,10 +163,10 @@ public class TestPing {
         Peer sender = null;
         Peer recv1 = null;
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
+            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).port(2424).start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean(), false, true,
                     true);
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
+            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).port(8088).start();
             new PingRPC(recv1.peerBean(), recv1.connectionBean(), false, true, true);
             Pair<FutureDone<Message>, KCP> fr = handshake.pingUDP(recv1.peerBean().serverPeerAddress());
             fr.element0().awaitUninterruptibly();
@@ -190,8 +190,8 @@ public class TestPing {
         Peer sender = null;
         Peer recv1 = null;
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
+            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).port(2424).start();
+            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).port(8088).start();
             List<Pair<FutureDone<Message>, KCP>> list = new ArrayList<>(50);
             for (int i = 0; i < 50; i++) {
             	Pair<FutureDone<Message>, KCP> fr = sender.pingRPC().pingUDP(recv1.peerAddress());
@@ -218,7 +218,7 @@ public class TestPing {
         Peer p[] = new Peer[50];
         try {
             for (int i = 0; i < p.length; i++) {
-                p[i] = new PeerBuilder(Number160.createHash(i)).p2pId(55).port(2424 + i).start();
+                p[i] = new PeerBuilder(Number256.createHash(""+i)).p2pId(55).port(2424 + i).start();
             }
             List<Pair<FutureDone<Message>, KCP>> list = new ArrayList<>();
             for (int i = 0; i < p.length; i++) {
@@ -249,8 +249,8 @@ public class TestPing {
         Peer sender = null;
         Peer recv1 = null;
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).port(2424).start();
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).port(8088).start();
+            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).port(2424).start();
+            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).port(8088).start();
             long start = System.currentTimeMillis();
             List<Pair<FutureDone<Message>, KCP>> list = new ArrayList<>(100);
             for (int i = 0; i < 20; i++) {

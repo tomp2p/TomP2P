@@ -35,7 +35,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerReachable;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
@@ -153,14 +153,14 @@ public class DiscoverBuilder {
         				.ipv4(IP.fromInet4Address((Inet4Address)inetAddress))
         				.udpPort(port)
         				.build();
-        		peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
+        		peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number256.ZERO).build();
         	} else {
         		PeerSocket6Address psa = PeerSocket6Address
         				.builder()
         				.ipv6(IP.fromInet6Address((Inet6Address)inetAddress))
         				.udpPort(port)
         				.build();
-        		peerAddress = PeerAddress.builder().ipv6Socket(psa).peerId(Number160.ZERO).build();
+        		peerAddress = PeerAddress.builder().ipv6Socket(psa).peerId(Number256.ZERO).build();
         	}
         }
         if (peerAddress == null) {
@@ -181,7 +181,7 @@ public class DiscoverBuilder {
      * peer. The fallback is NAT-PMP.
      * 
      * @param peerAddress
-     *            The peer address. Since pings are used the peer ID can be Number160.ZERO
+     *            The peer address. Since pings are used the peer ID can be Number256.ZERO
      * @return The future discover. This future holds also the real ID of the peer we send the discover request
      */
     private FutureDiscover discover(final PeerAddress peerAddress, final ConnectionConfiguration configuration, 
@@ -232,7 +232,7 @@ public class DiscoverBuilder {
                 	//now we know our internal address, set it as it could be a wrong one, e.g. 127.0.0.1
                 	serverAddress = serverAddress.withIpv4Socket(future.object().recipient().ipv4Socket());
                 	
-                    Collection<PeerAddress> tmp = future.object().neighborsSet(0)
+                    /*Collection<PeerAddress> tmp = future.object().neighborsSet(0)
                             .neighbors();
                     futureDiscover.reporter(future.object().sender());
                     if (tmp.size() == 1) {
@@ -303,7 +303,7 @@ public class DiscoverBuilder {
                     } else {
                         futureDiscover.failed("Peer " + peerAddress + " did not report our IP address.");
                         return;
-                    }
+                    }*/
                 } else {
                     futureDiscover.failed("FutureDiscover (1): We need at least the TCP connection",
                             future);

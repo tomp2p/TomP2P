@@ -19,13 +19,13 @@ package net.tomp2p.p2p;
 import java.util.List;
 import java.util.Map;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatistic;
 
 public class Statistics {
 
-	private final static double MAX = Math.pow(2, Number160.BITS);
+	private final static double MAX = Math.pow(2, Number256.BITS);
 
 	private double estimatedNumberOfPeers = 1;
 
@@ -38,12 +38,12 @@ public class Statistics {
 	}
 	
 	public double estimatedNumberOfNodes() {
-		final List<Map<Number160, PeerStatistic>> map = peerMap.peerMapVerified();
+		final List<Map<Number256, PeerStatistic>> map = peerMap.peerMapVerified();
 		// assume we are full
 		double gap = 0D;
 		int gapCount = 0;
-		for (int i = 0; i < Number160.BITS; i++) {
-			Map<Number160, PeerStatistic> peers = map.get(i);
+		for (int i = 0; i < Number256.BITS; i++) {
+			Map<Number256, PeerStatistic> peers = map.get(i);
 			final int numPeers = peers.size();
 
 			if (numPeers > 0 && numPeers < peerMap.bagSizeVerified(i)) {

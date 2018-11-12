@@ -46,7 +46,7 @@ public class PeerStatRoutingFilter implements PeerMapFilter {
 		int e = (int) (Math.log(numberOfPeers / replicationRate) / Math.log(2));
 		int toExclude = e + 10; // e.g. 28
 		// e.g. 14 is fine, 29 is not fine
-		int toTest = target.xor(peerAddress.getPeerId()).bitLength();
+		int toTest = target.xor(peerAddress.getPeerAddressFromShortId()).bitLength();
 		if (toTest > toExclude) {
 			return true;
 		}
@@ -58,12 +58,12 @@ public class PeerStatRoutingFilter implements PeerMapFilter {
 		}
 		int total = all.size();
 
-		toTest = target.xor(peerAddress.getPeerId()).bitLength();
+		toTest = target.xor(peerAddress.getPeerAddressFromShortId()).bitLength();
 		toTest -= e;
 		m[toTest] += 1.0d;
 
 		for (PeerAddress test : all) {
-			toTest = target.xor(test.getPeerId()).bitLength();
+			toTest = target.xor(test.getPeerAddressFromShortId()).bitLength();
 			toTest -= e;
 			m[toTest] += 1.0d;
 		}

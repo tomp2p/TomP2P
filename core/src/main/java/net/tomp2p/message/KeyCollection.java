@@ -3,19 +3,18 @@ package net.tomp2p.message;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.utils.Utils;
 
 public class KeyCollection {
-    private final Collection<Number640> keys;
-    private final Collection<Number160> keysConvert;
-    private final Number160 locationKey;
-    private final Number160 domainKey;
-    private final Number160 versionKey;
+    private final Collection<Object> keys;
+    private final Collection<Number256> keysConvert;
+    private final Number256 locationKey;
+    private final Number256 domainKey;
+    private final Number256 versionKey;
 
-    public KeyCollection(final Number160 locationKey, final Number160 domainKey, final Number160 versionKey,
-            final Collection<Number160> keysConvert) {
+    public KeyCollection(final Number256 locationKey, final Number256 domainKey, final Number256 versionKey,
+                         final Collection<Number256> keysConvert) {
         this.keys = null;
         this.keysConvert = keysConvert;
         this.locationKey = locationKey;
@@ -23,7 +22,7 @@ public class KeyCollection {
         this.versionKey = versionKey;
     }
 
-    public KeyCollection(final Collection<Number640> keys) {
+    public KeyCollection(final Collection<Object> keys) {
         this.keys = keys;
         this.keysConvert = null;
         this.locationKey = null;
@@ -31,23 +30,23 @@ public class KeyCollection {
         this.versionKey = null;
     }
 
-    public Collection<Number640> keys() {
+    public Collection<Object> keys() {
         return convert(this);
     }
 
-    public Collection<Number160> keysConvert() {
+    public Collection<Number256> keysConvert() {
         return keysConvert;
     }
 
-    public Number160 locationKey() {
+    public Number256 locationKey() {
         return locationKey;
     }
 
-    public Number160 domainKey() {
+    public Number256 domainKey() {
         return domainKey;
     }
 
-    public Number160 versionKey() {
+    public Number256 versionKey() {
         return versionKey;
     }
 
@@ -75,17 +74,17 @@ public class KeyCollection {
      *            Add this number to the number480 set
      * @return This class
      */
-    public KeyCollection add(final Number640 number640) {
+    public KeyCollection add(final Object number640) {
         keys.add(number640);
         return this;
     }
 
-    private Collection<Number640> convert(final KeyCollection k) {
-        final Collection<Number640> keys3;
+    private Collection<Object> convert(final KeyCollection k) {
+        final Collection<Object> keys3;
         if (k.keysConvert != null) {
-            keys3 = new ArrayList<Number640>(k.keysConvert.size());
-            for (Number160 n160 : k.keysConvert) {
-                keys3.add(new Number640(k.locationKey, k.domainKey, n160, k.versionKey));
+            keys3 = new ArrayList<Object>(k.keysConvert.size());
+            for (Number256 n160 : k.keysConvert) {
+                //keys3.add(new Object(k.locationKey, k.domainKey, n160, k.versionKey));
             }
         } else {
             keys3 = k.keys;
@@ -95,7 +94,7 @@ public class KeyCollection {
     
     @Override
     public int hashCode() {
-        final Collection<Number640> keys = convert(this);
+        final Collection<Object> keys = convert(this);
         return keys.hashCode();
     }
     
@@ -108,8 +107,8 @@ public class KeyCollection {
             return true;
         }
         final KeyCollection k = (KeyCollection) obj;
-        final Collection<Number640> keys2 = convert(this);
-        final Collection<Number640> keys3 = convert(k);
+        final Collection<Object> keys2 = convert(this);
+        final Collection<Object> keys3 = convert(k);
         return Utils.isSameSets(keys2, keys3);
     }
 }

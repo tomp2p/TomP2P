@@ -22,7 +22,7 @@ import java.util.Map;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TrackerData;
-import net.tomp2p.peers.Number640;
+//import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.RTT;
 import net.tomp2p.storage.Data;
@@ -221,38 +221,6 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
 
     public RTT getRoundTripTime() {
         return roundTripTime;
-    }
-    
-    public FutureResponse releaseResponseMessage() {
-    	releaseMessage(responseMessage);
-    	return this;
-    }
-    
-    public FutureResponse releaseRequestMessage() {
-    	releaseMessage(requestMessage);
-    	return this;
-    }
-    
-    public FutureResponse release() {
-    	releaseMessage(responseMessage);
-    	releaseMessage(requestMessage);
-    	return this;
-    }
-    
-    private FutureResponse releaseMessage(Message message) {
-    	if(message != null) {
-    		for(DataMap dataMap:message.dataMapList()) {
-    			for(Map.Entry<Number640, Data> entry: dataMap.dataMap().entrySet()) {
-    				entry.getValue().release();
-    			}
-    		}
-    		for(TrackerData trackerData:message.trackerDataList()) {
-    			for(Map.Entry<PeerAddress, Data> entry: trackerData.peerAddresses().entrySet()) {
-    				entry.getValue().release();
-    			}
-    		}
-    	}
-    	return this;
     }
     
     public FutureSuccessEvaluator futureSuccessEvaluator() {

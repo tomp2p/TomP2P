@@ -48,23 +48,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Vector;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import io.netty.buffer.ByteBuf;
-import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TrackerData;
-import net.tomp2p.peers.IP.IPv4;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
-import net.tomp2p.peers.Number640;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import net.tomp2p.peers.*;
+import net.tomp2p.peers.Number256;
 
 /**
  * 
@@ -98,7 +90,7 @@ public class Utils {
         }
     }
 
-    public static Number160 makeSHAHash(File file) {
+    public static Number256 makeSHAHash(File file) {
         FileInputStream fis = null;
         FileChannel channel = null;
         try {
@@ -114,59 +106,59 @@ public class Utils {
                 md.update(buffer);
             }
             byte[] digest = md.digest();
-            return new Number160(digest);
+            return new Number256(digest);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-            return Number160.ZERO;
+            return Number256.ZERO;
         } catch (IOException e) {
             e.printStackTrace();
-            return Number160.ZERO;
+            return Number256.ZERO;
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-            return Number160.ZERO;
+            return Number256.ZERO;
         } finally {
             bestEffortclose(channel, fis);
         }
     }
 
-    public static Number160 makeSHAHash(String strInput) {
+    public static Number256 makeSHAHash(String strInput) {
         byte[] buffer = strInput.getBytes();
         return makeSHAHash(buffer);
     }
 
-    public static Number160 makeSHAHash(ByteBuffer buffer) {
+    public static Number256 makeSHAHash(ByteBuffer buffer) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             md.update(buffer);
             byte[] digest = md.digest();
-            return new Number160(digest);
+            return new Number256(digest);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-            return new Number160();
+            return new Number256();
         }
     }
     
-    public static Number160 makeSHAHash(ByteBuffer... bufferList) {
+    public static Number256 makeSHAHash(ByteBuffer... bufferList) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             for (ByteBuffer byteBuffer : bufferList) {
                 md.update(byteBuffer);
             }
             byte[] digest = md.digest();
-            return new Number160(digest);
+            return new Number256(digest);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-            return new Number160();
+            return new Number256();
         }
     }
 
 
 
-    public static Number160 makeSHAHash(byte[] buffer) {
+    public static Number256 makeSHAHash(byte[] buffer) {
         return makeSHAHash(ByteBuffer.wrap(buffer));
     }
 
-    public static Number160 makeSHAHash(byte[] buffer, int offset, int length) {
+    public static Number256 makeSHAHash(byte[] buffer, int offset, int length) {
         return makeSHAHash(ByteBuffer.wrap(buffer, offset, length));
     }
 
@@ -193,11 +185,11 @@ public class Utils {
         return m.digest();
     }
 
-    public static Number160 createRandomNodeID() {
+    public static Number256 createRandomNodeID() {
         // TODO: this hardcoded, bad style
         byte[] me = new byte[20];
         random.nextBytes(me);
-        Number160 id = new Number160(me);
+        Number256 id = new Number256(me);
         return id;
     }
 
@@ -745,13 +737,13 @@ public class Utils {
         return false;
     }
 
-    public static Collection<Number160> extractContentKeys(Collection<Number480> collection) {
-        Collection<Number160> result = new ArrayList<Number160>(collection.size());
+    /*public static Collection<Number256> extractContentKeys(Collection<Number480> collection) {
+        Collection<Number256> result = new ArrayList<Number256>(collection.size());
         for (Number480 number480 : collection) {
             result.add(number480.contentKey());
         }
         return result;
-    }
+    }*/
 
     /**
      * Converts a byte array to a Inet4Address.
@@ -937,13 +929,13 @@ public class Utils {
 		return String.valueOf(publicKey.hashCode());
     }
 
-	public static Map<Number640, Byte> setMapError(Map<Number640, ?> dataMap, byte reason) {
+	/*public static Map<Number640, Byte> setMapError(Map<Number640, ?> dataMap, byte reason) {
 		Map<Number640, Byte> retVal = new HashMap<Number640, Byte>();
 		for(Number640 key:dataMap.keySet()) {
 			retVal.put(key, Byte.valueOf(reason));
 		}
 	    return retVal;
-    }
+    }*/
 	
 	/**
 	 * This method returns a random positve {@link int} within a given upper limit.

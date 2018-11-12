@@ -15,7 +15,7 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.builder.RoutingBuilder;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMapFilter;
 import net.tomp2p.peers.PeerStatistic;
@@ -283,7 +283,7 @@ public class RoutingMechanism {
     }
 
     public boolean evaluateSuccess(PeerAddress remotePeer, DigestInfo digestBean,
-            Collection<PeerStatistic> newNeighbors, boolean last, Number160 locationkey) {
+            Collection<PeerStatistic> newNeighbors, boolean last, Number256 locationkey) {
         boolean finished;
         synchronized (this) {
         	filterPeers(newNeighbors, alreadyAsked, queueToAsk, locationkey);
@@ -312,7 +312,7 @@ public class RoutingMechanism {
     }
 
 	private void filterPeers(Collection<PeerStatistic> newNeighbors, SortedSet<PeerAddress> alreadyAsked,
-	        NavigableSet<PeerStatistic> queueToAsk, Number160 locationkey) {
+	        NavigableSet<PeerStatistic> queueToAsk, Number256 locationkey) {
 		if (peerMapFilters == null || peerMapFilters.size() == 0) {
 			return;
 		}

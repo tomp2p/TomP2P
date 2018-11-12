@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import net.tomp2p.peers.Number256;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,18 +36,16 @@ import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.IP;
-import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Utils;
 
 /**
  * Bootstraps to a known peer. First, channels are reserved, then discover(PeerAddress) is called to verify this Internet
  * connection settings using the "peerAddress" argument . Then the routing is initiated to the peers specified in
  * "bootstrapTo". Please be aware that in order to boostrap, you need to know the peer ID of all peers in the "bootstrapTo" collection.
- * Passing Number160.ZERO does *not* work.
+ * Passing Number256.ZERO does *not* work.
  */
 
 public class BootstrapBuilder {
@@ -98,7 +97,7 @@ public class BootstrapBuilder {
      * @return this instance
      */
     public BootstrapBuilder peerAddress(final PeerAddress peerAddress) {
-        if (peerAddress != null && peerAddress.peerId().equals(Number160.ZERO)) {
+        if (peerAddress != null && peerAddress.peerId().equals(Number256.ZERO)) {
             logger.warn("Peer address with peer ID zero provided. Bootstrapping is impossible, because no peer with peer ID set to zero is allowed to exist.");
             return this;
         }
@@ -174,14 +173,14 @@ public class BootstrapBuilder {
         				.ipv4(IP.fromInet4Address((Inet4Address)inetAddress))
         				.udpPort(port)
         				.build();
-        		PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number160.ZERO).build();
+        		PeerAddress peerAddress = PeerAddress.builder().ipv4Socket(psa).peerId(Number256.ZERO).build();
         	} else {
         		PeerSocket6Address psa = PeerSocket6Address
         				.builder()
         				.ipv6(IP.fromInet6Address((Inet6Address)inetAddress))
         				.udpPort(port)
         				.build();
-        		PeerAddress peerAddress = PeerAddress.builder().ipv6Socket(psa).peerId(Number160.ZERO).build();
+        		PeerAddress peerAddress = PeerAddress.builder().ipv6Socket(psa).peerId(Number256.ZERO).build();
         	}
             return bootstrapPing(peerAddress);
         } 

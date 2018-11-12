@@ -3,7 +3,9 @@ package net.tomp2p.rpc;
 public class RPC {
 	//Max. 255 Commands - don't change the order!! keep .NET interoperability in mind
 	public enum Commands{
-		PING(), 
+		PING(),
+		PING_DISCOVER(),
+		PING_PROBE(),
 		PUT(), 
 		GET(), 
 		ADD(), 

@@ -3,9 +3,9 @@ package net.tomp2p.rpc;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import net.tomp2p.network.KCP;
+import net.tomp2p.peers.Number256;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +13,6 @@ import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ClientChannel;
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
@@ -21,7 +20,6 @@ import net.tomp2p.message.MessageID;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.utils.ConcurrentCacheMap;
@@ -49,9 +47,9 @@ public class RelayRPC extends DispatchHandler {
 	 * @return
 	 */
 	
-	private List<Map<Number160,Map<Number160, PeerStatistic>>> peerMaps;
+	private List<Map<Number256,Map<Number256, PeerStatistic>>> peerMaps;
 	
-	final private ConcurrentCacheMap<Number160, Pair<InetSocketAddress, ChannelSender>> activeRelays = new ConcurrentCacheMap<>(60, 10000);
+	final private ConcurrentCacheMap<Number256, Pair<InetSocketAddress, ChannelSender>> activeRelays = new ConcurrentCacheMap<>(60, 10000);
 	
 	public RelayRPC(Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
@@ -71,7 +69,7 @@ public class RelayRPC extends DispatchHandler {
 	public Pair<FutureDone<Message>, KCP> sendSetupMessage(
 			final PeerAddress candidate) {
 		
-		final Message message = createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
+		final Message message = createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST);
 		message.keepAlive(true);
 		return connectionBean().channelServer().sendUDP(message);
 		
@@ -79,22 +77,23 @@ public class RelayRPC extends DispatchHandler {
 	
 	public Pair<FutureDone<Message>, KCP> sendPeerMap(
 			final PeerAddress relayPeer, 
-			final List<Map<Number160, 
+			final List<Map<Number256,
 			PeerStatistic>> map, 
 			final ClientChannel channel) {
 		
-		final Message message = createMessage(relayPeer, RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
+		/*final Message message = createMessage(relayPeer, RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
 
 		NeighborSet ns = new NeighborSet(5, RelayUtils.flatten(map));
 		message.neighborsSet(ns);
 		LOG.debug("send neighbors " + ns);
-		return connectionBean().channelServer().sendUDP(message);
+		return connectionBean().channelServer().sendUDP(message);*/
+		return null;
 	}
 	
 	@Override
 	public void handleResponse(Responder r, Message message, boolean sign, KCP kcp, ChannelSender sender) throws Exception {
 		LOG.debug("handle relay RPC");
-		if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
+		/*if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
 			//no capacity restrictions yet
 			activeRelays.putIfAbsent(message.sender().peerId(), Pair.create(message.senderSocket(), sender));
 			r.response(handleSetup(message));
@@ -122,11 +121,11 @@ public class RelayRPC extends DispatchHandler {
 			} else {
 				LOG.debug("no acive relays found for {}, only for {}", message.recipient().peerId(), activeRelays.keySet());
 			}
-		}
+		}*/
 	}
 	
 	private Message handleSetup(Message message) {
-		final Number160 unreachablePeerId = message.sender().peerId();
+		final Number256 unreachablePeerId = message.sender().peerId();
 		//TODO: add myself as relay
 		//peerBean().notifyPeerFound(unreachablePeerConnectionCopy.remotePeer(), null, unreachablePeerConnectionCopy, null);
 		
@@ -166,14 +165,6 @@ public class RelayRPC extends DispatchHandler {
 		return this.peer;
 	}
 
-	/**
-	 * Convenience method
-	 * 
-	 * @return the signature factory
-	 */
-	private SignatureFactory signatureFactory() {
-		return connectionBean().channelServer().channelServerConfiguration().signatureFactory();
-	}
 
 	/**
 	 * Convenience method

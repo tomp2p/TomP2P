@@ -17,7 +17,6 @@ package net.tomp2p.rpc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ConnectionBean;
@@ -31,7 +30,7 @@ import net.tomp2p.message.NeighborSet;
 import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.p2p.PeerReceivedBroadcastPing;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
 
@@ -105,7 +104,7 @@ public class PingRPC extends DispatchHandler {
 	 */
 	public Pair<FutureDone<Message>, KCP> pingUDP(final PeerAddress remotePeer) {
 		LOG.debug("Pinging UDP the remote peer {}.", remotePeer);
-		Message message = createHandler(remotePeer, Type.REQUEST_1);
+		Message message = createHandler(remotePeer, Type.REQUEST);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
@@ -118,7 +117,7 @@ public class PingRPC extends DispatchHandler {
 	 *         something fails.
 	 */
 	public Pair<FutureDone<Message>, KCP> fireUDP(final PeerAddress remotePeer) {
-		final Message message = createHandler(remotePeer, Type.REQUEST_FF_1);
+		final Message message = createHandler(remotePeer, Type.REQUEST_FF);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
@@ -143,7 +142,7 @@ public class PingRPC extends DispatchHandler {
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
 	public Pair<FutureDone<Message>, KCP> pingUDPProbe(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
-		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_3);
+		final Message message = createMessage(remotePeer, RPC.Commands.PING_PROBE.getNr(), Type.REQUEST);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
@@ -169,8 +168,8 @@ public class PingRPC extends DispatchHandler {
 	 * @return The future of this discover handler
 	 */
 	private Message createDiscoverHandler(final PeerAddress remotePeer) {
-		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_2);
-		message.neighborsSet(createNeighborSet(peerBean().serverPeerAddress()));
+		final Message message = createMessage(remotePeer, RPC.Commands.PING_DISCOVER.getNr(), Type.REQUEST);
+		//message.neighborsSet(createNeighborSet(peerBean().serverPeerAddress()));
 		return message;
 	}
 
@@ -192,7 +191,7 @@ public class PingRPC extends DispatchHandler {
 
 	@Override
 	public void handleResponse(Responder r, final Message message, final boolean sign, KCP kcp, ChannelSender sender) throws Exception {
-		if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
+		/*if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
 				|| message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3
 				|| message.type() == Type.REQUEST_4) && message.command() == RPC.Commands.PING
 				.getNr())) {
@@ -228,7 +227,7 @@ public class PingRPC extends DispatchHandler {
 			// not
 			// reply.
 			if (message.sender().peerId().equals(peerBean().serverPeerAddress().peerId())
-					&& message.recipient().peerId().equals(Number160.ZERO)) {
+					&& message.recipient().peerId().equals(Number256.ZERO)) {
 				LOG.warn("Don't respond. We are on the same peer, you should make this call.");
 				return;
 			}
@@ -269,7 +268,7 @@ public class PingRPC extends DispatchHandler {
 				responseMessage = message;
 
 		}
-		r.response(responseMessage);
+		r.response(responseMessage);*/
 	}
 
 	public void addPeerReachableListener(PeerReachable peerReachable) {

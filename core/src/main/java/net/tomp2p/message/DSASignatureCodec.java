@@ -20,7 +20,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -31,9 +31,9 @@ import net.tomp2p.utils.Utils;
  */
 public class DSASignatureCodec implements SignatureCodec {
 	
-	public static final int SIGNATURE_SIZE = 2 * Number160.BYTE_ARRAY_SIZE;
-	private final Number160 number1;
-	private final Number160 number2;
+	public static final int SIGNATURE_SIZE = 2 * Number256.BYTE_ARRAY_SIZE;
+	private final Number256 number1;
+	private final Number256 number2;
 
 	/**
 	 * Create a signature from an already encoded signature data
@@ -72,14 +72,14 @@ public class DSASignatureCodec implements SignatureCodec {
 	 * @param buf the buffer holding the signature at the next reader index
 	 */
 	public DSASignatureCodec(ByteBuf buf) {
-		byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
+		byte[] me = new byte[Number256.BYTE_ARRAY_SIZE];
 		buf.readBytes(me);
-		number1 = new Number160(me);
+		number1 = new Number256(me);
 		buf.readBytes(me);
-		number2 = new Number160(me);
+		number2 = new Number256(me);
 	}
 
-	private Number160 encodeNumber(byte[] encodedData, int offset, int len) throws IOException {
+	private Number256 encodeNumber(byte[] encodedData, int offset, int len) throws IOException {
 		if (len > 20) {
 			int bias = len - 20;
 			for (int i = 0; i < bias; i++) {
@@ -87,9 +87,9 @@ public class DSASignatureCodec implements SignatureCodec {
 					throw new IOException("we did not expect such a large number, it should be 160bit");
 				}
 			}
-			return new Number160(encodedData, offset + bias, 20);
+			return new Number256(encodedData, offset + bias, 20);
 		} else {
-			return new Number160(encodedData, offset, len);
+			return new Number256(encodedData, offset, len);
 		}
 	}
 
@@ -117,11 +117,11 @@ public class DSASignatureCodec implements SignatureCodec {
 		return this;
 	}
 
-	public Number160 number1() {
+	public Number256 number1() {
 		return number1;
 	}
 
-	public Number160 number2() {
+	public Number256 number2() {
 		return number2;
 	}
 

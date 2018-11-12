@@ -2,7 +2,7 @@ package net.tomp2p.p2p;
 
 import java.util.Comparator;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatistic;
 
@@ -28,7 +28,7 @@ import net.tomp2p.peers.PeerStatistic;
  */
 public class RTTPeerStatisticComparator implements PeerStatisticComparator {
     @Override
-    public Comparator<PeerStatistic> getComparator(final Number160 location) {
+    public Comparator<PeerStatistic> getComparator(final Number256 location) {
         return new Comparator<PeerStatistic>() {
             @Override
             public int compare(PeerStatistic o1, PeerStatistic o2) {

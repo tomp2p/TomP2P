@@ -21,12 +21,12 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 
-import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -44,16 +44,15 @@ import net.tomp2p.utils.Utils;
  * it does not matter if its not). The format looks as follows:
  * 
  * <pre>
- * 20 bytes - Number160
+ *
  * 2 bytes - Header 
  *  - 1 byte options: IPv6, firewalled UDP, is relayed
  *  - 1 byte relays:
  *    - first 3 bits: number of relays (max 5.)
  *    - second 5 bits: if the 5 relays are IPv6 (bit set) or not (no bit set)
- * 2 bytes - UDP port
- * 4 or 16 bytes - Inet Address
- * 0-5 relays:
- *  - 2 bytes - TCP port
+ * 32 bytes - Number256
+ * 4 or 16 bytes - Inet Address + 2 bytes - UDP port
+ * 0-7 relays:
  *  - 2 bytes - UDP port
  *  - 4 or 16 bytes - Inet Address
  * </pre>
@@ -68,32 +67,29 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 	
 	private static final long serialVersionUID = 8483270473601620720L;
 	
-	public static final int HEADER_SIZE = 2;
-	public static final int MIN_SIZE = HEADER_SIZE + Number160.BYTE_ARRAY_SIZE; //22
-	public static final int MIN_SIZE_HEADER = MIN_SIZE + PeerSocketAddress.PORT_SIZE; //24
-    public static final int MAX_SIZE = MIN_SIZE + (PeerSocket4Address.SIZE + PeerSocket6Address.SIZE) + (7 * PeerSocket6Address.SIZE); //172
+	public static final int HEADER_SIZE = 2; //MIN_SIZE -> header == 0x0000;
+	public static final int MAX_SIZE = HEADER_SIZE + Number256.BYTE_ARRAY_SIZE + (PeerSocket4Address.SIZE + PeerSocket6Address.SIZE) + (7 * PeerSocket6Address.SIZE); //184
+    public static final int MAX_SIZE_NO_PEER_ID = HEADER_SIZE + (PeerSocket4Address.SIZE + PeerSocket6Address.SIZE) + (7 * PeerSocket6Address.SIZE); //152
     
     //1 Byte - 8 bits
-    private static final int IPV4 = 0x1;					// xxxxxxxx xxxxxxx1 //peeraddress can have both, IPv4 and IPv6
+    private static final int IPV4 = 0x1;					// xxxxxxxx xxxxxxx1 - peeraddress can have both, IPv4 and IPv6
     private static final int IPV6 = 0x2;					// xxxxxxxx xxxxxx1x
-    														// xxxxxxxx xxxxxx00 // no IP
+    														// xxxxxxxx xxxxxx00 - no IP
 
     private static final int REACHABLE4_UDP = 0x4;			// xxxxxxxx xxxxx1xx
     private static final int REACHABLE6_UDP = 0x8;			// xxxxxxxx xxxx1xxx
-    														// xxxxxxxx xxxx00xx - unreachable
+    														// xxxxxxxx xxxx00xx - unreachable, only with relay
     
-    private static final int SKIP_IP = 0x10;				// xxxxxxxx xxx1xxxx
+    private static final int SKIP_PEER_ID = 0x10;			// xxxxxxxx xxx0xxxx - 1 if peer Id not skipped
     
-    private static final int RELAY_SIZE_MASK = 0xe0;		// xxxxxxxx 111xxxxx
+    private static final int RELAY_SIZE_MASK = 0xe0;		// xxxxxxxx 111xxxxx - (0-7) relays
     
     //next 1 Byte - 8 bits - we can have at most 7 relays
     
-    private static final int PORT_PRESERVIVG = 0x100;			// xxxxxxx1 xxxxxxxx
-    private static final int RELAY_TYPE_MASK = 0xfe00;		// 1111111x xxxxxxxx
+    private static final int PORT_PRESERVIVG = 0x100;		// xxxxxxx1 xxxxxxxx - if holp punching works if unreachable
+    private static final int RELAY_IP_TYPE_MASK = 0xfe00;	// 1111111x xxxxxxxx - 0 for IPv4, 1 for IPv6
     
 
-    @Getter @Wither private final int ipInternalNetworkPrefix;
-    //
     @Getter @Wither private final PeerSocket4Address ipv4Socket;
     @Getter @Wither private final PeerSocket6Address ipv6Socket;
     
@@ -105,11 +101,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     @Getter @Wither private final boolean reachable6UDP;
     
     // network information
-    @Getter @Wither private final Number160 peerId;
+    @Getter @Wither private final Number256 peerId;
     // connection information
     @Getter @Wither private final int relaySize;
     @Getter @Wither private final boolean portPreserving;
-    @Getter @Wither private final boolean skipIP;
+    @Getter @Wither private final boolean skipPeerId;
     
     @Wither private final BitSet relayTypes;
 
@@ -126,10 +122,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     public static final Collection<PeerSocketAddress> EMPTY_PEER_SOCKET_ADDRESSES = Collections.emptySet();
     public static final byte EMPTY_RELAY_TYPES = 0;
     
-    public static final boolean preferIPv6Addresses;
+    public static final boolean PREFER_IPV6_ADDRESSES;
     
     static {
-    	preferIPv6Addresses = "true".equalsIgnoreCase(System.getProperty("java.net.preferIPv6Addresses"));
+    	PREFER_IPV6_ADDRESSES = "true".equalsIgnoreCase(System.getProperty("java.net.PREFER_IPV6_ADDRESSES"));
     }
     
     //Change lomboks default behavior
@@ -257,8 +253,24 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
     public static Pair<PeerAddress, Integer> decode(final int header, final byte[] array, int offset) {
     	final PeerAddressBuilder builder = new PeerAddressBuilder();
-    	
     	decodeHeader(builder, header);
+
+    	if(!builder.skipPeerId) {
+            final Pair<Number256, Integer> pair = Number256.decode(array, offset);
+            builder.peerId(pair.element0());
+            offset = pair.element1();
+        }
+
+        if(builder.ipv4Flag) {
+            final Pair<PeerSocket4Address, Integer> pair = PeerSocket4Address.decode(array, offset);
+            builder.ipv4Socket(pair.element0());
+            offset = pair.element1();
+        }
+        if(builder.ipv6Flag) {
+            final Pair<PeerSocket6Address, Integer> pair;
+            builder.ipv6Socket((pair = PeerSocket6Address.decode(array, offset)).element0());
+            offset = pair.element1();
+        }
 			
 		//relays
     	for(int i = 0; i<builder.relaySize; i++) {
@@ -270,31 +282,29 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 			}
 			offset = pair.element1();
 		}
-    	
-    	if(builder.ipv4Flag) {
-    		final Pair<PeerSocket4Address, Integer> pair;
-			builder.ipv4Socket((pair = PeerSocket4Address.decode(array, offset, builder.skipIP)).element0());
-			offset = pair.element1();
-		}
-		if(builder.ipv6Flag) {
-			final Pair<PeerSocket6Address, Integer> pair;
-			builder.ipv6Socket((pair = PeerSocket6Address.decode(array, offset, builder.skipIP)).element0());
-			offset = pair.element1();
-		}
-    	
-		final Pair<Number160, Integer> pair;
-		final PeerAddress peerAddress = builder.peerId((pair = Number160.decode(array, offset)).element0())
-			.build();
-		return new Pair<PeerAddress, Integer>(peerAddress, pair.element1());
+
+		return new Pair<>(builder.build(), offset);
     }
 
-    public static PeerAddress decode(final ByteBuf buf) {
-    	final int header = buf.readUnsignedShort();
+    public static PeerAddress decode(final ByteBuffer buf) {
+    	final int header = 0x0000ffff & buf.getShort();
     	return decode(header, buf);
     }
-    public static PeerAddress decode(final int header, final ByteBuf buf) {
+    public static PeerAddress decode(final int header, final ByteBuffer buf) {
     	final PeerAddressBuilder builder = new PeerAddressBuilder();
 		decodeHeader(builder, header);
+
+        if(!builder.skipPeerId) {
+            final Number256 peerId = Number256.decode(buf);
+            builder.peerId(peerId);
+        }
+
+        if(builder.ipv4Flag) {
+            builder.ipv4Socket(PeerSocket4Address.decode(buf));
+        }
+        if(builder.ipv6Flag) {
+            builder.ipv6Socket(PeerSocket6Address.decode(buf));
+        }
 		
 		//relays
 		for(int i=0;i<builder.relaySize;i++) {
@@ -304,27 +314,20 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 				builder.relay(PeerSocket4Address.decode(buf), i);
 			}
 		}
-		if(builder.ipv4Flag) {
-			builder.ipv4Socket(PeerSocket4Address.decode(buf, builder.skipIP));
-		}
-		if(builder.ipv6Flag) {
-			builder.ipv6Socket(PeerSocket6Address.decode(buf, builder.skipIP));
-		}
-		return builder
-				.peerId(Number160.decode(buf))
-				.build();
+
+		return builder.build();
     }
 
     //we have a 2 byte header
     private static PeerAddressBuilder decodeHeader(final PeerAddressBuilder builder, final int header) {
-    	final byte[] tmp = new byte[]{(byte) ((header & RELAY_TYPE_MASK) >>> 9)};
+    	final byte[] tmp = new byte[]{(byte) ((header & 0x0000ffff) >>> 9)};
     	builder.ipv4Flag((header & IPV4) == IPV4)
 			.ipv6Flag((header & IPV6) == IPV6)
 			.reachable4UDP((header & REACHABLE4_UDP) == REACHABLE4_UDP)
     		.reachable6UDP((header & REACHABLE6_UDP) == REACHABLE6_UDP)
+            .skipPeerId((header & SKIP_PEER_ID) == SKIP_PEER_ID)
     		.relaySize((header & RELAY_SIZE_MASK) >>> 5)
 			.portPreserving((header & PORT_PRESERVIVG) == PORT_PRESERVIVG)
-			.skipIP((header & SKIP_IP) == SKIP_IP)
 			.relayTypes(BitSet.valueOf(tmp));
 		return builder;
 	}
@@ -333,16 +336,23 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The size of the serialized peer address, calculated using header information only
      */
     public int size() {
-        int size = HEADER_SIZE + Number160.BYTE_ARRAY_SIZE;
+        int size = HEADER_SIZE;
+
+        if(!skipPeerId) {
+            size += Number256.BYTE_ARRAY_SIZE;
+        }
+
+        if(ipv4Flag) {
+            size += PeerSocket4Address.SIZE;
+        }
+        if(ipv6Flag) {
+            size += PeerSocket6Address.SIZE;
+        }
+
         for(int i=0;i<relaySize;i++) {
 			size += relayTypes.get(i) ? PeerSocket6Address.SIZE : PeerSocket4Address.SIZE;
 		}
-        if(ipv4Flag) {
-        	size += skipIP ? PeerSocketAddress.PORT_SIZE : PeerSocket4Address.SIZE;
-		}
-		if(ipv6Flag) {
-			size += skipIP ? PeerSocketAddress.PORT_SIZE : PeerSocket6Address.SIZE;
-		}
+
         return size;
     }
     
@@ -371,38 +381,44 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public int encode(final byte[] array, int offset) {
     	offset = Utils.shortToByteArray(encodeHeader(), array, offset);
+
+    	if(!skipPeerId) {
+            offset = peerId.encode(array, offset);
+        }
+
+        if(ipv4Flag) {
+            offset = ipv4Socket.encode(array, offset);
+        }
+        if(ipv6Flag) {
+            offset = ipv6Socket.encode(array, offset);
+        }
     	
     	for(final PeerSocketAddress relay:relays()) {
     		offset = relay.encode(array, offset);
     	}
     	
-    	if(ipv4Flag) {
-    		offset = ipv4Socket.encode(array, offset, skipIP);
-		}
-		if(ipv6Flag) {
-			offset = ipv6Socket.encode(array, offset, skipIP);
-		}
-    	
-    	offset = peerId.encode(array, offset);
-        return offset;
+    	return offset;
     }
     
-    public PeerAddress encode(final ByteBuf buf) {
+    public PeerAddress encode(final ByteBuffer buf) {
     	final int header = encodeHeader() ;
-    	buf.writeShort(header);
+    	buf.putShort((short)header);
+
+        if(!skipPeerId) {
+            peerId.encode(buf);
+        }
+
+        if(ipv4Flag) {
+            ipv4Socket.encode(buf);
+        }
+        if(ipv6Flag) {
+            ipv6Socket.encode(buf);
+        }
     	
     	for(final PeerSocketAddress relay:relays()) {
     		relay.encode(buf);
     	}
-    	
-    	if(ipv4Flag) {
-    		ipv4Socket.encode(buf, skipIP);
-		}
-		if(ipv6Flag) {
-			ipv6Socket.encode(buf, skipIP);
-		}
-    	
-    	peerId.encode(buf);
+
         return this;
     }
     
@@ -411,10 +427,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     			| (ipv6Flag ? IPV6 : 0)
 				| (reachable4UDP ? REACHABLE4_UDP : 0)
 				| (reachable6UDP ? REACHABLE6_UDP : 0)
+                | (skipPeerId ? SKIP_PEER_ID : 0)
 				| ((relaySize << 5) & RELAY_SIZE_MASK)
 				| (portPreserving ? PORT_PRESERVIVG : 0)
-				| (skipIP ? SKIP_IP : 0)
-				| ((relayTypes() << 9) & RELAY_TYPE_MASK);
+				| ((relayTypes() << 9) & 0x0000ffff);
 	}
     
 
@@ -422,37 +438,34 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     @Override
     public String toString() {
 		StringBuilder sb = new StringBuilder("paddr[");
-		
-		if(ipv4Flag) {
-			sb.append("4:");
-			sb.append(ipv4Socket);
-    		if(!reachable4UDP) {
-    			sb.append('!');
-    		}
-		}
-		if(ipv6Flag) {
-			sb.append("6:");
+
+        if(!skipPeerId) {
+            sb.append(peerId);
+            sb.append('@');
+        }
+
+		sb.append("4");
+    	sb.append(reachable4UDP ? ':' : '!');
+    	if(ipv4Flag) {
+            sb.append(ipv4Socket);
+        }
+
+		sb.append("6");
+        sb.append(reachable6UDP ? ':' : '!');
+        if(ipv6Flag) {
 			sb.append(ipv6Socket);
-			if(!reachable6UDP) {
-    			sb.append('!');
-    		}
 		}
-		sb.append('{');
 		if(portPreserving) {
 			sb.append('*');
 		}
-		if(skipIP) {
-			sb.append('s');
-		}
+
 		sb.append('}');
 		
 		sb.append('r').append(relaySize).append('(');
 		for(final PeerSocketAddress relay:relays()) {
 			sb.append(relay);
     	}
-		sb.append(")-");
-    	
-		sb.append(peerId);
+		sb.append(")");
     	
 		return sb.append(']').toString();
     }
@@ -482,26 +495,26 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
 	public PeerAddress withIPSocket(PeerSocketAddress ps) {
 		if(ps instanceof PeerSocket4Address) {
-			return this.withIpv4Socket((PeerSocket4Address) ps);
+			return this.withIpv4Socket((PeerSocket4Address) ps).withIpv4Flag(true);
 		} else {
-			return this.withIpv6Socket((PeerSocket6Address) ps);
+			return this.withIpv6Socket((PeerSocket6Address) ps).withIpv6Flag(true);
 		}
 	}
 	
-	public static PeerAddress create(final Number160 peerId) {
+	public static PeerAddress create(final Number256 peerId) {
 		return builder().peerId(peerId).build();
 	}
 	
-	public static PeerAddress create(final Number160 peerId, String host, int udpPort) throws UnknownHostException {
+	public static PeerAddress create(final Number256 peerId, String host, int udpPort) throws UnknownHostException {
 		return create(peerId, InetAddress.getByName(host), udpPort);
 	}
 	
 	
-	public static PeerAddress create(final Number160 peerId, InetSocketAddress inetSocket) {
+	public static PeerAddress create(final Number256 peerId, InetSocketAddress inetSocket) {
 		return create(peerId, inetSocket.getAddress(), inetSocket.getPort()); 
 	}
 	
-	public static PeerAddress create(final Number160 peerId, InetAddress inet, int udpPort) {
+	public static PeerAddress create(final Number256 peerId, InetAddress inet, int udpPort) {
 		if(inet instanceof Inet4Address) {
 			final PeerSocket4Address ps4a = PeerSocket4Address.builder()
 					.ipv4(IP.fromInet4Address((Inet4Address)inet))
@@ -523,47 +536,44 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 		}
 	}
 
-	public InetSocketAddress createUDPSocket(final PeerAddress other) {
-		
-		final boolean canIPv6 = ipv6Flag && other.ipv6Flag;
-		final boolean canIPv4 = ipv4Flag && other.ipv4Flag;
-		if((preferIPv6Addresses && canIPv6) || 
-				(!canIPv4 && canIPv6)) {
+	public InetSocketAddress createSocket(final PeerAddress other) {
+		final boolean canIPv6 = ipv6Flag && other.reachable6UDP;
+		final boolean canIPv4 = ipv4Flag && other.reachable4UDP;
+		if(PREFER_IPV6_ADDRESSES && canIPv6) {
 			if(ipv6Socket == null) {
 				throw new RuntimeException("Flag indicates that ipv6 is present, but its not");
 			}
-			//check if reachable
 			return ipv6Socket.createUDPSocket();
 		} else if(canIPv4) {
-			if(ipv4Socket == null) {
-				throw new RuntimeException("Flag indicates that ipv4 is present, but its not");
-			}
-			//check if reachable
-			return ipv4Socket.createUDPSocket();
-		}
-		else {
-			throw new RuntimeException("No matching protocal found");
-		}
-	}
-
-	public InetSocketAddress createSocket(final PeerAddress other, final int port) {
-		final boolean canIPv6 = ipv6Flag && other.ipv6Flag;
-		final boolean canIPv4 = ipv4Flag && other.ipv4Flag;
-		if((preferIPv6Addresses && canIPv6) || 
-				(!canIPv4 && canIPv6)) {
-			if(ipv6Socket == null) {
-				throw new RuntimeException("Flag indicates that ipv6 is present, but its not");
-			}
-			return ipv6Socket.createSocket(port);
-		} else if(canIPv4) {
-			if(ipv4Socket == null) {
-				throw new RuntimeException("Flag indicates that ipv4 is present, but its not");
-			}
-			return ipv4Socket.createSocket(port);
-		}
-		else {
-			throw new RuntimeException("No matching protocal found");
-		}
+            if(ipv4Socket == null) {
+                throw new RuntimeException("Flag indicates that ipv4 is present, but its not");
+            }
+            return ipv4Socket.createUDPSocket();
+        } else if(canIPv6) {
+            if(ipv6Socket == null) {
+                throw new RuntimeException("Flag indicates that ipv6 is present, but its not");
+            }
+            return ipv6Socket.createUDPSocket();
+        }
+		else if(relaySize > 0) { //other is not reachabel, use relay
+            //TODO: pickrandom relay
+            for (PeerSocketAddress psa : relays()) {
+                if (PREFER_IPV6_ADDRESSES && ipv6Flag) {
+                    if (psa instanceof PeerSocket6Address) {
+                        return psa.createUDPSocket();
+                    }
+                } else if (ipv4Flag) {
+                    if (psa instanceof PeerSocket4Address) {
+                        return psa.createUDPSocket();
+                    }
+                } else if (ipv6Flag) {
+                    if (psa instanceof PeerSocket6Address) {
+                        return psa.createUDPSocket();
+                    }
+                }
+            }
+        }
+        return null; //No matching address found
 	}
 	
 	/*private int prefix4(InetAddress inetAddress) {

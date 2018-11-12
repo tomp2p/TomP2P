@@ -2,9 +2,6 @@ package net.tomp2p.rpc;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
@@ -17,21 +14,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import net.tomp2p.peers.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import net.tomp2p.connection.SignatureFactory;
-import net.tomp2p.message.Decoder;
-import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.peers.PeerStatistic;
+import net.tomp2p.peers.Number256;
 
 public class RelayUtils {
 
@@ -44,7 +35,7 @@ public class RelayUtils {
 		// only static methods
 	}
 
-	public static List<Map<Number160, PeerStatistic>> unflatten(Collection<PeerAddress> map, PeerAddress sender) {
+	public static List<Map<Number256, PeerStatistic>> unflatten(Collection<PeerAddress> map, PeerAddress sender) {
 		PeerMapConfiguration peerMapConfiguration = new PeerMapConfiguration(sender.peerId());
 		PeerMap peerMap = new PeerMap(peerMapConfiguration);
 		for (PeerAddress peerAddress : map) {
@@ -54,9 +45,9 @@ public class RelayUtils {
 		return peerMap.peerMapVerified();
 	}
 
-	public static Collection<PeerAddress> flatten(List<Map<Number160, PeerStatistic>> maps) {
+	public static Collection<PeerAddress> flatten(List<Map<Number256, PeerStatistic>> maps) {
 		Collection<PeerAddress> result = new ArrayList<PeerAddress>();
-		for (Map<Number160, PeerStatistic> map : maps) {
+		for (Map<Number256, PeerStatistic> map : maps) {
 			for (PeerStatistic peerStatistic : map.values()) {
 				result.add(peerStatistic.peerAddress());
 			}
@@ -70,22 +61,20 @@ public class RelayUtils {
 	 * buffer.
 	 * 
 	 * @param messages the messages to compose
-	 * @param signatureFactory the signature factory, necessary for encoding the messages
 	 * @return a single buffer holding all messages of the list
 	 */
-	public static ByteBuf composeMessageBuffer(List<Message> messages, SignatureFactory signatureFactory) {
+	public static ByteBuf composeMessageBuffer(List<Message> messages) {
 		ByteBuf buffer = Unpooled.buffer();
-		for (Message msg : messages) {
+		/*for (Message msg : messages) {
 			try {
-				msg.restoreContentReferences();
-				byte[] encoded = encodeMessage(msg, signatureFactory);
+				byte[] encoded = encodeMessage(msg);
 
 				buffer.writeInt(encoded.length);
 				buffer.writeBytes(encoded);
 			} catch (Exception e) {
 				LOG.error("Cannot encode the buffered message. Skip it.", e);
 			}
-		}
+		}*/
 		return buffer;
 	}
 
@@ -98,20 +87,19 @@ public class RelayUtils {
 	 * @param messageBuffer the message buffer
 	 * @return a list of buffers
 	 */
-	public static List<Message> decomposeCompositeBuffer(ByteBuf messageBuffer, InetSocketAddress recipient, InetSocketAddress sender,
-			SignatureFactory signatureFactory) {
+	public static List<Message> decomposeCompositeBuffer(ByteBuf messageBuffer, InetSocketAddress recipient, InetSocketAddress sender) {
 		List<Message> messages = new ArrayList<Message>();
-		while (messageBuffer.readableBytes() > 0) {
+		/*while (messageBuffer.readableBytes() > 0) {
 			int size = messageBuffer.readInt();
 			ByteBuf message = messageBuffer.readBytes(size);
 			
 			try {
-				Message decodedMessage = decodeMessage(message, recipient, sender, signatureFactory);
+				Message decodedMessage = decodeMessage(message, recipient, sender);
 				messages.add(decodedMessage);
 			} catch (Exception e) {
 				LOG.error("Cannot decode buffered message. Skip it.", e);
 			}
-		}
+		}*/
 
 		return messages;
 	}
@@ -119,8 +107,8 @@ public class RelayUtils {
 	/**
 	 * Encodes a message into a buffer, such that it can be used as a message payload (piggybacked), stored, etc.
 	 */
-	public static byte[] encodeMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
-		Encoder e = new Encoder(signatureFactory);
+	/*public static byte[] encodeMessage(Message message) throws InvalidKeyException, SignatureException, IOException {
+		Encoder e = new Encoder();
 		CompositeByteBuf buf = Unpooled.compositeBuffer();
 		e.write(buf, message, message.receivedSignature());
 		byte[] me = new byte[buf.readableBytes()];
@@ -129,39 +117,36 @@ public class RelayUtils {
 		return me;
 	}
 
-	/**
-	 * Decodes a message which was encoded using {{@link #encodeMessage(Message, SignatureFactory)}}.
-	 */
-	public static Message decodeMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
+
+	public static Message decodeMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender)
 	        throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, IOException {
-		Decoder d = new Decoder(signatureFactory);
+		Decoder d = new Decoder();
 		final int readerBefore = buf.readerIndex();
-		d.decodeHeader(buf, recipient, sender);
+		d.decode(buf, recipient, sender);
 		final boolean donePayload = d.decodePayload(buf);
 		d.decodeSignature(buf, readerBefore, donePayload);
 		return d.message();
-	}
-	
+	}*/
+
 	/**
 	 * Basically does the same as
 	 * in addition checks that the relay peers of the decoded message are set correctly
 	 */
-	public static Message decodeRelayedMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender,
-			SignatureFactory signatureFactory) throws InvalidKeyException, NoSuchAlgorithmException,
+	/*public static Message decodeRelayedMessage(ByteBuf buf, InetSocketAddress recipient, InetSocketAddress sender) throws InvalidKeyException, NoSuchAlgorithmException,
 			InvalidKeySpecException, SignatureException, IOException {
-		final Message decodedMessage = decodeMessage(buf, recipient, sender, signatureFactory);
+		final Message decodedMessage = decodeMessage(buf, recipient, sender);
 		return decodedMessage;
-	}
+	}*/
 	
 	/**
 	 * Calculates the size of the message
 	 */
-	public static int getMessageSize(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	/*public static int getMessageSize(Message message) throws InvalidKeyException, SignatureException, IOException {
 		// TODO instead of real encoding, calculate it using the content references
-		int size = encodeMessage(message, signatureFactory).length;
+		int size = encodeMessage(message).length;
 		message.restoreContentReferences();
 		return size;
-	}
+	}*/
 
 
 	

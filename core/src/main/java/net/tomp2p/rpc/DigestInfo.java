@@ -20,8 +20,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.Number256;
 
 /**
  * Calculates or sets a global hash. The digest is used in two places: for routing, where a message needs to have a
@@ -31,13 +30,13 @@ import net.tomp2p.peers.Number640;
  * @author Thomas Bocek
  */
 public class DigestInfo {
-    private volatile Number160 keyDigest = null;
+    private volatile Number256 keyDigest = null;
 
-    private volatile Number160 contentDigest = null;
+    private volatile Number256 contentDigest = null;
 
     private volatile int size = -1;
 
-    private final NavigableMap<Number640, Collection<Number160>> mapDigests = new TreeMap<Number640, Collection<Number160>>();
+    private final NavigableMap<Object, Collection<Number256>> mapDigests = new TreeMap<Object, Collection<Number256>>();
 
     /**
      * Empty constructor is used to add the hashes to the list.
@@ -66,7 +65,7 @@ public class DigestInfo {
      * @param size
      *            The number of entries
      */
-    public DigestInfo(final Number160 keyDigest, final Number160 contentDigest, final int size) {
+    public DigestInfo(final Number256 keyDigest, final Number256 contentDigest, final int size) {
         this.keyDigest = keyDigest;
         this.contentDigest = contentDigest;
         this.size = size;
@@ -76,7 +75,7 @@ public class DigestInfo {
      * @return Returns or calculates the global key hash. The global key hash will be calculated if the empty
      *         constructor is used.
      */
-    public Number160 keyDigest() {
+    public Number256 keyDigest() {
         if (keyDigest == null) {
             process();
         }
@@ -87,7 +86,7 @@ public class DigestInfo {
      * @return Returns or calculates the global content hash. The global content hash will be calculated if the empty
      *         constructor is used.
      */
-    public Number160 contentDigest() {
+    public Number256 contentDigest() {
         if (contentDigest == null) {
             process();
         }
@@ -98,14 +97,14 @@ public class DigestInfo {
      * Calculates the digest.
      */
     private void process() {
-        Number160 hashKey = Number160.ZERO;
-        Number160 hashContent = Number160.ZERO;
-        for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            hashKey = hashKey.xor(entry.getKey().locationKey());
-            hashKey = hashKey.xor(entry.getKey().domainKey());
-            hashKey = hashKey.xor(entry.getKey().contentKey());
-            hashKey = hashKey.xor(entry.getKey().versionKey());
-            for (Number160 basedOn: entry.getValue()) {
+        Number256 hashKey = Number256.ZERO;
+        Number256 hashContent = Number256.ZERO;
+        for (Map.Entry<Object, Collection<Number256>> entry : mapDigests.entrySet()) {
+            //hashKey = hashKey.xor(entry.getKey().locationKey());
+            //hashKey = hashKey.xor(entry.getKey().domainKey());
+            //hashKey = hashKey.xor(entry.getKey().contentKey());
+            //hashKey = hashKey.xor(entry.getKey().versionKey());
+            for (Number256 basedOn: entry.getValue()) {
             	hashContent = hashContent.xor(basedOn);
             }
         }
@@ -113,7 +112,7 @@ public class DigestInfo {
         contentDigest = hashContent;
     }
     
-    public NavigableMap<Number640, Collection<Number160>> mapDigests() {
+    public NavigableMap<Object, Collection<Number256>> mapDigests() {
     	return mapDigests;
     }
 
@@ -125,14 +124,14 @@ public class DigestInfo {
      * @param basedOnSet
      *            The hash of the content
      */
-    public void put(final Number640 key, final Collection<Number160> basedOnSet) {
+    public void put(final Object key, final Collection<Number256> basedOnSet) {
         mapDigests.put(key, basedOnSet);
     }
 
     /**
      * @return The list of hashes
      */
-    public NavigableMap<Number640, Collection<Number160>> digests() {
+    public NavigableMap<Object, Collection<Number256>> digests() {
         return mapDigests;
     }
 

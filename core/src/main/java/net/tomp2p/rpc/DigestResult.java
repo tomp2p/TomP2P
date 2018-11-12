@@ -20,22 +20,21 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.NavigableMap;
 
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 public class DigestResult {
-    final private SimpleBloomFilter<Number160> contentKeyBloomFilter;
-    final private SimpleBloomFilter<Number160> versionKeyBloomFilter;
-    final private SimpleBloomFilter<Number160> contentBloomFilter;
+    final private SimpleBloomFilter<Number256> contentKeyBloomFilter;
+    final private SimpleBloomFilter<Number256> versionKeyBloomFilter;
+    final private SimpleBloomFilter<Number256> contentBloomFilter;
 
-    final private NavigableMap<Number640, Collection<Number160>> keyDigest;
+    final private NavigableMap<Object, Collection<Number256>> keyDigest;
     
-    final private Map<Number640, Data> dataMap;
+    final private Map<Object, Data> dataMap;
 
-    public DigestResult(SimpleBloomFilter<Number160> contentKeyBloomFilter, SimpleBloomFilter<Number160> versionKeyBloomFilter, 
-    		SimpleBloomFilter<Number160> contentBloomFilter) {
+    public DigestResult(SimpleBloomFilter<Number256> contentKeyBloomFilter, SimpleBloomFilter<Number256> versionKeyBloomFilter,
+                        SimpleBloomFilter<Number256> contentBloomFilter) {
         this.contentKeyBloomFilter = contentKeyBloomFilter;
         this.versionKeyBloomFilter = versionKeyBloomFilter;
         this.contentBloomFilter = contentBloomFilter;
@@ -43,7 +42,7 @@ public class DigestResult {
         this.dataMap = null;
     }
 
-    public DigestResult(NavigableMap<Number640, Collection<Number160>> keyDigest) {
+    public DigestResult(NavigableMap<Object, Collection<Number256>> keyDigest) {
         this.keyDigest = keyDigest;
         this.contentKeyBloomFilter = null;
         this.versionKeyBloomFilter = null;
@@ -51,7 +50,7 @@ public class DigestResult {
         this.dataMap = null;
     }
 
-    public DigestResult(Map<Number640, Data> dataMap) {
+    public DigestResult(Map<Object, Data> dataMap) {
 	    this.dataMap = dataMap;
 	    this.keyDigest = null;
 	    this.contentKeyBloomFilter = null;
@@ -59,23 +58,23 @@ public class DigestResult {
         this.contentBloomFilter = null;
     }
 
-	public SimpleBloomFilter<Number160> contentKeyBloomFilter() {
+	public SimpleBloomFilter<Number256> contentKeyBloomFilter() {
         return contentKeyBloomFilter;
     }
 
-    public SimpleBloomFilter<Number160> versionKeyBloomFilter() {
+    public SimpleBloomFilter<Number256> versionKeyBloomFilter() {
         return versionKeyBloomFilter;
     }
     
-    public SimpleBloomFilter<Number160> contentBloomFilter() {
+    public SimpleBloomFilter<Number256> contentBloomFilter() {
         return contentBloomFilter;
     }
 
-    public NavigableMap<Number640, Collection<Number160>> keyDigest() {
+    public NavigableMap<Object, Collection<Number256>> keyDigest() {
         return keyDigest;
     }
 
-    public Map<Number640, Data> dataMap() {
+    public Map<Object, Data> dataMap() {
         return dataMap;
     }
     

@@ -22,7 +22,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.p2p.PostRoutingFilter;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerMapFilter;
 
 /**
@@ -34,11 +34,11 @@ import net.tomp2p.peers.PeerMapFilter;
  */
 public interface BasicBuilder<K> extends ConnectionConfiguration, Builder {
 
-    public Number160 locationKey();
+    public Number256 locationKey();
 
-    public Number160 domainKey();
+    public Number256 domainKey();
 
-    public K domainKey(Number160 domainKey);
+    public K domainKey(Number256 domainKey);
 
     public RoutingConfiguration routingConfiguration();
 

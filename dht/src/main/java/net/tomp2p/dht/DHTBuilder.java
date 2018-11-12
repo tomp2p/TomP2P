@@ -22,7 +22,6 @@ import java.util.Collection;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.p2p.PostRoutingFilter;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
@@ -55,7 +54,6 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
 
     protected RequestP2PConfiguration requestP2PConfiguration;
 
-    protected FutureChannelCreator futureChannelCreator;
 
     // private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
     // private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
@@ -138,23 +136,6 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      */
     public K requestP2PConfiguration(final RequestP2PConfiguration requestP2PConfiguration) {
         this.requestP2PConfiguration = requestP2PConfiguration;
-        return self;
-    }
-
-    /**
-     * @return The future of the created channel
-     */
-    public FutureChannelCreator futureChannelCreator() {
-        return futureChannelCreator;
-    }
-
-    /**
-     * @param futureChannelCreator
-     *            The future of the created channel
-     * @return This object
-     */
-    public K futureChannelCreator(FutureChannelCreator futureChannelCreator) {
-        this.futureChannelCreator = futureChannelCreator;
         return self;
     }
 
@@ -307,11 +288,6 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         }
         int size = peer.peer().peerBean().peerMap().size() + 1;
         requestP2PConfiguration = requestP2PConfiguration.adjustMinimumResult(size);
-        if (futureChannelCreator == null || 
-        		(futureChannelCreator.channelCreator()!=null && futureChannelCreator.channelCreator().isShutdown())) {
-            futureChannelCreator = peer.peer().connectionBean().reservation()
-                    .create(routingConfiguration, requestP2PConfiguration, this);
-        }
     }
 
     public RoutingBuilder createBuilder(RequestP2PConfiguration requestP2PConfiguration,

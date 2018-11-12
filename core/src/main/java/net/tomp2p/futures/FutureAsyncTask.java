@@ -18,7 +18,7 @@ package net.tomp2p.futures;
 
 import java.util.Map;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
@@ -34,7 +34,7 @@ import net.tomp2p.storage.Data;
 public class FutureAsyncTask extends BaseFutureImpl<FutureAsyncTask> {
     private final PeerAddress remotePeer;
 
-    private Map<Number160, Data> dataMap;
+    private Map<Number256, Data> dataMap;
 
     /**
      * Constructor
@@ -53,7 +53,7 @@ public class FutureAsyncTask extends BaseFutureImpl<FutureAsyncTask> {
      * @param dataMap
      *            The result from the remote peer
      */
-    public FutureAsyncTask dataMap(Map<Number160, Data> dataMap) {
+    public FutureAsyncTask dataMap(Map<Number256, Data> dataMap) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return this;
@@ -68,7 +68,7 @@ public class FutureAsyncTask extends BaseFutureImpl<FutureAsyncTask> {
     /**
      * @return The result of the remote peer from the task.
      */
-    public Map<Number160, Data> dataMap() {
+    public Map<Number256, Data> dataMap() {
         synchronized (lock) {
             return dataMap;
         }

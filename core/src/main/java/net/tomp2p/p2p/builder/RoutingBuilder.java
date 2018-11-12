@@ -8,23 +8,22 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.PostRoutingFilter;
 import net.tomp2p.p2p.RoutingMechanism;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerMapFilter;
 import net.tomp2p.rpc.NeighborRPC.SearchValues;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
 public class RoutingBuilder extends DefaultConnectionConfiguration {
 
-    private Number160 locationKey;
-    private Number160 domainKey;
-    private Number160 contentKey;
+    private Number256 locationKey;
+    private Number256 domainKey;
+    private Number256 contentKey;
 
-    private SimpleBloomFilter<Number160> keyBloomFilter;
-    private SimpleBloomFilter<Number160> contentBloomFilter;
+    private SimpleBloomFilter<Number256> keyBloomFilter;
+    private SimpleBloomFilter<Number256> contentBloomFilter;
     
-    private Number640 from;
-    private Number640 to;
+    //private Number640 from;
+    //private Number640 to;
     
     private Collection<PeerMapFilter> peerMapFilters;
     private Collection<PostRoutingFilter> postRoutingFilters;
@@ -38,11 +37,11 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     private boolean isForceRoutingOnlyToSelf;
     private boolean isRoutingToOthers;
 
-    public Number160 locationKey() {
+    public Number256 locationKey() {
         return locationKey;
     }
 
-    public Number160 domainKey() {
+    public Number256 domainKey() {
         return domainKey;
     }
 
@@ -107,11 +106,11 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         this.isForceRoutingOnlyToSelf = isForceRoutingOnlyToSelf;
     }
 
-    public void locationKey(Number160 locationKey) {
+    public void locationKey(Number256 locationKey) {
         this.locationKey = locationKey;
     }
     
-    public void domainKey(Number160 domainKey) {
+    public void domainKey(Number256 domainKey) {
         this.domainKey = domainKey;
     }
     
@@ -140,14 +139,14 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         if (contentKey() != null) {
         	return new SearchValues(locationKey, domainKey, contentKey());
         } 
-        if(from !=null && to!=null) {
+        /*if(from !=null && to!=null) {
         	return new SearchValues(locationKey, domainKey, from, to);
-        } 
+        } */
         if (contentBloomFilter() == null && keyBloomFilter() != null) {
-            return new SearchValues(locationKey, domainKey, keyBloomFilter());
+            //return new SearchValues(locationKey, domainKey, keyBloomFilter());
         } 
         if (contentBloomFilter() != null && keyBloomFilter() != null) {
-            return new SearchValues(locationKey, domainKey, keyBloomFilter(), contentBloomFilter());
+            //return new SearchValues(locationKey, domainKey, keyBloomFilter(), contentBloomFilter());
         }
         return new SearchValues(locationKey, domainKey);
     }
@@ -161,27 +160,27 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return isRoutingToOthers;
     }
 
-    public Number160 contentKey() {
+    public Number256 contentKey() {
         return contentKey;
     }
 
-    public void contentKey(Number160 contentKey) {
+    public void contentKey(Number256 contentKey) {
         this.contentKey = contentKey;
     }
 
-    public SimpleBloomFilter<Number160> contentBloomFilter() {
+    public SimpleBloomFilter<Number256> contentBloomFilter() {
         return contentBloomFilter;
     }
 
-    public void contentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
+    public void contentBloomFilter(SimpleBloomFilter<Number256> contentBloomFilter) {
         this.contentBloomFilter = contentBloomFilter;
     }
 
-    public SimpleBloomFilter<Number160> keyBloomFilter() {
+    public SimpleBloomFilter<Number256> keyBloomFilter() {
         return keyBloomFilter;
     }
 
-    public void keyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
+    public void keyBloomFilter(SimpleBloomFilter<Number256> keyBloomFilter) {
         this.keyBloomFilter = keyBloomFilter;
     }
 
@@ -196,7 +195,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return routingMechanism;
     }
 
-	public void range(Number640 from, Number640 to) {
+	/*public void range(Number640 from, Number640 to) {
 	    this.from = from;
 	    this.to = to;
     }
@@ -207,5 +206,5 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
 	
 	public Number640 to() {
 		return to;
-	}
+	}*/
 }

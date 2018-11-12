@@ -72,7 +72,7 @@ public class TestFilter {
 	/*@Test
 	public void testPeerStatFilter() throws UnknownHostException {
 		Random rnd = new Random(42);
-		Number160 key = new Number160(rnd);
+		Number256 key = new Number256(rnd);
 		PeerMapConfiguration conf = new PeerMapConfiguration(key);
 		PeerMap peerMap = new PeerMap(conf);
 		
@@ -83,12 +83,12 @@ public class TestFilter {
 		conf.addPeerFilter(pf);
 		
 		for(int i=0;i<10000;i++) {
-			PeerAddress pa = Utils2.createAddress(new Number160(rnd));
+			PeerAddress pa = Utils2.createAddress(new Number256(rnd));
 			Assert.assertTrue(peerMap.peerFound(pa, null));
 			System.err.println("i:"+i);
 		}
 		System.err.println("key: "+key);
-		Number160 attack = new Number160("0xba419d350dfe8af7aee7bbe10c45c0284f083ce1");
+		Number256 attack = new Number256("0xba419d350dfe8af7aee7bbe10c45c0284f083ce1");
 		PeerAddress pa = Utils2.createAddress(attack);
 		Assert.assertFalse(peerMap.peerFound(pa, null));
 		
@@ -104,13 +104,13 @@ public class TestFilter {
 			
 			final Data data1 = new Data(new byte[1]);
 			data1.ttlSeconds(3);
-			FuturePut futurePut = master.put(Number160.createHash("test")).setVersionKey(Number160.MAX_VALUE)
+			FuturePut futurePut = master.put(Number256.createHash("test")).setVersionKey(Number256.MAX_VALUE)
 			        .setData(data1).start();
 			futurePut.awaitUninterruptibly();
 			Assert.assertEquals(true, futurePut.isSuccess());
 			//
 			Map<Number640, Data> map = peers[0].getPeerBean().storage().get();
-			Assert.assertEquals(Number160.MAX_VALUE, map.entrySet().iterator().next().getKey().getVersionKey());
+			Assert.assertEquals(Number256.MAX_VALUE, map.entrySet().iterator().next().getKey().getVersionKey());
 			LOG.error("done");
 		} finally {
 			if (master != null) {

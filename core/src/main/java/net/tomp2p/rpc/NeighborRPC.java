@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
-import java.util.concurrent.CompletableFuture;
 
 import net.tomp2p.connection.ChannelSender;
 import net.tomp2p.connection.ConnectionBean;
@@ -39,12 +38,8 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.network.KCP;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
-import net.tomp2p.peers.Number640;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatistic;
-import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.*;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -113,16 +108,16 @@ public class NeighborRPC extends DispatchHandler {
             throw new IllegalArgumentException("The type must be a request");
         }
         
-        message.key(searchValues.locationKey());
-        message.key(searchValues.domainKey() == null ? Number160.ZERO : searchValues.domainKey());
+        /*message.key(searchValues.locationKey());
+        message.key(searchValues.domainKey() == null ? Number256.ZERO : searchValues.domainKey());
         
-        if(searchValues.from() !=null && searchValues.to()!=null) {
-        	Collection<Number640> collection = new ArrayList<Number640>(2);
-        	collection.add(searchValues.from());
-        	collection.add(searchValues.to());
-        	KeyCollection keyCollection = new KeyCollection(collection);
-        	message.keyCollection(keyCollection);
-        } else {
+        /*if(searchValues.from() !=null && searchValues.to()!=null) {
+        	Collection<Object> collection = new ArrayList<Object>(2);
+        	//collection.add(searchValues.from());
+        	//collection.add(searchValues.to());
+        	//KeyCollection keyCollection = new KeyCollection(collection);
+        	//message.keyCollection(keyCollection);
+        } else*/ /*{
 	        if (searchValues.contentKey() != null) {
         		message.key(searchValues.contentKey());
         	}
@@ -133,7 +128,7 @@ public class NeighborRPC extends DispatchHandler {
         	if (searchValues.contentBloomFilter() != null) {
         		message.bloomFilter(searchValues.contentBloomFilter());
         	}
-        }
+        }*/
         LOG.debug("Ask remote peer for neighbors with msg {}", message);
         return send(message, configuration);
     }
@@ -146,13 +141,13 @@ public class NeighborRPC extends DispatchHandler {
                 if(future.isSuccess()) {
                     Message response = future.responseMessage();
                     if(response != null) {
-                        NeighborSet ns = response.neighborsSet(0);
+                        /*NeighborSet ns = response.neighborsSet(0);
                         if(ns!=null) {
                             for(PeerAddress neighbor:ns.neighbors()) {
                                 // Notify, that we found this peer. RTT is from the reporter and therefore only an estimate.
                                 peerBean().notifyPeerFound(neighbor, response.sender(), futureResponse.getRoundTripTime().setEstimated());
                             }
-                        }
+                        }*/
                     }
                 }
             }
@@ -163,7 +158,7 @@ public class NeighborRPC extends DispatchHandler {
 
     @Override
     public void handleResponse(Responder r, final Message message, final boolean sign, KCP kcp, ChannelSender sender) throws IOException {
-        if (message.keyList().size() < 2) {
+        /*if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("At least location and domain keys are needed.");
         }
         if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2
@@ -171,8 +166,8 @@ public class NeighborRPC extends DispatchHandler {
                 && (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong for this handler.");
         }
-        Number160 locationKey = message.key(0);
-        Number160 domainKey = message.key(1);
+        Number256 locationKey = message.key(0);
+        Number256 domainKey = message.key(1);
         
         List<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
         if(neighbors == null) {
@@ -194,9 +189,9 @@ public class NeighborRPC extends DispatchHandler {
 		// 0 for content not here
 		// >0 content here
         // int contentLength = -1;
-        Number160 contentKey = message.key(2);
-        SimpleBloomFilter<Number160> keyBloomFilter = message.bloomFilter(0);
-        SimpleBloomFilter<Number160> contentBloomFilter = message.bloomFilter(1);
+        Number256 contentKey = message.key(2);
+        SimpleBloomFilter<Number256> keyBloomFilter = message.bloomFilter(0);
+        SimpleBloomFilter<Number256> contentBloomFilter = message.bloomFilter(1);
         KeyCollection keyCollection = message.keyCollection(0);
         // it is important to set an integer if a value is present
         boolean isDigest = message.type() != Type.REQUEST_1;
@@ -206,26 +201,6 @@ public class NeighborRPC extends DispatchHandler {
                 if (peerBean().digestStorage() == null) {
                 	//no storage to search
                 	digestInfo = new DigestInfo();
-                }
-                else if (contentKey != null && locationKey!=null && domainKey!=null) {
-                	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
-                    Number640 from = new Number640(locationAndDomainKey, contentKey, Number160.ZERO);
-                    Number640 to = new Number640(locationAndDomainKey, contentKey, Number160.MAX_VALUE);
-                    digestInfo = peerBean().digestStorage().digest(from, to, -1, true);
-                } else if ((keyBloomFilter != null || contentBloomFilter != null)  && locationKey!=null && domainKey!=null) {
-                	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
-                    digestInfo = peerBean().digestStorage().digest(locationAndDomainKey, keyBloomFilter,
-                            contentBloomFilter, -1, true, true);
-                } else if (keyCollection!=null && keyCollection.keys().size() == 2) {
-                	Iterator<Number640> iterator = keyCollection.keys().iterator();
-                	Number640 from = iterator.next();
-                	Number640 to = iterator.next();
-                	digestInfo = peerBean().digestStorage().digest(from, to, -1, true);
-                } else if (locationKey!=null && domainKey!=null){
-                	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
-                    Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
-                    Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-                    digestInfo = peerBean().digestStorage().digest(from, to, -1, true);
                 } else {
 					LOG.warn("Did not search for anything.");
                 	digestInfo = new DigestInfo();
@@ -255,13 +230,13 @@ public class NeighborRPC extends DispatchHandler {
             }
               
         }
-        r.response(responseMessage);
+        r.response(responseMessage);*/
     }
 
     /**
      * TODO: explain why protected method here.
      */
-    protected List<PeerAddress> getNeighbors(Number160 id, int atLeast) {
+    protected List<PeerAddress> getNeighbors(Number256 id, int atLeast) {
         NavigableSet<PeerStatistic> closePeers = peerBean().peerMap().closePeers(id, atLeast);
 
         ArrayList<PeerAddress> result = new ArrayList<PeerAddress>();
@@ -282,15 +257,12 @@ public class NeighborRPC extends DispatchHandler {
      */
 
     public static class SearchValues {
-        private final SimpleBloomFilter<Number160> keyBloomFilter;
-        private final SimpleBloomFilter<Number160> contentBloomFilter;
+        private final SimpleBloomFilter<Number256> keyBloomFilter;
+        private final SimpleBloomFilter<Number256> contentBloomFilter;
         
-        private final Number160 locationKey;
-        private final Number160 domainKey;
-        private final Number160 contentKey;
-        
-        private final Number640 from;
-        private final Number640 to;
+        private final Number256 locationKey;
+        private final Number256 domainKey;
+        private final Number256 contentKey;
 
         /**
          * Searches for all content keys.
@@ -300,14 +272,13 @@ public class NeighborRPC extends DispatchHandler {
          * @param domainKey
          *            The domain key
          */
-        public SearchValues(final Number160 locationKey, final Number160 domainKey) {
+        public SearchValues(final Number256 locationKey, final Number256 domainKey) {
             this.locationKey = locationKey;
             this.domainKey = domainKey;
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
             this.contentKey = null;
-            this.from = null;
-            this.to = null;
+
         }
 
         /**
@@ -322,118 +293,52 @@ public class NeighborRPC extends DispatchHandler {
 		 *            this key
          *            is on that peer.
          */
-        public SearchValues(final Number160 locationKey, final Number160 domainKey, final Number160 contentKey) {
+        public SearchValues(final Number256 locationKey, final Number256 domainKey, final Number256 contentKey) {
             this.locationKey = locationKey;
             this.domainKey = domainKey;
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
             this.contentKey = contentKey;
-            this.from = null;
-            this.to = null;
+
         }
         
-        public SearchValues(Number160 locationKey, Number160 domainKey, Number640 from, Number640 to) {
-            this.locationKey = locationKey;
-            this.domainKey = domainKey;
-            this.keyBloomFilter = null;
-            this.contentBloomFilter = null;
-            this.contentKey = null;
-            this.from = from;
-            this.to = to;
-        }
-
         /**
          * Searches for multiple content keys. There may be false positives.
-         * 
-         * @param locationKey
-         *            The location key
-         * @param domainKey
-         *            The domain key
-         * @param keyBloomFilter
-		 *            For get() and remove() one can provide a bloom filter of content keys and the remote
-		 *            peer
-         *            indicates if those keys are on that peer.
-         */
-        public SearchValues(final Number160 locationKey, final Number160 domainKey,
-                final SimpleBloomFilter<Number160> keyBloomFilter) {
-            this.locationKey = locationKey;
-            this.domainKey = domainKey;
-            this.keyBloomFilter = keyBloomFilter;
-            this.contentBloomFilter = null;
-            this.contentKey = null;
-            this.from = null;
-            this.to = null;
-        }
-
-        /**
-         * Searches for content key and values with a bloom filter. There may be false positives.
-         * 
-         * @param locationKey
-         *            The location key
-         * @param domainKey
-         *            The domain key
-         * @param keyBloomFilter
-		 *            For get() and remove() one can provide a bloom filter of content keys and the remote
-		 *            peer
-         *            indicates if those keys are on that peer.
-         * @param contentBloomFilter
-		 *            contentBloomFilter For get() and remove() one can provide a bloom filter of content
-		 *            values and
-         *            the remote peer indicates if those values are on that peer.
-         */
-        public SearchValues(final Number160 locationKey, final Number160 domainKey,
-                final SimpleBloomFilter<Number160> keyBloomFilter,
-                final SimpleBloomFilter<Number160> contentBloomFilter) {
-            this.locationKey = locationKey;
-            this.domainKey = domainKey;
-            this.keyBloomFilter = keyBloomFilter;
-            this.contentBloomFilter = contentBloomFilter;
-            this.contentKey = null;
-            this.from = null;
-            this.to = null;
-        }
-
-		/**
+         *
+         *
          * @return The location key
          */
-        public Number160 locationKey() {
+        public Number256 locationKey() {
             return locationKey;
         }
 
         /**
          * @return The domain key
          */
-        public Number160 domainKey() {
+        public Number256 domainKey() {
             return domainKey;
         }
 
         /**
          * @return The bloom filter for multiple content keys. May contain false positives.
          */
-        public SimpleBloomFilter<Number160> keyBloomFilter() {
+        public SimpleBloomFilter<Number256> keyBloomFilter() {
             return keyBloomFilter;
         }
 
         /**
          * @return The bloom filter for multiple content values. May contain false positives.
          */
-        public SimpleBloomFilter<Number160> contentBloomFilter() {
+        public SimpleBloomFilter<Number256> contentBloomFilter() {
             return contentBloomFilter;
         }
 
         /**
          * @return One content key for fast get
          */
-        public Number160 contentKey() {
+        public Number256 contentKey() {
             return contentKey;
         }
-        
-        public Number640 from() {
-        	return from;
-        }
-        
-        public Number640 to() {
-        	return to;
-        }
+
     }
 }

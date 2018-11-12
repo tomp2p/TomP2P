@@ -1,12 +1,12 @@
 package net.tomp2p.futures;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 
 
 public class FutureTest extends BaseFutureImpl<FutureTest> {
     
     private int counter;
-    private Number160 result;
+    private Number256 result;
     final private int i;
     final private int start;
     final private int rounds;
@@ -30,7 +30,7 @@ public class FutureTest extends BaseFutureImpl<FutureTest> {
         return start;
     }
 
-    public void setDone(Number160 result, int counter) {
+    public void setDone(Number256 result, int counter) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -48,7 +48,7 @@ public class FutureTest extends BaseFutureImpl<FutureTest> {
         }
     }
     
-    public Number160 getResult() {
+    public Number256 getResult() {
         synchronized (lock) {
             return result;
         }

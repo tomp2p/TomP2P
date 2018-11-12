@@ -31,7 +31,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.network.KCP;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.IP;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket6Address;
@@ -104,7 +104,7 @@ public class PingBuilder {
         if (peerAddress != null) {
 			return ping(peerAddress);
 		} else if (inetAddress != null) {
-			return ping(inetAddress, port, Number160.ZERO);
+			return ping(inetAddress, port, Number256.ZERO);
 		} else {
            throw new IllegalArgumentException("Cannot ping. Peer address or inet address required.");
 		}
@@ -119,7 +119,7 @@ public class PingBuilder {
      *            The address of the remote peer.
      * @return The future response
      */
-    private FuturePing ping(final InetAddress address, int port, final Number160 peerId) {
+    private FuturePing ping(final InetAddress address, int port, final Number256 peerId) {
     	if(address instanceof Inet4Address) {
     		PeerSocket4Address psa = PeerSocket4Address
     				.builder()

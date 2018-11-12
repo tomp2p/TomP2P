@@ -18,14 +18,14 @@ package net.tomp2p.connection;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import net.tomp2p.p2p.MaintenanceTask;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.p2p.PeerAddressManager;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener;
@@ -59,8 +59,9 @@ public class PeerBean {
     @Getter @Setter private DigestStorage digestStorage;
     @Getter @Setter private DigestTracker digestTracker;
     @Getter @Setter private NATHandler natHandler;
+    @Getter @Setter private PeerAddressManager shortIdLookup;
 
-    //This map is used for all open PeerConnections which are meant to stay open. {@link Number160} = peer ID.
+    //This map is used for all open PeerConnections which are meant to stay open. {@link Number256} = peer ID.
 
     public PeerBean notifyPeerFound(PeerAddress sender, PeerAddress reporter,
             RTT roundTripTime) {

@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
@@ -78,7 +78,7 @@ public class TrackerData {
         peerAddresses.put(remotePeer, attachment == null ? EMPTY_DATA : attachment);
     }
 
-    public Map.Entry<PeerAddress, Data> remove(Number160 remotePeerId) {
+    public Map.Entry<PeerAddress, Data> remove(Number256 remotePeerId) {
         for (Iterator<Map.Entry<PeerAddress, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
                 .hasNext();) {
             Map.Entry<PeerAddress, Data> entry = iterator.next();
@@ -90,7 +90,7 @@ public class TrackerData {
         return null;
     }
 
-    public boolean containsKey(Number160 tmpKey) {
+    public boolean containsKey(Number256 tmpKey) {
         for (Iterator<Map.Entry<PeerAddress, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
                 .hasNext();) {
             Map.Entry<PeerAddress, Data> entry = iterator.next();
@@ -101,7 +101,7 @@ public class TrackerData {
         return false;
     }
     
-    public Map.Entry<PeerAddress, Data> get(Number160 tmpKey) {
+    public Map.Entry<PeerAddress, Data> get(Number256 tmpKey) {
         for (Iterator<Map.Entry<PeerAddress, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
                 .hasNext();) {
             Map.Entry<PeerAddress, Data> entry = iterator.next();

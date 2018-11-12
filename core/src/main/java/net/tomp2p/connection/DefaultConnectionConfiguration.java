@@ -33,7 +33,6 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @Accessors(chain = true, fluent = true)
 public class DefaultConnectionConfiguration implements ConnectionConfiguration {
-    @Getter @Setter private boolean sign = false;
     @Getter @Setter private boolean sctp = false;
     @Getter @Setter private KeyPair keyPair = null;
 }

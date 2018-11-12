@@ -107,6 +107,6 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
         }
 
         return DistributedHashTable.<K> parallelRequests(requestP2PConfiguration, directHits, potentialHits, cancelOnFinish,
-                futureChannelCreator, operation, futureDHT);
+                operation, futureDHT);
     }
 }

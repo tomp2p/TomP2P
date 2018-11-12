@@ -34,16 +34,17 @@ import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.*;
+import net.tomp2p.utils.Pair;
 
 /**
  * This is the main class to start DHT operations. This class makes use of the build pattern and for each DHT operation,
- * a builder class is returned. The main operations can be initiated with {put(Number160)},
- * {get(Number160)}, {add(Number160)}, {addTracker(Number160)}, {getTracker(Number160)},
- * {remove(Number160)}, {submit(Number160, Worker)}, {send(Number160)}, {sendDirect()},
- * {broadcast(Number160)}. Each of those operations return a builder that offers more options. One of the main
+ * a builder class is returned. The main operations can be initiated with {put(Number256)},
+ * {get(Number256)}, {add(Number256)}, {addTracker(Number256)}, {getTracker(Number256)},
+ * {remove(Number256)}, {submit(Number256, Worker)}, {send(Number256)}, {sendDirect()},
+ * {broadcast(Number256)}. Each of those operations return a builder that offers more options. One of the main
  * difference to a "regular" DHT is that TomP2P can store a map (key-values) instead of just values. To distinguish 
  * those, the keys are termed location key (for finding the right peer in the network), and content key (to store more 
  * than one value on a peer). For the put builder e.g. the following options can be set: 
@@ -58,7 +59,7 @@ public class Peer {
     // As soon as the user calls listen, this connection handler is set
     private final PeerCreator peerCreator;
     // the id of this node
-    private final Number160 peerId;
+    private final Number256 peerId;
     // the p2p network identifier, two different networks can have the same
     // ports
     private final int p2pId;
@@ -89,7 +90,7 @@ public class Peer {
      * @param peerCreator
      *            The peer creator that holds the peer bean and the connection bean
      */
-    Peer(final int p2pID, final Number160 peerId, final PeerCreator peerCreator) {
+    Peer(final int p2pID, final Number256 peerId, final PeerCreator peerCreator) {
         this.p2pId = p2pID;
         this.peerId = peerId;
         this.peerCreator = peerCreator;
@@ -179,7 +180,7 @@ public class Peer {
      * The ID of this peer.
      * @return
      */
-    public Number160 peerID() {
+    public Number256 peerID() {
         return peerId;
     }
 
@@ -211,7 +212,7 @@ public class Peer {
     }
 
     public DataSend sendDirect(final int sessionId, PeerAddress recipient, DataStream dataStream) {
-        InetSocketAddress inetSocketAddress = recipient.createUDPSocket(peerAddress());
+        InetSocketAddress inetSocketAddress = recipient.createSocket(peerAddress());
         final KCP kcp = connectionBean().channelServer().openKCP(sessionId, inetSocketAddress);
         DataSend p = new DataSend() {
             @Override
@@ -258,7 +259,7 @@ public class Peer {
      * 
      * @return a new builder for a broadcast
      */
-    public BroadcastBuilder broadcast(Number160 messageKey) {
+    public BroadcastBuilder broadcast(Number256 messageKey) {
         return new BroadcastBuilder(this, messageKey);
     }
 
@@ -315,4 +316,7 @@ public class Peer {
 		return this;
 	}
 
+    public Pair<Number256, byte[]> getPeerId(int recipientShortId) {
+        return null;
+    }
 }

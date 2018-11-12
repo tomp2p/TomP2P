@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -31,14 +30,14 @@ import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.network.KCP;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
 
+import net.tomp2p.utils.ComPair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +61,7 @@ public class Dispatcher {
     final private ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
     final private Lock readLock = reentrantReadWriteLock.readLock();
     final private Lock writeLock = reentrantReadWriteLock.writeLock();
-    final private SortedMap<Number320, Map<Integer, DispatchHandler>> ioHandlers = new TreeMap<Number320, Map<Integer, DispatchHandler>>();
+    final private SortedMap<ComPair<Number256,Number256>, Map<Integer, DispatchHandler>> ioHandlers = new TreeMap<ComPair<Number256,Number256>, Map<Integer, DispatchHandler>>();
     
 	/**
 	 * Map that stores requests that are not answered yet.
@@ -106,13 +105,13 @@ public class Dispatcher {
      *            <b>Note:</b> If you register multiple handlers with the same command, only the last registered handler
      *            will receive these messages!
      */
-    public void registerIoHandler(final Number160 peerId, final Number160 onBehalfOf, final DispatchHandler ioHandler, final int... names) {
+    public void registerIoHandler(final Number256 peerId, final Number256 onBehalfOf, final DispatchHandler ioHandler, final int... names) {
     	writeLock.lock();
     	try {
-    		Map<Integer, DispatchHandler> types = ioHandlers.get(new Number320(peerId, onBehalfOf));
+    		Map<Integer, DispatchHandler> types = ioHandlers.get(ComPair.of(peerId, onBehalfOf));
     		if (types == null) {
     			types = new HashMap<Integer, DispatchHandler>();
-    			ioHandlers.put(new Number320(peerId, onBehalfOf), types);
+    			ioHandlers.put(ComPair.of(peerId, onBehalfOf), types);
     		}
     		for (Integer name : names) {
     			types.put(name, ioHandler);
@@ -131,20 +130,20 @@ public class Dispatcher {
      * @param onBehalfOf
      * 			  The ioHandler can be registered for the own use in behalf of another peer (e.g. in case of relay node).
      */
-    public void removeIoHandler(final Number160 peerId, final Number160 onBehalfOf) {
+    public void removeIoHandler(final Number256 peerId, final Number256 onBehalfOf) {
         writeLock.lock();
     	try {
-    		ioHandlers.remove(new Number320(peerId, onBehalfOf));
+    		ioHandlers.remove(ComPair.of(peerId, onBehalfOf));
     	}  finally {
     		writeLock.unlock();
     	}
     }
     
-    public void removeIoHandler(final Number160 peerId) {
+    public void removeIoHandler(final Number256 peerId) {
     	writeLock.lock();
     	try {
-    		Number320 min = new Number320(peerId, Number160.ZERO); 
-    		Number320 max = new Number320(peerId, Number160.MAX_VALUE);
+			ComPair<Number256, Number256> min = ComPair.of(peerId, Number256.ZERO);
+			ComPair<Number256, Number256> max = ComPair.of(peerId, Number256.MAX_VALUE);
     		ioHandlers.subMap(min, max).clear();
     	}  finally {
     		writeLock.unlock();
@@ -200,7 +199,7 @@ public class Dispatcher {
     	
     	readLock.lock();
     	try {
-    		for(final Map.Entry<Number320, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
+    		for(final Map.Entry<ComPair<Number256,Number256>, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
     			knownCommands.addAll(entry.getValue().keySet());
     		}
     	} finally {
@@ -240,7 +239,7 @@ public class Dispatcher {
 		// take the first one we found
 		if (recipient.peerId().isZero() && 
 				(message.command() == RPC.Commands.PING.getNr())) {
-			Number160 peerId = peerBeanMaster.serverPeerAddress().peerId();
+			Number256 peerId = peerBeanMaster.serverPeerAddress().peerId();
 			return searchHandler(peerId, peerId, message.command());
 			// else we search for the handler that we are responsible for
 		} else {
@@ -261,7 +260,7 @@ public class Dispatcher {
 	}
 	
 	//not relaying
-	public boolean isPrimaryTarget(final Number160 recipientID) {
+	public boolean isPrimaryTarget(final Number256 recipientID) {
 		readLock.lock();
 		final Map<Integer, DispatchHandler> ioHandlers;
 		try {
@@ -286,7 +285,7 @@ public class Dispatcher {
      *            The command of the message to be filtered for
      * @return The handler for the provided parameters or null, if none has been found.
      */
-    public DispatchHandler searchHandler(final Number160 recipientID, final Number160 onBehalfOf, final int cmd) {
+    public DispatchHandler searchHandler(final Number256 recipientID, final Number256 onBehalfOf, final int cmd) {
 		final Integer command = Integer.valueOf(cmd);
 		readLock.lock();
 		try {
@@ -310,11 +309,11 @@ public class Dispatcher {
      * @param command
      * @return
      */
-    public Map<Number320, DispatchHandler> searchHandler(final Integer command) {
+    public Map<ComPair<Number256,Number256>, DispatchHandler> searchHandler(final Integer command) {
 		readLock.lock();
 		try {
-			Map<Number320, DispatchHandler> result = new HashMap<Number320, DispatchHandler>();
-			for (Map.Entry<Number320, Map<Integer, DispatchHandler>> entry : ioHandlers.entrySet()) {
+			Map<ComPair<Number256,Number256>, DispatchHandler> result = new HashMap<>();
+			for (Map.Entry<ComPair<Number256,Number256>, Map<Integer, DispatchHandler>> entry : ioHandlers.entrySet()) {
 				for (Map.Entry<Integer, DispatchHandler> entry2 : entry.getValue().entrySet()) {
 					DispatchHandler handler = entry.getValue().get(command);
 					if (handler != null && entry2.getKey().equals(command)) {
@@ -329,7 +328,7 @@ public class Dispatcher {
     }
     
 	@SuppressWarnings("unchecked")
-	public <T> T searchHandler(Class<T> clazz, Number160 peerID, Number160 peerId2) {
+	public <T> T searchHandler(Class<T> clazz, Number256 peerID, Number256 peerId2) {
 		readLock.lock();
 		try {
 			final Map<Integer, DispatchHandler> ioHandlers = search(peerID, peerId2);
@@ -347,10 +346,10 @@ public class Dispatcher {
 		}
 	}
 	
-	public Map<Integer, DispatchHandler> searchHandler(Number160 peerId, Number160 onBehalfOf) {
+	public Map<Integer, DispatchHandler> searchHandler(Number256 peerId, Number256 onBehalfOf) {
 		readLock.lock();
 		try {
-			return new HashMap<Integer, DispatchHandler>(ioHandlers.get(new Number320(peerId, onBehalfOf)));
+			return new HashMap<Integer, DispatchHandler>(ioHandlers.get(ComPair.of(peerId, onBehalfOf)));
 		} finally {
 			readLock.unlock();
 		}
@@ -364,14 +363,14 @@ public class Dispatcher {
      * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
      * @return the map containing all dispatchers for each {@link Commands} type
      */
-	private Map<Integer, DispatchHandler> search(Number160 peerId, Number160 onBehalfOf) {
-		return ioHandlers.get(new Number320(peerId, onBehalfOf));
+	private Map<Integer, DispatchHandler> search(Number256 peerId, Number256 onBehalfOf) {
+		return ioHandlers.get(ComPair.of(peerId, onBehalfOf));
 	}
 
-	public boolean responsibleFor(Number160 peerId) {
+	public boolean responsibleFor(Number256 peerId) {
 		readLock.lock();
     	try {
-    		return ioHandlers.containsKey(new Number320(peerId, peerId));
+    		return ioHandlers.containsKey(ComPair.of(peerId, peerId));
     	} finally {
     		readLock.unlock();
     	}

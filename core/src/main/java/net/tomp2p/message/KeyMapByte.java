@@ -2,17 +2,16 @@ package net.tomp2p.message;
 
 import java.util.Map;
 
-import net.tomp2p.peers.Number640;
 import net.tomp2p.utils.Utils;
 
 public class KeyMapByte {
 
-    private final Map<Number640, Byte> keysMap;
-    public KeyMapByte(Map<Number640, Byte> keysMap) {
+    private final Map<Object, Byte> keysMap;
+    public KeyMapByte(Map<Object, Byte> keysMap) {
         this.keysMap = keysMap;
     }
     
-    public Map<Number640, Byte> keysMap() {
+    public Map<Object, Byte> keysMap() {
         return keysMap;
     }
 
@@ -20,7 +19,7 @@ public class KeyMapByte {
         return keysMap.size();
     }
 
-    public void put(Number640 key, Byte value) {
+    public void put(Object key, Byte value) {
         keysMap.put(key, value);
     }
     

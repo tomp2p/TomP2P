@@ -22,8 +22,7 @@ import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
@@ -31,14 +30,14 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
 
     private final Peer peer;
     
-    private final Number160 messageKey;
+    private final Number256 messageKey;
 
-    private NavigableMap<Number640, Data> dataMap;
+    //private NavigableMap<Number640, Data> dataMap;
 
     
     private int hopCounter;
 
-    public BroadcastBuilder(Peer peer, Number160 messageKey) {
+    public BroadcastBuilder(Peer peer, Number256 messageKey) {
         this.peer = peer;
         this.messageKey = messageKey;
     }
@@ -46,27 +45,25 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
     public void start() {
         Message message = new Message();
         //TODO: needs SCTP mayby
-        message.setDataMap(new DataMap(dataMap));
+        //message.setDataMap(new DataMap(dataMap));
         
-        message.key(messageKey);
-        message.intValue(0);
-        message.intValue(Number160.BITS);
+
 
         peer.broadcastRPC().broadcastHandler().receive(message);
     }
     
-    public Number160 messageKey() {
+    public Number256 messageKey() {
         return messageKey;
     }
 
-    public NavigableMap<Number640, Data> dataMap() {
+    /*public NavigableMap<Number640, Data> dataMap() {
         return dataMap;
-    }
+    }*/
 
-    public BroadcastBuilder dataMap(NavigableMap<Number640, Data> dataMap) {
+    /*public BroadcastBuilder dataMap(NavigableMap<Number640, Data> dataMap) {
         this.dataMap = dataMap;
         return this;
-    }
+    }*/
     
     public int hopCounter() {
         return hopCounter;

@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,16 +58,16 @@ public class TestFutures {
      */
     @Test
     public void testPerformanceSingle() {
-        Number160[] number160s = new Number160[nr];
+        Number256[] number160s = new Number256[nr];
         Random rnd = new Random(1);
         for (int i = 0; i < nr; i++) {
-            number160s[i] = new Number160(rnd);
+            //number160s[i] = new Number256(rnd);
         }
         // start test single-thread
         long start = System.currentTimeMillis();
         for (int i = 0; i < nr; i++) {
             for (int j = 0; j < RONUDS; j++) {
-                number160s[i] = number160s[i].xor(new Number160(new Random(j * 31)));
+                //number160s[i] = number160s[i].xor(new Number256(new Random(j * 31)));
                 // System.err.println("number160s[" + i + "]=" + number160s[i]);
             }
         }
@@ -88,11 +88,11 @@ public class TestFutures {
     @Test
     public void testPerformanceMulti() throws InterruptedException {
 
-        Number160[] number160s = new Number160[nr];
+        Number256[] number160s = new Number256[nr];
         AtomicReferenceArray<FutureTest> array = new AtomicReferenceArray<FutureTest>(new FutureTest[nr]);
         Random rnd = new Random(1);
         for (int i = 0; i < nr; i++) {
-            number160s[i] = new Number160(rnd);
+            //number160s[i] = new Number256(rnd);
         }
         long start = System.currentTimeMillis();
         FutureDone<Void> futureDone = new FutureDone<Void>();
@@ -107,8 +107,8 @@ public class TestFutures {
         }
     }
 
-    private void recursive(final AtomicReferenceArray<FutureTest> array, final Number160[] number160s, final int start,
-            final int rounds, final int counter, final FutureDone<Void> futureDone) {
+    private void recursive(final AtomicReferenceArray<FutureTest> array, final Number256[] number160s, final int start,
+                           final int rounds, final int counter, final FutureDone<Void> futureDone) {
         int active = 0;
         for (int i = 0; i < nr; i++) {
             if (array.get(i) == null) {
@@ -147,8 +147,8 @@ public class TestFutures {
         });
     }
 
-    private FutureTest startFuture(final Number160 number, final int start, final int rounds, final int counter,
-            final int ii) {
+    private FutureTest startFuture(final Number256 number, final int start, final int rounds, final int counter,
+                                   final int ii) {
         final FutureTest futureTest = new FutureTest(ii, start, rounds);
         Runnable r = new Runnable() {
 
@@ -156,9 +156,9 @@ public class TestFutures {
             public void run() {
                 // System.err.println("start theard (" + Thread.currentThread().getName() + ") " + number + "/" + start
                 // + "-" + rounds);
-                Number160 result = number;
+                Number256 result = number;
                 for (int i = start; i < rounds; i++) {
-                    result = result.xor(new Number160(new Random(i * 31)));
+                    //result = result.xor(new Number256(new Random(i * 31)));
                     // System.err.println("number160s[" + ii + "]=" + result + "start="+start);
                 }
                 futureTest.setDone(result, counter);

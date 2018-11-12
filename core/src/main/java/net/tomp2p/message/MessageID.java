@@ -15,7 +15,7 @@
  */
 package net.tomp2p.message;
 
-import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -31,7 +31,7 @@ public class MessageID implements Comparable<MessageID> {
 
     // The peer address depends on the message.
     // Either its the sender or the recipient.
-    private final Number160 senderReceiverPair;
+    private final Number256 senderReceiverPair;
 
     /**
      * Creates a message ID. If the message is a request, the peer address is the sender. Otherwise it is the recipient.
@@ -60,7 +60,7 @@ public class MessageID implements Comparable<MessageID> {
      * @param nodeAddress
      *            The node address
      */
-    public MessageID(final int id, final Number160 senderReceiverPair) {
+    public MessageID(final int id, final Number256 senderReceiverPair) {
         this.id = id;
         this.senderReceiverPair = senderReceiverPair;
     }

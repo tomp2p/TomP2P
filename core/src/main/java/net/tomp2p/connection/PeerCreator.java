@@ -22,13 +22,13 @@ import java.net.InetAddress;
 import java.security.KeyPair;
 import java.util.concurrent.ScheduledExecutorService;
 
+import net.tomp2p.peers.Number256;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.IP;
-import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
 
@@ -70,9 +70,9 @@ public class PeerCreator {
 	 * @throws IOException
 	 *            If the startup of listening to connections failed
 	 */
-	public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
-	        final ChannelServerConfiguration channelServerConfiguration,
-	        final ScheduledExecutorService timer, SendBehavior sendBehavior) throws IOException {
+	public PeerCreator(final int p2pId, final Number256 peerId, final KeyPair keyPair,
+					   final ChannelServerConfiguration channelServerConfiguration,
+					   final ScheduledExecutorService timer, SendBehavior sendBehavior) throws IOException {
 		//peer bean
 		peerBean = new PeerBean().keyPair(keyPair);
 		PeerAddress self = findPeerAddress(peerId, channelServerConfiguration);
@@ -99,7 +99,7 @@ public class PeerCreator {
 	 * @param keyPair
 	 *            The key pair or null
 	 */
-	public PeerCreator(final PeerCreator parent, final Number160 peerId, final KeyPair keyPair) {
+	public PeerCreator(final PeerCreator parent, final Number256 peerId, final KeyPair keyPair) {
 		this.connectionBean = parent.connectionBean;
 		this.peerBean = new PeerBean().keyPair(keyPair);
 		PeerAddress self = parent.peerBean().serverPeerAddress().withPeerId(peerId);
@@ -170,7 +170,7 @@ public class PeerCreator {
 	 * @throws IOException
 	 *             If the address could not be determined
 	 */
-	private static PeerAddress findPeerAddress(final Number160 peerId,
+	private static PeerAddress findPeerAddress(final Number256 peerId,
 	        final ChannelServerConfiguration channelServerConfiguration) throws IOException {
 		final DiscoverResults discoverResults = DiscoverNetworks.discoverInterfaces(
 				channelServerConfiguration.bindings());

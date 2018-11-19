@@ -15,7 +15,6 @@
  */
 package net.tomp2p.connection;
 
-import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +35,7 @@ import net.tomp2p.storage.DigestTracker;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.whispersystems.curve25519.Curve25519KeyPair;
 
 /**
  * A bean that holds non-sharable (unique for each peer) configuration settings for the peer. The sharable
@@ -51,7 +51,7 @@ public class PeerBean {
     
     @Getter final private List<PeerStatusListener> peerStatusListeners = new ArrayList<PeerStatusListener>(1);
     
-    @Getter @Setter private KeyPair keyPair;
+    @Getter @Setter private Curve25519KeyPair keyPair;
     @Getter @Setter private PeerAddress serverPeerAddress;
     @Getter @Setter private PeerMap peerMap;
     @Getter @Setter private BloomfilterFactory bloomfilterFactory;

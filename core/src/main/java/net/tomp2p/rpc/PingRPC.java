@@ -15,6 +15,7 @@
  */
 package net.tomp2p.rpc;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -89,8 +90,14 @@ public class PingRPC extends DispatchHandler {
 		this.enable = enable;
 		this.wait = wait;
 		if (register) {
-			connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(),
-					peerBean.serverPeerAddress().peerId(), this, RPC.Commands.PING.getNr());
+			connectionBean.dispatcher().registerIoHandler(
+					peerBean.serverPeerAddress().peerId(),
+					peerBean.serverPeerAddress().peerId(),
+					this,
+					RPC.Commands.PING.getNr(),
+					RPC.Commands.PING_DISCOVER.getNr(),
+					RPC.Commands.PING_PROBE.getNr(),
+					RPC.Commands.PING_NOACK.getNr() );
 		}
 	}
 
@@ -102,22 +109,15 @@ public class PingRPC extends DispatchHandler {
 	 *
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public Pair<FutureDone<Message>, KCP> pingUDP(final PeerAddress remotePeer) {
-		LOG.debug("Pinging UDP the remote peer {}.", remotePeer);
-		Message message = createHandler(remotePeer, Type.REQUEST);
+	public Pair<FutureDone<Message>, KCP> ping(final PeerAddress remotePeer) {
+		LOG.debug("Pinging the remote peer {}.", remotePeer);
+		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
-	/**
-	 * Ping a UDP peer, but don't expect an answer.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @return The future that will be triggered when we receive an answer or
-	 *         something fails.
-	 */
-	public Pair<FutureDone<Message>, KCP> fireUDP(final PeerAddress remotePeer) {
-		final Message message = createHandler(remotePeer, Type.REQUEST_FF);
+	public Pair<FutureDone<Message>, KCP> pingNoAck(final PeerAddress remotePeer) {
+		LOG.debug("Pinging (noack) the remote peer {}.", remotePeer);
+		final Message message = createMessage(remotePeer, RPC.Commands.PING_NOACK.getNr(), Type.REQUEST);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
@@ -128,8 +128,9 @@ public class PingRPC extends DispatchHandler {
 	 *            The destination peer
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public Pair<FutureDone<Message>, KCP> pingUDPDiscover(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
-		final Message message = createDiscoverHandler(remotePeer);
+	public Pair<FutureDone<Message>, KCP> pingDiscover(final PeerAddress remotePeer) {
+		LOG.debug("Pinging (discover) the remote peer {}.", remotePeer);
+		final Message message = createMessage(remotePeer, RPC.Commands.PING_DISCOVER.getNr(), Type.REQUEST);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
@@ -141,65 +142,21 @@ public class PingRPC extends DispatchHandler {
 	 *            The destination peer
 	 * @return The future that will be triggered when we receive an answer or something fails.
 	 */
-	public Pair<FutureDone<Message>, KCP> pingUDPProbe(final PeerAddress remotePeer, final ConnectionConfiguration configuration) {
+	public Pair<FutureDone<Message>, KCP> pingProbe(final PeerAddress remotePeer) {
+		LOG.debug("Pinging (probe) the remote peer {}.", remotePeer);
 		final Message message = createMessage(remotePeer, RPC.Commands.PING_PROBE.getNr(), Type.REQUEST);
 		return connectionBean().channelServer().sendUDP(message);
 	}
 
-	/**
-	 * Create a RequestHandler.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @param type
-	 *            The type of the request
-	 * @return The request handler
-	 */
-	private Message createHandler(final PeerAddress remotePeer, final Type type) {
-		final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), type);
-		return message;
-	}
-
-	/**
-	 * Create a discover handler.
-	 * 
-	 * @param remotePeer
-	 *            The destination peer
-	 * @return The future of this discover handler
-	 */
-	private Message createDiscoverHandler(final PeerAddress remotePeer) {
-		final Message message = createMessage(remotePeer, RPC.Commands.PING_DISCOVER.getNr(), Type.REQUEST);
-		//message.neighborsSet(createNeighborSet(peerBean().serverPeerAddress()));
-		return message;
-	}
-
-	/**
-	 * Create a neighbor set with one peer. We only support sending a neighbor set, so we need this wrapper
-	 * class.
-	 * 
-	 * @param self
-	 *            The peer that should be stored in the neighborset
-	 * @return The neighborset with exactly one peer
-	 */
-	private NeighborSet createNeighborSet(final PeerAddress... self) {
-		List<PeerAddress> tmp = new ArrayList<PeerAddress>(self.length);
-		for(int i=0;i<self.length;i++) {
-			tmp.add(self[i]);
-		}
-		return new NeighborSet(-1, tmp);
-	}
 
 	@Override
 	public void handleResponse(Responder r, final Message message, final boolean sign, KCP kcp, ChannelSender sender) throws Exception {
-		/*if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
-				|| message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3
-				|| message.type() == Type.REQUEST_4) && message.command() == RPC.Commands.PING
-				.getNr())) {
+		if (!message.isRequest()) {
 			throw new IllegalArgumentException("Request message type or command is wrong for this handler.");
 		}
 		final Message responseMessage;
 		// probe
-		if (message.type() == Type.REQUEST_3) {
+		if (message.command() == RPC.Commands.PING_PROBE.getNr()) {
 			LOG.debug("Respond to probing. Firing message to {}.", message.sender());
 			if(message.isSendSelf()) {
 				responseMessage = createResponseMessage(message, Type.NOT_FOUND);
@@ -207,9 +164,9 @@ public class PingRPC extends DispatchHandler {
 			} else {
 				responseMessage = createResponseMessage(message, Type.OK);
 				LOG.debug("Fire UDP to {}.", message.sender());
-				fireUDP(message.sender());
+				pingNoAck(message.sender());
 			}
-		} else if (message.type() == Type.REQUEST_2) { // discover
+		} else if (message.command() == RPC.Commands.PING_DISCOVER.getNr()) { // discover
 			LOG.debug("Respond to discovering. Found {}.", message.sender());
 			if(message.isSendSelf()) {
 				responseMessage = createResponseMessage(message, Type.NOT_FOUND);
@@ -217,11 +174,12 @@ public class PingRPC extends DispatchHandler {
 			} else {
 				responseMessage = createResponseMessage(message, Type.OK);
 				final int port = message.senderSocket().getPort();
-				responseMessage.neighborsSet(createNeighborSet(message.sender()));
-				responseMessage.intValue(port);
+				ByteBuffer bb = ByteBuffer.allocate(PeerAddress.MAX_SIZE);
+				message.sender().encode(bb);
+				bb.flip();
+				responseMessage.payload(bb);
 			}
-		} else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4) { // regular
-																							// ping
+		} else if (message.command() == RPC.Commands.PING.getNr() ) { // regular ping
 			LOG.debug("Respond to regular ping {}.", message.sender());
 			// test if this is a broadcast message to ourselves. If it is, do
 			// not
@@ -244,31 +202,13 @@ public class PingRPC extends DispatchHandler {
 				}
 				return;
 			}
-			if (message.type() == Type.REQUEST_4) {
-				synchronized (receivedBroadcastPingListeners) {
-					for (PeerReceivedBroadcastPing listener : receivedBroadcastPingListeners) {
-						listener.broadcastPingReceived(message.sender());
-					}
-				}
-			}
+		} else if (message.command() == RPC.Commands.PING_NOACK.getNr() ) { // fire and forget ping
+			responseMessage = null;
 		} else {
-			// fire-and-forget if message.getType() == Type.REQUEST_FF_1
-            // we received a fire-and forget ping
-            // this means we are reachable from the outside
-			PeerAddress serverAddress = peerBean().serverPeerAddress();
-
-				// UDP
-				PeerAddress newServerAddress = serverAddress.withReachable4UDP(true);
-				peerBean().serverPeerAddress(newServerAddress);
-				synchronized (reachableListeners) {
-					for (PeerReachable listener : reachableListeners) {
-						listener.peerWellConnected(newServerAddress, message.sender(), false);
-					}
-				}
-				responseMessage = message;
+			throw new IllegalArgumentException("Request message type or command is wrong for this handler.");
 
 		}
-		r.response(responseMessage);*/
+		r.response(responseMessage);
 	}
 
 	public void addPeerReachableListener(PeerReachable peerReachable) {

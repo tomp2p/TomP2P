@@ -29,8 +29,10 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.tomp2p.message.MessageHeader;
 import net.tomp2p.network.KCP;
 import net.tomp2p.network.KCPListener;
+import net.tomp2p.p2p.PeerAddressManager;
 import net.tomp2p.rpc.DataStream;
 import net.tomp2p.utils.Triple;
 import org.slf4j.Logger;
@@ -52,6 +54,7 @@ import net.tomp2p.rpc.RPC;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.ExpirationHandler;
 import net.tomp2p.utils.Pair;
+import org.whispersystems.curve25519.Curve25519KeyPair;
 
 /**
  * The "server" part that accepts connections.
@@ -86,7 +89,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	
 	private final PeerBean peerBean;
 	
-	final private ConcurrentCacheMap<MessageID, Pair<Long, FutureDone<Message>>> pendingMessages = new ConcurrentCacheMap<>(3, 10000);
+	final private ConcurrentCacheMap<MessageID, Triple<Long, FutureDone<Message>, Curve25519KeyPair>> pendingMessages = new ConcurrentCacheMap<>(3, 10000);
 
 	final private ConcurrentCacheMap<Pair<InetAddress, Integer>, KCP> openConnections = new ConcurrentCacheMap<>(60, 10000);
 
@@ -138,11 +141,13 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			discoverNetworks.start();
 		}
 		
-		pendingMessages.expirationHandler(new ExpirationHandler<Pair<Long, FutureDone<Message>>>() {
+		pendingMessages.expirationHandler(new ExpirationHandler<Triple<Long, FutureDone<Message>, Curve25519KeyPair>>() {
 			@Override
-			public void expired(Pair<Long, FutureDone<Message>> oldValue) {
+			public void expired(Triple<Long, FutureDone<Message>, Curve25519KeyPair> oldValue) {
 				LOG.debug("Timout occured for {}", oldValue);
-				oldValue.element1().failed("Timeout occurred");
+				if(oldValue.element1() != null) {
+                    oldValue.element1().failed("Timeout occurred");
+                }
 			}
 		});
 	}
@@ -366,7 +371,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
                     for(KCP kcp: openConnections.values()) {
                         kcp.update(System.currentTimeMillis());
                     }
-                    for(Pair<Long, FutureDone<Message>> future: pendingMessages.values()) {
+                    for(Triple<Long, FutureDone<Message>, Curve25519KeyPair> future: pendingMessages.values()) {
                         if(future.element0() + 3000 < System.currentTimeMillis()) {
                             future.element1().failed("timeout");
                         }
@@ -391,10 +396,9 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 
                     LOG.debug("got incoming data UDP:"+buffer.remaining() + " from " + remote);
 
-                    int offset = buffer.arrayOffset()+buffer.position();
 
-                    byte header = buffer.get(0);
-                    buffer.put(0, (byte) (header & 0x3f));
+                    byte header = buffer.get(buffer.position() + 0);
+                    buffer.put(buffer.position() + 0, (byte) (header & 0x3f));
 
                     byte[] buf = new byte[buffer.remaining()];
                     buffer.get(buf);
@@ -431,16 +435,17 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
                                 }
                             });
 
-                        } else {
+                        } else { //this is a response
                             LOG.debug("peer isVerified: {}, I'm: {}", m.isVerified(), peerBean.serverPeerAddress());
+                            Triple<Long, FutureDone<Message>, Curve25519KeyPair> currentFuture = pendingMessages.remove(new MessageID(m));
                             if (!m.isVerified()) {
-                                sendAck(m, outgoingData);
+                                sendAck(m, outgoingData, m.ephemeralPublicKey(), currentFuture.e2());
                             } else {
                                 LOG.debug("no need for sending ACK");
                             }
 
                             LOG.debug("looking for message with id {}, I'm {}", new MessageID(m), peerBean.serverPeerAddress());
-                            Pair<Long, FutureDone<Message>> currentFuture = pendingMessages.remove(new MessageID(m));
+
 
                             if(currentFuture != null) {
                                 LOG.debug("message removed: {}",m);
@@ -459,15 +464,18 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
                 System.out.println("done?????");
             }
             packetQueue.clear();
+            pendingMessages.clear();
+            openConnections.clear();
             shutdownFuture.complete(null);
             return;
         }
 
-        private void sendAck(Message m, OutgoingData outgoingData) throws GeneralSecurityException, IOException {
+        private void sendAck(Message m, OutgoingData outgoingData, final byte[] ephemeralPublicKeyRemote, Curve25519KeyPair keyPair) throws GeneralSecurityException, IOException {
             Message ackMessage = DispatchHandler.createAckMessage(m, Type.ACK, peerBean.serverPeerAddress());
+            ackMessage.ephemeralKeyPair(keyPair);
             //PeerAddress recipientAddress = m.recipient();
             PeerAddress recipientAddress = peerBean.serverPeerAddress();
-            sendNetwork(outgoingData, m.senderSocket(), ackMessage);
+            sendNetwork(outgoingData, peerBean.shortIdLookup(), m.senderSocket(), ackMessage, ephemeralPublicKeyRemote);
         }
 
         private Responder createResponder(final InetSocketAddress remote, Message m, OutgoingData outgoingData) {
@@ -483,7 +491,11 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
                             LOG.debug("peer is unknown, request an ack: {}", m);
                         }
                         try {
-                            sendNetwork(outgoingData, remote, responseMessage);
+                            //TODO: we should store the mapping between the two peers somewhere
+                            responseMessage.generateEphemeralKeyPair();
+                            Triple<Long, FutureDone<Message>, Curve25519KeyPair> pair = Triple.of(System.currentTimeMillis(), null, responseMessage.ephemeralKeyPair());
+                            pendingMessages.put(new MessageID(responseMessage), pair);
+                            sendNetwork(outgoingData, peerBean.shortIdLookup(), remote, responseMessage, m.ephemeralPublicKey());
                         } catch (Exception e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
@@ -507,7 +519,17 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
             Message m = new Message();
             ByteBuffer buf2 = ByteBuffer.wrap(buf);
             //TODO: add local and remote to the message: local, remote
-            Codec.decode(buf2, m, peerBean.shortIdLookup(), local, remote);
+
+            MessageHeader messageHeader = Codec.decodeHeader(buf2, peerBean.shortIdLookup());
+            MessageID messageID = new MessageID(messageHeader.messageId(), messageHeader.senderId().xor(messageHeader.recipient().peerId()));
+            Triple<Long, FutureDone<Message>, Curve25519KeyPair> t = pendingMessages.get(messageID);
+            if(t != null) {
+                Codec.decodePayload(buf2, m, messageHeader, t.e2().getPrivateKey(), local, remote);
+            } else {
+                Codec.decodePayload(buf2, m, messageHeader, null, local, remote);
+            }
+
+
             return m;
         }
 
@@ -583,13 +605,11 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
             asyncUDPSvr.process();
 
             LOG.debug("Server shutdown");
-            for (Pair<Long, FutureDone<Message>> future : pendingMessages.values()) {
-                future.element1().failed("Server shutdown");
+            for (Triple<Long, FutureDone<Message>, Curve25519KeyPair> future : pendingMessages.values()) {
+                if(future.e1() != null) {
+                    future.element1().failed("Server shutdown");
+                }
             }
-
-            pendingMessages.clear();
-            openConnections.clear();
-
 
             LOG.debug("ending loop");
         }
@@ -651,7 +671,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	public Pair<FutureDone<Message>, KCP> send(Message message, OutgoingData outgoingData) {
 		
 		FutureDone<Message> future = new FutureDone<Message>();
-        Pair<Long, FutureDone<Message>> pair = new Pair<>(System.currentTimeMillis(), future);
+        Triple<Long, FutureDone<Message>, Curve25519KeyPair> pair = Triple.of(System.currentTimeMillis(), future, message.ephemeralKeyPair());
 		KCP kcp = null;
 		
 		InetSocketAddress recipient = findRecipient(message);
@@ -673,7 +693,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 					holepunching.command(RPC.Commands.HOLEPUNCHING.getNr());
 					try {
 						LOG.debug("fire message {}",message);
-						sendNetwork(outgoingData, recipient, holepunching);
+						sendNetwork(outgoingData, peerBean.shortIdLookup(), recipient, holepunching, null);
 					} catch (Exception e) {
 						LOG.error("fire hole", e);
 						return Pair.create(future.failed(e),  null);
@@ -696,13 +716,13 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		}
 		
 		try {
-			sendNetwork(outgoingData, recipient, message);
+			sendNetwork(outgoingData, peerBean.shortIdLookup(), recipient, message, null);
 			// if we send an ack, don't expect any incoming packets
-			if (!message.isAck()) {
-				LOG.debug("pending message add: {} with id {}", message, new MessageID(message));
-				pendingMessages.put(new MessageID(message), pair);
-				LOG.debug("we have the following pending messages: {}", pendingMessages.keySet()); 
-			}
+			//if (!message.isAck()) {
+			//	LOG.debug("pending message add: {} with id {}", message, new MessageID(message));
+			pendingMessages.put(new MessageID(message), pair);
+			//	LOG.debug("we have the following pending messages: {}", pendingMessages.keySet());
+			//}
 		} catch (Throwable t) {
 			LOG.error("could not send", t);
             future.failed(t);
@@ -746,27 +766,28 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		return message.recipient().createSocket(message.sender());
 	}
 
-    private static void sendNetwork(OutgoingData outgoingData, final InetSocketAddress remote, Message m2)
+    private static void sendNetwork(OutgoingData outgoingData, PeerAddressManager peerAddressManager, final InetSocketAddress remote, Message m2, final byte[] ephemeralPublicKeyRemote)
             throws GeneralSecurityException, IOException {
         LOG.debug("peer isVerified: {}", m2.isVerified());
 
         ByteBuffer buf = ByteBuffer.wrap(new byte[1500]);
 
-        Codec.encode(buf, m2, null, remote.getAddress() instanceof Inet4Address);
+        Codec.encode(buf, m2, peerAddressManager, ephemeralPublicKeyRemote, (remote.getAddress() instanceof Inet4Address));
         packetCounterSend.incrementAndGet();
 
         LOG.debug("server out UDP {} to {}", m2, remote);
+        buf.flip();
         byte[] me = ChannelUtils.convert2(buf);
         outgoingData.send(remote, me, 0, me.length);
     }
 
 	
-	private static void sendNetwork(DatagramChannel datagramChannel, final InetSocketAddress remote, Message m2)
+	private static void sendNetwork(DatagramChannel datagramChannel, PeerAddressManager peerAddressManager, final InetSocketAddress remote, Message m2, final byte[] ephemeralPublicKeyRemote)
 			throws GeneralSecurityException, IOException {
 		LOG.debug("peer isVerified: {}", m2.isVerified());
 
         ByteBuffer buf = ByteBuffer.wrap(new byte[1500]);
-        Codec.encode(buf, m2, null, remote.getAddress() instanceof Inet4Address);
+        Codec.encode(buf, m2, peerAddressManager, ephemeralPublicKeyRemote, (remote.getAddress() instanceof Inet4Address));
 		packetCounterSend.incrementAndGet();
 				
 		LOG.debug("server out UDP {}: to {}", m2, remote);

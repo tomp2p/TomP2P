@@ -74,6 +74,7 @@ public class Utils2 {
 	    message.recipient(n2);
 	    message.type(type);
 	    message.command(command);
+	    message.generateEphemeralKeyPair();
 	    return message;
 	}
 

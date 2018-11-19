@@ -57,8 +57,8 @@ public class MessageID implements Comparable<MessageID> {
      * 
      * @param id
      *            The message id
-     * @param nodeAddress
-     *            The node address
+     * @param senderReceiverPair
+     *            The xored address
      */
     public MessageID(final int id, final Number256 senderReceiverPair) {
         this.id = id;

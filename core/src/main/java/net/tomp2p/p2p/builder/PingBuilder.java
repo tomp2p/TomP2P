@@ -148,7 +148,7 @@ public class PingBuilder {
 	private FuturePing ping(PeerAddress peerAddress) {
 		final FuturePing futurePing = new FuturePing();
 
-		Pair<FutureDone<Message>, KCP> p = peer.pingRPC().pingUDP(peerAddress);
+		Pair<FutureDone<Message>, KCP> p = peer.pingRPC().ping(peerAddress);
 					addPingListener(futurePing, p.element0());
 				
 

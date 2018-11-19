@@ -20,9 +20,14 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.security.KeyPair;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
+import net.tomp2p.p2p.PeerAddressManager;
 import net.tomp2p.peers.Number256;
+import net.tomp2p.utils.ConcurrentCacheMap;
+import net.tomp2p.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +36,7 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.IP;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress.PeerSocket4Address;
+import org.whispersystems.curve25519.Curve25519KeyPair;
 
 /**
  * Creates a peer and listens to incoming connections. The result of creating
@@ -51,6 +57,8 @@ public class PeerCreator {
 
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
+	private final MyPeerAddressManager myPeerAddressManager = new MyPeerAddressManager();
+
 	/**
 	 * Creates a master peer and starts UDP and TCP channels.
 	 * 
@@ -70,12 +78,13 @@ public class PeerCreator {
 	 * @throws IOException
 	 *            If the startup of listening to connections failed
 	 */
-	public PeerCreator(final int p2pId, final Number256 peerId, final KeyPair keyPair,
+	public PeerCreator(final int p2pId, final Number256 peerId, final Curve25519KeyPair keyPair,
 					   final ChannelServerConfiguration channelServerConfiguration,
 					   final ScheduledExecutorService timer, SendBehavior sendBehavior) throws IOException {
 		//peer bean
 		peerBean = new PeerBean().keyPair(keyPair);
 		PeerAddress self = findPeerAddress(peerId, channelServerConfiguration);
+        peerBean.shortIdLookup(myPeerAddressManager.add(self, keyPair));
 		peerBean.serverPeerAddress(self);
 		LOG.info("Visible address to other peers: {}", self);
 		
@@ -99,10 +108,11 @@ public class PeerCreator {
 	 * @param keyPair
 	 *            The key pair or null
 	 */
-	public PeerCreator(final PeerCreator parent, final Number256 peerId, final KeyPair keyPair) {
+	public PeerCreator(final PeerCreator parent, final Number256 peerId, final Curve25519KeyPair keyPair) {
 		this.connectionBean = parent.connectionBean;
 		this.peerBean = new PeerBean().keyPair(keyPair);
 		PeerAddress self = parent.peerBean().serverPeerAddress().withPeerId(peerId);
+        peerBean.shortIdLookup(myPeerAddressManager.add(self, keyPair));
 		this.peerBean.serverPeerAddress(self);
 		this.master = false;
 	}
@@ -198,4 +208,26 @@ public class PeerCreator {
 		
 		return self;
 	}
+
+	private static class MyPeerAddressManager implements PeerAddressManager {
+
+	    Map<Number256, Pair<PeerAddress, byte[]>> peerIdMap = new ConcurrentHashMap<>();
+        Map<Integer, Pair<PeerAddress, byte[]>> shortPeerIdMap = new ConcurrentHashMap<>();
+
+        @Override
+        public Pair<PeerAddress, byte[]> getPeerAddressFromShortId(int recipientShortId) {
+            return shortPeerIdMap.get(recipientShortId);
+        }
+
+        @Override
+        public Pair<PeerAddress, byte[]> getPeerAddressFromId(Number256 peerId) {
+            return peerIdMap.get(peerId);
+        }
+
+        public PeerAddressManager add(PeerAddress peerAddress, Curve25519KeyPair keyPair) {
+            peerIdMap.put(peerAddress.peerId(), Pair.of(peerAddress, keyPair.getPrivateKey()));
+            shortPeerIdMap.put(peerAddress.peerId().intValueMSB(), Pair.of(peerAddress, keyPair.getPrivateKey()));
+            return this;
+        }
+    }
 }

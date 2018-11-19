@@ -88,7 +88,7 @@ public class QuitRPC extends DispatchHandler {
 	 * @return The future response to keep track of future events
 	 */
 	public Pair<FutureDone<Message>, KCP> quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder) {
-		final Message message = createMessage(remotePeer, RPC.Commands.QUIT.getNr(), Type.REQUEST_FF);
+		final Message message = createMessage(remotePeer, RPC.Commands.QUIT.getNr(), Type.REQUEST);
 		//if (shutdownBuilder.sign()) {
 		//	message.publicKeyAndSign(shutdownBuilder.keyPair());
 		//}
@@ -98,7 +98,7 @@ public class QuitRPC extends DispatchHandler {
 
 	@Override
 	public void handleResponse(Responder r, final Message message, final boolean sign, KCP kcp, ChannelSender sender) throws Exception {
-		if (!(message.type() == Type.REQUEST_FF && message.command() == RPC.Commands.QUIT.getNr())) {
+		if (!(message.type() == Type.REQUEST && message.command() == RPC.Commands.QUIT.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong for this handler.");
 		}
 		LOG.debug("received QUIT message {}", message);

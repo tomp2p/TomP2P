@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.util.Arrays;
 
 import net.tomp2p.crypto.ChaCha20;
@@ -45,12 +46,6 @@ public final class Codec {
 
     private static final Logger LOG = LoggerFactory.getLogger(Codec.class);
 
-    /**
-     * Empty constructor.
-     */
-    private Codec() {
-    }
-
     public static final int HEADER_SIZE_MIN = 156;
 
     /**
@@ -61,11 +56,11 @@ public final class Codec {
      *    (don't care about lost packets, or high priority, at the moment its not used). If its KCP, then then the next
      *    30bits are the session Id, followed by the rest of the KCP header.
      *  - 30bit p2p version **4 bytes** //ignore if its wrong p2p version
+     *  - 32bit message id **4 bytes**
      *  - public key of sender xored with public key of recipient with overlapping 28 bytes **36 bytes**
      *  - Epheral public key of sender, just for this message. **32 bytes**
      *  -- now starts the encrypted part with ChaCha20-- - 32bytes sym key based on key pairs sender receiver **12 bytes** nonce overhead from ChaCha20
      *  - peeraddress of sender (without IP or public key) **min. 2 bytes**
-     *  - 32bit message id  	**4 bytes**
      *  - 4bit message type 	(request, ack, ok)
      *  - 4bit message options  **1 byte**
      *  - 8bit message command  **1 byte**
@@ -78,22 +73,29 @@ public final class Codec {
      *            The message with the header that will be encoded
      * @return The buffer passed as an argument
      */
-    public static void encode(final ByteBuffer buf, final Message message, final PeerAddressManager lookup, final boolean encodeForIPv4) throws GeneralSecurityException, IOException {
+    public static void encode(final ByteBuffer buf, final Message message, final PeerAddressManager lookup, final byte[] ephemeralPublicKeyRemote, final boolean encodeForIPv4) throws GeneralSecurityException, IOException {
 
         if(buf.remaining() < Codec.HEADER_SIZE_MIN) {
-            throw new IOException("header too small, min size is 144 bytes");
+            throw new IOException("header too small, min size is " + Codec.HEADER_SIZE_MIN);
         }
 
     	final int versionAndType = message.protocolType().ordinal() << 30 | (message.version() & 0x3fffffff);
     	buf.putInt(versionAndType); //4
+        buf.putInt(message.messageId()); // 8
+
         final byte[] xored = message.sender().peerId().xorOverlappedBy4(message.recipient().peerId());
-        buf.put(xored); //40
+        buf.put(xored); //44
+        final Curve25519KeyPair pair = message.ephemeralKeyPair();
+        buf.put(pair.getPublicKey()); //76
 
-        final Curve25519KeyPair pair = message.ephemeralKey();
-        buf.put(pair.getPublicKey()); //72
-
-        final ByteBuffer payload = message.payload().asReadOnlyBuffer();
-        final int maxEncryptionSize = PeerAddress.MAX_SIZE_NO_PEER_ID+4+1+1+payload.remaining()+12;
+        final int payloadLength;
+        if(message.payload() != null) {
+            final ByteBuffer payload = message.payload().asReadOnlyBuffer();
+            payloadLength=payload.remaining();
+        } else {
+            payloadLength = 0;
+        }
+        final int maxEncryptionSize = PeerAddress.MAX_SIZE_NO_PEER_ID+4+1+1+payloadLength+12;
         final ByteBuffer needsEncryption = ByteBuffer.allocate(maxEncryptionSize);
 
         //peer ID is in the xored section, and the IP comes with the IP packet, so no need for encoding
@@ -105,13 +107,19 @@ public final class Codec {
         }
 
         tmp.encode(needsEncryption);
-        needsEncryption.putInt(message.messageId());
+
         needsEncryption.put((byte) (message.type().ordinal() << 4 | message.options()));
         needsEncryption.put(message.command());
-        needsEncryption.put(payload); //copy
+        if(message.payload() != null) {
+            final ByteBuffer payload = message.payload().asReadOnlyBuffer();
+            needsEncryption.put(payload); //copy
+        }
 
-        //encryption
-        final byte[] sharedKey = Crypto.cipher.calculateAgreement(message.recipient().peerId().toByteArray(), pair.getPrivateKey());
+        //if there is a public key in the message, then encrypt with the empheral private key, as this message is a
+        //reply to a request. If no ephemeral key is present, its a request and the public key of the recipient
+        //has to be used in order to be 0RTT
+        byte[] publicKey = ephemeralPublicKeyRemote != null ? ephemeralPublicKeyRemote : message.recipient().peerId().toByteArray();
+        final byte[] sharedKey = Crypto.cipher.calculateAgreement(publicKey, pair.getPrivateKey());
         LOG.debug("shared key encoding: {}", Arrays.toString(sharedKey));
         LOG.debug("public key emp encoding: {}", Arrays.toString(pair.getPublicKey()));
         LOG.debug("public key rem encoding: {}", Arrays.toString(message.recipient().peerId().toByteArray()));
@@ -140,6 +148,7 @@ public final class Codec {
     	return ProtocolType.values()[version >>> 6];
     }
 
+
     /**
      * Decodes a message object.
      * 
@@ -151,33 +160,58 @@ public final class Codec {
      *            The buffer to decode from
      * @return The partial message where only the header fields are set
      */
-    public static void decode(final ByteBuffer buffer, final Message message, final PeerAddressManager lookup,
-                              final InetSocketAddress local, final InetSocketAddress remote) throws GeneralSecurityException, IOException {
+    public static MessageHeader decodeHeader(final ByteBuffer buffer, final PeerAddressManager lookup) throws IOException {
 
         if(buffer.remaining() < Codec.HEADER_SIZE_MIN) {
-            throw new IOException("header too small, min size is 144 bytes");
+            throw new IOException("header too small, min size is " + Codec.HEADER_SIZE_MIN);
         }
 
+        MessageHeader.MessageHeaderBuilder messageHeaderBuilder = new MessageHeader.MessageHeaderBuilder();
+
         final int versionAndType = buffer.getInt();
-        message.version(versionAndType >>> 4);
+        messageHeaderBuilder.version(versionAndType & 0x3fffffff);
+        messageHeaderBuilder.messageId(buffer.getInt());
 
         final byte[] xored = new byte[36];
         buffer.get(xored);
-
         final int recipientShortId = Utils.byteArrayToInt(xored, 32);
         final int senderIdShort = Utils.byteArrayToInt(xored, 0);
-
         final Pair<PeerAddress, byte[]> recipientId = lookup.getPeerAddressFromShortId(recipientShortId);
+        messageHeaderBuilder.recipient(recipientId.e0());
+        messageHeaderBuilder.privateKey(recipientId.e1());
         final Number256 senderId = recipientId.element0().peerId().deXorOverlappedBy4(xored, senderIdShort);
+        messageHeaderBuilder.senderId(senderId);
 
-        byte[] publicKeySender = new byte[32];
-        buffer.get(publicKeySender);
-        byte[] sharedKey = Crypto.cipher.calculateAgreement(publicKeySender, recipientId.element1());
+        return messageHeaderBuilder.build();
+
+    }
+
+    public static void decodePayload(final ByteBuffer buffer, final Message message, final MessageHeader messageHeader, final byte[] ephemeralPrivateKeyLocal,
+                                    final InetSocketAddress local, final InetSocketAddress remote) throws GeneralSecurityException {
+
+        message.recipientSocket(local);
+        message.senderSocket(remote);
+        message.version(messageHeader.version());
+        message.messageId(messageHeader.messageId());
+        message.recipient(messageHeader.recipient());
+        final Number256 senderId = messageHeader.senderId();
+        final byte[] localPrivateKey = messageHeader.privateKey();
+        //messageHeader not used anymore
+
+        byte[] ephemeralPublicKey = new byte[32];
+        buffer.get(ephemeralPublicKey);
+        message.ephemeralPublicKey(ephemeralPublicKey);
+
+        //if there is a private key for the message, then encrypt with the empheral private key, as this message is a
+        //reply to a request. If no ephemeral key is present, its a request and the public key of the recipient
+        //has to be used in order to be 0RTT
+        byte[] privateKey = ephemeralPrivateKeyLocal != null ? ephemeralPrivateKeyLocal : localPrivateKey;
+        byte[] sharedKey = Crypto.cipher.calculateAgreement(ephemeralPublicKey, privateKey);
 
         LOG.debug("shared key decoding: {}", Arrays.toString(sharedKey));
-        LOG.debug("public key emp decoding: {}", Arrays.toString(publicKeySender));
-        LOG.debug("public key loc decoding: {}", Arrays.toString(recipientId.element0().peerId().toByteArray()));
-
+        LOG.debug("public key emp decoding: {}", Arrays.toString(ephemeralPublicKey));
+        LOG.debug("public key loc decoding: {}", Arrays.toString(message.recipient().peerId().toByteArray()));
+        LOG.debug("priv: {}", ephemeralPrivateKeyLocal);
 
         int payloadLength = buffer.remaining() - 64;
         byte[] encrypted = new byte[payloadLength];
@@ -193,14 +227,6 @@ public final class Codec {
         sender = sender.withIPSocket(psa);
         sender = sender.withPeerId(senderId).withSkipPeerId(false);
         message.sender(sender);
-        message.senderSocket(remote);
-
-        //add recipient information, from both socket and internal information
-        message.recipientSocket(local);
-        message.recipient(recipientId.e0());
-
-
-        message.messageId(plain.getInt());
         int messageOptions = plain.get();
         message.type(Message.Type.values()[messageOptions >>> 4]);
         message.options(messageOptions & 0xf);

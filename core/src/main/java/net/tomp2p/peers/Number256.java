@@ -156,8 +156,14 @@ public final class Number256 extends Number implements Comparable<Number256> {
             throw new IllegalArgumentException(String.format("Can only deal with byte arrays of size smaller or equal to %s. Provided array has %s length.", BYTE_ARRAY_SIZE, length));
         }
         this.val = new long[LONG_ARRAY_SIZE];
+
+        //if this copy is not here, then we should align the byte array to the length of a long.
+        //@see testFromByteArray
+        byte[] newVal = new byte[32];
+        System.arraycopy(val, 0, newVal, newVal.length - val.length, val.length);
+
         for(int i=0; i<LONG_ARRAY_SIZE;i++) {
-            this.val[i] = Utils.byteArrayToLong(val, offset + (i*8));
+            this.val[i] = Utils.byteArrayToLong(newVal, offset + (i*8));
         }
     }
 
@@ -306,7 +312,7 @@ public final class Number256 extends Number implements Comparable<Number256> {
     public int bitLength() {
         for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
             if (this.val[i] != 0) {
-                return (Long.SIZE * (LONG_ARRAY_SIZE - (i-1))) +
+                return (Long.SIZE * (LONG_ARRAY_SIZE - (i+1))) +
                         (Long.SIZE - Long.numberOfLeadingZeros(this.val[i]));
             }
         }
@@ -315,12 +321,20 @@ public final class Number256 extends Number implements Comparable<Number256> {
 
     @Override
     public double doubleValue() {
-        return Double.NaN;
+        double d = 0;
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
+            d += this.val[LONG_ARRAY_SIZE - i - 1] * Math.pow(2, (i*64));
+        }
+        return d;
     }
 
     @Override
     public float floatValue() {
-        return Float.NaN;
+        float f = 0;
+        for (int i = 0; i < LONG_ARRAY_SIZE; i++) {
+            f += this.val[LONG_ARRAY_SIZE - i - 1] * Math.pow(2, (i*64));
+        }
+        return f;
     }
 
     @Override

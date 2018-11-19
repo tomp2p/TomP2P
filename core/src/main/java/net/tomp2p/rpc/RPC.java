@@ -6,6 +6,7 @@ public class RPC {
 		PING(),
 		PING_DISCOVER(),
 		PING_PROBE(),
+		PING_NOACK(),
 		PUT(), 
 		GET(), 
 		ADD(), 

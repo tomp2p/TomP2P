@@ -35,6 +35,7 @@ import net.tomp2p.connection.DefaultSendBehavior;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerCreator;
 import net.tomp2p.connection.SendBehavior;
+import net.tomp2p.crypto.Crypto;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.peers.Number256;
 import net.tomp2p.peers.PeerMap;
@@ -45,7 +46,7 @@ import net.tomp2p.rpc.DefaultBloomfilterFactory;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
-import net.tomp2p.utils.Utils;
+import org.whispersystems.curve25519.Curve25519KeyPair;
 
 /**
  * The builder of a {@link Peer} class.
@@ -61,27 +62,7 @@ public class PeerBuilder {
 		//or use -Djava.net.preferIPv4Stack=true in the command line. This is required to make broadcasting work. See
 		//https://issues.jboss.org/browse/MODCLUSTER-327 or https://code.google.com/p/kryonet/issues/detail?id=29
 	}
-	
-	public static final PublicKey EMPTY_PUBLIC_KEY = new PublicKey() {
-		private static final long serialVersionUID = 4041565007522454573L;
 
-		@Override
-		public String getFormat() {
-			return null;
-		}
-
-		@Override
-		public byte[] getEncoded() {
-			return null;
-		}
-
-		@Override
-		public String getAlgorithm() {
-			return null;
-		}
-	};
-
-	public static final KeyPair EMPTY_KEY_PAIR = new KeyPair(EMPTY_PUBLIC_KEY, null);
 	// if the permits are chosen too high, then we might run into timeouts as we
 	// cant handle that many connections
 	// withing the time limit
@@ -89,11 +70,9 @@ public class PeerBuilder {
 	public static final int MAX_PERMITS_TCP = 250;
 
 	// required
-	private final Number256 peerId;
+	private final Curve25519KeyPair keyPair;
 
 	// optional with reasonable defaults
-
-	private KeyPair keyPair = null;
 	private int p2pID = -1;
 	private int udpPortForwarding = -1;
 	private PeerMap peerMap = null;
@@ -121,13 +100,11 @@ public class PeerBuilder {
 
 
 	/**
-	 * Creates a peer builder with the provided peer ID and an empty key pair.
-	 * 
-	 * @param peerId
-	 *            The peer ID
+	 * Creates a peer builder with a random peer ID.
+	 *
 	 */
-	public PeerBuilder(final Number256 peerId) {
-		this.peerId = peerId;
+	public PeerBuilder() {
+		this.keyPair = Crypto.cipher.generateKeyPair();
 	}
 
 	/**
@@ -137,9 +114,9 @@ public class PeerBuilder {
 	 * @param keyPair
 	 *            The public private key pair
 	 */
-	public PeerBuilder(final KeyPair keyPair) {
+	public PeerBuilder(final Curve25519KeyPair keyPair) {
 		this.keyPair = keyPair;
-		this.peerId = Utils.makeSHAHash(keyPair.getPublic().getEncoded());
+
 	}
 
 	/**
@@ -149,10 +126,9 @@ public class PeerBuilder {
 	 * @throws IOException .
 	 */
 	public Peer start() throws IOException {
+
+	    Number256 peerId = peerId();
 		
-		if (keyPair == null) {
-			keyPair = EMPTY_KEY_PAIR;
-		}
 		if (p2pID == -1) {
 			p2pID = 1;
 		}
@@ -253,17 +229,13 @@ public class PeerBuilder {
 	}
 
 	public Number256 peerId() {
-		return peerId;
+		return new Number256(keyPair.getPublicKey());
 	}
 
-	public KeyPair keyPair() {
+	public Curve25519KeyPair keyPair() {
 		return keyPair;
 	}
 
-	public PeerBuilder keyPair(KeyPair keyPair) {
-		this.keyPair = keyPair;
-		return this;
-	}
 
 	public int p2pId() {
 		return p2pID;

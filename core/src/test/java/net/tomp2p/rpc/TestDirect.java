@@ -18,7 +18,7 @@ public class TestDirect {
         Peer recv1 = null;
         ChannelTransceiver.resetCounters();
         try {
-            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
+            sender = new PeerBuilder().p2pId(55).enableMaintenance(false).port(2424).start();
 
             byte[] testArray = new byte[222];
             for(int i=0;i<testArray.length;i++) {
@@ -26,7 +26,7 @@ public class TestDirect {
             }
             System.out.println("Send ARR: "+ Arrays.toString(testArray));
 
-            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
+            recv1 = new PeerBuilder().p2pId(55).enableMaintenance(false).port(8088).start();
 
             final CountDownLatch done = new CountDownLatch(1);
 
@@ -70,7 +70,7 @@ public class TestDirect {
         Peer recv1 = null;
         ChannelTransceiver.resetCounters();
         try {
-            sender = new PeerBuilder(new Number256("0x9876")).p2pId(55).enableMaintenance(false).port(2424).start();
+            sender = new PeerBuilder().p2pId(55).enableMaintenance(false).port(2424).start();
 
             byte[] testArray = new byte[9000]; //TODO: figure out why 6000 is not working
             for(int i=0;i<testArray.length;i++) {
@@ -78,7 +78,7 @@ public class TestDirect {
             }
             System.out.println("Send ARR: "+ Arrays.toString(testArray));
 
-            recv1 = new PeerBuilder(new Number256("0x1234")).p2pId(55).enableMaintenance(false).port(8088).start();
+            recv1 = new PeerBuilder().p2pId(55).enableMaintenance(false).port(8088).start();
 
             final CountDownLatch done = new CountDownLatch(1);
 

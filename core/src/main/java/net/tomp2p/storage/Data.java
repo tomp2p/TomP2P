@@ -334,10 +334,10 @@ public class Data {
 
 	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey) {
 		if (signed) {
-			if(publicKey != PeerBuilder.EMPTY_PUBLIC_KEY && publicKey!= null && 
+			/*if(publicKey != PeerBuilder.EMPTY_PUBLIC_KEY && publicKey!= null &&
 					(this.publicKey==null || this.publicKey == PeerBuilder.EMPTY_PUBLIC_KEY)) {
 				this.publicKey = publicKey;
-			}
+			}*/
 			
 			/*if(buf.readableBytes() < signatureFactory.signatureSize()) {
 				// don't even try to create a signature

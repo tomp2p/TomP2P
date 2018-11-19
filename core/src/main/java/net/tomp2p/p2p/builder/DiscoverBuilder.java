@@ -214,8 +214,7 @@ public class DiscoverBuilder {
         });
 
         
-        Pair<FutureDone<Message>, KCP> p = peer.pingRPC().pingUDPDiscover(peerAddress,
-                configuration); 
+        Pair<FutureDone<Message>, KCP> p = peer.pingRPC().pingDiscover(peerAddress);
         
          
         

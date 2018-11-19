@@ -57,11 +57,7 @@ public class Message {
     // used for creating random message id
     private static final transient Random RND = new Random();
 
-    private final Curve25519KeyPair keyPair = Crypto.cipher.generateKeyPair();
 
-    public Curve25519KeyPair ephemeralKey() {
-        return keyPair;
-    }
 
     public enum ProtocolType {UDP, KCP, UNUSED1, UNUSED2}; //max 4
 
@@ -70,7 +66,7 @@ public class Message {
      */
 	public enum Type {
 		REQUEST,
-        REQUEST_FF,
+        UNUSED,
 		ACK,
 		OK,
 		NOT_FOUND,
@@ -101,6 +97,32 @@ public class Message {
     private transient boolean sign = false;
     private transient boolean content = false;
     private transient boolean sendSelf = false;
+
+    private transient byte[] ephemeralPublicKey = null;
+    private transient Curve25519KeyPair keyPair = null;
+
+    public Message generateEphemeralKeyPair() {
+        this.keyPair = Crypto.cipher.generateKeyPair();
+        return this;
+    }
+
+    public Curve25519KeyPair ephemeralKeyPair() {
+        return keyPair;
+    }
+
+    public Message ephemeralKeyPair(Curve25519KeyPair keyPair) {
+        this.keyPair = keyPair;
+        return this;
+    }
+
+    public byte[] ephemeralPublicKey() {
+        return ephemeralPublicKey;
+    }
+
+    public Message ephemeralPublicKey(byte[] ephemeralPublicKey) {
+        this.ephemeralPublicKey = ephemeralPublicKey;
+        return this;
+    }
 
     /**
      * Creates message with a random ID.
@@ -251,18 +273,11 @@ public class Message {
      * @return True if this is a request, a regular or a fire and forget
      */
     public boolean isRequest() {
-		return type == Type.REQUEST || type == Type.REQUEST_FF;
+		return type == Type.REQUEST;
     }
     
     public boolean isAck() {
 		return type == Type.ACK;
-    }
-
-    /**
-     * @return True if its a fire and forget, that means we don't expect an answer
-     */
-    public boolean isFireAndForget() {
-        return type == Type.REQUEST_FF;
     }
 
     /**

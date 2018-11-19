@@ -27,7 +27,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-public class TestNumber160 {
+public class TestNumber256 {
     private final Random rnd = new Random();
     
     @Rule
@@ -50,10 +50,10 @@ public class TestNumber160 {
 
     @Test
     public void testXor() {
-        BigInteger bi1 = new BigInteger("1234567890abcdef1234567890abcdef12345678", 16);
-        Number256 ki1 = new Number256("0x1234567890abcdef1234567890abcdef12345678");
-        BigInteger bi2 = new BigInteger("357116889007843534245232322114545905234a", 16);
-        Number256 ki2 = new Number256("0x357116889007843534245232322114545905234a");
+        BigInteger bi1 = new BigInteger("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", 16);
+        Number256 ki1 = new Number256("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+        BigInteger bi2 = new BigInteger("357116889007843534245232322114545905234a688432435674546621211677", 16);
+        Number256 ki2 = new Number256("0x357116889007843534245232322114545905234a688432435674546621211677");
         Assert.assertEquals("0x" + bi1.toString(16), ki1.toString());
         Assert.assertEquals("0x" + bi2.toString(16), ki2.toString());
         Number256 ki3 = ki1.xor(ki2);
@@ -64,69 +64,65 @@ public class TestNumber160 {
     @Test
     public void testRandomXor() {
         for (int i = 0; i < 1000; i++) {
-            BigInteger bi1 = new BigInteger(160, rnd);
-            BigInteger bi2 = new BigInteger(160, rnd);
-            if (bi1.toString(16).length() == 40 && bi2.toString(16).length() == 40) {
+            BigInteger bi1 = new BigInteger(256, rnd);
+            BigInteger bi2 = new BigInteger(256, rnd);
+            if (bi1.toString(16).length() == 64 && bi2.toString(16).length() == 64) {
                 Number256 ki1 = new Number256("0x" + bi1.toString(16));
                 Number256 ki2 = new Number256("0x" + bi2.toString(16));
                 //
                 Number256 ki3 = ki1.xor(ki2);
                 BigInteger bi3 = bi1.xor(bi2);
-                Assert.assertEquals(ki3.toString(), "0x" + bi3.toString(16));
+                String s1 = bi3.toString(16);
+                while(s1.length() < 64) s1 = "0" + s1;
+                Assert.assertEquals(ki3.toString(), "0x" + s1);
             }
         }
     }
 
     @Test
     public void testFromIntArray() {
-        long[] tmp = new long[] { 1, 2, 3, 4, 5 };
+        long[] tmp = new long[] { 1, 2, 3, 4};
         Number256 ki2 = new Number256(tmp);
-        Assert.assertEquals("0x0000000100000002000000030000000400000005", ki2.toString());
-        tmp = new long[] { -1, -1, -1, -1, -1 };
+        Assert.assertEquals("0x0000000000000001000000000000000200000000000000030000000000000004", ki2.toString());
+        tmp = new long[] { -1, -1, -1, -1};
         ki2 = new Number256(tmp);
-        Assert.assertEquals("0xffffffffffffffffffffffffffffffffffffffff", ki2.toString());
+        Assert.assertEquals("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", ki2.toString());
         ki2 = new Number256(new long[] { 1, 2 });
-        Assert.assertEquals("0x100000002", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000010000000000000002", ki2.toString());
         ki2 = new Number256(new long[] { 1 });
-        Assert.assertEquals("0x1", ki2.toString());
-        ki2 = new Number256(new long[] { 1, 1, 1, 1, 1 });
-        Assert.assertEquals("0x0000000100000001000000010000000100000001", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000001", ki2.toString());
+        ki2 = new Number256(new long[] { 1, 1, 1, 1});
+        Assert.assertEquals("0x0000000000000001000000000000000100000000000000010000000000000001", ki2.toString());
     }
 
     @Test
     public void testFromString() {
         Number256 ki2 = new Number256("0x9");
-        Assert.assertEquals("0x9", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000009", ki2.toString());
         ki2 = new Number256("0x22");
-        Assert.assertEquals("0x22", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000022", ki2.toString());
         ki2 = new Number256("0x0000000000000002000000030000000400000005");
-        Assert.assertEquals("0x2000000030000000400000005", ki2.toString());
-        Assert.assertEquals("0x0000000000000002000000030000000400000005", ki2.toString());
-        ki2 = new Number256("0x0400000005");
-        Assert.assertEquals("0x400000005", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000002000000030000000400000005", ki2.toString());
         ki2 = new Number256("0x0000000000000002000000000000000000000000");
-        Assert.assertEquals("0x2000000000000000000000000", ki2.toString());
-        Assert.assertEquals("0x0000000000000002000000000000000000000000", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000002000000000000000000000000", ki2.toString());
         ki2 = new Number256("0x1000000000000000000000000000000000000000");
-        Assert.assertEquals("0x1000000000000000000000000000000000000000", ki2.toString());
-        ki2 = new Number256("0x100000000000000000000");
-        Assert.assertEquals("0x100000000000000000000", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000001000000000000000000000000000000000000000", ki2.toString());
     }
 
     @Test
     public void testFromInt() {
         Number256 ki2 = new Number256(0x2c);
-        Assert.assertEquals("0x2c", ki2.toString());
+        Assert.assertEquals("0x000000000000000000000000000000000000000000000000000000000000002c", ki2.toString());
     }
 
     @Test
     public void testFromByteArray() {
         Number256 ki2 = new Number256(new byte[] { 1 });
-        Assert.assertEquals("0x1", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000001", ki2.toString());
         ki2 = new Number256(1, 2);
-        Assert.assertEquals("0x100000002", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000010000000000000002", ki2.toString());
         ki2 = new Number256(new byte[] { 1, 2 });
-        Assert.assertEquals("0x102", ki2.toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000102", ki2.toString());
         //
         ki2 = new Number256(new byte[] { 1 });
         Number256 ki3 = new Number256(new byte[] { 2 });
@@ -195,38 +191,48 @@ public class TestNumber160 {
         } catch (RuntimeException e) {
         }
         ki2 = Number256.MAX_VALUE;
-        Assert.assertEquals(160, ki2.bitLength());
+        Assert.assertEquals(256, ki2.bitLength());
     }
 
     @Test
     public void testDouble() {
-        BigInteger bi1 = new BigInteger("1234567890abcdef1234567890abcdef12345678", 16);
-        Number256 ki1 = new Number256("0x1234567890abcdef1234567890abcdef12345678");
-        BigInteger bi2 = new BigInteger("357116889007843534245232322114545905234a", 16);
-        Number256 ki2 = new Number256("0x357116889007843534245232322114545905234a");
+        BigInteger bi1 = new BigInteger("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", 16);
+        Number256 ki1 = new Number256("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+        BigInteger bi2 = new BigInteger("357116889007843534245232322114545905234a688432435674546621211677", 16);
+        Number256 ki2 = new Number256("0x357116889007843534245232322114545905234a688432435674546621211677");
         Assert.assertEquals(0, Double.compare(bi1.doubleValue(), ki1.doubleValue()));
         Assert.assertEquals(0, Double.compare(bi2.doubleValue(), ki2.doubleValue()));
     }
 
     @Test
     public void testFloat() {
-        BigInteger bi1 = new BigInteger("1234567890abcdef1234567890abcdef12345678", 16);
-        Number256 ki1 = new Number256("0x1234567890abcdef1234567890abcdef12345678");
-        BigInteger bi2 = new BigInteger("357116889007843534245232322114545905234a", 16);
-        Number256 ki2 = new Number256("0x357116889007843534245232322114545905234a");
+        BigInteger bi1 = new BigInteger("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", 16);
+        Number256 ki1 = new Number256("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+        BigInteger bi2 = new BigInteger("357116889007843534245232322114545905234a688432435674546621211677", 16);
+        Number256 ki2 = new Number256("0x357116889007843534245232322114545905234a688432435674546621211677");
         Assert.assertEquals(0, Float.compare(bi1.floatValue(), ki1.floatValue()));
         Assert.assertEquals(0, Float.compare(bi2.floatValue(), ki2.floatValue()));
     }
 
     @Test
+    public void testLong() {
+        Number256 n1 = new Number256(1);
+        Number256 n2 = new Number256(1L);
+        Assert.assertEquals(n1, n2);
+        //
+        n2 = new Number256(Long.MAX_VALUE);
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000007FFFFFFFFFFFFFFF".toLowerCase(), n2.toString());
+    }
+
+    @Test
     public void testPerformance() {
-        int runs = 10000;
+        int runs = 1000;
         BigInteger bi1[] = new BigInteger[runs];
         BigInteger bi2[] = new BigInteger[runs];
         for (int i = 0; i < runs; i++) {
-            bi1[i] = new BigInteger(160, rnd);
-            bi2[i] = new BigInteger(160, rnd);
-            if (bi1[i].toString(16).length() != 40 || bi2[i].toString(16).length() != 40)
+            bi1[i] = new BigInteger(256, rnd);
+            bi2[i] = new BigInteger(256, rnd);
+            if (bi1[i].toString(16).length() != 64 || bi2[i].toString(16).length() != 64)
                 i--;
         }
         Number256 ki1[] = new Number256[runs];
@@ -250,47 +256,11 @@ public class TestNumber160 {
                 ki3 = ki1[(i * j) % runs].xor(ki2[i]).xor(ki3);
         }
         System.err.println("Key time " + (System.currentTimeMillis() - start) + ", " + ki3);
-        Assert.assertEquals("0x" + bi3.toString(16), ki3.toString());
+
+        String s1 = bi3.toString(16);
+        while(s1.length() < 64) s1 = "0" + s1;
+        Assert.assertEquals("0x" + s1, ki3.toString());
     }
 
-    @Test
-    public void testPerformance2() {
-        ConcurrentSkipListSet<BigInteger> test1 = new ConcurrentSkipListSet<BigInteger>();
-        ConcurrentSkipListSet<Number256> test2 = new ConcurrentSkipListSet<Number256>();
-        int runs = 10000;
-        BigInteger bi1[] = new BigInteger[runs];
-        for (int i = 0; i < runs; i++) {
-            bi1[i] = new BigInteger(160, rnd);
-            if (bi1[i].toString(16).length() != 40)
-                i--;
-        }
-        Number256 ki1[] = new Number256[runs];
-        for (int i = 0; i < runs; i++)
-            ki1[i] = new Number256("0x" + bi1[i].toString(16));
-        long start = System.currentTimeMillis();
-        for (int j = 0; j < 500; j++) {
-            test1.clear();
-            for (int i = 0; i < runs; i++)
-                test1.add(bi1[i]);
-        }
-        System.err.println("BigInteger time " + (System.currentTimeMillis() - start));
-        start = System.currentTimeMillis();
-        for (int j = 0; j < 500; j++) {
-            test2.clear();
-            for (int i = 0; i < runs; i++)
-                test2.add(ki1[i]);
-        }
-        System.err.println("Key time " + (System.currentTimeMillis() - start));
-        Assert.assertEquals("0x" + test1.first().toString(16), test2.first().toString());
-    }
 
-    @Test
-    public void testLong() {
-        Number256 n1 = new Number256(1);
-        Number256 n2 = new Number256(1L);
-        Assert.assertEquals(n1, n2);
-        //
-        n2 = new Number256(Long.MAX_VALUE);
-        Assert.assertEquals("0x7FFFFFFFFFFFFFFF".toLowerCase(), n2.toString());
-    }
 }

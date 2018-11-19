@@ -111,8 +111,13 @@ public abstract class DispatchHandler {
      * @return The created request message
      */
     public Message createMessage(final PeerAddress recipient, final byte name, final Type type) {
-    	return new Message().recipient(recipient).sender(peerBean().serverPeerAddress())
-                .command(name).type(type).version(connectionBean().p2pId());
+    	return new Message()
+                .recipient(recipient)
+                .sender(peerBean().serverPeerAddress())
+                .command(name)
+                .type(type)
+                .version(connectionBean().p2pId())
+                .generateEphemeralKeyPair();
     }
 
     /**
@@ -177,7 +182,7 @@ public abstract class DispatchHandler {
     		//if its send to self, then we have full trust, don't set reporter 
     		final PeerAddress reporter = requestMessage.isSendSelf() ? null : requestMessage.sender();
     		peerBean.notifyPeerFound(requestMessage.sender(), reporter, null);
-    	}
+    	}*/
         
         try {
             handleResponse(responder, requestMessage, sign, kcp, sender);
@@ -188,7 +193,7 @@ public abstract class DispatchHandler {
 				}
         	}
         	LOG.error("Exception in custom handler.", e);
-        }*/
+        }
     }
     
     /**

@@ -94,7 +94,7 @@ public class TestPeerMap {
         Assert.assertEquals(3, id33.bitLength());
         Assert.assertEquals(0, PeerMap.classMember(Number256.ZERO, ID));
         Assert.assertEquals(1, PeerMap.classMember(Number256.ZERO, id1));
-        Assert.assertEquals(159, PeerMap.classMember(Number256.ZERO, Number256.MAX_VALUE));
+        Assert.assertEquals(255, PeerMap.classMember(Number256.ZERO, Number256.MAX_VALUE));
         //
         PeerAddress pa1 = Utils2.createPeerAddress(id1);
         PeerAddress pa2 = Utils2.createPeerAddress(id2);
@@ -152,17 +152,17 @@ public class TestPeerMap {
         SortedSet<PeerStatistic> pa = peerMap.closePeers(ID, 2);
         Assert.assertEquals(2, pa.size());
         Iterator<PeerStatistic> iterator = pa.iterator();
-        Assert.assertEquals("0x3", iterator.next().peerAddress().peerId().toString());
-        Assert.assertEquals("0x2", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000003", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000002", iterator.next().peerAddress().peerId().toString());
         pa = peerMap.closePeers(id3, 3);
         Assert.assertEquals(3, pa.size());
         iterator = pa.iterator();
-        Assert.assertEquals("0x4", iterator.next().peerAddress().peerId().toString());
-        Assert.assertEquals("0x5", iterator.next().peerAddress().peerId().toString());
-        Assert.assertEquals("0x6", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000004", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000005", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000006", iterator.next().peerAddress().peerId().toString());
         // 0x7 is in the non-verified / overflow map
         List<PeerAddress> list = peerMap.allOverflow();
-        Assert.assertEquals("0x7", list.iterator().next().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000007", list.iterator().next().peerId().toString());
     }
 
     @Test

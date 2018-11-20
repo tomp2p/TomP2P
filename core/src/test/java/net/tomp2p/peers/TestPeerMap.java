@@ -111,15 +111,15 @@ public class TestPeerMap {
         SortedSet<PeerStatistic> pa = peerMap.closePeers(ID, 2);
         Assert.assertEquals(2, pa.size());
         Iterator<PeerStatistic> iterator = pa.iterator();
-        Assert.assertEquals("0x3", iterator.next().peerAddress().peerId().toString());
-        Assert.assertEquals("0x2", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000003", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000002", iterator.next().peerAddress().peerId().toString());
         pa = peerMap.closePeers(id3, 3);
         Assert.assertEquals(4, pa.size());
         iterator = pa.iterator();
-        Assert.assertEquals("0x4", iterator.next().peerAddress().peerId().toString());
-        Assert.assertEquals("0x5", iterator.next().peerAddress().peerId().toString());
-        Assert.assertEquals("0x6", iterator.next().peerAddress().peerId().toString());
-        Assert.assertEquals("0x7", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000004", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000005", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000006", iterator.next().peerAddress().peerId().toString());
+        Assert.assertEquals("0x0000000000000000000000000000000000000000000000000000000000000007", iterator.next().peerAddress().peerId().toString());
     }
 
     @Test

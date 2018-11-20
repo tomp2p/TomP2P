@@ -159,11 +159,11 @@ public final class Number256 extends Number implements Comparable<Number256> {
 
         //if this copy is not here, then we should align the byte array to the length of a long.
         //@see testFromByteArray
-        byte[] newVal = new byte[32];
-        System.arraycopy(val, 0, newVal, newVal.length - val.length, val.length);
+        byte[] newVal = new byte[BYTE_ARRAY_SIZE];
+        System.arraycopy(val, offset, newVal, newVal.length - length, length);
 
         for(int i=0; i<LONG_ARRAY_SIZE;i++) {
-            this.val[i] = Utils.byteArrayToLong(newVal, offset + (i*8));
+            this.val[i] = Utils.byteArrayToLong(newVal, (i*8));
         }
     }
 

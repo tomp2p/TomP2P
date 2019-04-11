@@ -27,15 +27,43 @@ package net.tomp2p.network;
 * you can use it.
 */
 
-import net.tomp2p.connection.ChannelTransceiver;
 import net.tomp2p.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListMap;
+
+
+/*
+
+KCP has only one kind of segment: both the data and control messages are
+encoded into the same structure and share the same header.
+
+The KCP packet (aka. segment) structure is as following:
+
+0               4   5   6       8 (BYTE)
++---------------+---+---+-------+
+|     conv      |cmd|frg|  wnd  |
++---------------+---+---+-------+   8
+|     ts        |     sn        |
++---------------+---------------+  16
+|     una       |     len       |
++---------------+---------------+  24
+|                               |
+|        DATA (optional)        |
+|                               |
++-------------------------------+
+
+*/
 
 public class KCP {
+
+    public interface KCPListener {
+        void output(byte[] buffer, int offset, int length);
+    }
 
     private static final Logger LOG = LoggerFactory.getLogger(KCP.class);
 
@@ -63,8 +91,7 @@ public class KCP {
     private static final int IKCP_PROBE_INIT = 7000;    // 7 secs to probe window size
     private static final int IKCP_PROBE_LIMIT = 120000; // up to 120 secs to probe window
 
-    private long conv = 0;
-    //long user = user;
+    private int conversationId = 0;
     private long snd_una = 0;
     private long snd_nxt = 0;
     private long rcv_nxt = 0;
@@ -74,59 +101,45 @@ public class KCP {
     private int rcv_wnd = IKCP_WND_RCV;
     private int rmt_wnd = IKCP_WND_RCV;
     private long cwnd = 0; //congestion window size
-    //private long incr = 0;
     private long probe = 0;
     private int mtu = IKCP_MTU_DEF;
     private int mss = this.mtu - IKCP_OVERHEAD;
     private byte[] buffer = new byte[(int) (mtu + IKCP_OVERHEAD) * 3];
-    private ArrayList<Segment> nrcv_buf = new ArrayList<>(128);
-    private ArrayList<Segment> nsnd_buf = new ArrayList<>(128);
-    private ArrayList<Segment> nrcv_que = new ArrayList<>(128);
-    private ArrayList<Segment> nsnd_que = new ArrayList<>(128);
+
+    //private List<Segment> nrcv_buf = new ArrayList<>();
+    //private List<Segment> nsnd_buf = new ArrayList<>();
+    //private List<Segment> nrcv_que = new ArrayList<>();
+    //private List<Segment> nsnd_que = new ArrayList<>();
+
+    private SortedMap<Long, Segment> nrcv_buf = new ConcurrentSkipListMap<>();
+    private SortedMap<Long, Segment> nsnd_buf = new ConcurrentSkipListMap<>();
+    private Queue<Segment> nrcv_que = new ConcurrentLinkedQueue<>();
+    private Queue<Segment> nsnd_que = new ConcurrentLinkedQueue<>();
+
     private long state = 0;
     private ArrayList<Long> acklist = new ArrayList<>(128);
     private long rx_srtt = 0;
     private long rx_rttval = 0;
-    private long rx_rto = IKCP_RTO_DEF;
-    private long rx_minrto = IKCP_RTO_MIN;
-    private long current = 0;
-    private long interval = IKCP_INTERVAL;
+    private int rx_rto = IKCP_RTO_DEF;
+    private int rx_minrto = IKCP_RTO_MIN;
+    private long currentTs = 0;
+
+    private int interval = IKCP_INTERVAL;
+
     private long ts_flush = IKCP_INTERVAL;
-    private long nodelay = 0;
-    private long updated = 0;
+
+    private boolean nodelayEnabled = false;
+    //private long updated = 0;
     private long ssthresh = IKCP_THRESH_INIT; // slow-start threshold
-    private long fastresend = 0;
+    private int fastresend = 0;
     private long xmit = 0;
-    private long nocwnd = 0;
+    private boolean congestionControlEnabled = true;
     private long dead_link = IKCP_DEADLINK;
 
     private final KCPListener kcpListener;
 
     private class Segment {
-        protected long conv = 0;
-
-/*
-
-KCP has only one kind of segment: both the data and control messages are
-encoded into the same structure and share the same header.
-
-The KCP packet (aka. segment) structure is as following:
-
-0               4   5   6       8 (BYTE)
-+---------------+---+---+-------+
-|     conv      |cmd|frg|  wnd  |
-+---------------+---+---+-------+   8
-|     ts        |     sn        |
-+---------------+---------------+  16
-|     una       |     len       |
-+---------------+---------------+  24
-|                               |
-|        DATA (optional)        |
-|                               |
-+-------------------------------+
-
-*/
-
+        protected int conversationId = 0;
 
         //TODO: everything was long, check if necessary
         protected byte cmd = 0; //command
@@ -157,7 +170,7 @@ The KCP packet (aka. segment) structure is as following:
         protected int encode(byte[] array, int offset) {
             int currentOffset = offset;
 
-            offset = Utils.intToByteArray(conv, array, offset);  //4
+            offset = Utils.intToByteArray(conversationId, array, offset);  //4
             offset = Utils.byteToByteArray(cmd, array, offset);  //1 / 5
             offset = Utils.byteToByteArray(frg, array, offset);  //1 / 6
             offset = Utils.shortToByteArray(wnd, array, offset); //2 / 8
@@ -171,9 +184,11 @@ The KCP packet (aka. segment) structure is as following:
         }
     }
 
+    public final static ByteBuffer EMPTY = ByteBuffer.allocate(0);
+
 
     /**
-     * @param conv The conversation id is used to identify each connection, which will not change
+     * @param conversationId The conversation id is used to identify each connection, which will not change
      * during the connection life-time.
      *
      * It is represented by a 32 bits integer which is given at the moment the KCP
@@ -196,8 +211,8 @@ The KCP packet (aka. segment) structure is as following:
      * from the conversation id and the kcp object which is in charge of this
      * connection can be find out from your map or array.
      */
-    public KCP(long conv, KCPListener kcpListener) {
-        this.conv = conv;
+    public KCP(int conversationId, KCPListener kcpListener) {
+        this.conversationId = conversationId;
         this.kcpListener = kcpListener;
     }
 
@@ -205,98 +220,40 @@ The KCP packet (aka. segment) structure is as following:
     // user/upper level recv: returns size, returns below zero for EAGAIN
     //---------------------------------------------------------------------
     // Pass the data in the receive queue to the upper reference
-    public int recv(byte[] buffer) {
+    public Collection<ByteBuffer> recv() {
 
-        if (0 == nrcv_que.size()) {
-            return -1;
-        }
-
-        int peekSize = peekSize();
-        if (0 > peekSize) {
-            return -2;
-        }
-
-        if (peekSize > buffer.length) {
-            return -3;
+        if (nrcv_que.size() == 0) {
+            LOG.debug("we have don't have any data to deliver");
+            return Collections.EMPTY_SET;
         }
 
         boolean recover = false;
         if (nrcv_que.size() >= rcv_wnd) {
+            LOG.debug("our queue [{}] is larger than the receiving window [{}]. Indicate recover", nrcv_que.size(), rcv_wnd);
             recover = true;
         }
 
-        // merge fragment.
-        int count = 0;
-        int n = 0;
-        for (Segment seg : nrcv_que) {
-            System.arraycopy(seg.data, 0, buffer, n, seg.data.length);
-            n += seg.data.length;
-            count++;
-            if (0 == seg.frg) {
+        final List<ByteBuffer> received = new ArrayList<>(rcv_wnd);
+        final Iterator<Segment> segmentIteratorDone = nrcv_que.iterator();
+        while(segmentIteratorDone.hasNext()) {
+            Segment seg = segmentIteratorDone.next();
+            LOG.debug("we have data to deliver, len:{}, convId: {}, seq: {}", seg.data.length, seg.conversationId, seg.sn);
+            received.add(ByteBuffer.wrap(seg.data));
+            segmentIteratorDone.remove();
+            if (seg.frg == 0) {
                 break;
             }
-        }
-
-        if (0 < count) {
-            KCPUtils.slice(nrcv_que, count, nrcv_que.size());
-        }
-
-        // move available data from rcv_buf -> nrcv_que
-        count = 0;
-        for (Segment seg : nrcv_buf) {
-            if (seg.sn == rcv_nxt && nrcv_que.size() < rcv_wnd) {
-                nrcv_que.add(seg);
-                rcv_nxt++;
-                count++;
-            } else {
-                break;
-            }
-        }
-
-        if (0 < count) {
-            KCPUtils.slice(nrcv_buf, count, nrcv_buf.size());
         }
 
         // fast recover
         if (nrcv_que.size() < rcv_wnd && recover) {
+            LOG.debug("our queue [{}] was larger than the receiving window [{}]. But now its good again", nrcv_que.size(), rcv_wnd);
             // ready to send back IKCP_CMD_WINS in ikcp_flush
             // tell remote my window size
             probe |= IKCP_ASK_TELL;
         }
 
-        return n;
-    }
-
-    //---------------------------------------------------------------------
-    // peek data size
-    //---------------------------------------------------------------------
-    // check the size of next message in the recv queue
-    // Calculate how much data is available in the receive queue
-    public int peekSize() {
-        if (0 == nrcv_que.size()) {
-            return -1;
-        }
-
-        Segment seq = nrcv_que.get(0);
-
-        if (0 == seq.frg) {
-            return seq.data.length;
-        }
-
-        if (nrcv_que.size() < seq.frg + 1) {
-            return -1;
-        }
-
-        int length = 0;
-
-        for (Segment item : nrcv_que) {
-            length += item.data.length;
-            if (0 == item.frg) {
-                break;
-            }
-        }
-
-        return length;
+        return received;
     }
 
     //---------------------------------------------------------------------
@@ -310,20 +267,11 @@ The KCP packet (aka. segment) structure is as following:
             return -1;
         }
 
-        int count;
-        // Fragment according to mss size
-        if (length < mss) {
-            count = 1;
-        } else {
-            count = (int) (length + mss - 1) / mss;
-        }
+        //number of fragments
+        int count = (length + mss - 1) / mss;
 
         if (count > 255) {
             return -2;
-        }
-
-        if (count == 0) {
-            count = 1;
         }
 
         // Add to the send queue after fragmentation
@@ -358,14 +306,14 @@ The KCP packet (aka. segment) structure is as following:
             }
         }
 
-        int rto = (int) (rx_srtt + KCPUtils._imax_(1, 4 * rx_rttval));
-        rx_rto = KCPUtils._ibound_(rx_minrto, rto, IKCP_RTO_MAX);
+        int rto = (int) (rx_srtt + Math.max(1, 4 * rx_rttval));
+        rx_rto = Math.min(Math.max(rx_minrto,rto), IKCP_RTO_MAX);
     }
 
     // Calculate local real snd_una
     private void shrink_buf() {
         if (nsnd_buf.size() > 0) {
-            snd_una = nsnd_buf.get(0).sn;
+            snd_una = nsnd_buf.firstKey();
         } else {
             snd_una = snd_nxt;
         }
@@ -373,49 +321,39 @@ The KCP packet (aka. segment) structure is as following:
 
     // The ack returned by the peer confirms that the corresponding packet is removed from the send buffer when the transmission is successful.
     private void parse_ack(long sn) {
-        if (KCPUtils._itimediff(sn, snd_una) < 0 || KCPUtils._itimediff(sn, snd_nxt) >= 0) {
+        if (sn - snd_una < 0 || sn - snd_nxt >= 0) {
             return;
         }
 
-        int index = 0;
-        for (Segment seg : nsnd_buf) {
-            if (KCPUtils._itimediff(sn, seg.sn) < 0) {
+        for (Segment seg : nsnd_buf.values()) {
+            if (sn < seg.sn) {
                 break;
             }
 
             // The original ikcp_parse_fastack&ikcp_parse_ack logic is repeated
             seg.fastack++;
-
-            if (sn == seg.sn) {
-                nsnd_buf.remove(index);
-                break;
-            }
-            index++;
         }
+        nsnd_buf.remove(sn);
     }
 
-    private void parse_una(long una) {
-        int count = 0;
-        for (Segment seg : nsnd_buf) {
-            if (KCPUtils._itimediff(una, seg.sn) > 0) {
-                count++;
+    private void parse_una(final long una) {
+        final Iterator<Segment> segmentIterator = nsnd_buf.values().iterator();
+        while(segmentIterator.hasNext()) {
+            final Segment seg = segmentIterator.next();
+            if (una - seg.sn > 0) {
+                segmentIterator.remove();
             } else {
                 break;
             }
         }
-
-        if (0 < count) {
-            KCPUtils.slice(nsnd_buf, count, nsnd_buf.size());
-        }
     }
 
-    private void parse_fastack(int sn)
-    {
-        if (KCPUtils._itimediff(sn, snd_una) < 0 || KCPUtils._itimediff(sn, snd_nxt) >= 0) {
+    private void parse_fastack(int sn) {
+        if (sn -snd_una < 0 || sn - snd_nxt >= 0) {
             return;
         }
-        for (Segment seg : this.nsnd_buf) {
-            if (KCPUtils._itimediff(sn, seg.sn) < 0) {
+        for (Segment seg : this.nsnd_buf.values()) {
+            if (sn - seg.sn < 0) {
                 break;
             } else if (sn != seg.sn) {
                 seg.fastack++;
@@ -440,54 +378,28 @@ The KCP packet (aka. segment) structure is as following:
     // User packet parsing
     private void parse_data(Segment newseg) {
         long sn = newseg.sn;
-        boolean repeat = false;
 
-        if (KCPUtils._itimediff(sn, rcv_nxt + rcv_wnd) >= 0 || KCPUtils._itimediff(sn, rcv_nxt) < 0) {
+        if (sn - (rcv_nxt + rcv_wnd) >= 0 || sn - rcv_nxt < 0) {
             return;
         }
 
-        int n = nrcv_buf.size() - 1;
-        int after_idx = -1;
-
-        // Determine if it is a duplicate package and calculate the insertion position
-        for (int i = n; i >= 0; i--) {
-            Segment seg = nrcv_buf.get(i);
-            if (seg.sn == sn) {
-                repeat = true;
-                break;
-            }
-
-            if (KCPUtils._itimediff(sn, seg.sn) > 0) {
-                after_idx = i;
-                break;
-            }
-        }
-
-        // Insert if it is not a duplicate package
-        if (!repeat) {
-            if (after_idx == -1) {
-                nrcv_buf.add(0, newseg);
-            } else {
-                nrcv_buf.add(after_idx + 1, newseg);
-            }
+        if(!nrcv_buf.containsKey(sn)) {
+            nrcv_buf.put(sn, newseg);
         }
 
         // move available data from nrcv_buf -> nrcv_que
         // Add continuous packets to the receive queue
-        int count = 0;
-        for (Segment seg : nrcv_buf) {
+        final Iterator<Map.Entry<Long, Segment>> mapIterator = nrcv_buf.entrySet().iterator();
+        while(mapIterator.hasNext()) {
+            final Segment seg = mapIterator.next().getValue();
             if (seg.sn == rcv_nxt && nrcv_que.size() < rcv_wnd) {
                 nrcv_que.add(seg);
                 rcv_nxt++;
-                count++;
+                // Remove from receive buffer
+                mapIterator.remove();
             } else {
                 break;
             }
-        }
-
-        // Remove from receive buffer
-        if (0 < count) {
-            KCPUtils.slice(nrcv_buf, count, nrcv_buf.size());
         }
     }
 
@@ -495,7 +407,7 @@ The KCP packet (aka. segment) structure is as following:
         if (data.length < IKCP_OVERHEAD) {
             return 0;
         }
-        return (int) KCPUtils.ikcp_decode32u(data, 0);
+        return Utils.byteArrayToInt(data, 0);
     }
 
     // when you received a low level packet (eg. UDP packet), call it
@@ -517,7 +429,7 @@ The KCP packet (aka. segment) structure is as following:
         while (true) {
 
             boolean readed = false;
-            long ts, sn, length, una, conv_;
+            long ts, sn, length, una;
             int wnd;
             byte cmd, frg;
 
@@ -525,26 +437,26 @@ The KCP packet (aka. segment) structure is as following:
                 break;
             }
 
-            conv_ = KCPUtils.ikcp_decode32u(data, offset);
+            int currentConversationId = Utils.byteArrayToInt(data, offset);
             offset += 4;
-            if (conv != conv_) {
-                LOG.debug("conv wrong {} != {} at {}",conv, conv_, offset);
+            if (conversationId != currentConversationId) {
+                LOG.debug("conv wrong {} != {} at {}", conversationId, currentConversationId, offset);
                 return -1;
             }
 
-            cmd = KCPUtils.ikcp_decode8u(data, offset);
+            cmd = data[offset];
             offset += 1;
-            frg = KCPUtils.ikcp_decode8u(data, offset);
+            frg = data[offset];
             offset += 1;
-            wnd = KCPUtils.ikcp_decode16u(data, offset);
+            wnd = Utils.byteArrayToShort(data, offset);
             offset += 2;
-            ts = KCPUtils.ikcp_decode32u(data, offset);
+            ts = Utils.byteArrayToUint(data, offset);
             offset += 4;
-            sn = KCPUtils.ikcp_decode32u(data, offset);
+            sn = Utils.byteArrayToUint(data, offset);
             offset += 4;
-            una = KCPUtils.ikcp_decode32u(data, offset);
+            una = Utils.byteArrayToUint(data, offset);
             offset += 4;
-            length = KCPUtils.ikcp_decode32u(data, offset);
+            length = Utils.byteArrayToUint(data, offset);
             offset += 4;
 
             if (data.length - offset < length) {
@@ -562,23 +474,23 @@ The KCP packet (aka. segment) structure is as following:
             shrink_buf();
 
             if (IKCP_CMD_ACK == cmd) {
-                if (KCPUtils._itimediff(current, ts) >= 0) {
-                    update_ack(KCPUtils._itimediff(current, ts));
+                if (currentTs - ts >= 0) {
+                    update_ack((int) (currentTs - ts));
                 }
                 parse_ack(sn);
                 shrink_buf();
                 if (flag == 0)  {
                     flag = 1;
                     maxack = (int)sn;
-                } else if (KCPUtils._itimediff(sn, maxack) > 0) {
+                } else if (sn - maxack > 0) {
                     maxack = (int)sn;
                 }
             } else if (IKCP_CMD_PUSH == cmd) {
-                if (KCPUtils._itimediff(sn, rcv_nxt + rcv_wnd) < 0) {
+                if (sn - (rcv_nxt + rcv_wnd) < 0) {
                     ack_push(sn, ts);
-                    if (KCPUtils._itimediff(sn, rcv_nxt) >= 0) {
+                    if (sn - rcv_nxt >= 0) {
                         Segment seg = new Segment((int) length);
-                        seg.conv = conv_;
+                        seg.conversationId = currentConversationId;
                         seg.cmd = cmd;
                         seg.frg = frg;
                         seg.wnd = wnd;
@@ -614,7 +526,7 @@ The KCP packet (aka. segment) structure is as following:
             parse_fastack(maxack);
         }
 
-        if (KCPUtils._itimediff(snd_una, s_una) > 0) {
+        if (snd_una - s_una > 0) {
             if (cwnd < rmt_wnd) {
                 //long mss_ = mss;
                 if (cwnd < ssthresh) {
@@ -647,7 +559,7 @@ The KCP packet (aka. segment) structure is as following:
     // Receive window available size
     private int wnd_unused() {
         if (nrcv_que.size() < rcv_wnd) {
-            return (int) rcv_wnd - nrcv_que.size();
+            return rcv_wnd - nrcv_que.size();
         }
         return 0;
     }
@@ -656,12 +568,12 @@ The KCP packet (aka. segment) structure is as following:
     // ikcp_flush
     //---------------------------------------------------------------------
     private void flush(boolean ackOnly) {
-        long current_ = current;
+        long current_ = currentTs;
         int change = 0;
         int lost = 0;
 
         Segment seg = new Segment(0);
-        seg.conv = conv;
+        seg.conversationId = conversationId;
         seg.cmd = IKCP_CMD_ACK;
         seg.wnd = wnd_unused();
         seg.una = rcv_nxt;
@@ -690,10 +602,10 @@ The KCP packet (aka. segment) structure is as following:
         if (0 == rmt_wnd) {
             if (0 == probe_wait) {
                 probe_wait = IKCP_PROBE_INIT;
-                ts_probe = current + probe_wait;
+                ts_probe = currentTs + probe_wait;
             } else {
-                // 逐步扩大请求时间间隔
-                if (KCPUtils._itimediff(current, ts_probe) >= 0) {
+                // Gradually increase the request interval
+                if (currentTs - ts_probe >= 0) {
                     if (probe_wait < IKCP_PROBE_INIT) {
                         probe_wait = IKCP_PROBE_INIT;
                     }
@@ -701,7 +613,7 @@ The KCP packet (aka. segment) structure is as following:
                     if (probe_wait > IKCP_PROBE_LIMIT) {
                         probe_wait = IKCP_PROBE_LIMIT;
                     }
-                    ts_probe = current + probe_wait;
+                    ts_probe = currentTs + probe_wait;
                     probe |= IKCP_ASK_SEND;
                 }
             }
@@ -735,20 +647,21 @@ The KCP packet (aka. segment) structure is as following:
         probe = 0;
 
         // calculate window size
-        long cwnd_ = KCPUtils._imin_(snd_wnd, rmt_wnd);
+        long cwnd_ = Math.min(snd_wnd, rmt_wnd);
         // If congestion control is used
-        if (0 == nocwnd) {
-            cwnd_ = KCPUtils._imin_(cwnd, cwnd_);
+        if (congestionControlEnabled) {
+            cwnd_ = Math.min(cwnd, cwnd_);
         }
 
-        count = 0;
         // move data from snd_queue to snd_buf
-        for (Segment nsnd_que1 : nsnd_que) {
-            if (KCPUtils._itimediff(snd_nxt, snd_una + cwnd_) >= 0) {
+        Iterator<Segment> segmentIterator = nsnd_que.iterator();
+        //for (Segment nsnd_que1 : nsnd_que) {
+        while(segmentIterator.hasNext()) {
+            Segment newseg = segmentIterator.next();
+            if (snd_nxt - (snd_una + cwnd_) >= 0) {
                 break;
             }
-            Segment newseg = nsnd_que1;
-            newseg.conv = conv;
+            newseg.conversationId = conversationId;
             newseg.cmd = IKCP_CMD_PUSH;
             newseg.wnd = seg.wnd;
             newseg.ts = current_;
@@ -758,24 +671,17 @@ The KCP packet (aka. segment) structure is as following:
             newseg.rto = rx_rto;
             newseg.fastack = 0;
             newseg.xmit = 0;
-            nsnd_buf.add(newseg);
+            nsnd_buf.put(newseg.sn, newseg);
             snd_nxt++;
-            count++;
-        }
-
-        if (0 < count) {
-            /*for (int i = 0; i < count; i++) {
-                nsnd_que.remove(0);
-            }*/
-            KCPUtils.slice(nsnd_que, count, nsnd_que.size());
+            segmentIterator.remove();
         }
 
         // calculate resent
-        long resent = (fastresend > 0) ? fastresend : 0xffffffff;
-        long rtomin = (nodelay == 0) ? (rx_rto >> 3) : 0;
+        long resent = (fastresend > 0) ? fastresend : -1;
+        long rtomin = (!nodelayEnabled) ? (rx_rto >> 3) : 0;
 
         // flush data segments
-        for (Segment segment : nsnd_buf) {
+        for (Segment segment : nsnd_buf.values()) {
             boolean needsend = false;
             if (0 == segment.xmit) {
                 // First transmission
@@ -783,12 +689,12 @@ The KCP packet (aka. segment) structure is as following:
                 segment.xmit++;
                 segment.rto = rx_rto;
                 segment.resendts = current_ + segment.rto + rtomin;
-            } else if (KCPUtils._itimediff(current_, segment.resendts) >= 0) {
+            } else if (current_ - segment.resendts >= 0) {
                 // Packet loss retransmission
                 needsend = true;
                 segment.xmit++;
                 xmit++;
-                if (0 == nodelay) {
+                if (!nodelayEnabled) {
                     segment.rto += rx_rto;
                 } else {
                     segment.rto += rx_rto / 2;
@@ -863,31 +769,33 @@ The KCP packet (aka. segment) structure is as following:
     // ikcp_check when to call it again (without ikcp_input/_send calling).
     // 'current' - current timestamp in millisec.
     //---------------------------------------------------------------------
-    public void update(long current_) {
-        current = current_;
-
-        if (updated == 0)
-        {
-            updated = 1;
-            ts_flush = this.current;
+    public void update(final long currentTs) {
+        //Call Update for the first time
+        if(this.currentTs == 0) {
+            this.ts_flush = currentTs;
         }
-        int slap = KCPUtils._itimediff(this.current, ts_flush);
+        this.currentTs = currentTs;
+
+        //Two update intervals
+        long slap = this.currentTs - this.ts_flush;
+
+        //The interval setting is too large or the Update call is too long
         if (slap >= 10000 || slap < -10000)
         {
-            ts_flush = this.current;
+            this.ts_flush = this.currentTs;
             slap = 0;
         }
+
+        // flush sets the next update time
         if (slap >= 0)
         {
-            ts_flush += interval;
-            if (KCPUtils._itimediff(this.current, ts_flush) >= 0)
+            this.ts_flush += this.interval;
+            if (this.currentTs - this.ts_flush >= 0)
             {
-                ts_flush = this.current + interval;
+                this.ts_flush = this.currentTs + this.interval;
             }
             flush(false);
         }
-
-        //flush();
     }
 
     /**
@@ -899,7 +807,7 @@ The KCP packet (aka. segment) structure is as following:
      * @return -1 if too small, -2 if too large
      */
     public int setMtu(int mtu_) {
-        if (mtu_ < 50 || mtu_ < (int) IKCP_OVERHEAD) {
+        if (mtu_ < 50 || mtu_ < IKCP_OVERHEAD) {
             return -1;
         }
 
@@ -916,35 +824,36 @@ The KCP packet (aka. segment) structure is as following:
 
     /**
      *
-     * @param interval_ internal update timer interval in millisec, default is 100ms
-     * @return
+     * @param interval internal update timer interval in millisec, default is 100ms
+     * @return the current interval
      */
-    public KCP interval(int interval_) {
-        if (interval_ > 5000) {
-            interval_ = 5000;
-        } else if (interval_ < 10) {
-            interval_ = 10;
+    public int interval(int interval) {
+        if (interval > 5000) {
+            this.interval = 5000;
+        } else if (interval < 10) {
+            this.interval = 10;
+        } else {
+            this.interval = interval;
         }
-        interval = (long) interval_;
-        return this;
+        return this.interval;
     }
 
     /**
-     * normal mode: ikcp_nodelay(kcp, 0, 40, 0, 0);
-     * fastest: ikcp_nodelay(kcp, 1, 10, 2, 1)
+     * normal mode: noDelay(false, 40, 0, true);
+     * fastest:     noDelay(true, 10, 2, false);
+     *
      *nodelay: 0:disable(default), 1:enable
      *interval: internal update timer interval in millisec, default is 100ms
      *resend: 0:disable fast resend(default), 1:enable fast resend
      *nc: 0:normal congestion control(default), 1:disable congestion control
      *
-     * @param nodelay_ Whether nodelay mode is enabled, 0 is not enabled; 1 enabled.
-     * @param interval_ Protocol internal work interval, in milliseconds, such as 10 ms or 20 ms.
-     * @param resend_ Fast retransmission mode, 0 represents off by default, 2 can be set (2 ACK spans will result in direct retransmission)
-     * @param nc_ Whether to turn off flow control, 0 represents “Do not turn off” by default, 1 represents “Turn off”.
+     * @param nodelayEnabled Whether nodelay mode is enabled, 0 is not enabled; 1 enabled.
+     * @param interval Protocol internal work interval, in milliseconds, such as 10 ms or 20 ms.
+     * @param fastresend Fast retransmission mode, 0 is off by default, 2 can be set (2 ACK spans will result in direct retransmission)
+     * @param congestionControlEnabled Whether to turn off flow control, false to disable
      * @return this
      */
-    public KCP noDelay(int nodelay_, int interval_, int resend_, int nc_) {
-
+    public KCP noDelay(boolean nodelayEnabled, int interval, int fastresend, boolean congestionControlEnabled) {
         /*
         * No matter TCP or KCP, they have the limitation for the minimum RTO when calculating
         * the RTO, even if the calculated RTO is 40ms, as the default RTO is 100ms, the protocol
@@ -952,28 +861,11 @@ The KCP packet (aka. segment) structure is as following:
         * value can be manually changed:
         */
 
-        if (nodelay_ >= 0) {
-            nodelay = nodelay_;
-            if (nodelay_ != 0) {
-                rx_minrto = IKCP_RTO_NDL;
-            } else {
-                rx_minrto = IKCP_RTO_MIN;
-            }
-        }
-
-
-        if (interval_ >= 0) {
-            interval(interval_);
-        }
-
-        if (resend_ >= 0) {
-            fastresend = resend_;
-        }
-
-        if (nc_ >= 0) {
-            nocwnd = nc_;
-        }
-
+        this.nodelayEnabled = nodelayEnabled;
+        this.rx_minrto = nodelayEnabled ? IKCP_RTO_NDL : IKCP_RTO_MIN;
+        interval(interval);
+        this.fastresend = fastresend;
+        this.congestionControlEnabled = congestionControlEnabled;
         return this;
     }
 

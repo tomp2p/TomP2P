@@ -1,12 +1,12 @@
 /*
  * Copyright 2009 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -59,10 +59,10 @@ import net.tomp2p.peers.*;
 import net.tomp2p.peers.Number256;
 
 /**
- * 
+ *
  * @author Thomas Bocek
  * @author Maxat Pernebayev
- * 
+ *
  */
 public class Utils {
     private static final Random random = new Random();
@@ -137,7 +137,7 @@ public class Utils {
             return new Number256();
         }
     }
-    
+
     public static Number256 makeSHAHash(ByteBuffer... bufferList) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
@@ -164,7 +164,7 @@ public class Utils {
 
     /**
      * It returns MD5 hash for the buffer.
-     * 
+     *
      * @param buffer
      *            The buffer to generate the checksum from
      * @return The strong checksum
@@ -249,7 +249,7 @@ public class Utils {
     public static byte[] uncompress(byte[] compressedData) {
         return uncompress(compressedData, 0, compressedData.length);
     }
-    
+
     //save memory: http://stackoverflow.com/a/26850863
     /** Subclasses ByteArrayOutputStream to give access to the internal raw buffer. */
     private static class ByteArrayOutputStream2 extends ByteArrayOutputStream {
@@ -279,7 +279,7 @@ public class Utils {
         ois.close();
         return obj;
     }
-    
+
     public static synchronized Object decodeJavaObject(List<ByteBuffer> buffers) throws ClassNotFoundException, IOException {
     	int count = buffers.size();
         Vector<InputStream> is = new Vector<InputStream>(count);
@@ -293,7 +293,7 @@ public class Utils {
         return obj;
     }
 
-    
+
 
     public static InputStream createInputStream(final ByteBuffer buf) {
         return new InputStream() {
@@ -331,7 +331,7 @@ public class Utils {
 	 * Stores the differences of two collections in a result collection. The result will contain items from
 	 * collection1
      * without those items that are in collection2.
-     * 
+     *
      * @param collection1
 	 *            The first collection (master collection) that will be iterated and checked against
 	 *            duplicates in
@@ -357,7 +357,7 @@ public class Utils {
 	 * Stores the differences of multiple collections in a result collection. The result will contain items
 	 * from
      * collection1 without those items that are in collections2. The calling method might need to provide a
-     * 
+     *
      * @SuppressWarnings("unchecked") since generics and arrays do not mix well.
      * @param collection1
 	 *            The first collection (master collection) that will be iterated and checked against
@@ -404,11 +404,11 @@ public class Utils {
     public static final byte[] intToByteArray(int value) {
         return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
     }
-    
+
     /*public static final byte[] mediumToByteArray(int value) {
         return new byte[] { (byte) (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
     }*/
-    
+
     public static final int shortToByteArray(int value, byte[] array, int offset) {
         array[offset + 0] =  (byte) (value >>> 8);
         array[offset + 1] =  (byte) value;
@@ -419,7 +419,7 @@ public class Utils {
         array[offset] =  (byte) value;
         return offset + 1;
     }
-    
+
     /*public static final int mediumToByteArray(int value, byte[] array, int offset) {
         array[offset++] =  (byte) (value >>> 16);
         array[offset++] =  (byte) (value >>> 8);
@@ -441,7 +441,15 @@ public class Utils {
         array[offset + 3] =  (byte) value;
         return offset + 4;
     }
-    
+
+    public static final int intToByteArray(int value, byte[] array, int offset) {
+        array[offset + 0] =  (byte) (value >>> 24);
+        array[offset + 1] =  (byte) (value >>> 16);
+        array[offset + 2] =  (byte) (value >>> 8);
+        array[offset + 3] =  (byte) value;
+        return offset + 4;
+    }
+
     public static int longToByteArray(long longHi, long longLo, byte[] array, int offset) {
     	array[offset++] =  (byte) (longHi >>> 56);
     	array[offset++] =  (byte) (longHi >>> 48);
@@ -451,7 +459,7 @@ public class Utils {
         array[offset++] =  (byte) (longHi >>> 16);
         array[offset++] =  (byte) (longHi >>> 8);
         array[offset++] =  (byte) longHi;
-        
+
         array[offset++] =  (byte) (longLo >>> 56);
     	array[offset++] =  (byte) (longLo >>> 48);
     	array[offset++] =  (byte) (longLo >>> 40);
@@ -460,34 +468,42 @@ public class Utils {
         array[offset++] =  (byte) (longLo >>> 16);
         array[offset++] =  (byte) (longLo >>> 8);
         array[offset++] =  (byte) longLo;
-        
+
 		return offset;
 	}
 
+    public static final int byteArrayToByte(byte[] b, int offset) {
+        return b[offset] & 0xFF;
+    }
+
     public static final int byteArrayToInt(byte[] b) {
-        return (b[0] << 24) + ((b[1] & 0xFF) << 16) + ((b[2] & 0xFF) << 8) + (b[3] & 0xFF);
+        return (b[0] << 24) | ((b[1] & 0xFF) << 16) | ((b[2] & 0xFF) << 8) | (b[3] & 0xFF);
     }
-    
+
     public static final int byteArrayToShort(byte[] b, int offset) {
-        return ((b[offset] & 0xFF) << 8) + (b[offset + 1] & 0xFF);
+        return ((b[offset] & 0xFF) << 8) | (b[offset + 1] & 0xFF);
     }
-    
-    /*public static final int byteArrayToMedium(byte[] b, int offset) {
-        return ((b[offset] & 0xFF) << 16) + ((b[offset + 1] & 0xFF) << 8) + (b[offset + 2] & 0xFF);
-    }*/
-    
+
+    public static final int byteArrayToMedium(byte[] b, int offset) {
+        return ((b[offset] & 0xFF) << 16) | ((b[offset + 1] & 0xFF) << 8) | (b[offset + 2] & 0xFF);
+    }
+
     public static final int byteArrayToInt(byte[] b, int offset) {
-        return ((b[offset] & 0xFF) << 24) + ((b[offset + 1] & 0xFF) << 16) + ((b[offset + 2] & 0xFF) << 8) + (b[offset + 3] & 0xFF);
+        return ((b[offset] & 0xFF) << 24) | ((b[offset + 1] & 0xFF) << 16) | ((b[offset + 2] & 0xFF) << 8) | (b[offset + 3] & 0xFF);
     }
-    
+
+    public static final long byteArrayToUint(byte[] b, int offset) {
+        return ((b[offset] & 0xFFL) << 24) | ((b[offset + 1] & 0xFFL) << 16) | ((b[offset + 2] & 0xFFL) << 8) | (b[offset + 3] & 0xFFL);
+    }
+
     public static long byteArrayToLong(byte[] b, int offset) {
-    	return  (((long)b[offset    ] & 0xFFl) << 56) | 
+    	return  (((long)b[offset    ] & 0xFFl) << 56) |
     			(((long)b[offset + 1] & 0xFFl) << 48) |
     			(((long)b[offset + 2] & 0xFFl) << 40) |
     			(((long)b[offset + 3] & 0xFFl) << 32) |
     			(((long)b[offset + 4] & 0xFFl) << 24) |
     			(((long)b[offset + 5] & 0xFFl) << 16) |
-    			(((long)b[offset + 6] & 0xFFl) << 8) | 
+    			(((long)b[offset + 6] & 0xFFl) << 8) |
     			( (long)b[offset + 7] & 0xFFl);
 	}
 
@@ -497,7 +513,7 @@ public class Utils {
 	 * does not offer a better solution. This method puts the collection into a {@link List} and fetches a
 	 * random
      * element using {@link List#get(int)}.
-     * 
+     *
      * @param collection
      *            The collection from which we want to pick a random element
      * @param rnd
@@ -516,7 +532,7 @@ public class Utils {
         collection.remove(retVal);
         return retVal;
     }
-    
+
     public static <K> K peekRandom(Collection<K> collection, Random rnd) {
         int size = collection.size();
         if (size == 0) {
@@ -646,7 +662,7 @@ public class Utils {
      */
     /**
      * Returns an Inet4Address having the integer value specified by the argument.
-     * 
+     *
      * @param address
      *            {@code int}, the 32bit integer address to be converted
      * @return {@link Inet4Address} equivalent of the argument
@@ -670,7 +686,7 @@ public class Utils {
 
     /**
      * Returns an {@link Inet4Address}, given a byte array representation of the IPv4 address.
-     * 
+     *
      * @param bytes
      *            byte array representing an IPv4 address (should be of length 4).
      * @return {@link Inet4Address} corresponding to the supplied byte array.
@@ -747,13 +763,13 @@ public class Utils {
 
     /**
      * Converts a byte array to a Inet4Address.
-     * 
+     *
      * @param src
      *            the byte array
      * @param offset
      *            where to start in the byte array
      * @return The Inet4Address
-     * 
+     *
      * @exception IndexOutOfBoundsException
      *                if copying would cause access of data outside array bounds for <code>src</code>.
      * @exception NullPointerException
@@ -778,13 +794,13 @@ public class Utils {
 
     /**
      * Converts a byte array to a Inet6Address.
-     * 
+     *
      * @param me
      *            me the byte array
      * @param offset
      *            where to start in the byte array
      * @return The Inet6Address
-     * 
+     *
      * @exception IndexOutOfBoundsException
      *                if copying would cause access of data outside array bounds for <code>src</code>.
      * @exception NullPointerException
@@ -810,7 +826,7 @@ public class Utils {
     /**
      * Convert a byte to a bit set. BitSet.valueOf(new byte[] {b}) is only available in 1.7, so we need to do this on
      * our own.
-     * 
+     *
      * @param b
      *            The byte to be converted
      * @return The resulting bit set
@@ -826,7 +842,7 @@ public class Utils {
     /**
      * Convert a BitSet to a byte. (Only takes the first 8 bits.)
      * Cannot use relayType.toByteArray()[0]; since its only available in 1.7
-     * 
+     *
      * @param bitSet
      *            The bit set
      * @return The resulting byte
@@ -843,7 +859,7 @@ public class Utils {
 
     /**
      * Compares if two sets have the exact same elements.
-     * 
+     *
      * @param set1
      *            The first set
      * @param set2
@@ -862,7 +878,7 @@ public class Utils {
         if (set1.size() != set2.size()) {
             return false;
         }
-        
+
         for (T obj : set1) {
         	if (!set2.contains(obj)) {
         		return false;
@@ -870,7 +886,7 @@ public class Utils {
         }
         return true;
     }
-    
+
 	/**
 	 * Compares if two collections of collections have the exact same elements.
 	 *
@@ -936,10 +952,10 @@ public class Utils {
 		}
 	    return retVal;
     }*/
-	
+
 	/**
 	 * This method returns a random positve {@link int} within a given upper limit.
-	 * 
+	 *
 	 * @param upperBound
 	 * @return randomInt
 	 */
@@ -950,20 +966,20 @@ public class Utils {
 		}
 		return randomInt;
 	}
-	
+
 	/*public static boolean canReflect(final PeerAddress recipient, final PeerAddress self) {
-		return recipient.ipv4Socket().ipv4().equals(self.ipv4Socket().ipv4()) 
-				&& self.ipInternalSocket() != null 
+		return recipient.ipv4Socket().ipv4().equals(self.ipv4Socket().ipv4())
+				&& self.ipInternalSocket() != null
 				&& recipient.ipInternalSocket()!=null;
 	}
 
-	
+
 	public static PeerSocket4Address natReflection(final PeerAddress recipient, final PeerAddress self) {
 		//check for NAT reflection
 	    if(canReflect(recipient, self)) {
 	    	//the recipient and me have the same external IP, this means we either send it to us, or to a peer in our network. Since NAT reflection is rarly properly implemented in routers, we need to change the IP address here in order to reach the peer.
 	    	IPv4 a = self.calcInternalInetAddress(recipient.ipInternalSocket().ipv4());
-	    	
+
 	    	return PeerSocket4Address.builder().ipv4(a)
 	    		.udpPort(recipient.ipInternalSocket().udpPort())
 	    		.build();
@@ -974,7 +990,7 @@ public class Utils {
 	/**
 	 * This method ensures that if a peer sends a message via reverse connection
 	 * or hole punching, a random relay is chosen as the relay/rendez-vous peer
-	 * 
+	 *
 	 * @param message
 	 * @return socketAddress
 	 */
@@ -996,6 +1012,6 @@ public class Utils {
 			return 0;
 		}
 		return obj.hashCode();
-	}	
-	
+	}
+
 }

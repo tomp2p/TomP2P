@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -150,6 +151,7 @@ public class TestKCP {
         }).start();
 
         int nr = 44032; //this is the limit: 32 * (1400-24)
+        //this is the maximum of bytes that can be in flight before receiving with recv().
         byte[] sn = new byte[nr];
         sn[nr-1] = 1;
         snd.send(ByteBuffer.wrap(sn));
@@ -157,16 +159,67 @@ public class TestKCP {
 
         Thread.sleep(1000);
 
-        byte[] rc = new byte[nr];
-        int nr2 = rcv.recv(rc);
+        //byte[] rc = new byte[nr];
+
+        //int nr2 = rcv.recv(rc, 0);
+        Collection<ByteBuffer> bs = rcv.recv();
+
+        int nr2 =0;
+        for(ByteBuffer b:bs) {
+            nr2 +=b.limit();
+        }
+
         Assert.assertEquals(44032, nr2);
         //exceeded rcv size
-        Assert.assertArrayEquals(sn, rc);
+        //Assert.assertArrayEquals(sn, rc);
 
     }
 
+    @Test
+    public void testLossyChannelGiga() throws InterruptedException {
+
+    }
+
+    private static void connect(KCP snd, final BlockingQueue<byte[]> sndQ, final Random sndR, KCP rcv, final BlockingQueue<byte[]> rcvQ, final Random rcvR) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                long counter = 200;
+                while(true) {
+                    byte[] tmp = rcvQ.poll();
+                    if(tmp == null) {
+                        snd.update(counter);
+                        counter += 100;
+                        continue;
+                    }
+                    if(sndR.nextInt() % 10 == 0) {
+                        //drop it!
+                        System.out.println("drop it");
+                    } else {
+                        snd.input(tmp);
+                    }
+
+                    tmp = sndQ.poll();
+                    if(tmp == null) {
+                        rcv.update(counter);
+                        counter += 100;
+                        continue;
+                    }
+                    if(rcvR.nextInt() % 10 == 0) {
+                        //drop it!
+                        System.out.println("drop it");
+                    } else {
+                        rcv.input(tmp);
+                    }
+
+                }
+            }
+
+        }).start();
+    }
+
     private static KCP create(final Queue<byte[]> q, String tag) {
-        KCP kcp = new KCP(10, new KCPListener() {
+        KCP kcp = new KCP(10, new KCP.KCPListener() {
             @Override
             public void output(byte[] buffer, int offset, int length) {
                 System.out.println(tag +"|len: " + length);

@@ -21,17 +21,13 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.tomp2p.message.MessageHeader;
 import net.tomp2p.network.KCP;
-import net.tomp2p.network.KCPListener;
+import net.tomp2p.network.KCP.KCPListener;
 import net.tomp2p.p2p.PeerAddressManager;
 import net.tomp2p.rpc.DataStream;
 import net.tomp2p.utils.Triple;
@@ -58,9 +54,9 @@ import org.whispersystems.curve25519.Curve25519KeyPair;
 
 /**
  * The "server" part that accepts connections.
- * 
+ *
  * @author Thomas Bocek
- * 
+ *
  */
 
 @Accessors(chain = true, fluent = true)
@@ -70,7 +66,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 
 	private final Map<InetAddress, Pair<ServerThread, PacketThread>> channelsUDP = Collections
 			.synchronizedMap(new HashMap<InetAddress, Pair<ServerThread,PacketThread>>());
-	
+
 
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
@@ -86,21 +82,21 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	private final static AtomicLong packetCounterSend = new AtomicLong();
 	private final static AtomicLong packetCounterReceive = new AtomicLong();
     private final static AtomicLong packetCounterReceiveKCP = new AtomicLong();
-	
+
 	private final PeerBean peerBean;
-	
+
 	final private ConcurrentCacheMap<MessageID, Triple<Long, FutureDone<Message>, Curve25519KeyPair>> pendingMessages = new ConcurrentCacheMap<>(3, 10000);
 
 	final private ConcurrentCacheMap<Pair<InetAddress, Integer>, KCP> openConnections = new ConcurrentCacheMap<>(60, 10000);
 
 
     final private ConcurrentCacheMap<Pair<InetAddress, Integer>, DataStream> handlers = new ConcurrentCacheMap<>(60, 10000);
-	
+
 	public static final int MAX_PORT = 65535;
 	public static final int MIN_DYN_PORT = 49152;
-	
+
 	public volatile OutgoingData sendingDatagramChannel;
-	
+
 	public static long packetCounterSend() {
 		return packetCounterSend.get();
 	}
@@ -116,7 +112,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 
 	/**
 	 * Sets parameters and starts network device discovery.
-	 * 
+	 *
 	 * @param channelServerConfiguration
 	 *            The server configuration that contains e.g. the handlers
 	 * @param dispatcher
@@ -129,18 +125,18 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		this.channelServerConfiguration = channelServerConfiguration;
 		this.dispatcher = dispatcher;
 		this.peerBean = peerBean;
-		
+
 		this.discoverNetworks = new DiscoverNetworks(5000, channelServerConfiguration.bindings(), timer);
 
 		discoverNetworks.addDiscoverNetworkListener(this);
 		//search in this thread and call notifylisteners
 		discoverNetworks.discoverInterfaces();
-		
+
 		//now start a thread to check periodically for new interfaces
 		if (timer != null) {
 			discoverNetworks.start();
 		}
-		
+
 		pendingMessages.expirationHandler(new ExpirationHandler<Triple<Long, FutureDone<Message>, Curve25519KeyPair>>() {
 			@Override
 			public void expired(Triple<Long, FutureDone<Message>, Curve25519KeyPair> oldValue) {
@@ -210,7 +206,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		/**
 		 * Travis-ci has the same inet address as the broadcast adress, handle it
 		 * properly.
-		 * 
+		 *
 		 * eth0 Link encap:Ethernet HWaddr 42:01:0a:f0:00:19 inet addr:10.240.0.25
 		 * Bcast:10.240.0.25 Mask:255.255.255.255 UP BROADCAST RUNNING MULTICAST
 		 * MTU:1460 Metric:1 RX packets:849 errors:0 dropped:0 overruns:0 frame:0 TX
@@ -300,7 +296,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 
 	/**
 	 * Start to listen on a UPD port.
-	 * 
+	 *
 	 * @param listenAddresses
 	 *            The address to listen to
 	 * @param broadcastFlag
@@ -368,8 +364,10 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
                         return;
                     }
                     //probably called too often...
-                    for(KCP kcp: openConnections.values()) {
-                        kcp.update(System.currentTimeMillis());
+                    synchronized (openConnections) {
+                        for(KCP kcp: openConnections.values()) {
+                            kcp.update(System.currentTimeMillis());
+                        }
                     }
                     for(Triple<Long, FutureDone<Message>, Curve25519KeyPair> future: pendingMessages.values()) {
                         if(future.element0() + 3000 < System.currentTimeMillis()) {
@@ -553,16 +551,14 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
                 return;
             }
 
-            byte[] tmp = new byte[32* (1400-24)];
+            //byte[] tmp = new byte[32* (1400-24)];
             //byte[] tmp = new byte[9000];
-            int r = socket.recv(tmp);
+            Collection<ByteBuffer> bs = socket.recv();
 
-            LOG.debug("recv: {}, myself: {}", r, sendingDatagramChannel.localSocket());
+            LOG.debug("recv: {}, myself: {}", bs.size(), sendingDatagramChannel.localSocket());
 
             final KCP socket2 = socket;
-            if(r > 0) {
-                ByteBuffer b = ByteBuffer.wrap(tmp);
-                b.position(0).limit(r);
+            for(ByteBuffer b:bs) {
                 ByteBuffer tosend = ds.receiveSend(b, new DataSend(){
                     @Override
                     public void send(ByteBuffer data) {
@@ -621,7 +617,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 
 	/**
 	 * Shuts down the server.
-	 * 
+	 *
 	 * @return The future when the shutdown is complete. This includes the worker
 	 *         and boss event loop
 	 */
@@ -652,8 +648,8 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 
 		return shutdownFuture();
 	}
-	
-	
+
+
 
 	/**
 	 * @return The shutdown future that is used when calling {@link #shutdown()}
@@ -665,23 +661,23 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 	public Pair<FutureDone<Message>, KCP> sendUDP(Message message) {
 		return send(message, sendingDatagramChannel);
 	}
-	
-	
-	
+
+
+
 	public Pair<FutureDone<Message>, KCP> send(Message message, OutgoingData outgoingData) {
-		
+
 		FutureDone<Message> future = new FutureDone<Message>();
         Triple<Long, FutureDone<Message>, Curve25519KeyPair> pair = Triple.of(System.currentTimeMillis(), future, message.ephemeralKeyPair());
 		KCP kcp = null;
-		
+
 		InetSocketAddress recipient = findRecipient(message);
 		InetSocketAddress firewalledRecipientSocket = recipient;
 		LOG.debug("sending a UDP message to {} with message {}", recipient, message);
-		
+
 		PeerAddress sender = message.sender();
 		PeerAddress receiver = message.recipient();
-		
-		
+
+
 		//check if relay is necessary
 		if(!message.recipient().reachable4UDP() && !message.target()) {
 			//we need relay
@@ -704,7 +700,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 				kcp = null;
 			}
 			message.target(false);
-			
+
 
 			firewalledRecipientSocket = recipient;
 			recipient = message.recipient().relays().iterator().next().createUDPSocket();
@@ -714,7 +710,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			Pair p = Pair.create(message.recipientSocket().getAddress(), 100);
 			kcp = openKCP(100, message.recipientSocket());
 		}
-		
+
 		try {
 			sendNetwork(outgoingData, peerBean.shortIdLookup(), recipient, message, null);
 			// if we send an ack, don't expect any incoming packets
@@ -727,7 +723,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 			LOG.error("could not send", t);
             future.failed(t);
 		}
-		
+
 		return Pair.create(future,  kcp);
 	}
 
@@ -749,11 +745,11 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
 		}
 		return kcp;
 	}
-	
+
 	/**
 	 * Find recipient from a message. If the message is a request message, the recipient socket is not
 	 * set and a new socket has to be created. If it was a reply, the recipient socket is set and we need
-	 * to send it back to that socket 
+	 * to send it back to that socket
 	 * @param message
 	 * @return
 	 */
@@ -781,7 +777,7 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
         outgoingData.send(remote, me, 0, me.length);
     }
 
-	
+
 	private static void sendNetwork(DatagramChannel datagramChannel, PeerAddressManager peerAddressManager, final InetSocketAddress remote, Message m2, final byte[] ephemeralPublicKeyRemote)
 			throws GeneralSecurityException, IOException {
 		LOG.debug("peer isVerified: {}", m2.isVerified());
@@ -789,9 +785,9 @@ public final class ChannelTransceiver implements DiscoverNetworkListener {
         ByteBuffer buf = ByteBuffer.wrap(new byte[1500]);
         Codec.encode(buf, m2, peerAddressManager, ephemeralPublicKeyRemote, (remote.getAddress() instanceof Inet4Address));
 		packetCounterSend.incrementAndGet();
-				
+
 		LOG.debug("server out UDP {}: to {}", m2, remote);
-		
+
 		datagramChannel.send(buf, remote);
 	}
 }

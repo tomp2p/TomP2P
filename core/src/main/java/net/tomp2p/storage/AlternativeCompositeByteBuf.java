@@ -12,25 +12,13 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations
  * under the License.
- * 
+ *
  */
 
 package net.tomp2p.storage;
 
-import io.netty.buffer.AbstractByteBufAllocator;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufProcessor;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.DuplicatedByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.SlicedByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.util.CharsetUtil;
-import io.netty.util.IllegalReferenceCountException;
-import io.netty.util.ResourceLeak;
-import io.netty.util.ResourceLeakDetector;
+import io.netty.buffer.*;
+import io.netty.util.*;
 import io.netty.util.internal.EmptyArrays;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
@@ -41,6 +29,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.CharacterCodingException;
@@ -56,12 +45,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * Heavily inspired by CompositeByteBuf, but with a slight different behavior.
- * 
+ *
  * @author Thomas Bocek
  *
  */
 public class AlternativeCompositeByteBuf extends ByteBuf {
-	
+
 	public static final PooledByteBufAllocator POOLED_DIRECT =
             new PooledByteBufAllocator(true);
 	public static final PooledHeapByteBufAlloc POOLED_HEAP =
@@ -202,6 +191,16 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		return this;
 	}
 
+	@Override
+	public AlternativeCompositeByteBuf touch() {
+		return this;
+	}
+
+	@Override
+	public AlternativeCompositeByteBuf touch(Object hint) {
+		return this;
+	}
+
 	private void deallocate() {
 		if (freed) {
 			return;
@@ -314,7 +313,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		}
 		return this;
 	}
-	
+
 	private void addComponentElement(final boolean fillBuffer, final ByteBuf b) {
 		final Component c = new Component(b.order(ByteOrder.BIG_ENDIAN)
 				.duplicate());
@@ -361,6 +360,16 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 			return false;
 		}
 		throw new RuntimeException("don't know what to report, Netty does not expose this");
+	}
+
+	@Override
+	public boolean isReadOnly() {
+		return components.iterator().next().buf.isReadOnly();
+	}
+
+	@Override
+	public AlternativeCompositeByteBuf asReadOnly() {
+		return this;
 	}
 
 	@Override
@@ -421,8 +430,8 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		setComponentWriterIndex(writerIndex);
 		return this;
 	}
-	
-	
+
+
 	private AlternativeCompositeByteBuf setIndex0(int readerIndex, int writerIndex) {
 		if (readerIndex < 0 || readerIndex > writerIndex
 				|| writerIndex > capacity()) {
@@ -519,11 +528,11 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		int offsetAdjustment = 0;
 		for(Iterator<Component> iterator = components.iterator();iterator.hasNext();) {
 			Component c = iterator.next();
-			
+
 			if(isOffsetAdjustment) {
 				c.offset = c.offset - offsetAdjustment;
 			}
-			
+
 			if(readerIndex >= c.endOffset()) {
 				c.buf.release();
 				iterator.remove();
@@ -715,13 +724,39 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public short getShortLE(int index) {
+		Component c = findComponent(index);
+		if (index + 2 <= c.endOffset()) {
+			return c.buf.getShortLE(index - c.offset);
+		} else if (order() == ByteOrder.BIG_ENDIAN) {
+			return (short) ((getByte(index) & 0xff) << 8 | getByte(index + 1) & 0xff);
+		} else {
+			return (short) (getByte(index) & 0xff | (getByte(index + 1) & 0xff) << 8);
+		}
+	}
+
+	@Override
 	public int getUnsignedShort(int index) {
 		return getShort(index) & 0xFFFF;
 	}
 
 	@Override
+	public int getUnsignedShortLE(int index) {
+		return getShortLE(index) & 0xFFFF;
+	}
+
+	@Override
 	public int getMedium(int index) {
 		int value = getUnsignedMedium(index);
+		if ((value & 0x800000) != 0) {
+			value |= 0xff000000;
+		}
+		return value;
+	}
+
+	@Override
+	public int getMediumLE(int index) {
+		int value = getUnsignedMediumLE(index);
 		if ((value & 0x800000) != 0) {
 			value |= 0xff000000;
 		}
@@ -741,6 +776,18 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public int getUnsignedMediumLE(int index) {
+		Component c = findComponent(index);
+		if (index + 3 <= c.endOffset()) {
+			return c.buf.getUnsignedMedium(index - c.offset);
+		} else if (order() == ByteOrder.BIG_ENDIAN) {
+			return (getShortLE(index) & 0xffff) << 8 | getByte(index + 2) & 0xff;
+		} else {
+			return getShortLE(index) & 0xFFFF | (getByte(index + 2) & 0xFF) << 16;
+		}
+	}
+
+	@Override
 	public int getInt(int index) {
 		Component c = findComponent(index);
 		if (index + 4 <= c.endOffset()) {
@@ -755,8 +802,27 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public int getIntLE(int index) {
+		Component c = findComponent(index);
+		if (index + 4 <= c.endOffset()) {
+			return c.buf.getInt(index - c.offset);
+		} else if (order() == ByteOrder.BIG_ENDIAN) {
+			return (getShortLE(index) & 0xffff) << 16 | getShortLE(index + 2)
+					& 0xffff;
+		} else {
+			return getShortLE(index) & 0xFFFF
+					| (getShortLE(index + 2) & 0xFFFF) << 16;
+		}
+	}
+
+	@Override
 	public long getUnsignedInt(int index) {
 		return getInt(index) & 0xFFFFFFFFL;
+	}
+
+	@Override
+	public long getUnsignedIntLE(int index) {
+		return 0;
 	}
 
 	@Override
@@ -770,6 +836,20 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		} else {
 			return getInt(index) & 0xFFFFFFFFL
 					| (getInt(index + 4) & 0xFFFFFFFFL) << 32;
+		}
+	}
+
+	@Override
+	public long getLongLE(int index) {
+		Component c = findComponent(index);
+		if (index + 8 <= c.endOffset()) {
+			return c.buf.getLong(index - c.offset);
+		} else if (order() == ByteOrder.BIG_ENDIAN) {
+			return (getIntLE(index) & 0xffffffffL) << 32 | getIntLE(index + 4)
+					& 0xffffffffL;
+		} else {
+			return getIntLE(index) & 0xFFFFFFFFL
+					| (getIntLE(index + 4) & 0xFFFFFFFFL) << 32;
 		}
 	}
 
@@ -943,6 +1023,29 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public int getBytes(int index, FileChannel out, long position, int length) throws IOException {
+		int count = nioBufferCount();
+		if (count == 1) {
+			return out.write(internalNioBuffer(index, length), position);
+		} else {
+			long writtenBytes = 0;
+			for (ByteBuffer buf : nioBuffers(index, length)) {
+				writtenBytes += out.write(buf, position + writtenBytes);
+			}
+			if (writtenBytes > Integer.MAX_VALUE) {
+				return Integer.MAX_VALUE;
+			}
+			return (int) writtenBytes;
+		}
+	}
+
+	@Override
+	public CharSequence getCharSequence(int index, int length, Charset charset) {
+		// TODO - implement
+		return null;
+	}
+
+	@Override
 	public AlternativeCompositeByteBuf setBoolean(int index, boolean value) {
 		setByte(index, value ? 1 : 0);
 		return this;
@@ -971,6 +1074,21 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public AlternativeCompositeByteBuf setShortLE(int index, int value) {
+		Component c = findComponent(index);
+		if (index + 2 <= c.endOffset()) {
+			c.buf.setShortLE(index - c.offset, value);
+		} else if (order() == ByteOrder.BIG_ENDIAN) {
+			setByte(index, (byte) value);
+			setByte(index + 1, (byte) (value >>> 8));
+		} else {
+			setByte(index, (byte) (value >>> 8));
+			setByte(index + 1, (byte) value);
+		}
+		return this;
+	}
+
+	@Override
 	public AlternativeCompositeByteBuf setMedium(int index, int value) {
 		Component c = findComponent(index);
 		if (index + 3 <= c.endOffset()) {
@@ -980,6 +1098,21 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 			setByte(index + 2, (byte) value);
 		} else {
 			setShort(index, (short) value);
+			setByte(index + 2, (byte) (value >>> 16));
+		}
+		return this;
+	}
+
+	@Override
+	public ByteBuf setMediumLE(int index, int value) {
+		Component c = findComponent(index);
+		if (index + 3 <= c.endOffset()) {
+			c.buf.setMediumLE(index - c.offset, value);
+		} else if (order() == ByteOrder.BIG_ENDIAN) {
+			setShortLE(index, (short) (value >> 8));
+			setByte(index + 2, (byte) value);
+		} else {
+			setShortLE(index, (short) value);
 			setByte(index + 2, (byte) (value >>> 16));
 		}
 		return this;
@@ -1001,6 +1134,21 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public AlternativeCompositeByteBuf setIntLE(int index, int value) {
+		Component c = findComponent(index);
+		if (index + 4 <= c.endOffset()) {
+			c.buf.setIntLE(index - c.offset, value);
+		} else if (order() == ByteOrder.BIG_ENDIAN) {
+			setShortLE(index, (short) value);
+			setShortLE(index + 2, (short) (value >>> 16));
+		} else {
+			setShortLE(index, (short) (value >>> 16));
+			setShortLE(index + 2, (short) value);
+		}
+		return this;
+	}
+
+	@Override
 	public AlternativeCompositeByteBuf setLong(int index, long value) {
 		Component c = findComponent(index);
 		if (index + 8 <= c.endOffset()) {
@@ -1011,6 +1159,21 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		} else {
 			setInt(index, (int) value);
 			setInt(index + 4, (int) (value >>> 32));
+		}
+		return this;
+	}
+
+	@Override
+	public ByteBuf setLongLE(int index, long value) {
+		Component c = findComponent(index);
+		if (index + 8 <= c.endOffset()) {
+			c.buf.setLongLE(index - c.offset, value);
+		} else if (order() == ByteOrder.BIG_ENDIAN) {
+			setIntLE(index, (int) (value >>> 32));
+			setIntLE(index + 4, (int) value);
+		} else {
+			setIntLE(index, (int) value);
+			setIntLE(index + 4, (int) (value >>> 32));
 		}
 		return this;
 	}
@@ -1232,6 +1395,12 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public int setBytes(int index, FileChannel in, long position, int length) throws IOException {
+		// TODO - fix
+		return this.setBytes(index, in, length);
+	}
+
+	@Override
 	public AlternativeCompositeByteBuf setZero(int index, int length) {
 		if (length == 0) {
 			return this;
@@ -1261,6 +1430,12 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 			}
 		}
 		return this;
+	}
+
+	@Override
+	public int setCharSequence(int index, CharSequence sequence, Charset charset) {
+		// TODO implement
+		return 0;
 	}
 
 	/**
@@ -1308,8 +1483,18 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public short readShortLE() {
+		return 0;
+	}
+
+	@Override
 	public int readUnsignedShort() {
 		return readShort() & 0xFFFF;
+	}
+
+	@Override
+	public int readUnsignedShortLE() {
+		return 0;
 	}
 
 	@Override
@@ -1322,11 +1507,21 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public int readMediumLE() {
+		return 0;
+	}
+
+	@Override
 	public int readUnsignedMedium() {
 		checkReadableBytes(3);
 		int v = getUnsignedMedium(readerIndex);
 		readerIndex += 3;
 		return v;
+	}
+
+	@Override
+	public int readUnsignedMediumLE() {
+		return 0;
 	}
 
 	@Override
@@ -1338,8 +1533,18 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public int readIntLE() {
+		return 0;
+	}
+
+	@Override
 	public long readUnsignedInt() {
 		return readInt() & 0xFFFFFFFFL;
+	}
+
+	@Override
+	public long readUnsignedIntLE() {
+		return 0;
 	}
 
 	@Override
@@ -1348,6 +1553,11 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		long v = getLong(readerIndex);
 		readerIndex += 8;
 		return v;
+	}
+
+	@Override
+	public long readLongLE() {
+		return 0;
 	}
 
 	@Override
@@ -1385,6 +1595,11 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		ByteBuf slice = slice(readerIndex, length);
 		readerIndex += length;
 		return slice;
+	}
+
+	@Override
+	public ByteBuf readRetainedSlice(int length) {
+		return null;
 	}
 
 	@Override
@@ -1455,6 +1670,16 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public CharSequence readCharSequence(int length, Charset charset) {
+		return null;
+	}
+
+	@Override
+	public int readBytes(FileChannel out, long position, int length) throws IOException {
+		return 0;
+	}
+
+	@Override
 	public ByteBuf skipBytes(int length) {
 		checkReadableBytes(length);
 
@@ -1484,7 +1709,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		Component c = components.get(index);
 		int relWriterIndex = writerIndex - c.offset;
 		c.buf.writerIndex(relWriterIndex);
-		
+
 		if (this.writerIndex < writerIndex) {
 			//new writer index is larger than the old one
 			// assuming full buffers
@@ -1493,7 +1718,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 				c.buf.writerIndex(c.buf.capacity());
 			}
 			this.writerIndex = writerIndex;
-			
+
 		} else {
 			//we go back in the buffer
 			for (int i = index + 1; i < to; i++) {
@@ -1542,11 +1767,21 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public ByteBuf writeShortLE(int value) {
+		return null;
+	}
+
+	@Override
 	public ByteBuf writeMedium(int value) {
 		ensureWritable0(3, true);
 		setMedium(writerIndex, value);
 		increaseComponentWriterIndex(3);
 		return this;
+	}
+
+	@Override
+	public ByteBuf writeMediumLE(int value) {
+		return null;
 	}
 
 	@Override
@@ -1558,11 +1793,21 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public ByteBuf writeIntLE(int value) {
+		return null;
+	}
+
+	@Override
 	public ByteBuf writeLong(long value) {
 		ensureWritable0(8, true);
 		setLong(writerIndex, value);
 		increaseComponentWriterIndex(8);
 		return this;
+	}
+
+	@Override
+	public ByteBuf writeLongLE(long value) {
+		return null;
 	}
 
 	@Override
@@ -1655,6 +1900,11 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public int writeBytes(FileChannel in, long position, int length) throws IOException {
+		return 0;
+	}
+
+	@Override
 	public ByteBuf writeZero(int length) {
 		if (length == 0) {
 			return this;
@@ -1684,6 +1934,11 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public int writeCharSequence(CharSequence sequence, Charset charset) {
+		return 0;
+	}
+
+	@Override
 	public int indexOf(int fromIndex, int toIndex, byte value) {
 		return ByteBufUtil.indexOf(this, fromIndex, toIndex, value);
 	}
@@ -1709,20 +1964,19 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
-	public int forEachByte(ByteBufProcessor processor) {
+	public int forEachByte(ByteProcessor processor) {
 		int index = readerIndex;
 		int length = writerIndex - index;
 		return forEachByteAsc0(index, length, processor);
 	}
 
 	@Override
-	public int forEachByte(int index, int length, ByteBufProcessor processor) {
+	public int forEachByte(int index, int length, ByteProcessor processor) {
 		checkIndex(index, length);
 		return forEachByteAsc0(index, length, processor);
 	}
 
-	private int forEachByteAsc0(int index, int length,
-			ByteBufProcessor processor) {
+	private int forEachByteAsc0(int index, int length, ByteProcessor processor) {
 		if (processor == null) {
 			throw new NullPointerException("processor");
 		}
@@ -1749,20 +2003,19 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
-	public int forEachByteDesc(ByteBufProcessor processor) {
+	public int forEachByteDesc(ByteProcessor processor) {
 		int index = readerIndex;
 		int length = writerIndex - index;
 		return forEachByteDesc0(index, length, processor);
 	}
 
 	@Override
-	public int forEachByteDesc(int index, int length, ByteBufProcessor processor) {
+	public int forEachByteDesc(int index, int length, ByteProcessor processor) {
 		checkIndex(index, length);
 		return forEachByteDesc0(index, length, processor);
 	}
 
-	private int forEachByteDesc0(int index, int length,
-			ByteBufProcessor processor) {
+	private int forEachByteDesc0(int index, int length, ByteProcessor processor) {
 		if (processor == null) {
 			throw new NullPointerException("processor");
 		}
@@ -1828,6 +2081,11 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public ByteBuf retainedSlice() {
+		return null;
+	}
+
+	@Override
 	public ByteBuf slice(int index, int length) {
 		if (length == 0) {
 			return Unpooled.EMPTY_BUFFER;
@@ -1837,8 +2095,18 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	}
 
 	@Override
+	public ByteBuf retainedSlice(int index, int length) {
+		return null;
+	}
+
+	@Override
 	public ByteBuf duplicate() {
 		return new DuplicatedByteBuf(this);
+	}
+
+	@Override
+	public ByteBuf retainedDuplicate() {
+		return null;
 	}
 
 	@Override
@@ -2028,7 +2296,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 		buf.append(')');
 		return buf.toString();
 	}
-	
+
 	 public List<ByteBuf> decompose(int offset, int length) {
 	        checkIndex(offset, length);
 	        if (length == 0) {
@@ -2070,7 +2338,7 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 
 	        return slice;
 	    }
-	
+
 
 	private static String decodeString(ByteBuffer src, Charset charset) {
 		final CharsetDecoder decoder = CharsetUtil.getDecoder(charset);
@@ -2094,9 +2362,9 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	public static AlternativeCompositeByteBuf compBuffer(ByteBufAllocator alloc, ByteBuf... buffers) {
 		return new AlternativeCompositeByteBuf(alloc, buffers);
 	}
-	
+
 	private static class UnpooledHeapByteBufAlloc extends AbstractByteBufAllocator {
-		
+
 		private final static UnpooledByteBufAllocator UNPOOLED_HEAP_ORIG = new UnpooledByteBufAllocator(false);
 
 		@Override
@@ -2113,25 +2381,25 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	    public boolean isDirectBufferPooled() {
 	        return false;
 	    }
-	    
+
 	    @Override
 	    public ByteBuf ioBuffer() {
 	    	return UNPOOLED_HEAP_ORIG.heapBuffer();
 	    }
-	    
+
 	    @Override
 	    public ByteBuf ioBuffer(int initialCapacity) {
 	    	return UNPOOLED_HEAP_ORIG.heapBuffer(initialCapacity);
 	    }
-	    
+
 	    @Override
 	    public ByteBuf ioBuffer(int initialCapacity, int maxCapacity) {
 	        return UNPOOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
-	    }		
+	    }
 	}
-	
+
 	private static class PooledHeapByteBufAlloc extends AbstractByteBufAllocator {
-		
+
 		private final static PooledByteBufAllocator POOLED_HEAP_ORIG = new PooledByteBufAllocator(false);
 
 		@Override
@@ -2148,20 +2416,20 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 	    public boolean isDirectBufferPooled() {
 	        return true;
 	    }
-	    
+
 	    @Override
 	    public ByteBuf ioBuffer() {
 	    	return POOLED_HEAP_ORIG.heapBuffer();
 	    }
-	    
+
 	    @Override
 	    public ByteBuf ioBuffer(int initialCapacity) {
 	    	return POOLED_HEAP_ORIG.heapBuffer(initialCapacity);
 	    }
-	    
+
 	    @Override
 	    public ByteBuf ioBuffer(int initialCapacity, int maxCapacity) {
 	        return POOLED_HEAP_ORIG.heapBuffer(initialCapacity, maxCapacity);
-	    }		
+	    }
 	}
 }

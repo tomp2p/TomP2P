@@ -30,7 +30,7 @@ public class TestReservation {
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 1000; i++) {
                 FutureResponse fr1 = sender.pingRPC().pingTCP(recv1.peerAddress(), cc, new DefaultConnectionConfiguration());
                 FutureResponse fr2 = sender.pingRPC().pingTCP(recv1.peerAddress(), cc, new DefaultConnectionConfiguration());
                 FutureResponse fr3 = sender.pingRPC().pingTCP(recv1.peerAddress(), cc, new DefaultConnectionConfiguration());
@@ -75,7 +75,7 @@ public class TestReservation {
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 1000; i++) {
                 FutureResponse fr1 = sender.pingRPC().pingUDP(recv1.peerAddress(), cc, new DefaultConnectionConfiguration());
                 FutureResponse fr2 = sender.pingRPC().pingUDP(recv1.peerAddress(), cc, new DefaultConnectionConfiguration());
                 FutureResponse fr3 = sender.pingRPC().pingUDP(recv1.peerAddress(), cc, new DefaultConnectionConfiguration());

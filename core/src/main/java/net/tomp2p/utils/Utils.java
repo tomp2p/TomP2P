@@ -37,6 +37,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -644,15 +645,7 @@ public class Utils {
     // http://stackoverflow.com/questions/617414/create-a-temporary-directory-in-java
     public static File createTempDir() throws IOException {
         final File temp;
-        temp = File.createTempFile("temp", Long.toString(System.nanoTime()));
-
-        if (!(temp.delete())) {
-            throw new IOException("Could not delete temp file: " + temp.getAbsolutePath());
-        }
-
-        if (!(temp.mkdir())) {
-            throw new IOException("Could not create temp directory: " + temp.getAbsolutePath());
-        }
+        temp = Files.createTempDirectory("temp" + Long.toString(System.nanoTime())).toFile();
         return (temp);
     }
 
